@@ -127,6 +127,7 @@ const renderTokenKey = (
   toggleTokenVisibility,
   copyTokenKey,
   copyTokenConnectionString,
+  downloadTokenCodexScript,
   t,
 ) => {
   const revealed = !!showKeys[record.id];
@@ -171,6 +172,16 @@ const renderTokenKey = (
                   node: 'item',
                   name: t('复制连接信息'),
                   onClick: () => copyTokenConnectionString(record),
+                },
+                {
+                  node: 'item',
+                  name: t('下载当前 Key 的 Codex Windows 脚本'),
+                  onClick: () => downloadTokenCodexScript(record, 'windows'),
+                },
+                {
+                  node: 'item',
+                  name: t('下载当前 Key 的 Codex Linux 脚本'),
+                  onClick: () => downloadTokenCodexScript(record, 'linux'),
                 },
               ]}
             >
@@ -474,6 +485,7 @@ export const getTokensColumns = ({
   toggleTokenVisibility,
   copyTokenKey,
   copyTokenConnectionString,
+  downloadTokenCodexScript,
   manageToken,
   onOpenLink,
   setEditingToken,
@@ -516,6 +528,7 @@ export const getTokensColumns = ({
           toggleTokenVisibility,
           copyTokenKey,
           copyTokenConnectionString,
+          downloadTokenCodexScript,
           t,
         ),
     },

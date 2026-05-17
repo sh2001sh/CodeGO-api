@@ -26,6 +26,7 @@ import {
   ExternalLink,
   ArrowRightLeft,
   Copy,
+  Download,
   Link,
   Loader2,
   MoreHorizontal as DotsHorizontalIcon,
@@ -55,6 +56,7 @@ import { resolveChatUrl, type ChatPreset } from '@/features/chat/lib/chat-links'
 import { sendToFluent } from '@/features/chat/lib/send-to-fluent'
 import { updateApiKeyStatus } from '../api'
 import { API_KEY_STATUS, ERROR_MESSAGES, SUCCESS_MESSAGES } from '../constants'
+import { downloadCodexSetupScript } from '../lib/codex-config-script'
 import { apiKeySchema } from '../types'
 import { useApiKeys } from './api-keys-provider'
 
@@ -169,6 +171,22 @@ export function DataTableRowActions<TData>({
     }
   }
 
+  const handleDownloadCodexScript = async (platform: 'windows' | 'linux') => {
+    const realKey = await resolveRealKey(apiKey.id)
+    if (!realKey) return
+    downloadCodexSetupScript(platform, {
+      apiKey: realKey,
+      label: apiKey.name || String(apiKey.id),
+    })
+    toast.success(
+      t(
+        platform === 'windows'
+          ? 'Downloaded Codex Windows setup script'
+          : 'Downloaded Codex Linux setup script'
+      )
+    )
+  }
+
   return (
     <div className='flex items-center justify-end gap-1'>
       <Tooltip>
@@ -270,6 +288,29 @@ export function DataTableRowActions<TData>({
               <ArrowRightLeft size={16} />
             </DropdownMenuShortcut>
           </DropdownMenuItem>
+          <DropdownMenuSub>
+            <DropdownMenuSubTrigger>
+              {t('Download Codex Script')}
+            </DropdownMenuSubTrigger>
+            <DropdownMenuSubContent>
+              <DropdownMenuItem
+                onClick={() => handleDownloadCodexScript('windows')}
+              >
+                {t('Windows Script')}
+                <DropdownMenuShortcut>
+                  <Download size={16} />
+                </DropdownMenuShortcut>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => handleDownloadCodexScript('linux')}
+              >
+                {t('Linux Script')}
+                <DropdownMenuShortcut>
+                  <Download size={16} />
+                </DropdownMenuShortcut>
+              </DropdownMenuItem>
+            </DropdownMenuSubContent>
+          </DropdownMenuSub>
           {hasChatPresets && (
             <DropdownMenuSub>
               <DropdownMenuSubTrigger>{t('Chat')}</DropdownMenuSubTrigger>

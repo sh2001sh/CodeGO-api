@@ -408,6 +408,12 @@ function TokensPage() {
               setShowEdit={setShowEdit}
               batchCopyTokens={batchCopyTokens}
               batchDeleteTokens={batchDeleteTokens}
+              downloadGenericCodexWindowsScript={
+                tokensData.downloadGenericCodexWindowsScript
+              }
+              downloadGenericCodexLinuxScript={
+                tokensData.downloadGenericCodexLinuxScript
+              }
               t={t}
             />
 

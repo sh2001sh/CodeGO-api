@@ -35,6 +35,7 @@ import {
   getServerAddress,
   encodeChannelConnectionString,
 } from '../../helpers/token';
+import { downloadCodexSetupScript } from '../../helpers/codex-script';
 
 export const useTokensData = (openFluentNotification, openCCSwitchModal) => {
   const { t } = useTranslation();
@@ -209,6 +210,31 @@ export const useTokensData = (openFluentNotification, openCCSwitchModal) => {
     const serverUrl = getServerAddress();
     const connStr = encodeChannelConnectionString(`sk-${fullKey}`, serverUrl);
     await copyText(connStr);
+  };
+
+  const downloadGenericCodexWindowsScript = () => {
+    downloadCodexSetupScript('windows');
+    showSuccess(t('已下载 Codex Windows 配置脚本'));
+  };
+
+  const downloadGenericCodexLinuxScript = () => {
+    downloadCodexSetupScript('linux');
+    showSuccess(t('已下载 Codex Linux 配置脚本'));
+  };
+
+  const downloadTokenCodexScript = async (record, platform) => {
+    const fullKey = await fetchTokenKey(record);
+    downloadCodexSetupScript(platform, {
+      apiKey: fullKey,
+      label: record?.name || String(record?.id || 'key'),
+    });
+    showSuccess(
+      t(
+        platform === 'windows'
+          ? '已下载当前 Key 的 Codex Windows 配置脚本'
+          : '已下载当前 Key 的 Codex Linux 配置脚本',
+      ),
+    );
   };
 
   // Open link function for chat integrations
@@ -504,6 +530,9 @@ export const useTokensData = (openFluentNotification, openCCSwitchModal) => {
     toggleTokenVisibility,
     copyTokenKey,
     copyTokenConnectionString,
+    downloadGenericCodexWindowsScript,
+    downloadGenericCodexLinuxScript,
+    downloadTokenCodexScript,
     onOpenLink,
     manageToken,
     searchTokens,
