@@ -24,6 +24,7 @@ import {
   type SystemConfig,
   DEFAULT_CURRENCY_CONFIG,
 } from '@/stores/system-config-store'
+import { normalizeLogoUrl } from '@/lib/branding'
 import { DEFAULT_SYSTEM_NAME, DEFAULT_LOGO } from '@/lib/constants'
 import { applyFaviconToDom } from '@/lib/dom-utils'
 
@@ -93,7 +94,7 @@ export function mapStatusDataToConfig(
 
   return {
     systemName: data.system_name || DEFAULT_SYSTEM_NAME,
-    logo: data.logo || DEFAULT_LOGO,
+    logo: normalizeLogoUrl(data.logo || DEFAULT_LOGO),
     footerHtml: data.footer_html,
     demoSiteEnabled: data.demo_site_enabled,
     displayTokenStatEnabled: data.display_token_stat_enabled,
@@ -150,6 +151,7 @@ export function useSystemConfig(options: UseSystemConfigOptions = {}) {
     setLoadedLogoUrl,
     setLoading,
   } = useSystemConfigStore()
+  const normalizedLogo = normalizeLogoUrl(config.logo)
 
   // Load config from backend
   const loadConfig = useCallback(async () => {
@@ -169,9 +171,15 @@ export function useSystemConfig(options: UseSystemConfigOptions = {}) {
     if (autoLoad) loadConfig()
   }, [autoLoad, loadConfig])
 
+  useEffect(() => {
+    if (config.logo !== normalizedLogo) {
+      setConfig({ logo: normalizedLogo })
+    }
+  }, [config.logo, normalizedLogo, setConfig])
+
   // Preload logo image when URL changes
   useEffect(() => {
-    const { logo } = config
+    const logo = normalizedLogo
 
     // Skip if logo is already loaded
     if (!logo || logo === loadedLogoUrl) return
@@ -187,17 +195,19 @@ export function useSystemConfig(options: UseSystemConfigOptions = {}) {
         if (logo !== DEFAULT_LOGO) {
           // eslint-disable-next-line no-console
           console.error('Failed to load logo:', logo)
+          setConfig({ logo: DEFAULT_LOGO })
         }
-        // Mark as loaded even on error to prevent infinite retry
-        setLoadedLogoUrl(logo)
+        setLoadedLogoUrl(DEFAULT_LOGO)
+        applyFaviconToDom(DEFAULT_LOGO)
       }
     )
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [config.logo, loadedLogoUrl, setLoadedLogoUrl])
+  }, [loadedLogoUrl, normalizedLogo, setConfig, setLoadedLogoUrl])
 
   return {
     ...config,
+    logo: normalizedLogo,
     loading,
-    logoLoaded: config.logo === loadedLogoUrl && !!loadedLogoUrl,
+    logoLoaded: normalizedLogo === loadedLogoUrl && !!loadedLogoUrl,
   }
 }
