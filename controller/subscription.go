@@ -74,6 +74,13 @@ func normalizeAdminUserSubscriptionStatus(status string) (string, bool) {
 	}
 }
 
+func isMonthlySubscriptionPlan(plan *model.SubscriptionPlan) bool {
+	if plan == nil {
+		return false
+	}
+	return plan.DurationUnit == model.SubscriptionDurationMonth && plan.DurationValue == 1
+}
+
 func validateSubscriptionPlanInput(plan *model.SubscriptionPlan) error {
 	if plan == nil {
 		return gorm.ErrInvalidData
@@ -111,6 +118,9 @@ func validateSubscriptionPlanInput(plan *model.SubscriptionPlan) error {
 	plan.QuotaResetPeriod = model.NormalizeResetPeriod(plan.QuotaResetPeriod)
 	if plan.QuotaResetPeriod == model.SubscriptionResetCustom && plan.QuotaResetCustomSeconds <= 0 {
 		return errors.New("quota_reset_custom_seconds must be > 0")
+	}
+	if isMonthlySubscriptionPlan(plan) && plan.QuotaResetPeriod == model.SubscriptionResetWeekly && plan.PeriodAmount > 0 {
+		plan.TotalAmount = plan.PeriodAmount * 4
 	}
 	return nil
 }

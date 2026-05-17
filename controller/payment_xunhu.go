@@ -17,6 +17,8 @@ import (
 	"github.com/QuantumNous/new-api/setting"
 )
 
+const xunhuAPIVersion = "1.1"
+
 type XunhuCreateOrderResponse struct {
 	ErrCode   int    `json:"errcode"`
 	ErrMsg    string `json:"errmsg"`
@@ -27,7 +29,11 @@ type XunhuCreateOrderResponse struct {
 }
 
 func isXunhuPaymentMethod(method string) bool {
-	return strings.TrimSpace(method) == model.PaymentMethodXunhu
+	trimmed := strings.TrimSpace(method)
+	if trimmed == model.PaymentMethodXunhu {
+		return true
+	}
+	return setting.XunhuEnabled && trimmed == "wxpay"
 }
 
 func buildXunhuHash(params map[string]string, secret string) string {
@@ -60,8 +66,42 @@ func verifyXunhuHash(params map[string]string) bool {
 	return strings.EqualFold(expected, params["hash"])
 }
 
+func validateXunhuConfig() error {
+	switch {
+	case strings.TrimSpace(setting.XunhuAppID) == "":
+		return fmt.Errorf("xunhu app id is empty")
+	case strings.TrimSpace(setting.XunhuSecret) == "":
+		return fmt.Errorf("xunhu secret is empty")
+	case strings.TrimSpace(setting.XunhuGateway) == "":
+		return fmt.Errorf("xunhu gateway is empty")
+	default:
+		return nil
+	}
+}
+
+func formatXunhuCreatePaymentError(err error) string {
+	if err == nil {
+		return "failed to create payment"
+	}
+	message := strings.TrimSpace(err.Error())
+	if message == "" {
+		return "failed to create payment"
+	}
+	message = strings.ReplaceAll(message, "\r", " ")
+	message = strings.ReplaceAll(message, "\n", " ")
+	message = strings.Join(strings.Fields(message), " ")
+	if len(message) > 180 {
+		message = message[:180] + "..."
+	}
+	return fmt.Sprintf("failed to create payment: %s", message)
+}
+
 func createXunhuOrder(tradeNo string, title string, totalFee float64, notifyURL string, returnURL string) (*XunhuCreateOrderResponse, error) {
+	if err := validateXunhuConfig(); err != nil {
+		return nil, err
+	}
 	nonce := common.GetRandomString(32)
+	requestTime := strconv.FormatInt(time.Now().Unix(), 10)
 	payload := map[string]string{
 		"appid":          strings.TrimSpace(setting.XunhuAppID),
 		"trade_order_id": tradeNo,
@@ -69,6 +109,8 @@ func createXunhuOrder(tradeNo string, title string, totalFee float64, notifyURL 
 		"total_fee":      strconv.FormatFloat(totalFee, 'f', 2, 64),
 		"notify_url":     notifyURL,
 		"return_url":     returnURL,
+		"time":           requestTime,
+		"version":        xunhuAPIVersion,
 		"nonce_str":      nonce,
 	}
 	payload["hash"] = buildXunhuHash(payload, setting.XunhuSecret)
@@ -101,10 +143,14 @@ func createXunhuOrder(tradeNo string, title string, totalFee float64, notifyURL 
 
 	var result XunhuCreateOrderResponse
 	if err := common.Unmarshal(body, &result); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("invalid xunhu response: %s", string(body))
 	}
 	if result.ErrCode != 0 {
-		return nil, fmt.Errorf("xunhu create order failed: %s", result.ErrMsg)
+		errMsg := strings.TrimSpace(result.ErrMsg)
+		if errMsg == "" {
+			errMsg = string(body)
+		}
+		return nil, fmt.Errorf("xunhu create order failed: %s", errMsg)
 	}
 	if result.Hash != "" {
 		responseVerify := map[string]string{
@@ -118,6 +164,9 @@ func createXunhuOrder(tradeNo string, title string, totalFee float64, notifyURL 
 		if !verifyXunhuHash(responseVerify) {
 			return nil, fmt.Errorf("xunhu response hash verification failed")
 		}
+	}
+	if strings.TrimSpace(result.PayURL) == "" && strings.TrimSpace(result.QRCodeURL) == "" {
+		return nil, fmt.Errorf("xunhu response missing payment url")
 	}
 	return &result, nil
 }

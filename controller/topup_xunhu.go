@@ -49,7 +49,7 @@ func requestXunhuPayment(c *gin.Context, req EpayRequest) {
 	order, err := createXunhuOrder(tradeNo, fmt.Sprintf("TUC%d", req.Amount), payMoney, notifyURL, returnURL)
 	if err != nil {
 		logger.LogError(c.Request.Context(), fmt.Sprintf("xunhu create topup order failed user_id=%d trade_no=%s error=%q", userId, tradeNo, err.Error()))
-		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "failed to create payment"})
+		c.JSON(http.StatusOK, gin.H{"message": "error", "data": formatXunhuCreatePaymentError(err)})
 		return
 	}
 

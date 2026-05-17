@@ -64,6 +64,15 @@ const resetPeriodOptions = [
   { value: 'custom', label: '自定义(秒)' },
 ];
 
+const quotaModeOptions = [
+  { value: 'total', label: '总额度' },
+  { value: 'weekly', label: '每周额度' },
+];
+
+const isMonthlyCardPlan = (values) =>
+  values?.duration_unit === 'month' &&
+  Number(values?.duration_value || 0) === 1;
+
 const AddEditSubscriptionModal = ({
   visible,
   handleClose,
@@ -93,7 +102,9 @@ const AddEditSubscriptionModal = ({
     enabled: true,
     sort_order: 0,
     max_purchase_per_user: 0,
+    quota_mode: 'total',
     total_amount: 0,
+    period_amount: 0,
     upgrade_group: '',
     stripe_price_id: '',
     creem_product_id: '',
@@ -103,6 +114,15 @@ const AddEditSubscriptionModal = ({
     const base = getInitValues();
     if (editingPlan?.plan?.id === undefined) return base;
     const p = editingPlan.plan || {};
+    const quotaMode =
+      isMonthlyCardPlan({
+        duration_unit: p.duration_unit || 'month',
+        duration_value: Number(p.duration_value || 1),
+      }) &&
+      (p.quota_reset_period || 'never') === 'weekly' &&
+      Number(p.period_amount || 0) > 0
+        ? 'weekly'
+        : 'total';
     return {
       ...base,
       title: p.title || '',
@@ -117,8 +137,12 @@ const AddEditSubscriptionModal = ({
       enabled: p.enabled !== false,
       sort_order: Number(p.sort_order || 0),
       max_purchase_per_user: Number(p.max_purchase_per_user || 0),
+      quota_mode: quotaMode,
       total_amount: Number(
         quotaToDisplayAmount(p.total_amount || 0).toFixed(2),
+      ),
+      period_amount: Number(
+        quotaToDisplayAmount(p.period_amount || 0).toFixed(2),
       ),
       upgrade_group: p.upgrade_group || '',
       stripe_price_id: p.stripe_price_id || '',
@@ -148,6 +172,9 @@ const AddEditSubscriptionModal = ({
     }
     setLoading(true);
     try {
+      const isMonthlyCard = isMonthlyCardPlan(values);
+      const useWeeklyQuota = isMonthlyCard && values.quota_mode === 'weekly';
+      const displayPeriodAmount = Number(values.period_amount || 0);
       const payload = {
         plan: {
           ...values,
@@ -155,14 +182,25 @@ const AddEditSubscriptionModal = ({
           currency: 'USD',
           duration_value: Number(values.duration_value || 0),
           custom_seconds: Number(values.custom_seconds || 0),
-          quota_reset_period: values.quota_reset_period || 'never',
+          quota_reset_period: useWeeklyQuota
+            ? 'weekly'
+            : values.quota_reset_period || 'never',
           quota_reset_custom_seconds:
-            values.quota_reset_period === 'custom'
+            !useWeeklyQuota && values.quota_reset_period === 'custom'
               ? Number(values.quota_reset_custom_seconds || 0)
               : 0,
           sort_order: Number(values.sort_order || 0),
           max_purchase_per_user: Number(values.max_purchase_per_user || 0),
-          total_amount: displayAmountToQuota(values.total_amount),
+          total_amount: displayAmountToQuota(
+            useWeeklyQuota ? displayPeriodAmount * 4 : values.total_amount,
+          ),
+          period_amount: displayAmountToQuota(
+            useWeeklyQuota
+              ? displayPeriodAmount
+              : isMonthlyCard
+                ? 0
+                : values.period_amount,
+          ),
           upgrade_group: values.upgrade_group || '',
         },
       };
@@ -248,6 +286,15 @@ const AddEditSubscriptionModal = ({
             key={formKey}
             initValues={buildFormValues()}
             getFormApi={(api) => (formApiRef.current = api)}
+            onValueChange={(nextValues) => {
+              if (
+                isMonthlyCardPlan(nextValues) &&
+                nextValues.quota_mode === 'weekly' &&
+                nextValues.quota_reset_period !== 'weekly'
+              ) {
+                formApiRef.current?.setValue('quota_reset_period', 'weekly');
+              }
+            }}
             onSubmit={submit}
           >
             {({ values }) => (
@@ -307,20 +354,63 @@ const AddEditSubscriptionModal = ({
                       />
                     </Col>
 
-                    <Col span={12}>
-                      <Form.InputNumber
-                        field='total_amount'
-                        label={t('总额度')}
-                        required
-                        min={0}
-                        precision={2}
-                        rules={[{ required: true, message: t('请输入总额度') }]}
-                        extraText={`${t('0 表示不限')} · ${t('原生额度')}：${displayAmountToQuota(
-                          values.total_amount,
-                        )}`}
-                        style={{ width: '100%' }}
-                      />
-                    </Col>
+                    {isMonthlyCardPlan(values) && (
+                      <Col span={12}>
+                        <Form.Select
+                          field='quota_mode'
+                          label={t('月卡额度模式')}
+                          extraText={t(
+                            '月卡支持“总额度 / 每周额度”二选一；选择每周额度后，总额度会自动按每周额度 x 4 计算。',
+                          )}
+                        >
+                          {quotaModeOptions.map((option) => (
+                            <Select.Option
+                              key={option.value}
+                              value={option.value}
+                            >
+                              {option.label}
+                            </Select.Option>
+                          ))}
+                        </Form.Select>
+                      </Col>
+                    )}
+
+                    {(values.quota_mode || 'total') === 'total' ||
+                    !isMonthlyCardPlan(values) ? (
+                      <Col span={12}>
+                        <Form.InputNumber
+                          field='total_amount'
+                          label={t('总额度')}
+                          required
+                          min={0}
+                          precision={2}
+                          rules={[
+                            { required: true, message: t('请输入总额度') },
+                          ]}
+                          extraText={`${t('0 表示不限')} · ${t('原生额度')}：${displayAmountToQuota(
+                            values.total_amount,
+                          )}`}
+                          style={{ width: '100%' }}
+                        />
+                      </Col>
+                    ) : (
+                      <Col span={12}>
+                        <Form.InputNumber
+                          field='period_amount'
+                          label={t('每周额度')}
+                          required
+                          min={0}
+                          precision={2}
+                          rules={[
+                            { required: true, message: t('请输入每周额度') },
+                          ]}
+                          extraText={`${t('月卡总额度将自动设为')} ${
+                            Number(values.period_amount || 0) * 4
+                          }`}
+                          style={{ width: '100%' }}
+                        />
+                      </Col>
+                    )}
 
                     <Col span={12}>
                       <Form.Select
@@ -468,6 +558,16 @@ const AddEditSubscriptionModal = ({
                       <Form.Select
                         field='quota_reset_period'
                         label={t('重置周期')}
+                        disabled={
+                          isMonthlyCardPlan(values) &&
+                          values.quota_mode === 'weekly'
+                        }
+                        extraText={
+                          isMonthlyCardPlan(values) &&
+                          values.quota_mode === 'weekly'
+                            ? t('每周额度模式会自动使用每周重置')
+                            : undefined
+                        }
                       >
                         {resetPeriodOptions.map((o) => (
                           <Select.Option key={o.value} value={o.value}>
@@ -498,6 +598,19 @@ const AddEditSubscriptionModal = ({
                         />
                       )}
                     </Col>
+                    {!isMonthlyCardPlan(values) &&
+                      values.quota_reset_period !== 'never' && (
+                        <Col span={12}>
+                          <Form.InputNumber
+                            field='period_amount'
+                            label={t('周期额度上限')}
+                            min={0}
+                            precision={2}
+                            extraText={t('0 表示不启用')}
+                            style={{ width: '100%' }}
+                          />
+                        </Col>
+                      )}
                   </Row>
                 </Card>
 

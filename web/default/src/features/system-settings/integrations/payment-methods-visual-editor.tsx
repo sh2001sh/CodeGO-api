@@ -56,14 +56,6 @@ const PAYMENT_TEMPLATES = [
     },
   },
   {
-    name: 'WeChat Pay',
-    template: {
-      color: 'rgba(var(--semi-green-5), 1)',
-      name: '微信',
-      type: 'wxpay',
-    },
-  },
-  {
     name: 'Xunhu WeChat Pay',
     template: {
       color: 'rgba(var(--semi-orange-5), 1)',

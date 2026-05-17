@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -22,11 +23,29 @@ import (
 	"github.com/shopspring/decimal"
 )
 
+func cloneDisplayedPayMethods(methods []map[string]string, skipType string) []map[string]string {
+	cloned := make([]map[string]string, 0, len(methods))
+	for _, method := range methods {
+		if len(method) == 0 {
+			continue
+		}
+		if skipType != "" && strings.TrimSpace(method["type"]) == skipType {
+			continue
+		}
+		next := make(map[string]string, len(method))
+		for key, value := range method {
+			next[key] = value
+		}
+		cloned = append(cloned, next)
+	}
+	return cloned
+}
+
 func GetTopUpInfo(c *gin.Context) {
 	complianceConfirmed := operation_setting.IsPaymentComplianceConfirmed()
 
 	// 获取支付方式
-	payMethods := operation_setting.PayMethods
+	payMethods := cloneDisplayedPayMethods(operation_setting.PayMethods, "")
 	if !complianceConfirmed {
 		payMethods = []map[string]string{}
 	}
@@ -97,6 +116,7 @@ func GetTopUpInfo(c *gin.Context) {
 
 	enableXunhu := isXunhuTopUpEnabled()
 	if enableXunhu {
+		payMethods = cloneDisplayedPayMethods(payMethods, "wxpay")
 		userGroup := ""
 		if userId := c.GetInt("id"); userId > 0 {
 			if group, err := model.GetUserGroup(userId, true); err == nil {

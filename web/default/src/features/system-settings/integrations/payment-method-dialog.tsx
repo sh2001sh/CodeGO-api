@@ -70,7 +70,6 @@ type PaymentMethodDialogProps = {
 
 const PAYMENT_TYPES = [
   { value: 'alipay', label: 'Alipay' },
-  { value: 'wxpay', label: 'WeChat Pay' },
   { value: 'xunhu', label: 'Xunhu WeChat Pay' },
   { value: 'stripe', label: 'Stripe' },
 ]

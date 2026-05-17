@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/QuantumNous/new-api/common"
+	"github.com/QuantumNous/new-api/logger"
 	"github.com/QuantumNous/new-api/model"
 	"github.com/QuantumNous/new-api/service"
 	"github.com/gin-gonic/gin"
@@ -65,8 +66,9 @@ func requestSubscriptionXunhuPay(c *gin.Context, planId int) {
 
 	payResult, err := createXunhuOrder(tradeNo, fmt.Sprintf("SUB:%s", plan.Title), plan.PriceAmount, notifyURL, returnURL)
 	if err != nil {
+		logger.LogError(c.Request.Context(), fmt.Sprintf("xunhu create subscription order failed user_id=%d trade_no=%s plan_id=%d error=%q", userId, tradeNo, plan.Id, err.Error()))
 		_ = model.ExpireSubscriptionOrder(tradeNo, model.PaymentProviderXunhu)
-		common.ApiErrorMsg(c, "failed to create payment")
+		common.ApiErrorMsg(c, formatXunhuCreatePaymentError(err))
 		return
 	}
 

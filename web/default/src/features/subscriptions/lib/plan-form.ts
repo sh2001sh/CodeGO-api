@@ -20,6 +20,29 @@ import { z } from 'zod'
 import type { TFunction } from 'i18next'
 import type { SubscriptionPlan, PlanPayload } from '../types'
 
+type PlanQuotaMode = 'total' | 'weekly'
+
+function isMonthlyCardPlanInput(
+  durationUnit: string,
+  durationValue: number
+): boolean {
+  return durationUnit === 'month' && Number(durationValue || 0) === 1
+}
+
+function deriveQuotaMode(plan: SubscriptionPlan): PlanQuotaMode {
+  if (
+    isMonthlyCardPlanInput(
+      plan.duration_unit || 'month',
+      Number(plan.duration_value || 0)
+    ) &&
+    plan.quota_reset_period === 'weekly' &&
+    Number(plan.period_amount || 0) > 0
+  ) {
+    return 'weekly'
+  }
+  return 'total'
+}
+
 export function getPlanFormSchema(t: TFunction) {
   return z.object({
     title: z.string().min(1, t('Please enter plan title')),
@@ -40,6 +63,7 @@ export function getPlanFormSchema(t: TFunction) {
     enabled: z.boolean(),
     sort_order: z.coerce.number(),
     max_purchase_per_user: z.coerce.number().min(0),
+    quota_mode: z.enum(['total', 'weekly']),
     total_amount: z.coerce.number().min(0),
     period_amount: z.coerce.number().min(0),
     model_limits: z.string().optional(),
@@ -64,6 +88,7 @@ export const PLAN_FORM_DEFAULTS: PlanFormValues = {
   enabled: true,
   sort_order: 0,
   max_purchase_per_user: 0,
+  quota_mode: 'total',
   total_amount: 0,
   period_amount: 0,
   model_limits: '',
@@ -86,6 +111,7 @@ export function planToFormValues(plan: SubscriptionPlan): PlanFormValues {
     enabled: plan.enabled !== false,
     sort_order: Number(plan.sort_order || 0),
     max_purchase_per_user: Number(plan.max_purchase_per_user || 0),
+    quota_mode: deriveQuotaMode(plan),
     total_amount: Number(plan.total_amount || 0),
     period_amount: Number(plan.period_amount || 0),
     model_limits: plan.model_limits || '',
@@ -96,24 +122,46 @@ export function planToFormValues(plan: SubscriptionPlan): PlanFormValues {
 }
 
 export function formValuesToPlanPayload(values: PlanFormValues): PlanPayload {
+  const isMonthlyCard = isMonthlyCardPlanInput(
+    values.duration_unit,
+    Number(values.duration_value || 0)
+  )
+  const useWeeklyQuota = isMonthlyCard && values.quota_mode === 'weekly'
+  const periodAmount = useWeeklyQuota
+    ? Number(values.period_amount || 0)
+    : isMonthlyCard
+      ? 0
+      : Number(values.period_amount || 0)
+  const totalAmount = useWeeklyQuota
+    ? periodAmount * 4
+    : Number(values.total_amount || 0)
+  const quotaResetPeriod = useWeeklyQuota
+    ? 'weekly'
+    : values.quota_reset_period || 'never'
+
   return {
     plan: {
-      ...values,
+      title: values.title,
+      subtitle: values.subtitle || '',
       price_amount: Number(values.price_amount || 0),
       currency: values.currency || 'USD',
+      duration_unit: values.duration_unit,
       duration_value: Number(values.duration_value || 0),
       custom_seconds: Number(values.custom_seconds || 0),
-      quota_reset_period: values.quota_reset_period || 'never',
+      quota_reset_period: quotaResetPeriod,
       quota_reset_custom_seconds:
-        values.quota_reset_period === 'custom'
+        quotaResetPeriod === 'custom'
           ? Number(values.quota_reset_custom_seconds || 0)
           : 0,
+      enabled: values.enabled,
       sort_order: Number(values.sort_order || 0),
       max_purchase_per_user: Number(values.max_purchase_per_user || 0),
-      total_amount: Number(values.total_amount || 0),
-      period_amount: Number(values.period_amount || 0),
+      total_amount: totalAmount,
+      period_amount: periodAmount,
       model_limits: values.model_limits || '',
       upgrade_group: values.upgrade_group || '',
+      stripe_price_id: values.stripe_price_id || '',
+      creem_product_id: values.creem_product_id || '',
     },
   }
 }
