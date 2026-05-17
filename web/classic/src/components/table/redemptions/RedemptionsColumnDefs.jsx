@@ -22,14 +22,12 @@ import { Tag, Button, Space, Popover, Dropdown } from '@douyinfe/semi-ui';
 import { IconMore } from '@douyinfe/semi-icons';
 import { renderQuota, timestamp2string } from '../../../helpers';
 import {
+  REDEMPTION_ACTIONS,
   REDEMPTION_STATUS,
   REDEMPTION_STATUS_MAP,
-  REDEMPTION_ACTIONS,
+  REDEMPTION_TYPES,
 } from '../../../constants/redemption.constants';
 
-/**
- * Check if redemption code is expired
- */
 export const isExpired = (record) => {
   return (
     record.status === REDEMPTION_STATUS.UNUSED &&
@@ -38,21 +36,15 @@ export const isExpired = (record) => {
   );
 };
 
-/**
- * Render timestamp
- */
 const renderTimestamp = (timestamp) => {
   return <>{timestamp2string(timestamp)}</>;
 };
 
-/**
- * Render redemption code status
- */
 const renderStatus = (status, record, t) => {
   if (isExpired(record)) {
     return (
       <Tag color='orange' shape='circle'>
-        {t('已过期')}
+        {t('Expired')}
       </Tag>
     );
   }
@@ -68,23 +60,53 @@ const renderStatus = (status, record, t) => {
 
   return (
     <Tag color='black' shape='circle'>
-      {t('未知状态')}
+      {t('Unknown')}
     </Tag>
   );
 };
 
-/**
- * Get redemption code table column definitions
- */
+const renderRedeemType = (record, t) => {
+  if (record.redeem_type === REDEMPTION_TYPES.SUBSCRIPTION) {
+    return (
+      <Tag color='blue' shape='circle'>
+        {t('Subscription')}
+      </Tag>
+    );
+  }
+
+  return (
+    <Tag color='grey' shape='circle'>
+      {t('Quota')}
+    </Tag>
+  );
+};
+
+const renderBenefit = (record, t) => {
+  if (record.redeem_type === REDEMPTION_TYPES.SUBSCRIPTION) {
+    return (
+      <div>
+        <Tag color='blue' shape='circle'>
+          {record.plan_title || `Plan #${record.plan_id || '-'}`}
+        </Tag>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <Tag color='grey' shape='circle'>
+        {renderQuota(parseInt(record.quota || 0, 10))}
+      </Tag>
+    </div>
+  );
+};
+
 export const getRedemptionsColumns = ({
   t,
   manageRedemption,
   copyText,
   setEditingRedemption,
   setShowEdit,
-  refresh,
-  redemptions,
-  activePage,
   showDeleteRedemptionModal,
 }) => {
   return [
@@ -93,73 +115,61 @@ export const getRedemptionsColumns = ({
       dataIndex: 'id',
     },
     {
-      title: t('名称'),
+      title: t('Name'),
       dataIndex: 'name',
     },
     {
-      title: t('状态'),
+      title: t('Type'),
+      dataIndex: 'redeem_type',
+      render: (_, record) => renderRedeemType(record, t),
+    },
+    {
+      title: t('Benefit'),
+      key: 'benefit',
+      render: (_, record) => renderBenefit(record, t),
+    },
+    {
+      title: t('Status'),
       dataIndex: 'status',
       key: 'status',
-      render: (text, record) => {
-        return <div>{renderStatus(text, record, t)}</div>;
-      },
+      render: (text, record) => <div>{renderStatus(text, record, t)}</div>,
     },
     {
-      title: t('额度'),
-      dataIndex: 'quota',
-      render: (text) => {
-        return (
-          <div>
-            <Tag color='grey' shape='circle'>
-              {renderQuota(parseInt(text))}
-            </Tag>
-          </div>
-        );
-      },
-    },
-    {
-      title: t('创建时间'),
+      title: t('Created At'),
       dataIndex: 'created_time',
-      render: (text) => {
-        return <div>{renderTimestamp(text)}</div>;
-      },
+      render: (text) => <div>{renderTimestamp(text)}</div>,
     },
     {
-      title: t('过期时间'),
+      title: t('Expires At'),
       dataIndex: 'expired_time',
       render: (text) => {
-        return <div>{text === 0 ? t('永不过期') : renderTimestamp(text)}</div>;
+        return <div>{text === 0 ? t('Never expires') : renderTimestamp(text)}</div>;
       },
     },
     {
-      title: t('兑换人ID'),
+      title: t('Redeemed By'),
       dataIndex: 'used_user_id',
-      render: (text) => {
-        return <div>{text === 0 ? t('无') : text}</div>;
-      },
+      render: (text) => <div>{text === 0 ? '-' : text}</div>,
     },
     {
       title: '',
       dataIndex: 'operate',
       fixed: 'right',
       width: 205,
-      render: (text, record) => {
-        // Create dropdown menu items for more operations
+      render: (_, record) => {
         const moreMenuItems = [
           {
             node: 'item',
-            name: t('删除'),
+            name: t('Delete'),
             type: 'danger',
-            onClick: () => {
-              showDeleteRedemptionModal(record);
-            },
+            onClick: () => showDeleteRedemptionModal(record),
           },
         ];
 
         if (record.status === REDEMPTION_STATUS.UNUSED && !isExpired(record)) {
           moreMenuItems.push({
             node: 'item',
-            name: t('禁用'),
+            name: t('Disable'),
             type: 'warning',
             onClick: () => {
               manageRedemption(record.id, REDEMPTION_ACTIONS.DISABLE, record);
@@ -168,7 +178,7 @@ export const getRedemptionsColumns = ({
         } else if (!isExpired(record)) {
           moreMenuItems.push({
             node: 'item',
-            name: t('启用'),
+            name: t('Enable'),
             type: 'secondary',
             onClick: () => {
               manageRedemption(record.id, REDEMPTION_ACTIONS.ENABLE, record);
@@ -179,13 +189,9 @@ export const getRedemptionsColumns = ({
 
         return (
           <Space>
-            <Popover
-              content={record.key}
-              style={{ padding: 20 }}
-              position='top'
-            >
+            <Popover content={record.key} style={{ padding: 20 }} position='top'>
               <Button type='tertiary' size='small'>
-                {t('查看')}
+                {t('View')}
               </Button>
             </Popover>
             <Button
@@ -194,7 +200,7 @@ export const getRedemptionsColumns = ({
                 await copyText(record.key);
               }}
             >
-              {t('复制')}
+              {t('Copy')}
             </Button>
             <Button
               type='tertiary'
@@ -205,13 +211,9 @@ export const getRedemptionsColumns = ({
               }}
               disabled={record.status !== REDEMPTION_STATUS.UNUSED}
             >
-              {t('编辑')}
+              {t('Edit')}
             </Button>
-            <Dropdown
-              trigger='click'
-              position='bottomRight'
-              menu={moreMenuItems}
-            >
+            <Dropdown trigger='click' position='bottomRight' menu={moreMenuItems}>
               <Button type='tertiary' size='small' icon={<IconMore />} />
             </Dropdown>
           </Space>

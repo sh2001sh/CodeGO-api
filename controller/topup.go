@@ -113,7 +113,7 @@ func GetTopUpInfo(c *gin.Context) {
 		}
 		if !hasXunhu {
 			payMethods = append(payMethods, map[string]string{
-				"name":      "XunhuPay",
+				"name":      "Xunhu WeChat Pay",
 				"type":      model.PaymentMethodXunhu,
 				"color":     "rgba(var(--semi-orange-5), 1)",
 				"min_topup": strconv.FormatInt(xunhuMinTopup, 10),

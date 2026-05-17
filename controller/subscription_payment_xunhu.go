@@ -15,17 +15,8 @@ type SubscriptionXunhuPayRequest struct {
 	PlanId int `json:"plan_id"`
 }
 
-func SubscriptionRequestXunhuPay(c *gin.Context) {
-	if !requirePaymentCompliance(c) {
-		return
-	}
-
-	var req SubscriptionXunhuPayRequest
-	if err := c.ShouldBindJSON(&req); err != nil || req.PlanId <= 0 {
-		common.ApiErrorMsg(c, "invalid request")
-		return
-	}
-	plan, err := model.GetSubscriptionPlanById(req.PlanId)
+func requestSubscriptionXunhuPay(c *gin.Context, planId int) {
+	plan, err := model.GetSubscriptionPlanById(planId)
 	if err != nil {
 		common.ApiError(c, err)
 		return
@@ -87,6 +78,19 @@ func SubscriptionRequestXunhuPay(c *gin.Context) {
 			"order_id":   tradeNo,
 		},
 	})
+}
+
+func SubscriptionRequestXunhuPay(c *gin.Context) {
+	if !requirePaymentCompliance(c) {
+		return
+	}
+
+	var req SubscriptionXunhuPayRequest
+	if err := c.ShouldBindJSON(&req); err != nil || req.PlanId <= 0 {
+		common.ApiErrorMsg(c, "invalid request")
+		return
+	}
+	requestSubscriptionXunhuPay(c, req.PlanId)
 }
 
 func SubscriptionXunhuNotify(c *gin.Context) {

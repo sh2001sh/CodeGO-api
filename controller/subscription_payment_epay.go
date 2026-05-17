@@ -32,6 +32,11 @@ func SubscriptionRequestEpay(c *gin.Context) {
 		return
 	}
 
+	if req.PaymentMethod == model.PaymentMethodXunhu {
+		requestSubscriptionXunhuPay(c, req.PlanId)
+		return
+	}
+
 	plan, err := model.GetSubscriptionPlanById(req.PlanId)
 	if err != nil {
 		common.ApiError(c, err)

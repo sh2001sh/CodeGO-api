@@ -25,6 +25,7 @@ import SettingsPaymentGatewayStripe from '../../pages/Setting/Payment/SettingsPa
 import SettingsPaymentGatewayCreem from '../../pages/Setting/Payment/SettingsPaymentGatewayCreem';
 import SettingsPaymentGatewayWaffo from '../../pages/Setting/Payment/SettingsPaymentGatewayWaffo';
 import SettingsPaymentGatewayWaffoPancake from '../../pages/Setting/Payment/SettingsPaymentGatewayWaffoPancake';
+import SettingsPaymentGatewayXunhu from '../../pages/Setting/Payment/SettingsPaymentGatewayXunhu';
 import { API, showError, showSuccess, toBoolean } from '../../helpers';
 import { useTranslation } from 'react-i18next';
 import RiskAcknowledgementModal from '../common/modals/RiskAcknowledgementModal';
@@ -52,6 +53,11 @@ const PaymentSetting = () => {
     StripeUnitPrice: 8.0,
     StripeMinTopUp: 1,
     StripePromotionCodesEnabled: false,
+    XunhuEnabled: false,
+    XunhuAppID: '',
+    XunhuSecret: '',
+    XunhuGateway: '',
+    XunhuMinTopUp: 10,
 
     WaffoPancakeEnabled: false,
     WaffoPancakeSandbox: false,
@@ -334,6 +340,13 @@ const PaymentSetting = () => {
               {/*    hideSectionTitle*/}
               {/*  />*/}
               {/*</Tabs.TabPane>*/}
+              <Tabs.TabPane tab={t('Xunhu WeChat Pay')} itemKey='xunhu'>
+                <SettingsPaymentGatewayXunhu
+                  options={inputs}
+                  refresh={onRefresh}
+                  hideSectionTitle
+                />
+              </Tabs.TabPane>
             </Tabs>
           </div>
         </Card>
