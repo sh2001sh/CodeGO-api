@@ -23,6 +23,13 @@ import { showError } from '../../../helpers';
 import CopyTokensModal from './modals/CopyTokensModal';
 import DeleteTokensModal from './modals/DeleteTokensModal';
 
+const TEXT = {
+  selectTokensFirst: '\u8bf7\u5148\u9009\u62e9\u4ee4\u724c',
+  createToken: '\u65b0\u589e\u4ee4\u724c',
+  copySelectedTokens: '\u590d\u5236\u6240\u9009\u4ee4\u724c',
+  deleteSelectedTokens: '\u5220\u9664\u6240\u9009\u4ee4\u724c',
+};
+
 const TokensActions = ({
   selectedKeys,
   setEditingToken,
@@ -36,7 +43,7 @@ const TokensActions = ({
 
   const handleCopySelectedTokens = () => {
     if (selectedKeys.length === 0) {
-      showError(t('璇疯嚦灏戦€夋嫨涓€涓护鐗岋紒'));
+      showError(t(TEXT.selectTokensFirst));
       return;
     }
     setShowCopyModal(true);
@@ -44,7 +51,7 @@ const TokensActions = ({
 
   const handleDeleteSelectedTokens = () => {
     if (selectedKeys.length === 0) {
-      showError(t('璇疯嚦灏戦€夋嫨涓€涓护鐗岋紒'));
+      showError(t(TEXT.selectTokensFirst));
       return;
     }
     setShowDeleteModal(true);
@@ -69,7 +76,7 @@ const TokensActions = ({
           }}
           size='small'
         >
-          {t('娣诲姞浠ょ墝')}
+          {t(TEXT.createToken)}
         </Button>
 
         <Button
@@ -78,7 +85,7 @@ const TokensActions = ({
           onClick={handleCopySelectedTokens}
           size='small'
         >
-          {t('澶嶅埗鎵€閫変护鐗?)}
+          {t(TEXT.copySelectedTokens)}
         </Button>
 
         <Button
@@ -87,7 +94,7 @@ const TokensActions = ({
           onClick={handleDeleteSelectedTokens}
           size='small'
         >
-          {t('鍒犻櫎鎵€閫変护鐗?)}
+          {t(TEXT.deleteSelectedTokens)}
         </Button>
       </div>
 

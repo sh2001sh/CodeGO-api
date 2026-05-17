@@ -28,6 +28,7 @@ import ChartsPanel from './ChartsPanel';
 import ApiInfoPanel from './ApiInfoPanel';
 import AnnouncementsPanel from './AnnouncementsPanel';
 import FaqPanel from './FaqPanel';
+import SubscriptionUsagePanel from './SubscriptionUsagePanel';
 import UptimePanel from './UptimePanel';
 import SearchModal from './modals/SearchModal';
 
@@ -181,6 +182,10 @@ const Dashboard = () => {
         CARD_PROPS={CARD_PROPS}
         CHART_CONFIG={CHART_CONFIG}
       />
+
+      <div className='mb-4'>
+        <SubscriptionUsagePanel />
+      </div>
 
       {/* API信息和图表面板 */}
       <div className='mb-4'>

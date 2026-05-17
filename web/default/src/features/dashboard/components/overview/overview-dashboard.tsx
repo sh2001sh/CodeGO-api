@@ -57,6 +57,7 @@ import { AnnouncementsPanel } from './announcements-panel'
 import { ApiInfoPanel } from './api-info-panel'
 import { FAQPanel } from './faq-panel'
 import { PerformanceHealthPanel } from './performance-health-panel'
+import { SubscriptionUsagePanel } from './subscription-usage-panel'
 import { SummaryCards } from './summary-cards'
 import { UptimePanel } from './uptime-panel'
 
@@ -714,6 +715,12 @@ export function OverviewDashboard() {
       )}
 
       <SummaryCards />
+
+      <CardStaggerContainer>
+        <CardStaggerItem>
+          <SubscriptionUsagePanel />
+        </CardStaggerItem>
+      </CardStaggerContainer>
 
       <CardStaggerContainer className='grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]'>
         <div className='grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2'>
