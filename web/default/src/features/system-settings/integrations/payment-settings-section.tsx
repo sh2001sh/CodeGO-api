@@ -1540,9 +1540,9 @@ export function PaymentSettingsSection({
 
           <div className='space-y-4'>
             <div>
-              <h3 className='text-lg font-medium'>{t('Xunhu WeChat Pay')}</h3>
+              <h3 className='text-lg font-medium'>{t('WeChat Pay')}</h3>
               <p className='text-muted-foreground text-sm'>
-                {t('Configuration for Xunhu WeChat Pay integration')}
+                {t('Configuration for WeChat Pay integration')}
               </p>
             </div>
 
@@ -1554,7 +1554,7 @@ export function PaymentSettingsSection({
                   <div className='space-y-0.5'>
                     <FormLabel className='text-base'>{t('Enabled')}</FormLabel>
                     <FormDescription>
-                      {t('Enable Xunhu WeChat Pay for wallet and subscription payments')}
+                      {t('Enable WeChat Pay for wallet and subscription payments')}
                     </FormDescription>
                   </div>
                   <FormControl>
@@ -1640,7 +1640,7 @@ export function PaymentSettingsSection({
                       />
                     </FormControl>
                     <FormDescription>
-                      {t('Minimum Xunhu WeChat Pay charge in CNY')}
+                      {t('Minimum WeChat Pay charge in CNY')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
@@ -1659,7 +1659,7 @@ export function PaymentSettingsSection({
             >
               {updateOption.isPending
                 ? t('Saving...')
-                : t('Save Xunhu WeChat Pay settings')}
+                : t('Save WeChat Pay settings')}
             </Button>
           </div>
 

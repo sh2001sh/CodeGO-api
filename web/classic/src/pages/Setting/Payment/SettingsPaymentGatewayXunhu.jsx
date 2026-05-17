@@ -32,7 +32,7 @@ export default function SettingsPaymentGatewayXunhu(props) {
   const { t } = useTranslation();
   const sectionTitle = props.hideSectionTitle
     ? undefined
-    : t('Xunhu WeChat Pay Settings');
+    : '\u5fae\u4fe1\u652f\u4ed8\u8bbe\u7f6e';
   const [loading, setLoading] = useState(false);
   const [inputs, setInputs] = useState({
     XunhuEnabled: false,
@@ -168,7 +168,7 @@ export default function SettingsPaymentGatewayXunhu(props) {
             description={
               <>
                 {t(
-                  'Configure Xunhu WeChat Pay for wallet top-up and subscription purchase.'
+                  'Configure WeChat Pay for wallet top-up and subscription purchase.'
                 )}
                 <br />
                 {t('Top-up notify URL')}: {props.options.ServerAddress || t('网站地址')}
@@ -188,7 +188,7 @@ export default function SettingsPaymentGatewayXunhu(props) {
                 size='default'
                 checkedText='ON'
                 uncheckedText='OFF'
-                label={t('Enable Xunhu WeChat Pay')}
+                label={t('WeChat Pay')}
               />
             </Col>
             <Col xs={24} sm={24} md={8} lg={8} xl={8}>
@@ -222,7 +222,7 @@ export default function SettingsPaymentGatewayXunhu(props) {
             <Col xs={24} sm={24} md={8} lg={8} xl={8}>
               <Form.InputNumber
                 field='XunhuMinTopUp'
-                label={t('Minimum Xunhu charge (CNY)')}
+                label={t('Minimum WeChat Pay charge (CNY)')}
                 min={0}
                 precision={0}
                 style={{ width: '100%' }}
@@ -230,7 +230,7 @@ export default function SettingsPaymentGatewayXunhu(props) {
             </Col>
           </Row>
           <Button onClick={submitXunhuSettings} style={{ marginTop: 16 }}>
-            {t('Save Xunhu WeChat Pay settings')}
+            {'\u4fdd\u5b58\u5fae\u4fe1\u652f\u4ed8\u8bbe\u7f6e'}
           </Button>
         </Form.Section>
       </Form>

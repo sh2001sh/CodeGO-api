@@ -340,7 +340,7 @@ const PaymentSetting = () => {
               {/*    hideSectionTitle*/}
               {/*  />*/}
               {/*</Tabs.TabPane>*/}
-              <Tabs.TabPane tab={t('Xunhu WeChat Pay')} itemKey='xunhu'>
+              <Tabs.TabPane tab={t('WeChat Pay')} itemKey='xunhu'>
                 <SettingsPaymentGatewayXunhu
                   options={inputs}
                   refresh={onRefresh}

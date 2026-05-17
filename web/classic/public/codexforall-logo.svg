@@ -1,19 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 96" role="img" aria-labelledby="title desc">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-labelledby="title desc">
   <title id="title">codexforall</title>
-  <desc id="desc">codexforall brand mark in blue and navy</desc>
+  <desc id="desc">codexforall square brand mark in blue and navy</desc>
   <defs>
-    <linearGradient id="brandBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+    <linearGradient id="brandBlue" x1="24" y1="20" x2="104" y2="108" gradientUnits="userSpaceOnUse">
       <stop offset="0%" stop-color="#4b8dff" />
       <stop offset="100%" stop-color="#2d6ef5" />
     </linearGradient>
   </defs>
-  <rect width="320" height="96" rx="20" fill="white" />
-  <g transform="translate(16 20)">
-    <path d="M40 10 14 30l26 20" fill="none" stroke="url(#brandBlue)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M112 10 138 30l-26 20" fill="none" stroke="url(#brandBlue)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
-    <path d="M84 8c-11 0-20 10-20 22s9 22 20 22c8 0 15-4 19-11" fill="none" stroke="#1b2748" stroke-width="8" stroke-linecap="round"/>
+  <rect width="128" height="128" rx="32" fill="#ffffff" />
+  <g fill="none" stroke-linecap="round" stroke-linejoin="round" stroke-width="12">
+    <path d="M44 42 24 64l20 22" stroke="url(#brandBlue)" />
+    <path d="M84 42 104 64 84 86" stroke="url(#brandBlue)" />
+    <path d="M75 42c-13 0-23 10-23 22s10 22 23 22c9 0 16-4 21-11" stroke="#1b2748" />
   </g>
-  <text x="160" y="78" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="700" fill="#1b2748">
-    codex<tspan fill="#2d6ef5">forall</tspan>
-  </text>
 </svg>
