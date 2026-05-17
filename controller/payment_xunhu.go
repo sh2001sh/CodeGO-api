@@ -3,6 +3,7 @@ package controller
 import (
 	"crypto/md5"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -64,6 +65,57 @@ func buildXunhuHash(params map[string]string, secret string) string {
 func verifyXunhuHash(params map[string]string) bool {
 	expected := buildXunhuHash(params, setting.XunhuSecret)
 	return strings.EqualFold(expected, params["hash"])
+}
+
+func stringifyXunhuValue(value interface{}) (string, bool) {
+	switch v := value.(type) {
+	case nil:
+		return "", false
+	case string:
+		return v, true
+	case json.Number:
+		return v.String(), true
+	case float64:
+		return strconv.FormatFloat(v, 'f', -1, 64), true
+	case float32:
+		return strconv.FormatFloat(float64(v), 'f', -1, 32), true
+	case int:
+		return strconv.Itoa(v), true
+	case int64:
+		return strconv.FormatInt(v, 10), true
+	case int32:
+		return strconv.FormatInt(int64(v), 10), true
+	case int16:
+		return strconv.FormatInt(int64(v), 10), true
+	case int8:
+		return strconv.FormatInt(int64(v), 10), true
+	case uint:
+		return strconv.FormatUint(uint64(v), 10), true
+	case uint64:
+		return strconv.FormatUint(v, 10), true
+	case uint32:
+		return strconv.FormatUint(uint64(v), 10), true
+	case uint16:
+		return strconv.FormatUint(uint64(v), 10), true
+	case uint8:
+		return strconv.FormatUint(uint64(v), 10), true
+	case bool:
+		return strconv.FormatBool(v), true
+	default:
+		return "", false
+	}
+}
+
+func buildXunhuResponseVerifyMap(payload map[string]interface{}) map[string]string {
+	verifyMap := make(map[string]string, len(payload))
+	for key, value := range payload {
+		stringValue, ok := stringifyXunhuValue(value)
+		if !ok {
+			continue
+		}
+		verifyMap[key] = stringValue
+	}
+	return verifyMap
 }
 
 func validateXunhuConfig() error {
@@ -145,6 +197,10 @@ func createXunhuOrder(tradeNo string, title string, totalFee float64, notifyURL 
 	if err := common.Unmarshal(body, &result); err != nil {
 		return nil, fmt.Errorf("invalid xunhu response: %s", string(body))
 	}
+	responsePayload := make(map[string]interface{})
+	if err := common.Unmarshal(body, &responsePayload); err != nil {
+		return nil, fmt.Errorf("invalid xunhu response payload: %s", string(body))
+	}
 	if result.ErrCode != 0 {
 		errMsg := strings.TrimSpace(result.ErrMsg)
 		if errMsg == "" {
@@ -153,14 +209,8 @@ func createXunhuOrder(tradeNo string, title string, totalFee float64, notifyURL 
 		return nil, fmt.Errorf("xunhu create order failed: %s", errMsg)
 	}
 	if result.Hash != "" {
-		responseVerify := map[string]string{
-			"errcode":        strconv.Itoa(result.ErrCode),
-			"errmsg":         result.ErrMsg,
-			"trade_order_id": result.TradeNo,
-			"url":            result.PayURL,
-			"url_qrcode":     result.QRCodeURL,
-			"hash":           result.Hash,
-		}
+		responseVerify := buildXunhuResponseVerifyMap(responsePayload)
+		responseVerify["hash"] = result.Hash
 		if !verifyXunhuHash(responseVerify) {
 			return nil, fmt.Errorf("xunhu response hash verification failed")
 		}

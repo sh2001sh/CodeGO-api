@@ -214,7 +214,7 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
               setSubscriptionsDialogOpen(true)
             }}
           >
-            {t('Manage Subscriptions')}
+            {t('User Subscription Management')}
             <DropdownMenuShortcut>
               <CreditCard size={16} />
             </DropdownMenuShortcut>

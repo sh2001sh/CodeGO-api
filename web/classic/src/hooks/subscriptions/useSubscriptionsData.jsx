@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { API, showError, showSuccess } from '../../helpers';
 import { useTableCompactMode } from '../common/useTableCompactMode';
@@ -25,43 +25,36 @@ import { useTableCompactMode } from '../common/useTableCompactMode';
 export const useSubscriptionsData = () => {
   const { t } = useTranslation();
   const [compactMode, setCompactMode] = useTableCompactMode('subscriptions');
-
-  // State management
   const [allPlans, setAllPlans] = useState([]);
   const [loading, setLoading] = useState(true);
-
-  // Pagination (client-side for now)
   const [activePage, setActivePage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-
-  // Drawer states
   const [showEdit, setShowEdit] = useState(false);
   const [editingPlan, setEditingPlan] = useState(null);
-  const [sheetPlacement, setSheetPlacement] = useState('left'); // 'left' | 'right'
+  const [sheetPlacement, setSheetPlacement] = useState('left');
 
-  // Load subscription plans
+  const syncPlans = (nextPlans) => {
+    setAllPlans(nextPlans);
+    const totalPages = Math.max(1, Math.ceil(nextPlans.length / pageSize));
+    setActivePage((page) => Math.min(page || 1, totalPages));
+  };
+
   const loadPlans = async () => {
     setLoading(true);
     try {
       const res = await API.get('/api/subscription/admin/plans');
       if (res.data?.success) {
-        const next = res.data.data || [];
-        setAllPlans(next);
-
-        // Keep page in range after data changes
-        const totalPages = Math.max(1, Math.ceil(next.length / pageSize));
-        setActivePage((p) => Math.min(p || 1, totalPages));
+        syncPlans(res.data.data || []);
       } else {
-        showError(res.data?.message || t('加载失败'));
+        showError(res.data?.message || '\u52a0\u8f7d\u5931\u8d25');
       }
-    } catch (e) {
-      showError(t('请求失败'));
+    } catch (error) {
+      showError(error?.message || '\u8bf7\u6c42\u5931\u8d25');
     } finally {
       setLoading(false);
     }
   };
 
-  // Refresh data
   const refresh = async () => {
     await loadPlans();
   };
@@ -75,32 +68,62 @@ export const useSubscriptionsData = () => {
     setActivePage(1);
   };
 
-  // Update plan enabled status (single endpoint)
   const setPlanEnabled = async (planRecordOrId, enabled) => {
     const planId =
       typeof planRecordOrId === 'number'
         ? planRecordOrId
         : planRecordOrId?.plan?.id;
-    if (!planId) return;
+    if (!planId) return false;
+
     setLoading(true);
     try {
       const res = await API.patch(`/api/subscription/admin/plans/${planId}`, {
         enabled: !!enabled,
       });
       if (res.data?.success) {
-        showSuccess(enabled ? t('已启用') : t('已禁用'));
+        showSuccess(enabled ? '\u5df2\u542f\u7528' : '\u5df2\u7981\u7528');
         await loadPlans();
-      } else {
-        showError(res.data?.message || t('操作失败'));
+        return true;
       }
-    } catch (e) {
-      showError(t('请求失败'));
+      showError(res.data?.message || '\u64cd\u4f5c\u5931\u8d25');
+      return false;
+    } catch (error) {
+      showError(error?.message || '\u8bf7\u6c42\u5931\u8d25');
+      return false;
     } finally {
       setLoading(false);
     }
   };
 
-  // Modal control functions
+  const deletePlan = async (planRecordOrId) => {
+    const planId =
+      typeof planRecordOrId === 'number'
+        ? planRecordOrId
+        : planRecordOrId?.plan?.id;
+    if (!planId) return false;
+
+    setLoading(true);
+    try {
+      const res = await API.delete(`/api/subscription/admin/plans/${planId}`);
+      if (res.data?.success) {
+        showSuccess('\u5220\u9664\u6210\u529f');
+        await loadPlans();
+        return true;
+      }
+      showError(res.data?.message || '\u64cd\u4f5c\u5931\u8d25');
+      return false;
+    } catch (error) {
+      showError(
+        error?.response?.data?.message ||
+          error?.message ||
+          '\u8bf7\u6c42\u5931\u8d25',
+      );
+      return false;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const closeEdit = () => {
     setShowEdit(false);
     setEditingPlan(null);
@@ -118,7 +141,6 @@ export const useSubscriptionsData = () => {
     setShowEdit(true);
   };
 
-  // Initialize data on component mount
   useEffect(() => {
     loadPlans();
   }, []);
@@ -130,37 +152,27 @@ export const useSubscriptionsData = () => {
   );
 
   return {
-    // Data state
     plans,
     planCount,
     loading,
-
-    // Modal state
     showEdit,
     editingPlan,
     sheetPlacement,
     setShowEdit,
     setEditingPlan,
-
-    // UI state
     compactMode,
     setCompactMode,
-
-    // Pagination
     activePage,
     pageSize,
     handlePageChange,
     handlePageSizeChange,
-
-    // Actions
     loadPlans,
     setPlanEnabled,
+    deletePlan,
     refresh,
     closeEdit,
     openCreate,
     openEdit,
-
-    // Translation
     t,
   };
 };

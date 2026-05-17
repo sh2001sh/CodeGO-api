@@ -301,6 +301,28 @@ func AdminUpdateSubscriptionPlanStatus(c *gin.Context) {
 	common.ApiSuccess(c, nil)
 }
 
+func AdminDeleteSubscriptionPlan(c *gin.Context) {
+	if !requirePaymentCompliance(c) {
+		return
+	}
+
+	id, _ := strconv.Atoi(c.Param("id"))
+	if id <= 0 {
+		common.ApiErrorMsg(c, "invalid id")
+		return
+	}
+	msg, err := model.AdminDeleteSubscriptionPlan(id)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	if msg != "" {
+		common.ApiSuccess(c, gin.H{"message": msg})
+		return
+	}
+	common.ApiSuccess(c, nil)
+}
+
 func AdminBindSubscription(c *gin.Context) {
 	if !requirePaymentCompliance(c) {
 		return

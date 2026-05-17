@@ -154,7 +154,7 @@ const SiderBar = ({ onNavigate = () => {} }) => {
         className: isAdmin() ? '' : 'tableHiddle',
       },
       {
-        text: t('订阅管理'),
+        text: t('\u5957\u9910\u7ba1\u7406'),
         itemKey: 'subscription',
         to: '/subscription',
         className: isAdmin() ? '' : 'tableHiddle',

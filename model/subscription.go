@@ -981,6 +981,43 @@ func AdminDeleteUserSubscription(userSubscriptionId int) (string, error) {
 	return "", nil
 }
 
+func AdminDeleteSubscriptionPlan(planId int) (string, error) {
+	if planId <= 0 {
+		return "", errors.New("invalid planId")
+	}
+
+	var plan SubscriptionPlan
+	if err := DB.Where("id = ?", planId).First(&plan).Error; err != nil {
+		return "", err
+	}
+
+	var orderCount int64
+	if err := DB.Model(&SubscriptionOrder{}).
+		Where("plan_id = ?", planId).
+		Count(&orderCount).Error; err != nil {
+		return "", err
+	}
+	if orderCount > 0 {
+		return "", errors.New("cannot delete a plan that already has subscription orders")
+	}
+
+	var subscriptionCount int64
+	if err := DB.Model(&UserSubscription{}).
+		Where("plan_id = ?", planId).
+		Count(&subscriptionCount).Error; err != nil {
+		return "", err
+	}
+	if subscriptionCount > 0 {
+		return "", errors.New("cannot delete a plan that is already bound to user subscriptions")
+	}
+
+	if err := DB.Where("id = ?", planId).Delete(&SubscriptionPlan{}).Error; err != nil {
+		return "", err
+	}
+	InvalidateSubscriptionPlanCache(planId)
+	return "", nil
+}
+
 type AdminUpdateUserSubscriptionInput struct {
 	StartTime    int64
 	EndTime      int64
@@ -1209,18 +1246,24 @@ func maybeResetUserSubscriptionWithPlanTx(tx *gorm.DB, sub *UserSubscription, pl
 	if tx == nil || sub == nil || plan == nil {
 		return errors.New("invalid reset args")
 	}
-	if sub.NextResetTime > 0 && sub.NextResetTime > now {
-		return nil
-	}
 	if NormalizeResetPeriod(plan.QuotaResetPeriod) == SubscriptionResetNever {
 		return nil
 	}
 	baseUnix := sub.LastResetTime
-	if baseUnix <= 0 {
+	if baseUnix <= 0 || (sub.StartTime > 0 && baseUnix < sub.StartTime) {
 		baseUnix = sub.StartTime
 	}
 	base := time.Unix(baseUnix, 0)
 	next := calcNextResetTime(base, plan, sub.EndTime)
+	if next == 0 || next > now {
+		scheduleChanged := sub.LastResetTime != base.Unix() || sub.NextResetTime != next
+		if scheduleChanged {
+			sub.LastResetTime = base.Unix()
+			sub.NextResetTime = next
+			return tx.Save(sub).Error
+		}
+		return nil
+	}
 	advanced := false
 	for next > 0 && next <= now {
 		advanced = true
@@ -1512,7 +1555,7 @@ func defaultSubscriptionPlans() []SubscriptionPlan {
 	return []SubscriptionPlan{
 		{
 			Title:              "Lite",
-			Subtitle:           "Entry monthly plan for Codex usage",
+			Subtitle:           "月卡",
 			PriceAmount:        50,
 			Currency:           "CNY",
 			DurationUnit:       SubscriptionDurationMonth,
@@ -1528,7 +1571,7 @@ func defaultSubscriptionPlans() []SubscriptionPlan {
 		},
 		{
 			Title:            "Standard",
-			Subtitle:         "Mainstream monthly Codex plan",
+			Subtitle:         "月卡",
 			PriceAmount:      90,
 			Currency:         "CNY",
 			DurationUnit:     SubscriptionDurationMonth,
@@ -1541,7 +1584,7 @@ func defaultSubscriptionPlans() []SubscriptionPlan {
 		},
 		{
 			Title:            "Pro",
-			Subtitle:         "Heavy monthly Codex plan",
+			Subtitle:         "月卡",
 			PriceAmount:      170,
 			Currency:         "CNY",
 			DurationUnit:     SubscriptionDurationMonth,
@@ -1554,7 +1597,7 @@ func defaultSubscriptionPlans() []SubscriptionPlan {
 		},
 		{
 			Title:            "Ultra",
-			Subtitle:         "Flagship monthly Codex plan",
+			Subtitle:         "月卡",
 			PriceAmount:      360,
 			Currency:         "CNY",
 			DurationUnit:     SubscriptionDurationMonth,
@@ -1567,7 +1610,7 @@ func defaultSubscriptionPlans() []SubscriptionPlan {
 		},
 		{
 			Title:            "Day Pass 50",
-			Subtitle:         "Single-day Codex pass with 50 quota",
+			Subtitle:         "日卡",
 			PriceAmount:      10,
 			Currency:         "CNY",
 			DurationUnit:     SubscriptionDurationDay,
@@ -1579,7 +1622,7 @@ func defaultSubscriptionPlans() []SubscriptionPlan {
 		},
 		{
 			Title:            "Day Pass 100",
-			Subtitle:         "Single-day Codex pass with 100 quota",
+			Subtitle:         "日卡",
 			PriceAmount:      20,
 			Currency:         "CNY",
 			DurationUnit:     SubscriptionDurationDay,

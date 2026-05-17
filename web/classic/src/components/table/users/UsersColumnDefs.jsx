@@ -226,7 +226,7 @@ const renderOperations = (
   const moreMenu = [
     {
       node: 'item',
-      name: t('订阅管理'),
+      name: t('\u7528\u6237\u8ba2\u9605\u7ba1\u7406'),
       onClick: () => showUserSubscriptionsModal(record),
     },
     {

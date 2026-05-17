@@ -36,7 +36,7 @@ function SubscriptionsContent() {
     <>
       <SectionPageLayout>
         <SectionPageLayout.Title>
-          {t('Subscription Management')}
+          {t('Package Management')}
         </SectionPageLayout.Title>
         <SectionPageLayout.Description>
           {t('Manage subscription plan creation, pricing and status')}

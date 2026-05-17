@@ -90,7 +90,7 @@ function getBillingPreferenceLabel(
 
 function getCurrencySymbol(currency?: string): string {
   const normalized = (currency || '').toUpperCase()
-  if (normalized === 'CNY') return '¥'
+  if (normalized === 'CNY') return '\u5143'
   if (normalized === 'EUR') return 'EUR '
   return '$'
 }
@@ -102,19 +102,19 @@ function formatPlanPrice(priceAmount: number, currency?: string): string {
     .replace(/\.00$/, '')
     .replace(/(\.\d)0$/, '$1')
 
-  if (normalized === 'CNY') return `${formatted} 元`
+  if (normalized === 'CNY') return `${formatted} \u5143`
   return `${getCurrencySymbol(currency)}${formatted}`
 }
 
 function getPlanSubtitle(plan: PlanRecord['plan'] | null | undefined): string {
   const subtitle = String(plan?.subtitle || '').trim()
   if (subtitle) return subtitle
-  const durationCount = Number(plan?.duration_count || 0)
+  const durationCount = Number(plan?.duration_value || 0)
   const durationUnit = String(plan?.duration_unit || '').toLowerCase()
   if (durationUnit === 'day' && durationCount > 0 && durationCount <= 2) {
-    return '日卡'
+    return '\u65e5\u5361'
   }
-  return '月卡'
+  return '\u6708\u5361'
 }
 
 function getPlanDetailsText(
@@ -125,14 +125,16 @@ function getPlanDetailsText(
 ): string {
   if (!plan) return ''
   const periodLabel =
-    plan.quota_reset_period === 'weekly' ? '每周额度' : '周期额度'
-  const totalLabel = totalAmount > 0 ? formatQuota(totalAmount) : '不限'
+    plan.quota_reset_period === 'weekly'
+      ? '\u6bcf\u5468\u989d\u5ea6'
+      : '\u5468\u671f\u989d\u5ea6'
+  const totalLabel = totalAmount > 0 ? formatQuota(totalAmount) : '\u4e0d\u9650'
   const parts = [
-    `有效期 ${formatDuration(plan, t)}`,
+    `\u6709\u6548\u671f ${formatDuration(plan, t)}`,
     periodAmount > 0 ? `${periodLabel} ${formatQuota(periodAmount)}` : null,
-    `总额度 ${totalLabel}`,
+    `\u603b\u989d\u5ea6 ${totalLabel}`,
   ]
-  return parts.filter(Boolean).join('，')
+  return parts.filter(Boolean).join('\uFF1B')
 }
 
 export function SubscriptionPlansCard({

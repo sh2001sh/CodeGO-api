@@ -29,8 +29,6 @@ const TokensActions = ({
   setShowEdit,
   batchCopyTokens,
   batchDeleteTokens,
-  downloadGenericCodexWindowsScript,
-  downloadGenericCodexLinuxScript,
   t,
 }) => {
   const [showCopyModal, setShowCopyModal] = useState(false);
@@ -38,7 +36,7 @@ const TokensActions = ({
 
   const handleCopySelectedTokens = () => {
     if (selectedKeys.length === 0) {
-      showError(t('请至少选择一个令牌！'));
+      showError(t('璇疯嚦灏戦€夋嫨涓€涓护鐗岋紒'));
       return;
     }
     setShowCopyModal(true);
@@ -46,7 +44,7 @@ const TokensActions = ({
 
   const handleDeleteSelectedTokens = () => {
     if (selectedKeys.length === 0) {
-      showError(t('请至少选择一个令牌！'));
+      showError(t('璇疯嚦灏戦€夋嫨涓€涓护鐗岋紒'));
       return;
     }
     setShowDeleteModal(true);
@@ -71,7 +69,7 @@ const TokensActions = ({
           }}
           size='small'
         >
-          {t('添加令牌')}
+          {t('娣诲姞浠ょ墝')}
         </Button>
 
         <Button
@@ -80,25 +78,7 @@ const TokensActions = ({
           onClick={handleCopySelectedTokens}
           size='small'
         >
-          {t('复制所选令牌')}
-        </Button>
-
-        <Button
-          type='tertiary'
-          className='flex-1 md:flex-initial'
-          onClick={downloadGenericCodexWindowsScript}
-          size='small'
-        >
-          {t('下载 Codex Windows 脚本')}
-        </Button>
-
-        <Button
-          type='tertiary'
-          className='flex-1 md:flex-initial'
-          onClick={downloadGenericCodexLinuxScript}
-          size='small'
-        >
-          {t('下载 Codex Linux 脚本')}
+          {t('澶嶅埗鎵€閫変护鐗?)}
         </Button>
 
         <Button
@@ -107,7 +87,7 @@ const TokensActions = ({
           onClick={handleDeleteSelectedTokens}
           size='small'
         >
-          {t('删除所选令牌')}
+          {t('鍒犻櫎鎵€閫変护鐗?)}
         </Button>
       </div>
 

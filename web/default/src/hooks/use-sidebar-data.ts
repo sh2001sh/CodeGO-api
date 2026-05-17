@@ -141,7 +141,7 @@ export function useSidebarData(): SidebarData {
             icon: Ticket,
           },
           {
-            title: t('Subscription Management'),
+            title: t('Package Management'),
             url: '/subscriptions',
             icon: CreditCard,
           },

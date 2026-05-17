@@ -19,57 +19,65 @@ For commercial licensing, please contact support@quantumnous.com
 
 import React from 'react';
 import {
+  Badge,
   Button,
+  Divider,
   Modal,
+  Popover,
   Space,
   Tag,
-  Typography,
-  Popover,
-  Divider,
-  Badge,
   Tooltip,
+  Typography,
 } from '@douyinfe/semi-ui';
 import { renderQuota } from '../../../helpers';
 import { convertUSDToCurrency } from '../../../helpers/render';
+import {
+  formatSubscriptionDuration,
+  formatSubscriptionResetPeriod,
+} from '../../../helpers/subscriptionFormat';
 
 const { Text } = Typography;
 
-function formatDuration(plan, t) {
-  if (!plan) return '';
-  const u = plan.duration_unit || 'month';
-  if (u === 'custom') {
-    return `${t('自定义')} ${plan.custom_seconds || 0}s`;
-  }
-  const unitMap = {
-    year: t('年'),
-    month: t('月'),
-    day: t('日'),
-    hour: t('小时'),
-  };
-  return `${plan.duration_value || 0}${unitMap[u] || u}`;
-}
+const TEXT = {
+  package: '\u5957\u9910',
+  price: '\u4ef7\u683c',
+  rawQuota: '\u539f\u751f\u989d\u5ea6',
+  totalQuota: '\u603b\u989d\u5ea6',
+  purchaseLimit: '\u8d2d\u4e70\u4e0a\u9650',
+  noUpgrade: '\u4e0d\u5347\u7ea7',
+  unlimited: '\u4e0d\u9650',
+  validFor: '\u6709\u6548\u671f',
+  quotaReset: '\u91cd\u7f6e\u5468\u671f',
+  priority: '\u4f18\u5148\u7ea7',
+  status: '\u72b6\u6001',
+  paymentChannel: '\u652f\u4ed8\u6e20\u9053',
+  upgradeGroup: '\u5347\u7ea7\u5206\u7ec4',
+  actions: '\u64cd\u4f5c',
+  wechatPay: '\u5fae\u4fe1\u652f\u4ed8',
+  enabled: '\u5df2\u542f\u7528',
+  disabled: '\u5df2\u7981\u7528',
+  edit: '\u7f16\u8f91',
+  enable: '\u542f\u7528',
+  disable: '\u7981\u7528',
+  delete: '\u5220\u9664',
+  confirmDisable: '\u786e\u8ba4\u7981\u7528',
+  confirmEnable: '\u786e\u8ba4\u542f\u7528',
+  confirmDelete: '\u786e\u8ba4\u5220\u9664',
+  disableDesc:
+    '\u7981\u7528\u540e\u7528\u6237\u7aef\u4e0d\u518d\u5c55\u793a\uff0c\u4f46\u5386\u53f2\u8ba2\u5355\u4e0d\u53d7\u5f71\u54cd\u3002\u662f\u5426\u7ee7\u7eed\uff1f',
+  enableDesc:
+    '\u542f\u7528\u540e\u5957\u9910\u5c06\u5728\u7528\u6237\u7aef\u5c55\u793a\u3002\u662f\u5426\u7ee7\u7eed\uff1f',
+  deleteDesc:
+    '\u5220\u9664\u540e\u5c06\u6c38\u4e45\u79fb\u9664\u8be5\u5957\u9910\u3002\u5df2\u88ab\u8ba2\u5355\u6216\u7528\u6237\u8ba2\u9605\u5f15\u7528\u7684\u5957\u9910\u4e0d\u53ef\u5220\u9664\u3002',
+};
 
-function formatResetPeriod(plan, t) {
-  const period = plan?.quota_reset_period || 'never';
-  if (period === 'daily') return t('每天');
-  if (period === 'weekly') return t('每周');
-  if (period === 'monthly') return t('每月');
-  if (period === 'custom') {
-    const seconds = Number(plan?.quota_reset_custom_seconds || 0);
-    if (seconds >= 86400) return `${Math.floor(seconds / 86400)} ${t('天')}`;
-    if (seconds >= 3600) return `${Math.floor(seconds / 3600)} ${t('小时')}`;
-    if (seconds >= 60) return `${Math.floor(seconds / 60)} ${t('分钟')}`;
-    return `${seconds} ${t('秒')}`;
-  }
-  return t('不重置');
-}
-
-const renderPlanTitle = (text, record, t) => {
-  const subtitle = record?.plan?.subtitle;
+function renderPlanTitle(title, record, t) {
   const plan = record?.plan;
+  const subtitle = plan?.subtitle;
+  const totalAmount = Number(plan?.total_amount || 0);
   const popoverContent = (
     <div style={{ width: 260 }}>
-      <Text strong>{text}</Text>
+      <Text strong>{title}</Text>
       {subtitle && (
         <Text type='tertiary' style={{ display: 'block', marginTop: 4 }}>
           {subtitle}
@@ -77,30 +85,29 @@ const renderPlanTitle = (text, record, t) => {
       )}
       <Divider margin={12} />
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
-        <Text type='tertiary'>{t('价格')}</Text>
+        <Text type='tertiary'>{TEXT.price}</Text>
         <Text strong style={{ color: 'var(--semi-color-success)' }}>
           {convertUSDToCurrency(Number(plan?.price_amount || 0), 2)}
         </Text>
-        <Text type='tertiary'>{t('总额度')}</Text>
-        {plan?.total_amount > 0 ? (
-          <Tooltip content={`${t('原生额度')}：${plan.total_amount}`}>
-            <Text>{renderQuota(plan.total_amount)}</Text>
-          </Tooltip>
-        ) : (
-          <Text>{t('不限')}</Text>
-        )}
-        <Text type='tertiary'>{t('升级分组')}</Text>
-        <Text>{plan?.upgrade_group ? plan.upgrade_group : t('不升级')}</Text>
-        <Text type='tertiary'>{t('购买上限')}</Text>
+
+        <Text type='tertiary'>{TEXT.totalQuota}</Text>
+        <Text>{totalAmount > 0 ? renderQuota(totalAmount) : TEXT.unlimited}</Text>
+
+        <Text type='tertiary'>{TEXT.upgradeGroup}</Text>
+        <Text>{plan?.upgrade_group || TEXT.noUpgrade}</Text>
+
+        <Text type='tertiary'>{TEXT.purchaseLimit}</Text>
         <Text>
-          {plan?.max_purchase_per_user > 0
+          {Number(plan?.max_purchase_per_user || 0) > 0
             ? plan.max_purchase_per_user
-            : t('不限')}
+            : TEXT.unlimited}
         </Text>
-        <Text type='tertiary'>{t('有效期')}</Text>
-        <Text>{formatDuration(plan, t)}</Text>
-        <Text type='tertiary'>{t('重置')}</Text>
-        <Text>{formatResetPeriod(plan, t)}</Text>
+
+        <Text type='tertiary'>{TEXT.validFor}</Text>
+        <Text>{formatSubscriptionDuration(plan, t)}</Text>
+
+        <Text type='tertiary'>{TEXT.quotaReset}</Text>
+        <Text>{formatSubscriptionResetPeriod(plan, t)}</Text>
       </div>
     </div>
   );
@@ -109,7 +116,7 @@ const renderPlanTitle = (text, record, t) => {
     <Popover content={popoverContent} position='rightTop' showArrow>
       <div style={{ cursor: 'pointer', maxWidth: 180 }}>
         <Text strong ellipsis={{ showTooltip: false }}>
-          {text}
+          {title}
         </Text>
         {subtitle && (
           <Text
@@ -123,38 +130,30 @@ const renderPlanTitle = (text, record, t) => {
       </div>
     </Popover>
   );
-};
+}
 
-const renderPrice = (text) => {
+function renderPrice(value) {
   return (
     <Text strong style={{ color: 'var(--semi-color-success)' }}>
-      {convertUSDToCurrency(Number(text || 0), 2)}
+      {convertUSDToCurrency(Number(value || 0), 2)}
     </Text>
   );
-};
+}
 
-const renderPurchaseLimit = (text, record, t) => {
+function renderPurchaseLimit(record) {
   const limit = Number(record?.plan?.max_purchase_per_user || 0);
-  return (
-    <Text type={limit > 0 ? 'secondary' : 'tertiary'}>
-      {limit > 0 ? limit : t('不限')}
-    </Text>
-  );
-};
+  return <Text type={limit > 0 ? 'secondary' : 'tertiary'}>{limit || TEXT.unlimited}</Text>;
+}
 
-const renderDuration = (text, record, t) => {
-  return <Text type='secondary'>{formatDuration(record?.plan, t)}</Text>;
-};
-
-const renderEnabled = (text, record, t) => {
-  return text ? (
+function renderStatus(enabled) {
+  return enabled ? (
     <Tag
       color='white'
       shape='circle'
       type='light'
       prefixIcon={<Badge dot type='success' />}
     >
-      {t('启用')}
+      {TEXT.enabled}
     </Tag>
   ) : (
     <Tag
@@ -163,49 +162,35 @@ const renderEnabled = (text, record, t) => {
       type='light'
       prefixIcon={<Badge dot type='danger' />}
     >
-      {t('禁用')}
+      {TEXT.disabled}
     </Tag>
   );
-};
+}
 
-const renderTotalAmount = (text, record, t) => {
+function renderTotalAmount(record) {
   const total = Number(record?.plan?.total_amount || 0);
   return (
     <Text type={total > 0 ? 'secondary' : 'tertiary'}>
       {total > 0 ? (
-        <Tooltip content={`${t('原生额度')}：${total}`}>
+        <Tooltip content={`${TEXT.rawQuota}：${total}`}>
           <span>{renderQuota(total)}</span>
         </Tooltip>
       ) : (
-        t('不限')
+        TEXT.unlimited
       )}
     </Text>
   );
-};
+}
 
-const renderUpgradeGroup = (text, record, t) => {
+function renderUpgradeGroup(record) {
   const group = record?.plan?.upgrade_group || '';
-  return (
-    <Text type={group ? 'secondary' : 'tertiary'}>
-      {group ? group : t('不升级')}
-    </Text>
-  );
-};
+  return <Text type={group ? 'secondary' : 'tertiary'}>{group || TEXT.noUpgrade}</Text>;
+}
 
-const renderResetPeriod = (text, record, t) => {
-  const period = record?.plan?.quota_reset_period || 'never';
-  const isNever = period === 'never';
-  return (
-    <Text type={isNever ? 'tertiary' : 'secondary'}>
-      {formatResetPeriod(record?.plan, t)}
-    </Text>
-  );
-};
-
-const renderPaymentConfig = (text, record, t, enableEpay) => {
+function renderPaymentConfig(record, enableEpay) {
   const hasStripe = !!record?.plan?.stripe_price_id;
   const hasCreem = !!record?.plan?.creem_product_id;
-  const hasEpay = !!enableEpay;
+  const hasWechat = !!enableEpay;
 
   return (
     <Space spacing={4}>
@@ -219,38 +204,35 @@ const renderPaymentConfig = (text, record, t, enableEpay) => {
           Creem
         </Tag>
       )}
-      {hasEpay && (
+      {hasWechat && (
         <Tag color='light-green' shape='circle'>
-          {t('易支付')}
+          {TEXT.wechatPay}
         </Tag>
       )}
     </Space>
   );
-};
+}
 
-const renderOperations = (
-  text,
-  record,
-  { openEdit, setPlanEnabled, t, complianceConfirmed },
-) => {
+function renderOperations(record, handlers) {
+  const { openEdit, setPlanEnabled, deletePlan, complianceConfirmed } = handlers;
   const isEnabled = record?.plan?.enabled;
 
   const handleToggle = () => {
-    if (isEnabled) {
-      Modal.confirm({
-        title: t('确认禁用'),
-        content: t('禁用后用户端不再展示，但历史订单不受影响。是否继续？'),
-        centered: true,
-        onOk: () => setPlanEnabled(record, false),
-      });
-    } else {
-      Modal.confirm({
-        title: t('确认启用'),
-        content: t('启用后套餐将在用户端展示。是否继续？'),
-        centered: true,
-        onOk: () => setPlanEnabled(record, true),
-      });
-    }
+    Modal.confirm({
+      title: isEnabled ? TEXT.confirmDisable : TEXT.confirmEnable,
+      content: isEnabled ? TEXT.disableDesc : TEXT.enableDesc,
+      centered: true,
+      onOk: () => setPlanEnabled(record, !isEnabled),
+    });
+  };
+
+  const handleDelete = () => {
+    Modal.confirm({
+      title: TEXT.confirmDelete,
+      content: TEXT.deleteDesc,
+      centered: true,
+      onOk: () => deletePlan(record),
+    });
   };
 
   return (
@@ -262,114 +244,121 @@ const renderOperations = (
         onClick={() => openEdit(record)}
         disabled={!complianceConfirmed}
       >
-        {t('编辑')}
+        {TEXT.edit}
       </Button>
-      {isEnabled ? (
-        <Button
-          theme='light'
-          type='danger'
-          size='small'
-          onClick={handleToggle}
-          disabled={!complianceConfirmed}
-        >
-          {t('禁用')}
-        </Button>
-      ) : (
-        <Button
-          theme='light'
-          type='primary'
-          size='small'
-          onClick={handleToggle}
-          disabled={!complianceConfirmed}
-        >
-          {t('启用')}
-        </Button>
-      )}
+      <Button
+        theme='light'
+        type={isEnabled ? 'danger' : 'primary'}
+        size='small'
+        onClick={handleToggle}
+        disabled={!complianceConfirmed}
+      >
+        {isEnabled ? TEXT.disable : TEXT.enable}
+      </Button>
+      <Button
+        theme='light'
+        type='danger'
+        size='small'
+        onClick={handleDelete}
+        disabled={!complianceConfirmed}
+      >
+        {TEXT.delete}
+      </Button>
     </Space>
   );
-};
+}
 
 export const getSubscriptionsColumns = ({
   t,
   openEdit,
   setPlanEnabled,
+  deletePlan,
   enableEpay,
   complianceConfirmed = true,
-}) => {
-  return [
-    {
-      title: 'ID',
-      dataIndex: ['plan', 'id'],
-      width: 60,
-      render: (text) => <Text type='tertiary'>#{text}</Text>,
-    },
-    {
-      title: t('套餐'),
-      dataIndex: ['plan', 'title'],
-      width: 200,
-      render: (text, record) => renderPlanTitle(text, record, t),
-    },
-    {
-      title: t('价格'),
-      dataIndex: ['plan', 'price_amount'],
-      width: 100,
-      render: (text) => renderPrice(text),
-    },
-    {
-      title: t('购买上限'),
-      width: 90,
-      render: (text, record) => renderPurchaseLimit(text, record, t),
-    },
-    {
-      title: t('优先级'),
-      dataIndex: ['plan', 'sort_order'],
-      width: 80,
-      render: (text) => <Text type='tertiary'>{Number(text || 0)}</Text>,
-    },
-    {
-      title: t('有效期'),
-      width: 100,
-      render: (text, record) => renderDuration(text, record, t),
-    },
-    {
-      title: t('重置'),
-      width: 80,
-      render: (text, record) => renderResetPeriod(text, record, t),
-    },
-    {
-      title: t('状态'),
-      dataIndex: ['plan', 'enabled'],
-      width: 80,
-      render: (text, record) => renderEnabled(text, record, t),
-    },
-    {
-      title: t('支付渠道'),
-      width: 180,
-      render: (text, record) =>
-        renderPaymentConfig(text, record, t, enableEpay),
-    },
-    {
-      title: t('总额度'),
-      width: 100,
-      render: (text, record) => renderTotalAmount(text, record, t),
-    },
-    {
-      title: t('升级分组'),
-      width: 100,
-      render: (text, record) => renderUpgradeGroup(text, record, t),
-    },
-    {
-      title: t('操作'),
-      dataIndex: 'operate',
-      fixed: 'right',
-      width: 160,
-      render: (text, record) =>
-        renderOperations(text, record, {
-          openEdit,
-          setPlanEnabled,
-          t,
-          complianceConfirmed,
-        }),
-    },
-  ];
-};
+}) => [
+  {
+    title: 'ID',
+    dataIndex: ['plan', 'id'],
+    width: 60,
+    render: (text) => <Text type='tertiary'>#{text}</Text>,
+  },
+  {
+    title: TEXT.package,
+    dataIndex: ['plan', 'title'],
+    width: 200,
+    render: (text, record) => renderPlanTitle(text, record, t),
+  },
+  {
+    title: TEXT.price,
+    dataIndex: ['plan', 'price_amount'],
+    width: 100,
+    render: (text) => renderPrice(text),
+  },
+  {
+    title: TEXT.purchaseLimit,
+    width: 90,
+    render: (_, record) => renderPurchaseLimit(record),
+  },
+  {
+    title: TEXT.priority,
+    dataIndex: ['plan', 'sort_order'],
+    width: 80,
+    render: (text) => <Text type='tertiary'>{Number(text || 0)}</Text>,
+  },
+  {
+    title: TEXT.validFor,
+    width: 100,
+    render: (_, record) => (
+      <Text type='secondary'>{formatSubscriptionDuration(record?.plan, t)}</Text>
+    ),
+  },
+  {
+    title: TEXT.quotaReset,
+    width: 100,
+    render: (_, record) => (
+      <Text
+        type={
+          formatSubscriptionResetPeriod(record?.plan, t) === '\u4e0d\u91cd\u7f6e'
+            ? 'tertiary'
+            : 'secondary'
+        }
+      >
+        {formatSubscriptionResetPeriod(record?.plan, t)}
+      </Text>
+    ),
+  },
+  {
+    title: TEXT.status,
+    dataIndex: ['plan', 'enabled'],
+    width: 90,
+    render: (text) => renderStatus(text),
+  },
+  {
+    title: TEXT.paymentChannel,
+    width: 180,
+    render: (_, record) => renderPaymentConfig(record, enableEpay),
+  },
+  {
+    title: TEXT.totalQuota,
+    width: 100,
+    render: (_, record) => renderTotalAmount(record),
+  },
+  {
+    title: TEXT.upgradeGroup,
+    width: 110,
+    render: (_, record) => renderUpgradeGroup(record),
+  },
+  {
+    title: TEXT.actions,
+    dataIndex: 'operate',
+    fixed: 'right',
+    width: 220,
+    render: (_, record) =>
+      renderOperations(record, {
+        openEdit,
+        setPlanEnabled,
+        deletePlan,
+        complianceConfirmed,
+      }),
+  },
+];
