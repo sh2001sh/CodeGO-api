@@ -309,12 +309,31 @@ const SubscriptionPlansCard = ({
     }
     setPaying(true);
     try {
-      const res = await API.post('/api/subscription/epay/pay', {
-        plan_id: selectedPlan.plan.id,
-        payment_method: selectedEpayMethod,
-      });
+      const isXunhu = selectedEpayMethod === 'xunhu';
+      const res = isXunhu
+        ? await API.post('/api/subscription/xunhu/pay', {
+            plan_id: selectedPlan.plan.id,
+          })
+        : await API.post('/api/subscription/epay/pay', {
+            plan_id: selectedPlan.plan.id,
+            payment_method: selectedEpayMethod,
+          });
       if (res.data?.message === 'success') {
-        submitEpayForm({ url: res.data.url, params: res.data.data });
+        if (isXunhu) {
+          const payUrl =
+            res.data?.data?.pay_url || res.data?.data?.qrcode_url || '';
+          if (!payUrl) {
+            showError(TEXT.payFailed);
+            return;
+          }
+          window.open(payUrl, '_blank');
+        } else {
+          if (!res.data.url) {
+            showError(TEXT.payFailed);
+            return;
+          }
+          submitEpayForm({ url: res.data.url, params: res.data.data });
+        }
         showSuccess(TEXT.payStarted);
         closeBuy();
       } else {
