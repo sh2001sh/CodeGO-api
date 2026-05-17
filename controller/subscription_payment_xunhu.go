@@ -26,12 +26,20 @@ func requestSubscriptionXunhuPay(c *gin.Context, planId int) {
 		common.ApiErrorMsg(c, "plan is disabled")
 		return
 	}
-	if plan.PriceAmount < 0.01 {
+	userId := c.GetInt("id")
+	preview, err := model.ResolveSubscriptionPurchasePreview(userId, plan)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	if preview.Action == model.SubscriptionPurchaseActionDisabled {
+		common.ApiErrorMsg(c, preview.DisabledReason)
+		return
+	}
+	if preview.AmountDue < 0.01 {
 		common.ApiErrorMsg(c, "plan amount is too low")
 		return
 	}
-
-	userId := c.GetInt("id")
 	if plan.MaxPurchasePerUser > 0 {
 		count, err := model.CountUserSubscriptionsByPlan(userId, plan.Id)
 		if err != nil {
@@ -52,7 +60,7 @@ func requestSubscriptionXunhuPay(c *gin.Context, planId int) {
 	order := &model.SubscriptionOrder{
 		UserId:          userId,
 		PlanId:          plan.Id,
-		Money:           plan.PriceAmount,
+		Money:           preview.AmountDue,
 		TradeNo:         tradeNo,
 		PaymentMethod:   model.PaymentMethodXunhu,
 		PaymentProvider: model.PaymentProviderXunhu,
@@ -64,7 +72,7 @@ func requestSubscriptionXunhuPay(c *gin.Context, planId int) {
 		return
 	}
 
-	payResult, err := createXunhuOrder(tradeNo, fmt.Sprintf("SUB:%s", plan.Title), plan.PriceAmount, notifyURL, returnURL)
+	payResult, err := createXunhuOrder(tradeNo, fmt.Sprintf("SUB:%s", plan.Title), preview.AmountDue, notifyURL, returnURL)
 	if err != nil {
 		logger.LogError(c.Request.Context(), fmt.Sprintf("xunhu create subscription order failed user_id=%d trade_no=%s plan_id=%d error=%q", userId, tradeNo, plan.Id, err.Error()))
 		_ = model.ExpireSubscriptionOrder(tradeNo, model.PaymentProviderXunhu)
@@ -78,6 +86,8 @@ func requestSubscriptionXunhuPay(c *gin.Context, planId int) {
 			"pay_url":    payResult.PayURL,
 			"qrcode_url": payResult.QRCodeURL,
 			"order_id":   tradeNo,
+			"amount_due": preview.AmountDue,
+			"action":     preview.Action,
 		},
 	})
 }

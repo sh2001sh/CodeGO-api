@@ -137,6 +137,22 @@ function getPlanDetailsText(
   return parts.filter(Boolean).join('\uFF1B')
 }
 
+function getPlanActionLabel(
+  action: PlanRecord['action'] | undefined,
+  t: (key: string) => string
+): string {
+  switch (action) {
+    case 'renew':
+      return '\u7eed\u8d39'
+    case 'upgrade':
+      return '\u5347\u7ea7'
+    case 'disabled':
+      return '\u4e0d\u53ef\u8ba2\u9605'
+    default:
+      return t('Subscribe Now')
+  }
+}
+
 export function SubscriptionPlansCard({
   topupInfo,
   onAvailabilityChange,
@@ -602,11 +618,17 @@ export function SubscriptionPlansCard({
               const totalAmount = Number(plan.total_amount || 0)
               const periodAmount = Number(plan.period_amount || 0)
               const priceAmount = Number(plan.price_amount || 0)
-              const displayPrice = formatPlanPrice(priceAmount, plan.currency)
+              const effectiveAmount = Number(p.amount_due ?? priceAmount || 0)
+              const displayPrice = formatPlanPrice(
+                effectiveAmount,
+                plan.currency
+              )
               const isPopular = index === 0 && plans.length > 1
               const limit = Number(plan.max_purchase_per_user || 0)
               const count = planPurchaseCountMap.get(plan.id) || 0
               const reached = limit > 0 && count >= limit
+              const blockedByRule = p.action === 'disabled'
+              const actionLabel = getPlanActionLabel(p.action, t)
               const detailText = getPlanDetailsText(
                 plan,
                 totalAmount,
@@ -648,6 +670,11 @@ export function SubscriptionPlansCard({
                         <p className='text-muted-foreground truncate text-xs'>
                           {getPlanSubtitle(plan)}
                         </p>
+                        {p.action && p.action !== 'subscribe' && (
+                          <p className='text-primary mt-1 text-xs font-medium'>
+                            {actionLabel}
+                          </p>
+                        )}
                       </div>
                       {isPopular && (
                         <StatusBadge
@@ -665,6 +692,11 @@ export function SubscriptionPlansCard({
                       <span className='text-primary text-2xl font-bold'>
                         {displayPrice}
                       </span>
+                      {effectiveAmount !== priceAmount && (
+                        <div className='text-muted-foreground mt-1 text-xs'>
+                          \u539f\u4ef7 {formatPlanPrice(priceAmount, plan.currency)}
+                        </div>
+                      )}
                     </div>
 
                     <div className='flex-1 space-y-1.5 pb-3'>
@@ -681,7 +713,7 @@ export function SubscriptionPlansCard({
 
                     <div className='bg-muted/40 mb-3 rounded-md border p-2.5'>
                       <div className='text-foreground text-xs font-medium'>
-                        套餐详情
+                        {'\u5957\u9910\u8be6\u60c5'}
                       </div>
                       <div className='text-muted-foreground mt-1 text-xs leading-5'>
                         {detailText}
@@ -690,15 +722,18 @@ export function SubscriptionPlansCard({
 
                     <Separator className='mb-3' />
 
-                    {reached ? (
+                    {reached || blockedByRule ? (
                       <Tooltip>
                         <TooltipTrigger render={<div />}>
                           <Button variant='outline' className='w-full' disabled>
-                            {t('Limit Reached')}
+                            {reached ? t('Limit Reached') : actionLabel}
                           </Button>
                         </TooltipTrigger>
                         <TooltipContent>
-                          {t('Purchase limit reached')} ({count}/{limit})
+                          {reached
+                            ? `${t('Purchase limit reached')} (${count}/${limit})`
+                            : p.disabled_reason ||
+                              '\u5f53\u524d\u5df2\u6709\u751f\u6548\u5957\u9910\uff0c\u4e0d\u652f\u6301\u964d\u7ea7\u8ba2\u8d2d\u3002'}
                         </TooltipContent>
                       </Tooltip>
                     ) : (
@@ -710,7 +745,7 @@ export function SubscriptionPlansCard({
                           setPurchaseOpen(true)
                         }}
                       >
-                        {t('Subscribe Now')}
+                        {actionLabel}
                       </Button>
                     )}
                   </CardContent>

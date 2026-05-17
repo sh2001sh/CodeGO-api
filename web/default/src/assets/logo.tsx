@@ -28,17 +28,48 @@ export function Logo({ className, ...props }: SVGProps<SVGSVGElement>) {
       height='24'
       width='24'
       fill='none'
-      stroke='currentColor'
-      strokeWidth='2'
-      strokeLinecap='round'
-      strokeLinejoin='round'
       className={cn('size-6', className)}
       {...props}
     >
       <title>codexforall</title>
-      <path d='M6 8 2.75 12 6 16' stroke='#2d6ef5' />
-      <path d='M18 8 21.25 12 18 16' stroke='#2d6ef5' />
-      <path d='M14.25 8.5a4.8 4.8 0 1 0 0 7' stroke='#1b2748' />
+      <rect x='1' y='1' width='22' height='22' rx='6' fill='#f8fbff' />
+      <rect
+        x='1'
+        y='1'
+        width='22'
+        height='22'
+        rx='6'
+        stroke='#dbeafe'
+        strokeWidth='0.8'
+      />
+      <path
+        d='M8.1 5.5 3.7 12l4.4 6.5 1.6-1.05L6.1 12l3.6-5.45Z'
+        fill='url(#codexforall-core)'
+      />
+      <path
+        d='m15.9 5.5-1.6 1.05 3.6 5.45-3.6 5.45 1.6 1.05 4.4-6.5Z'
+        fill='url(#codexforall-core)'
+      />
+      <path
+        d='M13.1 4.9 10.1 19.1'
+        stroke='#0f172a'
+        strokeWidth='1.7'
+        strokeLinecap='round'
+      />
+      <circle cx='12' cy='12' r='1.25' fill='#38bdf8' opacity='.16' />
+      <defs>
+        <linearGradient
+          id='codexforall-core'
+          x1='4'
+          y1='3.5'
+          x2='20'
+          y2='20.5'
+          gradientUnits='userSpaceOnUse'
+        >
+          <stop offset='0%' stopColor='#38bdf8' />
+          <stop offset='100%' stopColor='#2563eb' />
+        </linearGradient>
+      </defs>
     </svg>
   )
 }

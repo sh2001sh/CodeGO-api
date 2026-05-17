@@ -27,6 +27,7 @@ import type {
   SubscriptionPayResponse,
   SubscriptionPayRequest,
   SelfSubscriptionData,
+  SubscriptionOrderStatus,
 } from './types'
 
 // ============================================================================
@@ -150,6 +151,13 @@ export async function paySubscriptionXunhu(
   data: SubscriptionPayRequest
 ): Promise<SubscriptionPayResponse> {
   const res = await api.post('/api/subscription/xunhu/pay', data)
+  return res.data
+}
+
+export async function getSubscriptionOrderStatus(
+  tradeNo: string
+): Promise<ApiResponse<SubscriptionOrderStatus>> {
+  const res = await api.get(`/api/subscription/orders/${tradeNo}`)
   return res.data
 }
 

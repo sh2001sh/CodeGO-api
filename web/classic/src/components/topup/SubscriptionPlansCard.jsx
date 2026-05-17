@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Badge,
   Button,
@@ -87,6 +87,23 @@ const TEXT = {
   selectPaymentMethod: '\u8bf7\u9009\u62e9\u652f\u4ed8\u65b9\u5f0f',
   stripeNotReady: '\u8be5\u5957\u9910\u672a\u914d\u7f6e Stripe',
   creemNotReady: '\u8be5\u5957\u9910\u672a\u914d\u7f6e Creem',
+  waitingPayment: '\u7b49\u5f85\u652f\u4ed8\u7ed3\u679c',
+  paySuccess: '\u652f\u4ed8\u6210\u529f',
+  waitCancelled: '\u5df2\u53d6\u6d88\u7b49\u5f85',
+  openPayPage: '\u6253\u5f00\u652f\u4ed8\u9875',
+  cancelPayWait: '\u53d6\u6d88\u652f\u4ed8',
+  wechatPay: '\u5fae\u4fe1\u652f\u4ed8',
+};
+
+const EMPTY_PAYMENT_TRACKER = {
+  stage: 'idle',
+  orderId: '',
+  externalUrl: '',
+  qrCodeUrl: '',
+  amountDue: 0,
+  methodLabel: '',
+  actionLabel: '',
+  message: '',
 };
 
 function formatPlanPrice(priceAmount, currency) {
@@ -137,10 +154,34 @@ function getPlanIntroText(plan, totalAmount, periodAmount) {
   return parts.join(' | ');
 }
 
+function getPlanActionLabel(action) {
+  switch (action) {
+    case 'renew':
+      return '\u7eed\u8d39';
+    case 'upgrade':
+      return '\u5347\u7ea7';
+    case 'disabled':
+      return '\u4e0d\u53ef\u8ba2\u9605';
+    default:
+      return TEXT.subscribeNow;
+  }
+}
+
 function getEpayMethods(payMethods = []) {
   return (payMethods || []).filter(
     (method) => method?.type && method.type !== 'stripe' && method.type !== 'creem',
   );
+}
+
+function normalizePaymentMethod(method) {
+  if (!method?.type) return method;
+  if (method.type === 'xunhu' || method.type === 'wxpay') {
+    return {
+      ...method,
+      name: TEXT.wechatPay,
+    };
+  }
+  return method;
 }
 
 function submitEpayForm({ url, params }) {
@@ -185,8 +226,13 @@ const SubscriptionPlansCard = ({
   const [paying, setPaying] = useState(false);
   const [selectedEpayMethod, setSelectedEpayMethod] = useState('');
   const [refreshing, setRefreshing] = useState(false);
+  const [paymentTracker, setPaymentTracker] = useState(EMPTY_PAYMENT_TRACKER);
+  const successTriggeredRef = useRef(false);
 
-  const epayMethods = useMemo(() => getEpayMethods(payMethods), [payMethods]);
+  const epayMethods = useMemo(
+    () => getEpayMethods(payMethods).map(normalizePaymentMethod),
+    [payMethods],
+  );
 
   const hasActiveSubscription = activeSubscriptions.length > 0;
   const hasAnySubscription = allSubscriptions.length > 0;
@@ -228,6 +274,8 @@ const SubscriptionPlansCard = ({
   const openBuy = (planRecord) => {
     setSelectedPlan(planRecord);
     setSelectedEpayMethod(epayMethods?.[0]?.type || '');
+    setPaymentTracker(EMPTY_PAYMENT_TRACKER);
+    successTriggeredRef.current = false;
     setOpen(true);
   };
 
@@ -235,6 +283,83 @@ const SubscriptionPlansCard = ({
     setOpen(false);
     setSelectedPlan(null);
     setPaying(false);
+    setSelectedEpayMethod('');
+    setPaymentTracker(EMPTY_PAYMENT_TRACKER);
+    successTriggeredRef.current = false;
+  };
+
+  useEffect(() => {
+    if (!open) return;
+    if (!selectedEpayMethod && epayMethods.length > 0) {
+      setSelectedEpayMethod(epayMethods[0].type || '');
+    }
+  }, [epayMethods, open, selectedEpayMethod]);
+
+  useEffect(() => {
+    if (!open || paymentTracker.stage !== 'pending' || !paymentTracker.orderId) {
+      return undefined;
+    }
+
+    let active = true;
+    const poll = async () => {
+      try {
+        const res = await API.get(`/api/subscription/orders/${paymentTracker.orderId}`);
+        const order = res.data?.data;
+        if (!active || res.data?.success !== true || !order) return;
+        if (order.status === 'success') {
+          setPaymentTracker((prev) => ({
+            ...prev,
+            stage: 'success',
+            message: '\u652f\u4ed8\u6210\u529f\uff0c\u5957\u9910\u5df2\u751f\u6548\u3002',
+          }));
+          if (!successTriggeredRef.current) {
+            successTriggeredRef.current = true;
+            window.dispatchEvent(new Event('subscription:changed'));
+            reloadSubscriptionSelf?.();
+          }
+          return;
+        }
+        if (order.status === 'expired') {
+          setPaymentTracker((prev) => ({
+            ...prev,
+            stage: 'failed',
+            message:
+              '\u652f\u4ed8\u672a\u5b8c\u6210\u6216\u5df2\u5173\u95ed\uff0c\u8ba2\u5355\u5df2\u5931\u6548\u3002',
+          }));
+        }
+      } catch {
+        // Ignore transient polling errors.
+      }
+    };
+
+    poll();
+    const timer = window.setInterval(poll, 2000);
+    return () => {
+      active = false;
+      window.clearInterval(timer);
+    };
+  }, [open, paymentTracker.orderId, paymentTracker.stage, reloadSubscriptionSelf]);
+
+  const getSelectedEpayMethodLabel = () =>
+    epayMethods.find((method) => method.type === selectedEpayMethod)?.name ||
+    selectedEpayMethod ||
+    TEXT.selectPaymentMethod;
+
+  const startPendingPayment = (resData, methodLabel, externalUrl = '', qrCodeUrl = '') => {
+    setPaymentTracker({
+      stage: 'pending',
+      orderId: String(resData?.order_id || ''),
+      externalUrl,
+      qrCodeUrl,
+      amountDue: Number(resData?.amount_due ?? selectedPlan?.amount_due ?? selectedPlan?.plan?.price_amount || 0),
+      methodLabel,
+      actionLabel: getPlanActionLabel(selectedPlan?.action),
+      message:
+        qrCodeUrl
+          ? '\u8bf7\u4f7f\u7528\u5fae\u4fe1\u626b\u7801\u5b8c\u6210\u652f\u4ed8\uff0c\u7cfb\u7edf\u4f1a\u81ea\u52a8\u7b49\u5f85\u56de\u4f20\u3002'
+          : '\u6b63\u5728\u7b49\u5f85\u652f\u4ed8\u56de\u4f20\uff0c\u8bf7\u5728\u65b0\u7a97\u53e3\u5b8c\u6210\u652f\u4ed8\u3002',
+    });
+    showSuccess(TEXT.payStarted);
   };
 
   const handleRefresh = async () => {
@@ -257,9 +382,12 @@ const SubscriptionPlansCard = ({
         plan_id: selectedPlan.plan.id,
       });
       if (res.data?.message === 'success') {
-        window.open(res.data.data?.pay_link, '_blank');
+        const payLink = res.data?.data?.pay_link || '';
+        if (payLink) {
+          window.open(payLink, '_blank');
+        }
         showSuccess(TEXT.payPageOpened);
-        closeBuy();
+        startPendingPayment(res.data?.data, 'Stripe', payLink);
       } else {
         const errorMsg =
           typeof res.data?.data === 'string'
@@ -285,9 +413,12 @@ const SubscriptionPlansCard = ({
         plan_id: selectedPlan.plan.id,
       });
       if (res.data?.message === 'success') {
-        window.open(res.data.data?.checkout_url, '_blank');
+        const checkoutUrl = res.data?.data?.checkout_url || '';
+        if (checkoutUrl) {
+          window.open(checkoutUrl, '_blank');
+        }
         showSuccess(TEXT.payPageOpened);
-        closeBuy();
+        startPendingPayment(res.data?.data, 'Creem', checkoutUrl);
       } else {
         const errorMsg =
           typeof res.data?.data === 'string'
@@ -320,22 +451,33 @@ const SubscriptionPlansCard = ({
           });
       if (res.data?.message === 'success') {
         if (isXunhu) {
-          const payUrl =
-            res.data?.data?.pay_url || res.data?.data?.qrcode_url || '';
-          if (!payUrl) {
+          const payUrl = res.data?.data?.pay_url || '';
+          const qrCodeUrl = res.data?.data?.qrcode_url || '';
+          if (!payUrl && !qrCodeUrl) {
             showError(TEXT.payFailed);
             return;
           }
-          window.open(payUrl, '_blank');
+          startPendingPayment(
+            res.data?.data,
+            TEXT.wechatPay,
+            payUrl,
+            qrCodeUrl,
+          );
         } else {
           if (!res.data.url) {
             showError(TEXT.payFailed);
             return;
           }
-          submitEpayForm({ url: res.data.url, params: res.data.data });
+          submitEpayForm({
+            url: res.data.url,
+            params: res.data?.data?.form || res.data.data,
+          });
+          startPendingPayment(
+            res.data?.data,
+            getSelectedEpayMethodLabel(),
+            res.data.url,
+          );
         }
-        showSuccess(TEXT.payStarted);
-        closeBuy();
       } else {
         const errorMsg =
           typeof res.data?.data === 'string'
@@ -598,14 +740,18 @@ const SubscriptionPlansCard = ({
             const plan = planRecord?.plan;
             const totalAmount = Number(plan?.total_amount || 0);
             const periodAmount = Number(plan?.period_amount || 0);
+            const priceAmount = Number(plan?.price_amount || 0);
+            const effectiveAmount = Number(planRecord?.amount_due ?? priceAmount || 0);
             const displayPrice = formatPlanPrice(
-              Number(plan?.price_amount || 0),
+              effectiveAmount,
               plan?.currency,
             );
             const isPopular = index === 0 && plans.length > 1;
             const limit = Number(plan?.max_purchase_per_user || 0);
             const count = getPlanPurchaseCount(plan?.id);
             const reached = limit > 0 && count >= limit;
+            const blockedByRule = planRecord?.action === 'disabled';
+            const actionLabel = getPlanActionLabel(planRecord?.action);
             const detailText = getPlanDetailsText(plan, totalAmount, periodAmount, t);
             const introText = getPlanIntroText(plan, totalAmount, periodAmount);
             const resetText = formatSubscriptionResetPeriod(plan, t);
@@ -657,6 +803,15 @@ const SubscriptionPlansCard = ({
                     >
                       {getPlanSubtitle(plan)}
                     </Text>
+                    {planRecord?.action && planRecord.action !== 'subscribe' && (
+                      <Text
+                        type='primary'
+                        size='small'
+                        style={{ display: 'block', marginTop: 4, fontWeight: 600 }}
+                      >
+                        {actionLabel}
+                      </Text>
+                    )}
                     <Text
                       type='secondary'
                       size='small'
@@ -673,6 +828,11 @@ const SubscriptionPlansCard = ({
                         {displayPrice}
                       </span>
                     </div>
+                    {effectiveAmount !== priceAmount && (
+                      <Text type='tertiary' size='small'>
+                        {`\u539f\u4ef7 ${formatPlanPrice(priceAmount, plan?.currency)}`}
+                      </Text>
+                    )}
                   </div>
 
                   <div className='flex flex-col items-start gap-1 pb-2'>
@@ -698,13 +858,18 @@ const SubscriptionPlansCard = ({
 
                   <div className='mt-auto'>
                     <Divider margin={12} />
-                    {reached ? (
+                    {reached || blockedByRule ? (
                       <Tooltip
-                        content={`${TEXT.purchaseLimitReached} (${count}/${limit})`}
+                        content={
+                          reached
+                            ? `${TEXT.purchaseLimitReached} (${count}/${limit})`
+                            : planRecord?.disabled_reason ||
+                              '\u5f53\u524d\u5df2\u6709\u751f\u6548\u5957\u9910\uff0c\u4e0d\u652f\u6301\u964d\u7ea7\u8ba2\u8d2d\u3002'
+                        }
                         position='top'
                       >
                         <Button theme='outline' type='primary' block disabled>
-                          {TEXT.limitReached}
+                          {reached ? TEXT.limitReached : actionLabel}
                         </Button>
                       </Tooltip>
                     ) : (
@@ -714,7 +879,7 @@ const SubscriptionPlansCard = ({
                         block
                         onClick={() => openBuy(planRecord)}
                       >
-                        {TEXT.subscribeNow}
+                        {actionLabel}
                       </Button>
                     )}
                   </div>
@@ -746,6 +911,8 @@ const SubscriptionPlansCard = ({
         selectedEpayMethod={selectedEpayMethod}
         setSelectedEpayMethod={setSelectedEpayMethod}
         epayMethods={epayMethods}
+        paymentTracker={paymentTracker}
+        setPaymentTracker={setPaymentTracker}
         enableOnlineTopUp={enableOnlineTopUp}
         enableStripeTopUp={enableStripeTopUp}
         enableCreemTopUp={enableCreemTopUp}

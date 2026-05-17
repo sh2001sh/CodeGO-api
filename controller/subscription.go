@@ -14,7 +14,10 @@ import (
 )
 
 type SubscriptionPlanDTO struct {
-	Plan model.SubscriptionPlan `json:"plan"`
+	Plan           model.SubscriptionPlan `json:"plan"`
+	Action         string                 `json:"action,omitempty"`
+	AmountDue      float64                `json:"amount_due,omitempty"`
+	DisabledReason string                 `json:"disabled_reason,omitempty"`
 }
 
 type BillingPreferenceRequest struct {
@@ -137,10 +140,49 @@ func GetSubscriptionPlans(c *gin.Context) {
 		return
 	}
 	result := make([]SubscriptionPlanDTO, 0, len(plans))
+	userId := c.GetInt("id")
 	for _, plan := range plans {
-		result = append(result, SubscriptionPlanDTO{Plan: plan})
+		record := SubscriptionPlanDTO{Plan: plan}
+		if userId > 0 {
+			preview, err := model.ResolveSubscriptionPurchasePreview(userId, &plan)
+			if err == nil && preview != nil {
+				record.Action = preview.Action
+				record.AmountDue = preview.AmountDue
+				record.DisabledReason = preview.DisabledReason
+			}
+		}
+		result = append(result, record)
 	}
 	common.ApiSuccess(c, result)
+}
+
+func GetSubscriptionOrderStatus(c *gin.Context) {
+	tradeNo := strings.TrimSpace(c.Param("trade_no"))
+	if tradeNo == "" {
+		common.ApiErrorMsg(c, "invalid trade no")
+		return
+	}
+	userId := c.GetInt("id")
+	order, err := model.GetSubscriptionOrderByTradeNoForUser(tradeNo, userId)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	planTitle := ""
+	if plan, planErr := model.GetSubscriptionPlanById(order.PlanId); planErr == nil && plan != nil {
+		planTitle = plan.Title
+	}
+	common.ApiSuccess(c, gin.H{
+		"trade_no":         order.TradeNo,
+		"status":           order.Status,
+		"plan_id":          order.PlanId,
+		"plan_title":       planTitle,
+		"money":            order.Money,
+		"payment_method":   order.PaymentMethod,
+		"payment_provider": order.PaymentProvider,
+		"create_time":      order.CreateTime,
+		"complete_time":    order.CompleteTime,
+	})
 }
 
 func GetSubscriptionSelf(c *gin.Context) {

@@ -37,6 +37,13 @@ var (
 	ErrSubscriptionOrderStatusInvalid = errors.New("subscription order status invalid")
 )
 
+const (
+	SubscriptionPurchaseActionSubscribe = "subscribe"
+	SubscriptionPurchaseActionRenew     = "renew"
+	SubscriptionPurchaseActionUpgrade   = "upgrade"
+	SubscriptionPurchaseActionDisabled  = "disabled"
+)
+
 type SubscriptionModelQuotaMap map[string]int64
 
 const (
@@ -238,6 +245,17 @@ func GetSubscriptionOrderByTradeNo(tradeNo string) *SubscriptionOrder {
 	return &order
 }
 
+func GetSubscriptionOrderByTradeNoForUser(tradeNo string, userId int) (*SubscriptionOrder, error) {
+	if strings.TrimSpace(tradeNo) == "" || userId <= 0 {
+		return nil, errors.New("invalid tradeNo or userId")
+	}
+	var order SubscriptionOrder
+	if err := DB.Where("trade_no = ? AND user_id = ?", tradeNo, userId).First(&order).Error; err != nil {
+		return nil, err
+	}
+	return &order, nil
+}
+
 // User subscription instance
 type UserSubscription struct {
 	Id     int `json:"id"`
@@ -281,6 +299,14 @@ func (s *UserSubscription) BeforeUpdate(tx *gorm.DB) error {
 
 type SubscriptionSummary struct {
 	Subscription *UserSubscription `json:"subscription"`
+}
+
+type SubscriptionPurchasePreview struct {
+	Action              string            `json:"action"`
+	AmountDue           float64           `json:"amount_due"`
+	CurrentSubscription *UserSubscription `json:"-"`
+	CurrentPlan         *SubscriptionPlan `json:"-"`
+	DisabledReason      string            `json:"disabled_reason,omitempty"`
 }
 
 func NormalizeSubscriptionModelQuotaMap(input map[string]int64) SubscriptionModelQuotaMap {
@@ -443,6 +469,158 @@ func applySubscriptionUsageDelta(plan *SubscriptionPlan, sub *UserSubscription, 
 		usage[trimmedModelName] = newUsage
 	}
 	return sub.SetModelUsageMap(usage)
+}
+
+func IsSubscriptionDayPassPlan(plan *SubscriptionPlan) bool {
+	if plan == nil {
+		return false
+	}
+	return plan.DurationUnit == SubscriptionDurationDay && plan.DurationValue > 0 && plan.DurationValue <= 2
+}
+
+func isManagedPackagePlan(plan *SubscriptionPlan) bool {
+	return plan != nil && !IsSubscriptionDayPassPlan(plan)
+}
+
+func compareSubscriptionPlanTier(left *SubscriptionPlan, right *SubscriptionPlan) int {
+	if left == nil && right == nil {
+		return 0
+	}
+	if left == nil {
+		return -1
+	}
+	if right == nil {
+		return 1
+	}
+	if left.PriceAmount < right.PriceAmount {
+		return -1
+	}
+	if left.PriceAmount > right.PriceAmount {
+		return 1
+	}
+	if left.TotalAmount < right.TotalAmount {
+		return -1
+	}
+	if left.TotalAmount > right.TotalAmount {
+		return 1
+	}
+	if left.PeriodAmount < right.PeriodAmount {
+		return -1
+	}
+	if left.PeriodAmount > right.PeriodAmount {
+		return 1
+	}
+	if left.Id < right.Id {
+		return -1
+	}
+	if left.Id > right.Id {
+		return 1
+	}
+	return 0
+}
+
+func pickPrimaryActivePackageTx(tx *gorm.DB, userId int, now int64) (*UserSubscription, *SubscriptionPlan, error) {
+	if tx == nil {
+		tx = DB
+	}
+	var subs []UserSubscription
+	if err := tx.Where("user_id = ? AND status = ? AND end_time > ?", userId, "active", now).
+		Order("end_time desc, id desc").
+		Find(&subs).Error; err != nil {
+		return nil, nil, err
+	}
+	var pickedSub *UserSubscription
+	var pickedPlan *SubscriptionPlan
+	for _, candidate := range subs {
+		plan, err := getSubscriptionPlanByIdTx(tx, candidate.PlanId)
+		if err != nil || !isManagedPackagePlan(plan) {
+			continue
+		}
+		candidateCopy := candidate
+		if pickedSub == nil || compareSubscriptionPlanTier(plan, pickedPlan) > 0 || (compareSubscriptionPlanTier(plan, pickedPlan) == 0 && candidate.EndTime > pickedSub.EndTime) {
+			pickedSub = &candidateCopy
+			pickedPlan = plan
+		}
+	}
+	return pickedSub, pickedPlan, nil
+}
+
+func calcSubscriptionRemainingFraction(sub *UserSubscription, now int64) float64 {
+	if sub == nil || sub.EndTime <= now {
+		return 0
+	}
+	totalSeconds := sub.EndTime - sub.StartTime
+	if totalSeconds <= 0 {
+		return 1
+	}
+	remainingSeconds := sub.EndTime - now
+	if remainingSeconds <= 0 {
+		return 0
+	}
+	fraction := float64(remainingSeconds) / float64(totalSeconds)
+	if fraction < 0 {
+		return 0
+	}
+	if fraction > 1 {
+		return 1
+	}
+	return fraction
+}
+
+func ResolveSubscriptionPurchasePreviewTx(tx *gorm.DB, userId int, targetPlan *SubscriptionPlan) (*SubscriptionPurchasePreview, error) {
+	if targetPlan == nil || targetPlan.Id <= 0 {
+		return nil, errors.New("invalid plan")
+	}
+	if userId <= 0 {
+		return nil, errors.New("invalid userId")
+	}
+	preview := &SubscriptionPurchasePreview{
+		Action:    SubscriptionPurchaseActionSubscribe,
+		AmountDue: targetPlan.PriceAmount,
+	}
+	if !isManagedPackagePlan(targetPlan) {
+		return preview, nil
+	}
+	now := GetDBTimestamp()
+	currentSub, currentPlan, err := pickPrimaryActivePackageTx(tx, userId, now)
+	if err != nil {
+		return nil, err
+	}
+	if currentSub == nil || currentPlan == nil {
+		return preview, nil
+	}
+	preview.CurrentSubscription = currentSub
+	preview.CurrentPlan = currentPlan
+
+	switch compareSubscriptionPlanTier(targetPlan, currentPlan) {
+	case -1:
+		preview.Action = SubscriptionPurchaseActionDisabled
+		preview.AmountDue = 0
+		preview.DisabledReason = "cannot subscribe to a lower-tier plan while your current package is active"
+	case 0:
+		preview.Action = SubscriptionPurchaseActionRenew
+		preview.AmountDue = targetPlan.PriceAmount
+	default:
+		preview.Action = SubscriptionPurchaseActionUpgrade
+		remainingFraction := calcSubscriptionRemainingFraction(currentSub, now)
+		priceDiff := targetPlan.PriceAmount - currentPlan.PriceAmount
+		if priceDiff < 0 {
+			priceDiff = 0
+		}
+		if remainingFraction <= 0 {
+			preview.AmountDue = targetPlan.PriceAmount
+		} else {
+			preview.AmountDue = priceDiff * remainingFraction
+		}
+		if preview.AmountDue < 0.01 {
+			preview.AmountDue = 0.01
+		}
+	}
+	return preview, nil
+}
+
+func ResolveSubscriptionPurchasePreview(userId int, targetPlan *SubscriptionPlan) (*SubscriptionPurchasePreview, error) {
+	return ResolveSubscriptionPurchasePreviewTx(nil, userId, targetPlan)
 }
 
 func calcPlanEndTime(start time.Time, plan *SubscriptionPlan) (int64, error) {
@@ -675,6 +853,149 @@ func CreateUserSubscriptionFromPlanTx(tx *gorm.DB, userId int, plan *Subscriptio
 	return sub, nil
 }
 
+func applySubscriptionUpgradeGroupTx(tx *gorm.DB, sub *UserSubscription, plan *SubscriptionPlan) error {
+	if tx == nil || sub == nil || plan == nil {
+		return errors.New("invalid upgrade group args")
+	}
+	upgradeGroup := strings.TrimSpace(plan.UpgradeGroup)
+	sub.UpgradeGroup = upgradeGroup
+	if upgradeGroup == "" {
+		return nil
+	}
+	currentGroup, err := getUserGroupByIdTx(tx, sub.UserId)
+	if err != nil {
+		return err
+	}
+	if currentGroup == upgradeGroup {
+		if strings.TrimSpace(sub.PrevUserGroup) == "" {
+			sub.PrevUserGroup = currentGroup
+		}
+		return nil
+	}
+	if strings.TrimSpace(sub.PrevUserGroup) == "" {
+		sub.PrevUserGroup = currentGroup
+	}
+	return tx.Model(&User{}).Where("id = ?", sub.UserId).
+		Update("group", upgradeGroup).Error
+}
+
+func renewUserSubscriptionWithPlanTx(tx *gorm.DB, sub *UserSubscription, plan *SubscriptionPlan, source string) (*UserSubscription, error) {
+	if tx == nil || sub == nil || plan == nil {
+		return nil, errors.New("invalid renewal args")
+	}
+	baseTime := time.Unix(sub.EndTime, 0)
+	newEndTime, err := calcPlanEndTime(baseTime, plan)
+	if err != nil {
+		return nil, err
+	}
+	sub.EndTime = newEndTime
+	sub.Status = "active"
+	sub.Source = source
+	if plan.TotalAmount == 0 || sub.AmountTotal == 0 {
+		sub.AmountTotal = 0
+	} else {
+		sub.AmountTotal += plan.TotalAmount
+	}
+	sub.PeriodAmount = plan.PeriodAmount
+	sub.ModelLimits = plan.ModelLimits
+	if err := applySubscriptionUpgradeGroupTx(tx, sub, plan); err != nil {
+		return nil, err
+	}
+	now := GetDBTimestamp()
+	if NormalizeResetPeriod(plan.QuotaResetPeriod) == SubscriptionResetNever {
+		sub.LastResetTime = 0
+		sub.NextResetTime = 0
+	} else {
+		if sub.LastResetTime <= 0 || sub.LastResetTime < sub.StartTime {
+			sub.LastResetTime = sub.StartTime
+		}
+		sub.NextResetTime = calcNextResetTime(time.Unix(sub.LastResetTime, 0), plan, sub.EndTime)
+		if err := maybeResetUserSubscriptionWithPlanTx(tx, sub, plan, now); err != nil {
+			return nil, err
+		}
+	}
+	if err := tx.Save(sub).Error; err != nil {
+		return nil, err
+	}
+	return sub, nil
+}
+
+func upgradeUserSubscriptionWithPlanTx(tx *gorm.DB, sub *UserSubscription, plan *SubscriptionPlan, source string) (*UserSubscription, error) {
+	if tx == nil || sub == nil || plan == nil {
+		return nil, errors.New("invalid upgrade args")
+	}
+	sub.PlanId = plan.Id
+	sub.Status = "active"
+	sub.Source = source
+	sub.ModelLimits = plan.ModelLimits
+	if plan.TotalAmount == 0 {
+		sub.AmountTotal = 0
+	} else if sub.AmountTotal < plan.TotalAmount {
+		sub.AmountTotal = plan.TotalAmount
+	}
+	if sub.AmountTotal > 0 && sub.AmountTotal < sub.AmountUsed {
+		sub.AmountTotal = sub.AmountUsed
+	}
+	sub.PeriodAmount = plan.PeriodAmount
+	if sub.PeriodAmount > 0 && sub.PeriodAmount < sub.PeriodUsed {
+		sub.PeriodAmount = sub.PeriodUsed
+	}
+	if err := applySubscriptionUpgradeGroupTx(tx, sub, plan); err != nil {
+		return nil, err
+	}
+	now := GetDBTimestamp()
+	if NormalizeResetPeriod(plan.QuotaResetPeriod) == SubscriptionResetNever {
+		sub.LastResetTime = 0
+		sub.NextResetTime = 0
+	} else {
+		if sub.LastResetTime <= 0 || sub.LastResetTime < sub.StartTime {
+			sub.LastResetTime = sub.StartTime
+		}
+		sub.NextResetTime = calcNextResetTime(time.Unix(sub.LastResetTime, 0), plan, sub.EndTime)
+		if err := maybeResetUserSubscriptionWithPlanTx(tx, sub, plan, now); err != nil {
+			return nil, err
+		}
+	}
+	if err := tx.Save(sub).Error; err != nil {
+		return nil, err
+	}
+	return sub, nil
+}
+
+func ApplySubscriptionPurchaseTx(tx *gorm.DB, userId int, plan *SubscriptionPlan, source string) (*UserSubscription, *SubscriptionPurchasePreview, error) {
+	if tx == nil {
+		return nil, nil, errors.New("tx is nil")
+	}
+	if plan == nil || plan.Id == 0 {
+		return nil, nil, errors.New("invalid plan")
+	}
+	preview, err := ResolveSubscriptionPurchasePreviewTx(tx, userId, plan)
+	if err != nil {
+		return nil, nil, err
+	}
+	switch preview.Action {
+	case SubscriptionPurchaseActionDisabled:
+		if strings.TrimSpace(preview.DisabledReason) != "" {
+			return nil, preview, errors.New(preview.DisabledReason)
+		}
+		return nil, preview, errors.New("plan is not available for the current subscription")
+	case SubscriptionPurchaseActionRenew:
+		if preview.CurrentSubscription == nil {
+			break
+		}
+		sub, err := renewUserSubscriptionWithPlanTx(tx, preview.CurrentSubscription, plan, source)
+		return sub, preview, err
+	case SubscriptionPurchaseActionUpgrade:
+		if preview.CurrentSubscription == nil {
+			break
+		}
+		sub, err := upgradeUserSubscriptionWithPlanTx(tx, preview.CurrentSubscription, plan, source)
+		return sub, preview, err
+	}
+	sub, err := CreateUserSubscriptionFromPlanTx(tx, userId, plan, source)
+	return sub, preview, err
+}
+
 // Complete a subscription order (idempotent). Creates a UserSubscription snapshot from the plan.
 // expectedPaymentProvider guards against cross-gateway callback attacks (empty skips the check).
 // actualPaymentMethod updates the order's PaymentMethod to reflect the real payment type used (empty skips update).
@@ -712,10 +1033,12 @@ func CompleteSubscriptionOrder(tradeNo string, providerPayload string, expectedP
 		if !plan.Enabled {
 			// still allow completion for already purchased orders
 		}
-		upgradeGroup = strings.TrimSpace(plan.UpgradeGroup)
-		_, err = CreateUserSubscriptionFromPlanTx(tx, order.UserId, plan, "order")
+		sub, preview, err := ApplySubscriptionPurchaseTx(tx, order.UserId, plan, "order")
 		if err != nil {
 			return err
+		}
+		if preview != nil {
+			upgradeGroup = strings.TrimSpace(sub.UpgradeGroup)
 		}
 		if err := upsertSubscriptionTopUpTx(tx, &order); err != nil {
 			return err

@@ -48,6 +48,9 @@ export type SubscriptionPlan = z.infer<typeof subscriptionPlanSchema>
 
 export interface PlanRecord {
   plan: SubscriptionPlan
+  action?: 'subscribe' | 'renew' | 'upgrade' | 'disabled'
+  amount_due?: number
+  disabled_reason?: string
 }
 
 // ============================================================================
@@ -102,8 +105,26 @@ export interface SubscriptionPayResponse {
   data?: {
     pay_link?: string
     checkout_url?: string
+    pay_url?: string
+    qrcode_url?: string
+    order_id?: string
+    amount_due?: number
+    action?: 'subscribe' | 'renew' | 'upgrade' | 'disabled'
+    form?: Record<string, unknown>
   }
   url?: string
+}
+
+export interface SubscriptionOrderStatus {
+  trade_no: string
+  status: 'pending' | 'success' | 'expired' | string
+  plan_id: number
+  plan_title?: string
+  money: number
+  payment_method?: string
+  payment_provider?: string
+  create_time?: number
+  complete_time?: number
 }
 
 export interface CreateUserSubscriptionRequest {

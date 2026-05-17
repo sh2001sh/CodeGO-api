@@ -36,6 +36,10 @@ func cloneDisplayedPayMethods(methods []map[string]string, skipType string) []ma
 		for key, value := range method {
 			next[key] = value
 		}
+		switch strings.TrimSpace(next["type"]) {
+		case model.PaymentMethodXunhu, "wxpay":
+			next["name"] = "\u5fae\u4fe1\u652f\u4ed8"
+		}
 		cloned = append(cloned, next)
 	}
 	return cloned
@@ -133,7 +137,7 @@ func GetTopUpInfo(c *gin.Context) {
 		}
 		if !hasXunhu {
 			payMethods = append(payMethods, map[string]string{
-				"name":      "Xunhu WeChat Pay",
+				"name":      "\u5fae\u4fe1\u652f\u4ed8",
 				"type":      model.PaymentMethodXunhu,
 				"color":     "rgba(var(--semi-orange-5), 1)",
 				"min_topup": strconv.FormatInt(xunhuMinTopup, 10),

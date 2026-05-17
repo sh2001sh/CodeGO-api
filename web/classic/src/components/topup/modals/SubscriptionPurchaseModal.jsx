@@ -29,7 +29,16 @@ import {
   Typography,
 } from '@douyinfe/semi-ui';
 import { IconCreditCard } from '@douyinfe/semi-icons';
-import { CalendarClock, Crown, Package } from 'lucide-react';
+import {
+  CalendarClock,
+  CheckCircle2,
+  CircleSlash,
+  Crown,
+  ExternalLink,
+  Loader2,
+  Package,
+  XCircle,
+} from 'lucide-react';
 import { SiStripe } from 'react-icons/si';
 import { renderQuota } from '../../../helpers';
 import {
@@ -51,6 +60,7 @@ const TEXT = {
   upgradeGroup: '\u5347\u7ea7\u5206\u7ec4',
   packageDetail: '\u5957\u9910\u8be6\u60c5',
   amountDue: '\u5e94\u4ed8\u91d1\u989d',
+  actionType: '\u8ba2\u9605\u7c7b\u578b',
   selectPaymentMethod: '\u9009\u62e9\u652f\u4ed8\u65b9\u5f0f',
   pay: '\u652f\u4ed8',
   noPayment:
@@ -60,6 +70,14 @@ const TEXT = {
   weeklyQuota: '\u6bcf\u5468\u989d\u5ea6',
   cycleQuota: '\u5468\u671f\u989d\u5ea6',
   purchaseLimitReached: '\u5df2\u8fbe\u5230\u8d2d\u4e70\u4e0a\u9650',
+  waitingPayment: '\u7b49\u5f85\u652f\u4ed8\u7ed3\u679c',
+  paySuccess: '\u652f\u4ed8\u6210\u529f',
+  payFailed: '\u652f\u4ed8\u5931\u8d25',
+  waitCancelled: '\u5df2\u53d6\u6d88\u7b49\u5f85',
+  openPayPage: '\u6253\u5f00\u652f\u4ed8\u9875',
+  cancelPayWait: '\u53d6\u6d88\u652f\u4ed8',
+  close: '\u5173\u95ed',
+  scanWeChat: '\u8bf7\u4f7f\u7528\u5fae\u4fe1\u626b\u7801\u5b8c\u6210\u652f\u4ed8\u3002',
 };
 
 function formatPlanPrice(priceAmount, currency) {
@@ -106,6 +124,8 @@ const SubscriptionPurchaseModal = ({
   selectedEpayMethod,
   setSelectedEpayMethod,
   epayMethods = [],
+  paymentTracker,
+  setPaymentTracker,
   enableOnlineTopUp = false,
   enableStripeTopUp = false,
   enableCreemTopUp = false,
@@ -118,7 +138,7 @@ const SubscriptionPurchaseModal = ({
   const totalAmount = Number(plan?.total_amount || 0);
   const periodAmount = Number(plan?.period_amount || 0);
   const displayPrice = formatPlanPrice(
-    Number(plan?.price_amount || 0),
+    Number(selectedPlan?.amount_due ?? plan?.price_amount || 0),
     plan?.currency,
   );
   const detailText = getPlanDetailsText(plan, totalAmount, periodAmount, t);
@@ -131,6 +151,114 @@ const SubscriptionPurchaseModal = ({
   const purchaseCount = Number(purchaseLimitInfo?.count || 0);
   const purchaseLimitReached =
     purchaseLimit > 0 && purchaseCount >= purchaseLimit;
+  const blockedByRule = selectedPlan?.action === 'disabled';
+  const blockedMessage =
+    selectedPlan?.disabled_reason ||
+    '\u5f53\u524d\u5957\u9910\u4e0d\u53ef\u8ba2\u9605\uff0c\u8bf7\u5148\u7b49\u5f85\u5df2\u751f\u6548\u5957\u9910\u5230\u671f\u3002';
+  const disablePurchase =
+    purchaseLimitReached || blockedByRule || paymentTracker?.stage === 'pending';
+  const actionLabel =
+    paymentTracker?.actionLabel ||
+    (selectedPlan?.action === 'renew'
+      ? '\u7eed\u8d39'
+      : selectedPlan?.action === 'upgrade'
+        ? '\u5347\u7ea7'
+        : selectedPlan?.action === 'disabled'
+          ? '\u4e0d\u53ef\u8ba2\u9605'
+          : '\u7acb\u5373\u8ba2\u9605');
+
+  const renderPaymentTracker = () => {
+    if (!paymentTracker || paymentTracker.stage === 'idle') return null;
+
+    const stageMeta = {
+      pending: {
+        title: TEXT.waitingPayment,
+        icon: <Loader2 size={18} className='animate-spin text-blue-500' />,
+        tone: 'border-blue-200 bg-blue-50',
+      },
+      success: {
+        title: TEXT.paySuccess,
+        icon: <CheckCircle2 size={18} className='text-emerald-500' />,
+        tone: 'border-emerald-200 bg-emerald-50',
+      },
+      failed: {
+        title: TEXT.payFailed,
+        icon: <XCircle size={18} className='text-rose-500' />,
+        tone: 'border-rose-200 bg-rose-50',
+      },
+      cancelled: {
+        title: TEXT.waitCancelled,
+        icon: <CircleSlash size={18} className='text-slate-500' />,
+        tone: 'border-slate-200 bg-slate-50',
+      },
+    }[paymentTracker.stage];
+
+    if (!stageMeta) return null;
+
+    return (
+      <div className={`rounded-xl border p-3 space-y-3 ${stageMeta.tone}`}>
+        <div className='flex items-center gap-2 text-sm font-semibold text-slate-900'>
+          {stageMeta.icon}
+          <span>{stageMeta.title}</span>
+        </div>
+
+        <div className='space-y-1 text-xs text-slate-600'>
+          <div>{`${TEXT.actionType}: ${paymentTracker.actionLabel || actionLabel}`}</div>
+          <div>{`${TEXT.selectPaymentMethod}: ${paymentTracker.methodLabel || '-'}`}</div>
+          <div>{`${TEXT.amountDue}: ${formatPlanPrice(paymentTracker.amountDue || 0, plan?.currency)}`}</div>
+          <div>{`Order ID: ${paymentTracker.orderId || '-'}`}</div>
+        </div>
+
+        <Text size='small' className='!text-slate-600'>
+          {paymentTracker.message}
+        </Text>
+
+        {paymentTracker.qrCodeUrl && paymentTracker.stage === 'pending' && (
+          <div className='rounded-lg border border-slate-200 bg-white p-3'>
+            <img
+              src={paymentTracker.qrCodeUrl}
+              alt='wechat-pay-qrcode'
+              className='mx-auto h-44 w-44 object-contain'
+            />
+            <div className='mt-2 text-center text-xs text-slate-500'>
+              {TEXT.scanWeChat}
+            </div>
+          </div>
+        )}
+
+        <div className='flex flex-wrap gap-2'>
+          {paymentTracker.externalUrl && paymentTracker.stage === 'pending' && (
+            <Button
+              theme='light'
+              icon={<ExternalLink size={14} />}
+              onClick={() => window.open(paymentTracker.externalUrl, '_blank')}
+            >
+              {TEXT.openPayPage}
+            </Button>
+          )}
+          {paymentTracker.stage === 'pending' ? (
+            <Button
+              theme='borderless'
+              onClick={() =>
+                setPaymentTracker((prev) => ({
+                  ...prev,
+                  stage: 'cancelled',
+                  message:
+                    '\u5df2\u53d6\u6d88\u672c\u6b21\u7b49\u5f85\uff0c\u5982\u679c\u60a8\u5728\u652f\u4ed8\u9875\u7ee7\u7eed\u5b8c\u6210\u4ed8\u6b3e\uff0c\u8ba2\u5355\u4ecd\u4f1a\u5728\u56de\u8c03\u540e\u751f\u6548\u3002',
+                }))
+              }
+            >
+              {TEXT.cancelPayWait}
+            </Button>
+          ) : (
+            <Button theme='solid' type='primary' onClick={onCancel}>
+              {TEXT.close}
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <Modal
@@ -169,6 +297,15 @@ const SubscriptionPurchaseModal = ({
                 </Text>
                 <Text className='text-slate-900 dark:text-slate-100'>
                   {getPlanSubtitle(plan)}
+                </Text>
+              </div>
+
+              <div className='flex justify-between items-center'>
+                <Text strong className='text-slate-700 dark:text-slate-200'>
+                  {TEXT.actionType}:
+                </Text>
+                <Text className='text-slate-900 dark:text-slate-100'>
+                  {actionLabel}
                 </Text>
               </div>
 
@@ -259,7 +396,18 @@ const SubscriptionPurchaseModal = ({
             />
           )}
 
-          {hasAnyPayment ? (
+          {blockedByRule && (
+            <Banner
+              type='warning'
+              description={blockedMessage}
+              className='!rounded-xl'
+              closeIcon={null}
+            />
+          )}
+
+          {renderPaymentTracker()}
+
+          {paymentTracker?.stage === 'idle' && hasAnyPayment ? (
             <div className='space-y-3'>
               <Text size='small' type='tertiary'>
                 {TEXT.selectPaymentMethod}\uff1a
@@ -274,7 +422,7 @@ const SubscriptionPurchaseModal = ({
                       icon={<SiStripe size={14} color='#635BFF' />}
                       onClick={onPayStripe}
                       loading={paying}
-                      disabled={purchaseLimitReached}
+                      disabled={disablePurchase}
                     >
                       Stripe
                     </Button>
@@ -286,7 +434,7 @@ const SubscriptionPurchaseModal = ({
                       icon={<IconCreditCard />}
                       onClick={onPayCreem}
                       loading={paying}
-                      disabled={purchaseLimitReached}
+                      disabled={disablePurchase}
                     >
                       Creem
                     </Button>
@@ -306,21 +454,21 @@ const SubscriptionPurchaseModal = ({
                       value: method.type,
                       label: method.name || method.type,
                     }))}
-                    disabled={purchaseLimitReached}
+                    disabled={disablePurchase}
                   />
                   <Button
                     theme='solid'
                     type='primary'
                     onClick={onPayEpay}
                     loading={paying}
-                    disabled={!selectedEpayMethod || purchaseLimitReached}
+                    disabled={!selectedEpayMethod || disablePurchase}
                   >
-                    {TEXT.pay}
+                    {actionLabel}
                   </Button>
                 </div>
               )}
             </div>
-          ) : (
+          ) : paymentTracker?.stage === 'idle' ? (
             <Banner
               type='info'
               description={TEXT.noPayment}
