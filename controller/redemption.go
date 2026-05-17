@@ -1,6 +1,7 @@
 package controller
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 	"unicode/utf8"
@@ -23,7 +24,6 @@ func GetAllRedemptions(c *gin.Context) {
 	pageInfo.SetTotal(int(total))
 	pageInfo.SetItems(redemptions)
 	common.ApiSuccess(c, pageInfo)
-	return
 }
 
 func SearchRedemptions(c *gin.Context) {
@@ -37,7 +37,6 @@ func SearchRedemptions(c *gin.Context) {
 	pageInfo.SetTotal(int(total))
 	pageInfo.SetItems(redemptions)
 	common.ApiSuccess(c, pageInfo)
-	return
 }
 
 func GetRedemption(c *gin.Context) {
@@ -56,7 +55,6 @@ func GetRedemption(c *gin.Context) {
 		"message": "",
 		"data":    redemption,
 	})
-	return
 }
 
 func AddRedemption(c *gin.Context) {
@@ -87,15 +85,22 @@ func AddRedemption(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"success": false, "message": msg})
 		return
 	}
+	if err := prepareRedemptionForWrite(&redemption); err != nil {
+		common.ApiErrorMsg(c, err.Error())
+		return
+	}
+
 	var keys []string
 	for i := 0; i < redemption.Count; i++ {
-		key := common.GetUUID()
 		cleanRedemption := model.Redemption{
 			UserId:      c.GetInt("id"),
 			Name:        redemption.Name,
-			Key:         key,
+			Key:         common.GetUUID(),
 			CreatedTime: common.GetTimestamp(),
+			RedeemType:  redemption.RedeemType,
 			Quota:       redemption.Quota,
+			PlanId:      redemption.PlanId,
+			PlanTitle:   redemption.PlanTitle,
 			ExpiredTime: redemption.ExpiredTime,
 		}
 		err = cleanRedemption.Insert()
@@ -108,14 +113,13 @@ func AddRedemption(c *gin.Context) {
 			})
 			return
 		}
-		keys = append(keys, key)
+		keys = append(keys, cleanRedemption.Key)
 	}
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
 		"message": "",
 		"data":    keys,
 	})
-	return
 }
 
 func DeleteRedemption(c *gin.Context) {
@@ -129,7 +133,6 @@ func DeleteRedemption(c *gin.Context) {
 		"success": true,
 		"message": "",
 	})
-	return
 }
 
 func UpdateRedemption(c *gin.Context) {
@@ -145,15 +148,25 @@ func UpdateRedemption(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+
 	if statusOnly == "" {
+		if utf8.RuneCountInString(redemption.Name) == 0 || utf8.RuneCountInString(redemption.Name) > 20 {
+			common.ApiErrorI18n(c, i18n.MsgRedemptionNameLength)
+			return
+		}
 		if valid, msg := validateExpiredTime(c, redemption.ExpiredTime); !valid {
 			c.JSON(http.StatusOK, gin.H{"success": false, "message": msg})
 			return
 		}
-		// If you add more fields, please also update redemption.Update()
 		cleanRedemption.Name = redemption.Name
+		cleanRedemption.RedeemType = redemption.RedeemType
 		cleanRedemption.Quota = redemption.Quota
+		cleanRedemption.PlanId = redemption.PlanId
 		cleanRedemption.ExpiredTime = redemption.ExpiredTime
+		if err := prepareRedemptionForWrite(cleanRedemption); err != nil {
+			common.ApiErrorMsg(c, err.Error())
+			return
+		}
 	}
 	if statusOnly != "" {
 		cleanRedemption.Status = redemption.Status
@@ -168,7 +181,6 @@ func UpdateRedemption(c *gin.Context) {
 		"message": "",
 		"data":    cleanRedemption,
 	})
-	return
 }
 
 func DeleteInvalidRedemption(c *gin.Context) {
@@ -182,7 +194,6 @@ func DeleteInvalidRedemption(c *gin.Context) {
 		"message": "",
 		"data":    rows,
 	})
-	return
 }
 
 func validateExpiredTime(c *gin.Context, expired int64) (bool, string) {
@@ -190,4 +201,32 @@ func validateExpiredTime(c *gin.Context, expired int64) (bool, string) {
 		return false, i18n.T(c, i18n.MsgRedemptionExpireTimeInvalid)
 	}
 	return true, ""
+}
+
+func prepareRedemptionForWrite(redemption *model.Redemption) error {
+	if redemption == nil {
+		return errors.New("redemption payload is empty")
+	}
+
+	redemption.RedeemType = model.NormalizeRedemptionType(redemption.RedeemType)
+	switch redemption.RedeemType {
+	case model.RedemptionTypeSubscription:
+		if redemption.PlanId <= 0 {
+			return errors.New("subscription redemption requires a valid plan")
+		}
+		plan, err := model.GetSubscriptionPlanById(redemption.PlanId)
+		if err != nil {
+			return errors.New("subscription plan not found")
+		}
+		redemption.PlanTitle = plan.Title
+		redemption.Quota = 0
+	default:
+		if redemption.Quota <= 0 {
+			return errors.New("quota redemption requires quota greater than 0")
+		}
+		redemption.PlanId = 0
+		redemption.PlanTitle = ""
+	}
+
+	return nil
 }

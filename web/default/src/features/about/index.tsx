@@ -57,33 +57,33 @@ function EmptyAboutState() {
         </div>
         <div className='space-y-4 text-sm'>
           <p>
-            {t('New API Project Repository:')}{' '}
+            codexforall repository:{' '}
             <a
-              href='https://github.com/QuantumNous/new-api'
+              href='https://github.com/s2644752646/new-api'
               target='_blank'
               rel='noopener noreferrer'
               className='text-primary hover:underline'
             >
-              {t('https://github.com/QuantumNous/new-api')}
+              https://github.com/s2644752646/new-api
             </a>
           </p>
           <p className='text-muted-foreground'>
             <a
-              href='https://github.com/QuantumNous/new-api'
+              href='https://github.com/s2644752646/new-api'
               target='_blank'
               rel='noopener noreferrer'
               className='text-primary hover:underline'
             >
-              {t('NewAPI')}
+              codexforall
             </a>{' '}
             © {currentYear}{' '}
             <a
-              href='https://github.com/QuantumNous'
+              href='https://github.com/s2644752646'
               target='_blank'
               rel='noopener noreferrer'
               className='text-primary hover:underline'
             >
-              {t('QuantumNous')}
+              s2644752646
             </a>{' '}
             {t('| Based on')}{' '}
             <a
@@ -107,7 +107,7 @@ function EmptyAboutState() {
           <p className='text-muted-foreground'>
             {t('This project must be used in compliance with the')}{' '}
             <a
-              href='https://github.com/QuantumNous/new-api/blob/main/LICENSE'
+              href='https://github.com/s2644752646/new-api/blob/main/LICENSE'
               target='_blank'
               rel='noopener noreferrer'
               className='text-primary hover:underline'

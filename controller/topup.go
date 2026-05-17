@@ -2,6 +2,7 @@ package controller
 
 import (
 	"fmt"
+	"math"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -94,8 +95,34 @@ func GetTopUpInfo(c *gin.Context) {
 		}
 	}
 
+	enableXunhu := isXunhuTopUpEnabled()
+	if enableXunhu {
+		userGroup := ""
+		if userId := c.GetInt("id"); userId > 0 {
+			if group, err := model.GetUserGroup(userId, true); err == nil {
+				userGroup = group
+			}
+		}
+		xunhuMinTopup := getXunhuMinTopupAmount(userGroup)
+		hasXunhu := false
+		for _, method := range payMethods {
+			if method["type"] == model.PaymentMethodXunhu {
+				hasXunhu = true
+				break
+			}
+		}
+		if !hasXunhu {
+			payMethods = append(payMethods, map[string]string{
+				"name":      "XunhuPay",
+				"type":      model.PaymentMethodXunhu,
+				"color":     "rgba(var(--semi-orange-5), 1)",
+				"min_topup": strconv.FormatInt(xunhuMinTopup, 10),
+			})
+		}
+	}
+
 	data := gin.H{
-		"enable_online_topup":              isEpayTopUpEnabled(),
+		"enable_online_topup":              isEpayTopUpEnabled() || enableXunhu,
 		"enable_stripe_topup":              isStripeTopUpEnabled(),
 		"enable_creem_topup":               isCreemTopUpEnabled(),
 		"enable_waffo_topup":               enableWaffo,
@@ -185,11 +212,52 @@ func getMinTopup() int64 {
 	return int64(minTopup)
 }
 
+func getXunhuMinTopupAmount(group string) int64 {
+	minTopup := getMinTopup()
+	minPayment := float64(setting.XunhuMinTopUp)
+	if minPayment <= 0 {
+		return minTopup
+	}
+
+	groupRatio := common.GetTopupGroupRatio(group)
+	if groupRatio <= 0 {
+		groupRatio = 1
+	}
+
+	effectiveUnitPrice := operation_setting.Price * groupRatio
+	if operation_setting.GetQuotaDisplayType() == operation_setting.QuotaDisplayTypeTokens {
+		if common.QuotaPerUnit <= 0 {
+			return minTopup
+		}
+		effectiveUnitPrice = effectiveUnitPrice / common.QuotaPerUnit
+	}
+	if effectiveUnitPrice <= 0 {
+		return minTopup
+	}
+
+	required := int64(math.Ceil(minPayment / effectiveUnitPrice))
+	if required < minTopup {
+		required = minTopup
+	}
+
+	for attempts := 0; attempts < 1000; attempts++ {
+		if getPayMoney(required, group) >= minPayment {
+			return required
+		}
+		required++
+	}
+	return required
+}
+
 func RequestEpay(c *gin.Context) {
 	var req EpayRequest
 	err := c.ShouldBindJSON(&req)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "参数错误"})
+		return
+	}
+	if isXunhuPaymentMethod(req.PaymentMethod) {
+		requestXunhuPayment(c, req)
 		return
 	}
 	if req.Amount < getMinTopup() {

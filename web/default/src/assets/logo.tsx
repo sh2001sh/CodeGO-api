@@ -22,7 +22,7 @@ import { cn } from '@/lib/utils'
 export function Logo({ className, ...props }: SVGProps<SVGSVGElement>) {
   return (
     <svg
-      id='newapi-logo'
+      id='codexforall-logo'
       viewBox='0 0 24 24'
       xmlns='http://www.w3.org/2000/svg'
       height='24'
@@ -35,8 +35,10 @@ export function Logo({ className, ...props }: SVGProps<SVGSVGElement>) {
       className={cn('size-6', className)}
       {...props}
     >
-      <title>New API</title>
-      <path d='M15 6v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3' />
+      <title>codexforall</title>
+      <path d='M6 8 2.75 12 6 16' stroke='#2d6ef5' />
+      <path d='M18 8 21.25 12 18 16' stroke='#2d6ef5' />
+      <path d='M14.25 8.5a4.8 4.8 0 1 0 0 7' stroke='#1b2748' />
     </svg>
   )
 }

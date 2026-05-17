@@ -37,6 +37,8 @@ var (
 	ErrSubscriptionOrderStatusInvalid = errors.New("subscription order status invalid")
 )
 
+type SubscriptionModelQuotaMap map[string]int64
+
 const (
 	subscriptionPlanCacheNamespace     = "new-api:subscription_plan:v1"
 	subscriptionPlanInfoCacheNamespace = "new-api:subscription_plan_info:v1"
@@ -171,6 +173,12 @@ type SubscriptionPlan struct {
 	// Total quota (amount in quota units, 0 = unlimited)
 	TotalAmount int64 `json:"total_amount" gorm:"type:bigint;not null;default:0"`
 
+	// Quota cap within a reset period (0 = no period cap)
+	PeriodAmount int64 `json:"period_amount" gorm:"type:bigint;not null;default:0"`
+
+	// Optional per-model quota caps, stored as JSON: {"model-name": quota}
+	ModelLimits string `json:"model_limits" gorm:"type:text"`
+
 	// Quota reset period for plan
 	QuotaResetPeriod        string `json:"quota_reset_period" gorm:"type:varchar(16);default:'never'"`
 	QuotaResetCustomSeconds int64  `json:"quota_reset_custom_seconds" gorm:"type:bigint;default:0"`
@@ -236,8 +244,12 @@ type UserSubscription struct {
 	UserId int `json:"user_id" gorm:"index;index:idx_user_sub_active,priority:1"`
 	PlanId int `json:"plan_id" gorm:"index"`
 
-	AmountTotal int64 `json:"amount_total" gorm:"type:bigint;not null;default:0"`
-	AmountUsed  int64 `json:"amount_used" gorm:"type:bigint;not null;default:0"`
+	AmountTotal  int64  `json:"amount_total" gorm:"type:bigint;not null;default:0"`
+	AmountUsed   int64  `json:"amount_used" gorm:"type:bigint;not null;default:0"`
+	PeriodAmount int64  `json:"period_amount" gorm:"type:bigint;not null;default:0"`
+	PeriodUsed   int64  `json:"period_used" gorm:"type:bigint;not null;default:0"`
+	ModelLimits  string `json:"model_limits" gorm:"type:text"`
+	ModelUsage   string `json:"model_usage" gorm:"type:text"`
 
 	StartTime int64  `json:"start_time" gorm:"bigint"`
 	EndTime   int64  `json:"end_time" gorm:"bigint;index;index:idx_user_sub_active,priority:3"`
@@ -269,6 +281,168 @@ func (s *UserSubscription) BeforeUpdate(tx *gorm.DB) error {
 
 type SubscriptionSummary struct {
 	Subscription *UserSubscription `json:"subscription"`
+}
+
+func NormalizeSubscriptionModelQuotaMap(input map[string]int64) SubscriptionModelQuotaMap {
+	result := make(SubscriptionModelQuotaMap)
+	for key, value := range input {
+		trimmedKey := strings.TrimSpace(key)
+		if trimmedKey == "" || value <= 0 {
+			continue
+		}
+		result[trimmedKey] = value
+	}
+	return result
+}
+
+func ParseSubscriptionModelQuotaMap(raw string) (SubscriptionModelQuotaMap, error) {
+	if strings.TrimSpace(raw) == "" {
+		return SubscriptionModelQuotaMap{}, nil
+	}
+	result := make(SubscriptionModelQuotaMap)
+	if err := common.UnmarshalJsonStr(raw, &result); err != nil {
+		return nil, err
+	}
+	return NormalizeSubscriptionModelQuotaMap(result), nil
+}
+
+func EncodeSubscriptionModelQuotaMap(input map[string]int64) (string, error) {
+	normalized := NormalizeSubscriptionModelQuotaMap(input)
+	if len(normalized) == 0 {
+		return "", nil
+	}
+	raw, err := common.Marshal(normalized)
+	if err != nil {
+		return "", err
+	}
+	return string(raw), nil
+}
+
+func mustParseSubscriptionModelQuotaMap(raw string) SubscriptionModelQuotaMap {
+	result, err := ParseSubscriptionModelQuotaMap(raw)
+	if err != nil {
+		return SubscriptionModelQuotaMap{}
+	}
+	return result
+}
+
+func (p *SubscriptionPlan) GetModelLimitsMap() SubscriptionModelQuotaMap {
+	return mustParseSubscriptionModelQuotaMap(p.ModelLimits)
+}
+
+func (p *SubscriptionPlan) SetModelLimitsMap(input map[string]int64) error {
+	raw, err := EncodeSubscriptionModelQuotaMap(input)
+	if err != nil {
+		return err
+	}
+	p.ModelLimits = raw
+	return nil
+}
+
+func (s *UserSubscription) GetModelLimitsMap() SubscriptionModelQuotaMap {
+	return mustParseSubscriptionModelQuotaMap(s.ModelLimits)
+}
+
+func (s *UserSubscription) SetModelLimitsMap(input map[string]int64) error {
+	raw, err := EncodeSubscriptionModelQuotaMap(input)
+	if err != nil {
+		return err
+	}
+	s.ModelLimits = raw
+	return nil
+}
+
+func (s *UserSubscription) GetModelUsageMap() SubscriptionModelQuotaMap {
+	return mustParseSubscriptionModelQuotaMap(s.ModelUsage)
+}
+
+func (s *UserSubscription) SetModelUsageMap(input map[string]int64) error {
+	raw, err := EncodeSubscriptionModelQuotaMap(input)
+	if err != nil {
+		return err
+	}
+	s.ModelUsage = raw
+	return nil
+}
+
+func usesLegacyPeriodicQuota(plan *SubscriptionPlan, sub *UserSubscription) bool {
+	if plan == nil || sub == nil {
+		return false
+	}
+	if NormalizeResetPeriod(plan.QuotaResetPeriod) == SubscriptionResetNever {
+		return false
+	}
+	return sub.PeriodAmount <= 0 && sub.AmountTotal > 0
+}
+
+func getSubscriptionPeriodAmount(plan *SubscriptionPlan, sub *UserSubscription) int64 {
+	if sub != nil && sub.PeriodAmount > 0 {
+		return sub.PeriodAmount
+	}
+	if usesLegacyPeriodicQuota(plan, sub) && sub != nil {
+		return sub.AmountTotal
+	}
+	if plan != nil && plan.PeriodAmount > 0 {
+		return plan.PeriodAmount
+	}
+	return 0
+}
+
+func applySubscriptionUsageDelta(plan *SubscriptionPlan, sub *UserSubscription, modelName string, delta int64) error {
+	if sub == nil {
+		return errors.New("subscription is nil")
+	}
+	if delta == 0 {
+		return nil
+	}
+
+	legacyPeriodicQuota := usesLegacyPeriodicQuota(plan, sub)
+	newAmountUsed := sub.AmountUsed + delta
+	if newAmountUsed < 0 {
+		newAmountUsed = 0
+	}
+	if sub.AmountTotal > 0 && newAmountUsed > sub.AmountTotal {
+		return fmt.Errorf("subscription used exceeds total, used=%d total=%d", newAmountUsed, sub.AmountTotal)
+	}
+	sub.AmountUsed = newAmountUsed
+
+	if !legacyPeriodicQuota {
+		periodAmount := getSubscriptionPeriodAmount(plan, sub)
+		if periodAmount > 0 {
+			newPeriodUsed := sub.PeriodUsed + delta
+			if newPeriodUsed < 0 {
+				newPeriodUsed = 0
+			}
+			if newPeriodUsed > periodAmount {
+				return fmt.Errorf("subscription period quota exceeded, used=%d period=%d", newPeriodUsed, periodAmount)
+			}
+			sub.PeriodUsed = newPeriodUsed
+		}
+	}
+
+	trimmedModelName := strings.TrimSpace(modelName)
+	if trimmedModelName == "" {
+		return nil
+	}
+	limits := sub.GetModelLimitsMap()
+	limit, ok := limits[trimmedModelName]
+	if !ok || limit <= 0 {
+		return nil
+	}
+	usage := sub.GetModelUsageMap()
+	newUsage := usage[trimmedModelName] + delta
+	if newUsage < 0 {
+		newUsage = 0
+	}
+	if newUsage > limit {
+		return fmt.Errorf("subscription model quota exceeded, model=%s used=%d limit=%d", trimmedModelName, newUsage, limit)
+	}
+	if newUsage == 0 {
+		delete(usage, trimmedModelName)
+	} else {
+		usage[trimmedModelName] = newUsage
+	}
+	return sub.SetModelUsageMap(usage)
 }
 
 func calcPlanEndTime(start time.Time, plan *SubscriptionPlan) (int64, error) {
@@ -488,6 +662,10 @@ func CreateUserSubscriptionFromPlanTx(tx *gorm.DB, userId int, plan *Subscriptio
 		PlanId:        plan.Id,
 		AmountTotal:   plan.TotalAmount,
 		AmountUsed:    0,
+		PeriodAmount:  plan.PeriodAmount,
+		PeriodUsed:    0,
+		ModelLimits:   plan.ModelLimits,
+		ModelUsage:    "",
 		StartTime:     now.Unix(),
 		EndTime:       endUnix,
 		Status:        "active",
@@ -811,6 +989,110 @@ func AdminDeleteUserSubscription(userSubscriptionId int) (string, error) {
 	return "", nil
 }
 
+type AdminUpdateUserSubscriptionInput struct {
+	StartTime    int64
+	EndTime      int64
+	Status       string
+	AmountTotal  int64
+	AmountUsed   int64
+	PeriodAmount int64
+	PeriodUsed   int64
+	ModelLimits  string
+}
+
+func AdminUpdateUserSubscription(userSubscriptionId int, input AdminUpdateUserSubscriptionInput) (string, error) {
+	if userSubscriptionId <= 0 {
+		return "", errors.New("invalid userSubscriptionId")
+	}
+	now := common.GetTimestamp()
+	cacheGroup := ""
+	var userId int
+	err := DB.Transaction(func(tx *gorm.DB) error {
+		var sub UserSubscription
+		if err := tx.Set("gorm:query_option", "FOR UPDATE").
+			Where("id = ?", userSubscriptionId).First(&sub).Error; err != nil {
+			return err
+		}
+		userId = sub.UserId
+
+		plan, err := getSubscriptionPlanByIdTx(tx, sub.PlanId)
+		if err != nil {
+			return err
+		}
+
+		sub.StartTime = input.StartTime
+		sub.EndTime = input.EndTime
+		sub.AmountTotal = input.AmountTotal
+		sub.AmountUsed = input.AmountUsed
+		sub.PeriodAmount = input.PeriodAmount
+		sub.PeriodUsed = input.PeriodUsed
+		sub.ModelLimits = input.ModelLimits
+
+		if NormalizeResetPeriod(plan.QuotaResetPeriod) == SubscriptionResetNever {
+			sub.LastResetTime = 0
+			sub.NextResetTime = 0
+		} else if sub.LastResetTime < sub.StartTime {
+			sub.LastResetTime = sub.StartTime
+			sub.NextResetTime = calcNextResetTime(time.Unix(sub.LastResetTime, 0), plan, sub.EndTime)
+		}
+
+		status := strings.TrimSpace(input.Status)
+		if status == "" {
+			status = sub.Status
+		}
+		if status == "active" && sub.EndTime > 0 && sub.EndTime <= now {
+			status = "expired"
+		}
+		sub.Status = status
+
+		if err := maybeResetUserSubscriptionWithPlanTx(tx, &sub, plan, now); err != nil {
+			return err
+		}
+		if err := tx.Save(&sub).Error; err != nil {
+			return err
+		}
+
+		upgradeGroup := strings.TrimSpace(sub.UpgradeGroup)
+		switch {
+		case sub.Status == "active" && sub.EndTime > now && upgradeGroup != "":
+			currentGroup, err := getUserGroupByIdTx(tx, sub.UserId)
+			if err != nil {
+				return err
+			}
+			if currentGroup != upgradeGroup {
+				if strings.TrimSpace(sub.PrevUserGroup) == "" {
+					sub.PrevUserGroup = currentGroup
+					if err := tx.Model(&sub).Update("prev_user_group", sub.PrevUserGroup).Error; err != nil {
+						return err
+					}
+				}
+				if err := tx.Model(&User{}).Where("id = ?", sub.UserId).
+					Update("group", upgradeGroup).Error; err != nil {
+					return err
+				}
+				cacheGroup = upgradeGroup
+			}
+		case sub.Status != "active" || sub.EndTime <= now:
+			target, err := downgradeUserGroupForSubscriptionTx(tx, &sub, now)
+			if err != nil {
+				return err
+			}
+			if target != "" {
+				cacheGroup = target
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return "", err
+	}
+	if cacheGroup != "" && userId > 0 {
+		_ = UpdateUserGroupCache(userId, cacheGroup)
+		return fmt.Sprintf("鐢ㄦ埛鍒嗙粍宸叉洿鏂颁负 %s", cacheGroup), nil
+	}
+	return "", nil
+}
+
 type SubscriptionPreConsumeResult struct {
 	UserSubscriptionId int
 	PreConsumed        int64
@@ -912,6 +1194,7 @@ type SubscriptionPreConsumeRecord struct {
 	RequestId          string `json:"request_id" gorm:"type:varchar(64);uniqueIndex"`
 	UserId             int    `json:"user_id" gorm:"index"`
 	UserSubscriptionId int    `json:"user_subscription_id" gorm:"index"`
+	ModelName          string `json:"model_name" gorm:"type:varchar(255);default:''"`
 	PreConsumed        int64  `json:"pre_consumed" gorm:"type:bigint;not null;default:0"`
 	Status             string `json:"status" gorm:"type:varchar(32);index"` // consumed/refunded
 	CreatedAt          int64  `json:"created_at" gorm:"bigint"`
@@ -960,7 +1243,12 @@ func maybeResetUserSubscriptionWithPlanTx(tx *gorm.DB, sub *UserSubscription, pl
 		}
 		return nil
 	}
-	sub.AmountUsed = 0
+	if usesLegacyPeriodicQuota(plan, sub) {
+		sub.AmountUsed = 0
+	} else {
+		sub.PeriodUsed = 0
+	}
+	sub.ModelUsage = ""
 	sub.LastResetTime = base.Unix()
 	sub.NextResetTime = next
 	return tx.Save(sub).Error
@@ -1029,10 +1317,28 @@ func PreConsumeUserSubscription(requestId string, userId int, modelName string, 
 					continue
 				}
 			}
+			periodAmount := getSubscriptionPeriodAmount(plan, &sub)
+			if !usesLegacyPeriodicQuota(plan, &sub) && periodAmount > 0 {
+				periodRemain := periodAmount - sub.PeriodUsed
+				if periodRemain < amount {
+					continue
+				}
+			}
+			trimmedModelName := strings.TrimSpace(modelName)
+			if trimmedModelName != "" {
+				modelLimits := sub.GetModelLimitsMap()
+				if modelLimit, ok := modelLimits[trimmedModelName]; ok && modelLimit > 0 {
+					modelUsage := sub.GetModelUsageMap()
+					if modelUsage[trimmedModelName]+amount > modelLimit {
+						continue
+					}
+				}
+			}
 			record := &SubscriptionPreConsumeRecord{
 				RequestId:          requestId,
 				UserId:             userId,
 				UserSubscriptionId: sub.Id,
+				ModelName:          strings.TrimSpace(modelName),
 				PreConsumed:        amount,
 				Status:             "consumed",
 			}
@@ -1051,7 +1357,9 @@ func PreConsumeUserSubscription(requestId string, userId int, modelName string, 
 				}
 				return err
 			}
-			sub.AmountUsed += amount
+			if err := applySubscriptionUsageDelta(plan, &sub, record.ModelName, amount); err != nil {
+				return err
+			}
 			if err := tx.Save(&sub).Error; err != nil {
 				return err
 			}
@@ -1088,7 +1396,7 @@ func RefundSubscriptionPreConsume(requestId string) error {
 			record.Status = "refunded"
 			return tx.Save(&record).Error
 		}
-		if err := PostConsumeUserSubscriptionDelta(record.UserSubscriptionId, -record.PreConsumed); err != nil {
+		if err := PostConsumeUserSubscriptionUsageDelta(record.UserSubscriptionId, record.ModelName, -record.PreConsumed); err != nil {
 			return err
 		}
 		record.Status = "refunded"
@@ -1180,6 +1488,10 @@ func GetSubscriptionPlanInfoByUserSubscriptionId(userSubscriptionId int) (*Subsc
 
 // Update subscription used amount by delta (positive consume more, negative refund).
 func PostConsumeUserSubscriptionDelta(userSubscriptionId int, delta int64) error {
+	return PostConsumeUserSubscriptionUsageDelta(userSubscriptionId, "", delta)
+}
+
+func PostConsumeUserSubscriptionUsageDelta(userSubscriptionId int, modelName string, delta int64) error {
 	if userSubscriptionId <= 0 {
 		return errors.New("invalid userSubscriptionId")
 	}
@@ -1193,14 +1505,177 @@ func PostConsumeUserSubscriptionDelta(userSubscriptionId int, delta int64) error
 			First(&sub).Error; err != nil {
 			return err
 		}
-		newUsed := sub.AmountUsed + delta
-		if newUsed < 0 {
-			newUsed = 0
+		plan, err := getSubscriptionPlanByIdTx(tx, sub.PlanId)
+		if err != nil {
+			return err
 		}
-		if sub.AmountTotal > 0 && newUsed > sub.AmountTotal {
-			return fmt.Errorf("subscription used exceeds total, used=%d total=%d", newUsed, sub.AmountTotal)
+		if err := applySubscriptionUsageDelta(plan, &sub, modelName, delta); err != nil {
+			return err
 		}
-		sub.AmountUsed = newUsed
 		return tx.Save(&sub).Error
 	})
+}
+
+func defaultSubscriptionPlans() []SubscriptionPlan {
+	return []SubscriptionPlan{
+		{
+			Title:              "Lite",
+			Subtitle:           "Entry monthly plan for Codex usage",
+			PriceAmount:        50,
+			Currency:           "CNY",
+			DurationUnit:       SubscriptionDurationMonth,
+			DurationValue:      1,
+			Enabled:            true,
+			SortOrder:          60,
+			TotalAmount:        300,
+			PeriodAmount:       75,
+			QuotaResetPeriod:   SubscriptionResetWeekly,
+			ModelLimits:        "",
+			UpgradeGroup:       "",
+			MaxPurchasePerUser: 0,
+		},
+		{
+			Title:            "Standard",
+			Subtitle:         "Mainstream monthly Codex plan",
+			PriceAmount:      90,
+			Currency:         "CNY",
+			DurationUnit:     SubscriptionDurationMonth,
+			DurationValue:    1,
+			Enabled:          true,
+			SortOrder:        50,
+			TotalAmount:      600,
+			PeriodAmount:     150,
+			QuotaResetPeriod: SubscriptionResetWeekly,
+		},
+		{
+			Title:            "Pro",
+			Subtitle:         "Heavy monthly Codex plan",
+			PriceAmount:      170,
+			Currency:         "CNY",
+			DurationUnit:     SubscriptionDurationMonth,
+			DurationValue:    1,
+			Enabled:          true,
+			SortOrder:        40,
+			TotalAmount:      1500,
+			PeriodAmount:     375,
+			QuotaResetPeriod: SubscriptionResetWeekly,
+		},
+		{
+			Title:            "Ultra",
+			Subtitle:         "Flagship monthly Codex plan",
+			PriceAmount:      360,
+			Currency:         "CNY",
+			DurationUnit:     SubscriptionDurationMonth,
+			DurationValue:    1,
+			Enabled:          true,
+			SortOrder:        30,
+			TotalAmount:      4000,
+			PeriodAmount:     1000,
+			QuotaResetPeriod: SubscriptionResetWeekly,
+		},
+		{
+			Title:            "Day Pass 50",
+			Subtitle:         "Single-day Codex pass with 50 quota",
+			PriceAmount:      10,
+			Currency:         "CNY",
+			DurationUnit:     SubscriptionDurationDay,
+			DurationValue:    1,
+			Enabled:          true,
+			SortOrder:        20,
+			TotalAmount:      50,
+			QuotaResetPeriod: SubscriptionResetNever,
+		},
+		{
+			Title:            "Day Pass 100",
+			Subtitle:         "Single-day Codex pass with 100 quota",
+			PriceAmount:      20,
+			Currency:         "CNY",
+			DurationUnit:     SubscriptionDurationDay,
+			DurationValue:    1,
+			Enabled:          true,
+			SortOrder:        10,
+			TotalAmount:      100,
+			QuotaResetPeriod: SubscriptionResetNever,
+		},
+	}
+}
+
+func syncPresetSubscriptionPlanFields(existing *SubscriptionPlan, preset SubscriptionPlan) map[string]interface{} {
+	if existing == nil {
+		return nil
+	}
+	updates := make(map[string]interface{})
+	if existing.Subtitle != preset.Subtitle {
+		updates["subtitle"] = preset.Subtitle
+	}
+	if existing.PriceAmount != preset.PriceAmount {
+		updates["price_amount"] = preset.PriceAmount
+	}
+	if existing.Currency != preset.Currency {
+		updates["currency"] = preset.Currency
+	}
+	if existing.DurationUnit != preset.DurationUnit {
+		updates["duration_unit"] = preset.DurationUnit
+	}
+	if existing.DurationValue != preset.DurationValue {
+		updates["duration_value"] = preset.DurationValue
+	}
+	if existing.CustomSeconds != preset.CustomSeconds {
+		updates["custom_seconds"] = preset.CustomSeconds
+	}
+	if existing.Enabled != preset.Enabled {
+		updates["enabled"] = preset.Enabled
+	}
+	if existing.SortOrder != preset.SortOrder {
+		updates["sort_order"] = preset.SortOrder
+	}
+	if existing.MaxPurchasePerUser != preset.MaxPurchasePerUser {
+		updates["max_purchase_per_user"] = preset.MaxPurchasePerUser
+	}
+	if existing.UpgradeGroup != preset.UpgradeGroup {
+		updates["upgrade_group"] = preset.UpgradeGroup
+	}
+	if existing.TotalAmount != preset.TotalAmount {
+		updates["total_amount"] = preset.TotalAmount
+	}
+	if existing.PeriodAmount != preset.PeriodAmount {
+		updates["period_amount"] = preset.PeriodAmount
+	}
+	if existing.ModelLimits != preset.ModelLimits {
+		updates["model_limits"] = preset.ModelLimits
+	}
+	if existing.QuotaResetPeriod != preset.QuotaResetPeriod {
+		updates["quota_reset_period"] = preset.QuotaResetPeriod
+	}
+	if existing.QuotaResetCustomSeconds != preset.QuotaResetCustomSeconds {
+		updates["quota_reset_custom_seconds"] = preset.QuotaResetCustomSeconds
+	}
+	return updates
+}
+
+// SeedDefaultSubscriptionPlans creates missing preset plans and safely syncs
+// same-title presets in existing databases to the latest built-in defaults.
+func SeedDefaultSubscriptionPlans() error {
+	plans := defaultSubscriptionPlans()
+	for index := range plans {
+		var existing SubscriptionPlan
+		err := DB.Where("title = ?", plans[index].Title).First(&existing).Error
+		if err == nil {
+			updates := syncPresetSubscriptionPlanFields(&existing, plans[index])
+			if len(updates) > 0 {
+				if err := DB.Model(&existing).Updates(updates).Error; err != nil {
+					return err
+				}
+				InvalidateSubscriptionPlanCache(existing.Id)
+			}
+			continue
+		}
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return err
+		}
+		if err := DB.Create(&plans[index]).Error; err != nil {
+			return err
+		}
+	}
+	return nil
 }

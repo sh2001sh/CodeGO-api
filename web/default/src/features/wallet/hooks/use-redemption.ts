@@ -41,12 +41,31 @@ export function useRedemption() {
       const response = await redeemTopupCode({ key: code })
 
       if (response.success && response.data) {
-        const quotaAdded = response.data
-        toast.success(
-          i18next.t('Redemption successful! Added: {{quota}}', {
-            quota: formatQuota(quotaAdded),
-          })
-        )
+        const result = response.data
+        if (result.redeem_type === 'subscription') {
+          const planLabel =
+            result.plan_title ||
+            (result.plan_id
+              ? i18next.t('Plan #{{id}}', { id: result.plan_id })
+              : i18next.t('Subscription'))
+          toast.success(
+            i18next.t(
+              'Redemption successful! Subscription activated: {{plan}}',
+              {
+                plan: planLabel,
+              }
+            )
+          )
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new Event('subscription:changed'))
+          }
+        } else {
+          toast.success(
+            i18next.t('Redemption successful! Added: {{quota}}', {
+              quota: formatQuota(result.quota || 0),
+            })
+          )
+        }
         await getSelf()
         return true
       }

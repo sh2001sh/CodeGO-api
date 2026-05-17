@@ -40,12 +40,6 @@ interface FooterProps {
   className?: string
 }
 
-const NEW_API_FOOTER_ATTRIBUTION_KEY = [
-  'footer',
-  'new' + 'api',
-  'projectAttributionSuffix',
-].join('.')
-
 function FooterLinkItem(props: { link: FooterLink }) {
   const { t } = useTranslation()
   const isExternal = props.link.href.startsWith('http')
@@ -75,21 +69,21 @@ function FooterLinkItem(props: { link: FooterLink }) {
 }
 
 function ProjectAttribution(props: { currentYear: number }) {
-  const { t } = useTranslation()
+  const attributionUrl = 'https://github.com/s2644752646/new-api'
 
   return (
     <div className='text-muted-foreground/45 text-center text-xs sm:text-right'>
       <span className='text-muted-foreground/45'>
         &copy; {props.currentYear}{' '}
         <a
-          href='https://github.com/QuantumNous/new-api'
+          href={attributionUrl}
           target='_blank'
           rel='noopener noreferrer'
           className='text-foreground/70 hover:text-foreground font-medium transition-colors'
         >
-          {t('New API')}
+          codexforall
         </a>
-        . {t(NEW_API_FOOTER_ATTRIBUTION_KEY)}
+        . Built and maintained for codexforall.
       </span>
     </div>
   )
@@ -104,8 +98,8 @@ export function Footer(props: FooterProps) {
     demoSiteEnabled,
   } = useSystemConfig()
 
-  const displayLogo = systemLogo || props.logo || '/logo.png'
-  const displayName = systemName || props.name || 'New API'
+  const displayLogo = systemLogo || props.logo || '/codexforall-logo.svg'
+  const displayName = systemName || props.name || 'codexforall'
   const isDemoSiteMode = Boolean(demoSiteEnabled)
   const currentYear = new Date().getFullYear()
 

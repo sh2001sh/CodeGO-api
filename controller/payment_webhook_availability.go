@@ -117,3 +117,19 @@ func isEpayWebhookConfigured() bool {
 func isEpayWebhookEnabled() bool {
 	return isEpayTopUpEnabled()
 }
+
+func isXunhuTopUpEnabled() bool {
+	if !isPaymentComplianceConfirmed() {
+		return false
+	}
+	if !setting.XunhuEnabled {
+		return false
+	}
+	return strings.TrimSpace(setting.XunhuAppID) != "" &&
+		strings.TrimSpace(setting.XunhuSecret) != "" &&
+		strings.TrimSpace(setting.XunhuGateway) != ""
+}
+
+func isXunhuWebhookEnabled() bool {
+	return isXunhuTopUpEnabled()
+}

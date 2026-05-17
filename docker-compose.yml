@@ -3,6 +3,7 @@
 # Quick Start:
 #   1. docker-compose up -d
 #   2. Access at http://localhost:3000
+#   3. Optional: set NEW_API_IMAGE in .env to use a different published image
 #
 # Using MySQL instead of PostgreSQL:
 #   1. Comment out the postgres service and SQL_DSN line 15
@@ -16,7 +17,7 @@ version: '3.4' # For compatibility with older Docker versions
 
 services:
   new-api:
-    image: calciumion/new-api:latest
+    image: ${NEW_API_IMAGE:-s2644752646/new-api:latest}
     container_name: new-api
     restart: always
     command: --log-dir /app/logs

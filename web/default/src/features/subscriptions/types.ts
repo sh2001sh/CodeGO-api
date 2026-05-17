@@ -37,6 +37,8 @@ export const subscriptionPlanSchema = z.object({
   sort_order: z.number(),
   max_purchase_per_user: z.number(),
   total_amount: z.number(),
+  period_amount: z.number().optional(),
+  model_limits: z.string().optional(),
   upgrade_group: z.string().optional(),
   stripe_price_id: z.string().optional(),
   creem_product_id: z.string().optional(),
@@ -62,6 +64,10 @@ export const userSubscriptionSchema = z.object({
   end_time: z.number(),
   amount_total: z.number(),
   amount_used: z.number(),
+  period_amount: z.number().optional(),
+  period_used: z.number().optional(),
+  model_limits: z.string().optional(),
+  model_usage: z.string().optional(),
   next_reset_time: z.number().optional(),
 })
 
@@ -102,6 +108,17 @@ export interface SubscriptionPayResponse {
 
 export interface CreateUserSubscriptionRequest {
   plan_id: number
+}
+
+export interface UpdateUserSubscriptionRequest {
+  start_time: number
+  end_time: number
+  status: string
+  amount_total: number
+  amount_used: number
+  period_amount: number
+  period_used: number
+  model_limits: string
 }
 
 // ============================================================================

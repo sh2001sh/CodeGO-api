@@ -26,8 +26,8 @@ import {
 const defaultSiteSettings: SiteSettings = {
   'theme.frontend': 'default',
   Notice: '',
-  SystemName: 'New API',
-  Logo: '',
+  SystemName: 'codexforall',
+  Logo: '/codexforall-logo.svg',
   Footer: '',
   About: '',
   HomePageContent: '',

@@ -28,10 +28,23 @@ import {
 import { DataTableColumnHeader } from '@/components/data-table'
 import { MaskedValueDisplay } from '@/components/masked-value-display'
 import { StatusBadge } from '@/components/status-badge'
-import { REDEMPTION_FILTER_EXPIRED, REDEMPTION_STATUSES } from '../constants'
+import {
+  REDEMPTION_FILTER_EXPIRED,
+  REDEMPTION_STATUSES,
+  REDEMPTION_TYPES,
+} from '../constants'
 import { isRedemptionExpired, isTimestampExpired } from '../lib'
 import { type Redemption } from '../types'
 import { DataTableRowActions } from './data-table-row-actions'
+
+function getRedemptionTypeLabel(
+  redeemType: string,
+  t: (key: string, options?: Record<string, unknown>) => string
+) {
+  return redeemType === REDEMPTION_TYPES.SUBSCRIPTION
+    ? t('Subscription')
+    : t('Quota')
+}
 
 export function useRedemptionsColumns(): ColumnDef<Redemption>[] {
   const { t } = useTranslation()
@@ -65,9 +78,7 @@ export function useRedemptionsColumns(): ColumnDef<Redemption>[] {
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title={t('ID')} />
       ),
-      cell: ({ row }) => {
-        return <div className='w-[60px]'>{row.getValue('id')}</div>
-      },
+      cell: ({ row }) => <div className='w-[60px]'>{row.getValue('id')}</div>,
     },
     {
       accessorKey: 'name',
@@ -75,11 +86,28 @@ export function useRedemptionsColumns(): ColumnDef<Redemption>[] {
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title={t('Name')} />
       ),
+      cell: ({ row }) => (
+        <div className='max-w-[150px] truncate font-medium'>
+          {row.getValue('name')}
+        </div>
+      ),
+    },
+    {
+      accessorKey: 'redeem_type',
+      meta: { label: t('Type') },
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title={t('Type')} />
+      ),
       cell: ({ row }) => {
+        const redeemType = String(row.getValue('redeem_type') || 'quota')
         return (
-          <div className='max-w-[150px] truncate font-medium'>
-            {row.getValue('name')}
-          </div>
+          <StatusBadge
+            label={getRedemptionTypeLabel(redeemType, t)}
+            variant={
+              redeemType === REDEMPTION_TYPES.SUBSCRIPTION ? 'info' : 'neutral'
+            }
+            copyable={false}
+          />
         )
       },
     },
@@ -93,7 +121,6 @@ export function useRedemptionsColumns(): ColumnDef<Redemption>[] {
         const redemption = row.original
         const statusValue = row.getValue('status') as number
 
-        // Check if expired
         if (isRedemptionExpired(redemption.expired_time, statusValue)) {
           return (
             <StatusBadge
@@ -106,7 +133,6 @@ export function useRedemptionsColumns(): ColumnDef<Redemption>[] {
         }
 
         const statusConfig = REDEMPTION_STATUSES[statusValue]
-
         if (!statusConfig) {
           return null
         }
@@ -124,14 +150,12 @@ export function useRedemptionsColumns(): ColumnDef<Redemption>[] {
         const redemption = row.original
         const statusValue = row.getValue(id) as number
 
-        // Check if expired status is being filtered
         if (value.includes(REDEMPTION_FILTER_EXPIRED)) {
           if (isRedemptionExpired(redemption.expired_time, statusValue)) {
             return true
           }
         }
 
-        // Check regular status
         return value.includes(String(statusValue))
       },
     },
@@ -142,9 +166,8 @@ export function useRedemptionsColumns(): ColumnDef<Redemption>[] {
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title={t('Code')} />
       ),
-      cell: function CodeCell({ row }) {
-        const redemption = row.original
-        const key = redemption.key
+      cell: ({ row }) => {
+        const key = row.original.key
         const maskedKey = `${key.slice(0, 8)}${'*'.repeat(16)}${key.slice(-8)}`
 
         return (
@@ -160,16 +183,43 @@ export function useRedemptionsColumns(): ColumnDef<Redemption>[] {
       enableSorting: false,
     },
     {
+      accessorKey: 'plan_title',
+      meta: { label: t('Plan') },
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title={t('Plan')} />
+      ),
+      cell: ({ row }) => {
+        const redemption = row.original
+        if (redemption.redeem_type !== REDEMPTION_TYPES.SUBSCRIPTION) {
+          return <span className='text-muted-foreground text-sm'>-</span>
+        }
+
+        const label =
+          redemption.plan_title ||
+          (redemption.plan_id > 0
+            ? t('Plan #{{id}}', { id: redemption.plan_id })
+            : '-')
+
+        return (
+          <StatusBadge label={label} variant='neutral' copyable={false} />
+        )
+      },
+    },
+    {
       accessorKey: 'quota',
       meta: { label: t('Quota') },
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title={t('Quota')} />
       ),
       cell: ({ row }) => {
-        const quota = row.getValue('quota') as number
+        const redemption = row.original
+        if (redemption.redeem_type === REDEMPTION_TYPES.SUBSCRIPTION) {
+          return <span className='text-muted-foreground text-sm'>-</span>
+        }
+
         return (
           <StatusBadge
-            label={formatQuota(quota)}
+            label={formatQuota(redemption.quota)}
             variant='neutral'
             copyable={false}
           />
@@ -182,13 +232,11 @@ export function useRedemptionsColumns(): ColumnDef<Redemption>[] {
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title={t('Created')} />
       ),
-      cell: ({ row }) => {
-        return (
-          <div className='min-w-[140px] font-mono text-sm'>
-            {formatTimestampToDate(row.getValue('created_time'))}
-          </div>
-        )
-      },
+      cell: ({ row }) => (
+        <div className='min-w-[140px] font-mono text-sm'>
+          {formatTimestampToDate(row.getValue('created_time'))}
+        </div>
+      ),
     },
     {
       accessorKey: 'expired_time',

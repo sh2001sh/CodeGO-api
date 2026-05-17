@@ -72,11 +72,17 @@ export function useSubscriptionsColumns(): ColumnDef<PlanRecord>[] {
         header: ({ column }) => (
           <DataTableColumnHeader column={column} title={t('Price')} />
         ),
-        cell: ({ row }) => (
-          <span className='font-semibold text-emerald-600'>
-            ${Number(row.original.plan.price_amount || 0).toFixed(2)}
-          </span>
-        ),
+        cell: ({ row }) => {
+          const plan = row.original.plan
+          const symbol =
+            plan.currency === 'CNY' ? '¥' : plan.currency === 'EUR' ? '€' : '$'
+          return (
+            <span className='font-semibold text-emerald-600'>
+              {symbol}
+              {Number(plan.price_amount || 0).toFixed(2)}
+            </span>
+          )
+        },
         size: 100,
       },
       {
@@ -175,10 +181,12 @@ export function useSubscriptionsColumns(): ColumnDef<PlanRecord>[] {
         ),
         cell: ({ row }) => {
           const total = Number(row.original.plan.total_amount || 0)
+          const period = Number(row.original.plan.period_amount || 0)
           return (
-            <span className='text-muted-foreground'>
-              {total > 0 ? total : t('Unlimited')}
-            </span>
+            <div className='text-muted-foreground text-xs'>
+              <div>{total > 0 ? total : t('Unlimited')}</div>
+              {period > 0 && <div>{t('Period')}: {period}</div>}
+            </div>
           )
         },
         size: 100,

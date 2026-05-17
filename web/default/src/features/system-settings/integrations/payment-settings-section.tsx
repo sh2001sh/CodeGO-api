@@ -132,6 +132,11 @@ const paymentSchema = z.object({
       })
     }
   }),
+  XunhuEnabled: z.boolean(),
+  XunhuAppID: z.string(),
+  XunhuSecret: z.string(),
+  XunhuGateway: z.string(),
+  XunhuMinTopUp: z.coerce.number().min(0),
 })
 
 type PaymentFormValues = z.infer<typeof paymentSchema>
@@ -513,6 +518,47 @@ export function PaymentSettingsSection({
     }
   }
 
+  const saveXunhuSettings = async () => {
+    const values = form.getValues()
+    const sanitized = {
+      XunhuEnabled: values.XunhuEnabled as boolean,
+      XunhuAppID: values.XunhuAppID.trim(),
+      XunhuSecret: values.XunhuSecret.trim(),
+      XunhuGateway: removeTrailingSlash(values.XunhuGateway),
+      XunhuMinTopUp: values.XunhuMinTopUp as number,
+    }
+
+    const initial = {
+      XunhuEnabled: initialRef.current.XunhuEnabled,
+      XunhuAppID: initialRef.current.XunhuAppID.trim(),
+      XunhuSecret: initialRef.current.XunhuSecret.trim(),
+      XunhuGateway: removeTrailingSlash(initialRef.current.XunhuGateway),
+      XunhuMinTopUp: initialRef.current.XunhuMinTopUp,
+    }
+
+    const updates: Array<{ key: string; value: string | number | boolean }> = []
+
+    if (sanitized.XunhuEnabled !== initial.XunhuEnabled) {
+      updates.push({ key: 'XunhuEnabled', value: sanitized.XunhuEnabled })
+    }
+    if (sanitized.XunhuAppID !== initial.XunhuAppID) {
+      updates.push({ key: 'XunhuAppID', value: sanitized.XunhuAppID })
+    }
+    if (sanitized.XunhuSecret && sanitized.XunhuSecret !== initial.XunhuSecret) {
+      updates.push({ key: 'XunhuSecret', value: sanitized.XunhuSecret })
+    }
+    if (sanitized.XunhuGateway !== initial.XunhuGateway) {
+      updates.push({ key: 'XunhuGateway', value: sanitized.XunhuGateway })
+    }
+    if (sanitized.XunhuMinTopUp !== initial.XunhuMinTopUp) {
+      updates.push({ key: 'XunhuMinTopUp', value: sanitized.XunhuMinTopUp })
+    }
+
+    for (const update of updates) {
+      await updateOption.mutateAsync(update)
+    }
+  }
+
   const onSubmit = async (values: PaymentFormValues) => {
     const sanitized = {
       PayAddress: removeTrailingSlash(values.PayAddress),
@@ -530,6 +576,11 @@ export function PaymentSettingsSection({
       StripeUnitPrice: values.StripeUnitPrice,
       StripeMinTopUp: values.StripeMinTopUp,
       StripePromotionCodesEnabled: values.StripePromotionCodesEnabled,
+      XunhuEnabled: values.XunhuEnabled,
+      XunhuAppID: values.XunhuAppID.trim(),
+      XunhuSecret: values.XunhuSecret.trim(),
+      XunhuGateway: removeTrailingSlash(values.XunhuGateway),
+      XunhuMinTopUp: values.XunhuMinTopUp,
     }
 
     const initial = {
@@ -551,6 +602,11 @@ export function PaymentSettingsSection({
       StripeMinTopUp: initialRef.current.StripeMinTopUp,
       StripePromotionCodesEnabled:
         initialRef.current.StripePromotionCodesEnabled,
+      XunhuEnabled: initialRef.current.XunhuEnabled,
+      XunhuAppID: initialRef.current.XunhuAppID.trim(),
+      XunhuSecret: initialRef.current.XunhuSecret.trim(),
+      XunhuGateway: removeTrailingSlash(initialRef.current.XunhuGateway),
+      XunhuMinTopUp: initialRef.current.XunhuMinTopUp,
     }
 
     const updates: Array<{ key: string; value: string | number | boolean }> = []
@@ -646,6 +702,26 @@ export function PaymentSettingsSection({
         key: 'StripePromotionCodesEnabled',
         value: sanitized.StripePromotionCodesEnabled,
       })
+    }
+
+    if (sanitized.XunhuEnabled !== initial.XunhuEnabled) {
+      updates.push({ key: 'XunhuEnabled', value: sanitized.XunhuEnabled })
+    }
+
+    if (sanitized.XunhuAppID !== initial.XunhuAppID) {
+      updates.push({ key: 'XunhuAppID', value: sanitized.XunhuAppID })
+    }
+
+    if (sanitized.XunhuSecret && sanitized.XunhuSecret !== initial.XunhuSecret) {
+      updates.push({ key: 'XunhuSecret', value: sanitized.XunhuSecret })
+    }
+
+    if (sanitized.XunhuGateway !== initial.XunhuGateway) {
+      updates.push({ key: 'XunhuGateway', value: sanitized.XunhuGateway })
+    }
+
+    if (sanitized.XunhuMinTopUp !== initial.XunhuMinTopUp) {
+      updates.push({ key: 'XunhuMinTopUp', value: sanitized.XunhuMinTopUp })
     }
 
     for (const update of updates) {
@@ -1457,6 +1533,133 @@ export function PaymentSettingsSection({
               {updateOption.isPending
                 ? t('Saving...')
                 : t('Save Creem settings')}
+            </Button>
+          </div>
+
+          <Separator />
+
+          <div className='space-y-4'>
+            <div>
+              <h3 className='text-lg font-medium'>{t('XunhuPay Gateway')}</h3>
+              <p className='text-muted-foreground text-sm'>
+                {t('Configuration for XunhuPay payment integration')}
+              </p>
+            </div>
+
+            <FormField
+              control={form.control}
+              name='XunhuEnabled'
+              render={({ field }) => (
+                <FormItem className='flex flex-row items-center justify-between rounded-lg border p-4'>
+                  <div className='space-y-0.5'>
+                    <FormLabel className='text-base'>{t('Enabled')}</FormLabel>
+                    <FormDescription>
+                      {t('Enable XunhuPay for wallet and subscription payments')}
+                    </FormDescription>
+                  </div>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+
+            <div className='grid gap-6 md:grid-cols-2'>
+              <FormField
+                control={form.control}
+                name='XunhuAppID'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('App ID')}</FormLabel>
+                    <FormControl>
+                      <Input {...field} placeholder='app_1234567890' />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name='XunhuSecret'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('Secret')}</FormLabel>
+                    <FormControl>
+                      <Input
+                        type='password'
+                        autoComplete='new-password'
+                        {...field}
+                        placeholder={t('Enter new secret to update')}
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      {t('Leave blank unless rotating the secret')}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <div className='grid gap-6 md:grid-cols-2'>
+              <FormField
+                control={form.control}
+                name='XunhuGateway'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('Gateway URL')}</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        placeholder='https://api.xunhupay.com/payment/do.html'
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name='XunhuMinTopUp'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('Minimum Payment Amount (CNY)')}</FormLabel>
+                    <FormControl>
+                      <Input
+                        type='number'
+                        min={0}
+                        value={(field.value ?? 0) as number}
+                        onChange={(event) =>
+                          field.onChange(event.target.valueAsNumber)
+                        }
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      {t('Minimum XunhuPay charge in CNY')}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+
+            <Button
+              type='button'
+              onClick={(e) => {
+                e.preventDefault()
+                e.stopPropagation()
+                saveXunhuSettings()
+              }}
+              disabled={updateOption.isPending}
+            >
+              {updateOption.isPending
+                ? t('Saving...')
+                : t('Save XunhuPay settings')}
             </Button>
           </div>
 

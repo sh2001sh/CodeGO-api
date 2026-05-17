@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 96" role="img" aria-labelledby="title desc">
+  <title id="title">codexforall</title>
+  <desc id="desc">codexforall brand mark in blue and navy</desc>
+  <defs>
+    <linearGradient id="brandBlue" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4b8dff" />
+      <stop offset="100%" stop-color="#2d6ef5" />
+    </linearGradient>
+  </defs>
+  <rect width="320" height="96" rx="20" fill="white" />
+  <g transform="translate(16 20)">
+    <path d="M40 10 14 30l26 20" fill="none" stroke="url(#brandBlue)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M112 10 138 30l-26 20" fill="none" stroke="url(#brandBlue)" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M84 8c-11 0-20 10-20 22s9 22 20 22c8 0 15-4 19-11" fill="none" stroke="#1b2748" stroke-width="8" stroke-linecap="round"/>
+  </g>
+  <text x="160" y="78" text-anchor="middle" font-family="Segoe UI, Arial, sans-serif" font-size="28" font-weight="700" fill="#1b2748">
+    codex<tspan fill="#2d6ef5">forall</tspan>
+  </text>
+</svg>

@@ -71,6 +71,7 @@ type PaymentMethodDialogProps = {
 const PAYMENT_TYPES = [
   { value: 'alipay', label: 'Alipay' },
   { value: 'wxpay', label: 'WeChat Pay' },
+  { value: 'xunhu', label: 'XunhuPay' },
   { value: 'stripe', label: 'Stripe' },
 ]
 
@@ -85,6 +86,7 @@ const COLOR_PRESETS = [
   { value: '#1677FF', label: 'Blue (Alipay)' },
   { value: '#07C160', label: 'Green (WeChat)' },
   { value: '#635BFF', label: 'Purple (Stripe)' },
+  { value: '#FF8A00', label: 'Orange (XunhuPay)' },
   { value: '#1890FF', label: 'Sky Blue' },
   { value: '#52C41A', label: 'Lime Green' },
   { value: 'black', label: 'Black' },

@@ -1,8 +1,8 @@
 <div align="center">
 
-![new-api](/web/default/public/logo.png)
+![codexforall](/web/default/public/codexforall-logo.svg)
 
-# New API
+# codexforall
 
 🍥 **Next-Generation LLM Gateway and AI Asset Management System**
 
@@ -31,14 +31,14 @@
 
 <p align="center">
   <a href="https://trendshift.io/repositories/20180" target="_blank">
-    <img src="https://trendshift.io/api/badge/repositories/20180" alt="QuantumNous%2Fnew-api | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/>
+    <img src="https://trendshift.io/api/badge/repositories/20180" alt="codexforall | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/>
   </a>
   <br>
-  <a href="https://hellogithub.com/repository/QuantumNous/new-api" target="_blank">
+  <a href="https://github.com/sh2001sh/new-api" target="_blank">
     <img src="https://api.hellogithub.com/v1/widgets/recommend.svg?rid=539ac4217e69431684ad4a0bab768811&claim_uid=tbFPfKIDHpc4TzR" alt="Featured｜HelloGitHub" style="width: 250px; height: 54px;" width="250" height="54" />
   </a><!--
   --><a href="https://www.producthunt.com/products/new-api/launches/new-api?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-new-api" target="_blank" rel="noopener noreferrer">
-    <img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1047693&theme=light&t=1769577875005" alt="New API - All-in-one AI asset management gateway. | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" />
+    <img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1047693&theme=light&t=1769577875005" alt="codexforall - All-in-one AI asset management gateway. | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" />
   </a>
 </p>
 
@@ -111,11 +111,14 @@
 
 ```bash
 # Clone the project
-git clone https://github.com/QuantumNous/new-api.git
+git clone https://github.com/sh2001sh/new-api.git
 cd new-api
 
 # Edit docker-compose.yml configuration
 nano docker-compose.yml
+
+# Optional: switch compose to a different image
+# echo "NEW_API_IMAGE=your-dockerhub-user/new-api:latest" >> .env
 
 # Start the service
 docker-compose up -d
@@ -125,15 +128,15 @@ docker-compose up -d
 <summary><strong>Using Docker Commands</strong></summary>
 
 ```bash
-# Pull the latest image
-docker pull calciumion/new-api:latest
+# Pull the latest image for this fork
+docker pull s2644752646/new-api:latest
 
 # Using SQLite (default)
 docker run --name new-api -d --restart always \
   -p 3000:3000 \
   -e TZ=Asia/Shanghai \
   -v ./data:/data \
-  calciumion/new-api:latest
+  s2644752646/new-api:latest
 
 # Using MySQL
 docker run --name new-api -d --restart always \
@@ -141,7 +144,7 @@ docker run --name new-api -d --restart always \
   -e SQL_DSN="root:123456@tcp(localhost:3306)/oneapi" \
   -e TZ=Asia/Shanghai \
   -v ./data:/data \
-  calciumion/new-api:latest
+  s2644752646/new-api:latest
 ```
 
 > **💡 Tip:** `-v ./data:/data` will save data in the `data` folder of the current directory, you can also change it to an absolute path like `-v /your/custom/path:/data`
@@ -163,7 +166,7 @@ docker run --name new-api -d --restart always \
 
 <div align="center">
 
-### 📖 [Official Documentation](https://docs.newapi.pro/en/docs) | [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/QuantumNous/new-api)
+### 📖 [Official Documentation](https://docs.newapi.pro/en/docs) | [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/sh2001sh/new-api)
 
 </div>
 
@@ -295,7 +298,7 @@ docker run --name new-api -d --restart always \
 ## 🚢 Deployment
 
 > [!TIP]
-> **Latest Docker image:** `calciumion/new-api:latest`
+> **Latest Docker image for this fork:** `s2644752646/new-api:latest`
 
 ### 📋 Deployment Requirements
 
@@ -340,7 +343,7 @@ docker run --name new-api -d --restart always \
 
 ```bash
 # Clone the project
-git clone https://github.com/QuantumNous/new-api.git
+git clone https://github.com/sh2001sh/new-api.git
 cd new-api
 
 # Edit configuration
@@ -361,7 +364,7 @@ docker run --name new-api -d --restart always \
   -p 3000:3000 \
   -e TZ=Asia/Shanghai \
   -v ./data:/data \
-  calciumion/new-api:latest
+  s2644752646/new-api:latest
 ```
 
 **Using MySQL:**
@@ -371,7 +374,7 @@ docker run --name new-api -d --restart always \
   -e SQL_DSN="root:123456@tcp(localhost:3306)/oneapi" \
   -e TZ=Asia/Shanghai \
   -v ./data:/data \
-  calciumion/new-api:latest
+  s2644752646/new-api:latest
 ```
 
 > **💡 Path explanation:**
@@ -457,7 +460,7 @@ contributors.` in the appropriate legal notices and in any prominent about,
 legal, footer, or attribution location presented by the user interface.
 
 Modified versions that present a user interface must also preserve a visible
-link to the original project: <https://github.com/QuantumNous/new-api>.
+link to the original project: <https://github.com/sh2001sh/new-api>.
 
 This is an open-source project developed based on [One API](https://github.com/songquanpeng/one-api) (MIT License).
 
@@ -477,12 +480,12 @@ If your organization's policies do not permit the use of AGPLv3-licensed softwar
 
 <div align="center">
 
-### 💖 Thank you for using New API
+### 💖 Thank you for using codexforall
 
 If this project is helpful to you, welcome to give us a ⭐️ Star！
 
 **[Official Documentation](https://docs.newapi.pro/en/docs)** • **[Issue Feedback](https://github.com/Calcium-Ion/new-api/issues)** • **[Latest Release](https://github.com/Calcium-Ion/new-api/releases)**
 
-<sub>Built with ❤️ by QuantumNous</sub>
+<sub>Built for codexforall by sh2001sh</sub>
 
 </div>

@@ -241,6 +241,11 @@ export type BillingSettings = {
   CreemWebhookSecret: string
   CreemTestMode: boolean
   CreemProducts: string
+  XunhuEnabled: boolean
+  XunhuAppID: string
+  XunhuSecret: string
+  XunhuGateway: string
+  XunhuMinTopUp: number
   WaffoEnabled: boolean
   WaffoApiKey: string
   WaffoPrivateKey: string

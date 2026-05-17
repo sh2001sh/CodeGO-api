@@ -23,6 +23,7 @@ import type {
   PlanPayload,
   UserSubscriptionRecord,
   CreateUserSubscriptionRequest,
+  UpdateUserSubscriptionRequest,
   SubscriptionPayResponse,
   SubscriptionPayRequest,
   SelfSubscriptionData,
@@ -95,6 +96,14 @@ export async function invalidateUserSubscription(
   return res.data
 }
 
+export async function updateUserSubscription(
+  subId: number,
+  data: UpdateUserSubscriptionRequest
+): Promise<ApiResponse<{ message?: string }>> {
+  const res = await api.put(`/api/subscription/admin/user_subscriptions/${subId}`, data)
+  return res.data
+}
+
 export async function deleteUserSubscription(
   subId: number
 ): Promise<ApiResponse> {
@@ -130,6 +139,13 @@ export async function paySubscriptionEpay(
     ...res.data,
     url: res.data.url || (res as unknown as { url?: string }).url,
   }
+}
+
+export async function paySubscriptionXunhu(
+  data: SubscriptionPayRequest
+): Promise<SubscriptionPayResponse> {
+  const res = await api.post('/api/subscription/xunhu/pay', data)
+  return res.data
 }
 
 // ============================================================================

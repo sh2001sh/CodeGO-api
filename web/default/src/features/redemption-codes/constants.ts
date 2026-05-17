@@ -29,6 +29,11 @@ export const REDEMPTION_STATUS = {
   USED: 3,
 } as const
 
+export const REDEMPTION_TYPES = {
+  QUOTA: 'quota',
+  SUBSCRIPTION: 'subscription',
+} as const
+
 export const REDEMPTION_STATUS_VALUES = Object.values(REDEMPTION_STATUS).map(
   (value) => String(value)
 ) as `${number}`[]

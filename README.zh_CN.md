@@ -1,8 +1,8 @@
 <div align="center">
 
-![new-api](/web/default/public/logo.png)
+![codexforall](/web/default/public/codexforall-logo.svg)
 
-# New API
+# codexforall
 
 🍥 **新一代大模型网关与AI资产管理系统**
 
@@ -31,14 +31,14 @@
 
 <p align="center">
   <a href="https://trendshift.io/repositories/20180" target="_blank">
-    <img src="https://trendshift.io/api/badge/repositories/20180" alt="QuantumNous%2Fnew-api | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/>
+    <img src="https://trendshift.io/api/badge/repositories/20180" alt="codexforall | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/>
   </a>
   <br>
-  <a href="https://hellogithub.com/repository/QuantumNous/new-api" target="_blank">
+  <a href="https://github.com/sh2001sh/new-api" target="_blank">
     <img src="https://api.hellogithub.com/v1/widgets/recommend.svg?rid=539ac4217e69431684ad4a0bab768811&claim_uid=tbFPfKIDHpc4TzR" alt="Featured｜HelloGitHub" style="width: 250px; height: 54px;" width="250" height="54" />
   </a><!--
   --><a href="https://www.producthunt.com/products/new-api/launches/new-api?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-new-api" target="_blank" rel="noopener noreferrer">
-    <img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1047693&theme=light&t=1769577875005" alt="New API - All-in-one AI asset management gateway. | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" />
+    <img src="https://api.producthunt.com/widgets/embed-image/v1/featured.svg?post_id=1047693&theme=light&t=1769577875005" alt="codexforall - All-in-one AI asset management gateway. | Product Hunt" style="width: 250px; height: 54px;" width="250" height="54" />
   </a>
 </p>
 
@@ -111,11 +111,14 @@
 
 ```bash
 # 克隆项目
-git clone https://github.com/QuantumNous/new-api.git
+git clone https://github.com/sh2001sh/new-api.git
 cd new-api
 
 # 编辑 docker-compose.yml 配置
 nano docker-compose.yml
+
+# 可选：切换到其他镜像
+# echo "NEW_API_IMAGE=your-dockerhub-user/new-api:latest" >> .env
 
 # 启动服务
 docker-compose up -d
@@ -125,15 +128,15 @@ docker-compose up -d
 <summary><strong>使用 Docker 命令</strong></summary>
 
 ```bash
-# 拉取最新镜像
-docker pull calciumion/new-api:latest
+# 拉取当前 fork 对应的最新镜像
+docker pull s2644752646/new-api:latest
 
 # 使用 SQLite（默认）
 docker run --name new-api -d --restart always \
   -p 3000:3000 \
   -e TZ=Asia/Shanghai \
   -v ./data:/data \
-  calciumion/new-api:latest
+  s2644752646/new-api:latest
 
 # 使用 MySQL
 docker run --name new-api -d --restart always \
@@ -141,7 +144,7 @@ docker run --name new-api -d --restart always \
   -e SQL_DSN="root:123456@tcp(localhost:3306)/oneapi" \
   -e TZ=Asia/Shanghai \
   -v ./data:/data \
-  calciumion/new-api:latest
+  s2644752646/new-api:latest
 ```
 
 > **💡 提示：** `-v ./data:/data` 会将数据保存在当前目录的 `data` 文件夹中，你也可以改为绝对路径如 `-v /your/custom/path:/data`
@@ -163,7 +166,7 @@ docker run --name new-api -d --restart always \
 
 <div align="center">
 
-### 📖 [官方文档](https://docs.newapi.pro/zh/docs) | [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/QuantumNous/new-api)
+### 📖 [官方文档](https://docs.newapi.pro/zh/docs) | [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/sh2001sh/new-api)
 
 </div>
 
@@ -295,7 +298,7 @@ docker run --name new-api -d --restart always \
 ## 🚢 部署
 
 > [!TIP]
-> **最新版 Docker 镜像：** `calciumion/new-api:latest`
+> **当前 fork 默认 Docker 镜像：** `s2644752646/new-api:latest`
 
 ### 📋 部署要求
 
@@ -340,7 +343,7 @@ docker run --name new-api -d --restart always \
 
 ```bash
 # 克隆项目
-git clone https://github.com/QuantumNous/new-api.git
+git clone https://github.com/sh2001sh/new-api.git
 cd new-api
 
 # 编辑配置
@@ -361,7 +364,7 @@ docker run --name new-api -d --restart always \
   -p 3000:3000 \
   -e TZ=Asia/Shanghai \
   -v ./data:/data \
-  calciumion/new-api:latest
+  s2644752646/new-api:latest
 ```
 
 **使用 MySQL：**
@@ -371,7 +374,7 @@ docker run --name new-api -d --restart always \
   -e SQL_DSN="root:123456@tcp(localhost:3306)/oneapi" \
   -e TZ=Asia/Shanghai \
   -v ./data:/data \
-  calciumion/new-api:latest
+  s2644752646/new-api:latest
 ```
 
 > **💡 路径说明：**
@@ -469,12 +472,12 @@ docker run --name new-api -d --restart always \
 
 <div align="center">
 
-### 💖 感谢使用 New API
+### 💖 感谢使用 codexforall
 
 如果这个项目对你有帮助，欢迎给我们一个 ⭐️ Star！
 
 **[官方文档](https://docs.newapi.pro/zh/docs)** • **[问题反馈](https://github.com/Calcium-Ion/new-api/issues)** • **[最新发布](https://github.com/Calcium-Ion/new-api/releases)**
 
-<sub>Built with ❤️ by QuantumNous</sub>
+<sub>Built for codexforall by sh2001sh</sub>
 
 </div>

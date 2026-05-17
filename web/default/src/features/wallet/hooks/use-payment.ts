@@ -108,6 +108,16 @@ export function usePayment() {
 
         // Handle non-Stripe payment
         if (!isStripe && response.data) {
+          const directUrl =
+            (response.data as { pay_url?: string; qrcode_url?: string })
+              ?.pay_url ||
+            (response.data as { pay_url?: string; qrcode_url?: string })
+              ?.qrcode_url
+          if (directUrl) {
+            window.open(directUrl, '_blank')
+            toast.success(i18next.t('Redirecting to payment page...'))
+            return true
+          }
           const url = (response as unknown as { url?: string }).url
           if (url) {
             submitPaymentForm(url, response.data)

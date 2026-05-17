@@ -16,10 +16,11 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useState, useEffect } from 'react'
-import { Crown, CalendarClock, Package } from 'lucide-react'
+import { useEffect, useState } from 'react'
+import { CalendarClock, Crown, Package } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import { formatQuota } from '@/lib/format'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
@@ -39,9 +40,10 @@ import {
 import { Separator } from '@/components/ui/separator'
 import { GroupBadge } from '@/components/group-badge'
 import {
-  paySubscriptionStripe,
   paySubscriptionCreem,
   paySubscriptionEpay,
+  paySubscriptionStripe,
+  paySubscriptionXunhu,
 } from '../../api'
 import { formatDuration, formatResetPeriod } from '../../lib'
 import type { PlanRecord } from '../../types'
@@ -61,6 +63,13 @@ interface Props {
   epayMethods?: PaymentMethod[]
   purchaseLimit?: number
   purchaseCount?: number
+}
+
+function getCurrencySymbol(currency?: string) {
+  const normalized = (currency || '').toUpperCase()
+  if (normalized === 'CNY') return '¥'
+  if (normalized === 'EUR') return '€'
+  return '$'
 }
 
 export function SubscriptionPurchaseDialog(props: Props) {
@@ -90,6 +99,8 @@ export function SubscriptionPurchaseDialog(props: Props) {
     selectedEpayMethod ||
     t('Select payment method')
   const totalAmount = Number(plan.total_amount || 0)
+  const periodAmount = Number(plan.period_amount || 0)
+  const currencySymbol = getCurrencySymbol(plan.currency)
   const price = Number(plan.price_amount || 0).toFixed(2)
   const limitReached =
     (props.purchaseLimit || 0) > 0 &&
@@ -148,13 +159,28 @@ export function SubscriptionPurchaseDialog(props: Props) {
       toast.error(t('Please select a payment method'))
       return
     }
+
     setPaying(true)
     try {
-      const res = await paySubscriptionEpay({
-        plan_id: plan.id,
-        payment_method: selectedEpayMethod,
-      })
-      if (res.message === 'success' && res.url) {
+      const isXunhu = selectedEpayMethod === 'xunhu'
+      const res = isXunhu
+        ? await paySubscriptionXunhu({ plan_id: plan.id })
+        : await paySubscriptionEpay({
+            plan_id: plan.id,
+            payment_method: selectedEpayMethod,
+          })
+
+      const payUrl =
+        (res.data as { pay_url?: string; qrcode_url?: string } | undefined)
+          ?.pay_url ||
+        (res.data as { pay_url?: string; qrcode_url?: string } | undefined)
+          ?.qrcode_url
+
+      if (res.message === 'success' && isXunhu && payUrl) {
+        window.open(payUrl, '_blank')
+        toast.success(t('Payment initiated'))
+        props.onOpenChange(false)
+      } else if (res.message === 'success' && !isXunhu && res.url) {
         const form = document.createElement('form')
         form.action = res.url
         form.method = 'POST'
@@ -230,9 +256,17 @@ export function SubscriptionPurchaseDialog(props: Props) {
               </span>
               <span className='flex items-center gap-1 text-sm'>
                 <Package className='h-3.5 w-3.5' />
-                {totalAmount > 0 ? totalAmount : t('Unlimited')}
+                {totalAmount > 0 ? formatQuota(totalAmount) : t('Unlimited')}
               </span>
             </div>
+            {periodAmount > 0 && (
+              <div className='flex items-center justify-between'>
+                <span className='text-muted-foreground text-sm'>
+                  {t('Period Quota')}
+                </span>
+                <span className='text-sm'>{formatQuota(periodAmount)}</span>
+              </div>
+            )}
             {plan.upgrade_group && (
               <div className='flex items-center justify-between'>
                 <span className='text-muted-foreground text-sm'>
@@ -244,7 +278,10 @@ export function SubscriptionPurchaseDialog(props: Props) {
             <Separator />
             <div className='flex items-center justify-between'>
               <span className='text-sm font-medium'>{t('Amount Due')}</span>
-              <span className='text-primary text-lg font-bold'>${price}</span>
+              <span className='text-primary text-lg font-bold'>
+                {currencySymbol}
+                {price}
+              </span>
             </div>
           </div>
 
@@ -296,8 +333,8 @@ export function SubscriptionPurchaseDialog(props: Props) {
                       })),
                     ]}
                     value={selectedEpayMethod}
-                    onValueChange={(v) =>
-                      v !== null && setSelectedEpayMethod(v)
+                    onValueChange={(value) =>
+                      value !== null && setSelectedEpayMethod(value)
                     }
                     disabled={limitReached}
                   >
@@ -315,8 +352,9 @@ export function SubscriptionPurchaseDialog(props: Props) {
                     </SelectContent>
                   </Select>
                   <Button
+                    variant='default'
                     onClick={handlePayEpay}
-                    disabled={paying || !selectedEpayMethod || limitReached}
+                    disabled={paying || limitReached || !selectedEpayMethod}
                   >
                     {t('Pay')}
                   </Button>
@@ -326,9 +364,7 @@ export function SubscriptionPurchaseDialog(props: Props) {
           ) : (
             <Alert>
               <AlertDescription>
-                {t(
-                  'Online payment is not enabled. Please contact the administrator.'
-                )}
+                {t('No payment method is currently available for this plan')}
               </AlertDescription>
             </Alert>
           )}

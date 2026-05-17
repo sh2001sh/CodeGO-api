@@ -90,6 +90,11 @@ func InitOptionMap() {
 	common.OptionMap["CreemProducts"] = setting.CreemProducts
 	common.OptionMap["CreemTestMode"] = strconv.FormatBool(setting.CreemTestMode)
 	common.OptionMap["CreemWebhookSecret"] = setting.CreemWebhookSecret
+	common.OptionMap["XunhuEnabled"] = strconv.FormatBool(setting.XunhuEnabled)
+	common.OptionMap["XunhuAppID"] = setting.XunhuAppID
+	common.OptionMap["XunhuSecret"] = setting.XunhuSecret
+	common.OptionMap["XunhuGateway"] = setting.XunhuGateway
+	common.OptionMap["XunhuMinTopUp"] = strconv.Itoa(setting.XunhuMinTopUp)
 	common.OptionMap["WaffoEnabled"] = strconv.FormatBool(setting.WaffoEnabled)
 	common.OptionMap["WaffoApiKey"] = setting.WaffoApiKey
 	common.OptionMap["WaffoPrivateKey"] = setting.WaffoPrivateKey
@@ -186,6 +191,7 @@ func InitOptionMap() {
 
 	common.OptionMapRWMutex.Unlock()
 	loadOptionsFromDatabase()
+	syncDefaultBrandingOptions()
 }
 
 func loadOptionsFromDatabase() {
@@ -195,6 +201,25 @@ func loadOptionsFromDatabase() {
 		if err != nil {
 			common.SysLog("failed to update option map: " + err.Error())
 		}
+	}
+}
+
+func syncDefaultBrandingOptions() {
+	legacySystemNames := map[string]struct{}{
+		"":        {},
+		"New API": {},
+		"NewAPI":  {},
+	}
+	legacyLogos := map[string]struct{}{
+		"":          {},
+		"/logo.png": {},
+	}
+
+	if _, ok := legacySystemNames[strings.TrimSpace(common.SystemName)]; ok {
+		_ = UpdateOption("SystemName", "codexforall")
+	}
+	if _, ok := legacyLogos[strings.TrimSpace(common.Logo)]; ok {
+		_ = UpdateOption("Logo", "/codexforall-logo.svg")
 	}
 }
 
@@ -389,6 +414,16 @@ func updateOptionMap(key string, value string) (err error) {
 		setting.CreemTestMode = value == "true"
 	case "CreemWebhookSecret":
 		setting.CreemWebhookSecret = value
+	case "XunhuEnabled":
+		setting.XunhuEnabled = value == "true"
+	case "XunhuAppID":
+		setting.XunhuAppID = value
+	case "XunhuSecret":
+		setting.XunhuSecret = value
+	case "XunhuGateway":
+		setting.XunhuGateway = value
+	case "XunhuMinTopUp":
+		setting.XunhuMinTopUp, _ = strconv.Atoi(value)
 	case "WaffoEnabled":
 		setting.WaffoEnabled = value == "true"
 	case "WaffoApiKey":

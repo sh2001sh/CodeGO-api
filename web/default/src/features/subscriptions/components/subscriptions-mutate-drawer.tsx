@@ -33,6 +33,7 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
   SelectContent,
@@ -225,6 +226,20 @@ export function SubscriptionsMutateDrawer({
 
                 <FormField
                   control={form.control}
+                  name='currency'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('Currency')}</FormLabel>
+                      <FormControl>
+                        <Input {...field} placeholder='CNY / USD' />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
+                <FormField
+                  control={form.control}
                   name='total_amount'
                   render={({ field }) => (
                     <FormItem>
@@ -249,6 +264,30 @@ export function SubscriptionsMutateDrawer({
               </div>
 
               <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
+                <FormField
+                  control={form.control}
+                  name='period_amount'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>{t('Period Quota')}</FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type='number'
+                          min={0}
+                          onChange={(e) =>
+                            field.onChange(parseFloat(e.target.value) || 0)
+                          }
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        {t('Quota cap inside each reset period, 0 means disabled')}
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+
                 <FormField
                   control={form.control}
                   name='upgrade_group'
@@ -518,6 +557,27 @@ export function SubscriptionsMutateDrawer({
                 <CreditCard className='h-4 w-4' />
                 {t('Third-party Payment Config')}
               </h3>
+
+              <FormField
+                control={form.control}
+                name='model_limits'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('Model Limits JSON')}</FormLabel>
+                    <FormControl>
+                      <Textarea
+                        {...field}
+                        rows={4}
+                        placeholder='{"gpt-4.1":300,"codex-mini-latest":100}'
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      {t('Optional per-model quota caps copied to each new subscription')}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <FormField
                 control={form.control}

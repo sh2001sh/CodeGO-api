@@ -17,10 +17,19 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Plus } from 'lucide-react'
+import { Pencil, Plus } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import { ConfirmDialog } from '@/components/confirm-dialog'
 import { Button } from '@/components/ui/button'
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
@@ -32,9 +41,9 @@ import {
 import {
   Sheet,
   SheetContent,
+  SheetDescription,
   SheetHeader,
   SheetTitle,
-  SheetDescription,
 } from '@/components/ui/sheet'
 import {
   Table,
@@ -44,17 +53,38 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { ConfirmDialog } from '@/components/confirm-dialog'
+import { Textarea } from '@/components/ui/textarea'
 import { StatusBadge } from '@/components/status-badge'
 import {
+  createUserSubscription,
+  deleteUserSubscription,
   getAdminPlans,
   getUserSubscriptions,
-  createUserSubscription,
   invalidateUserSubscription,
-  deleteUserSubscription,
+  updateUserSubscription,
 } from '../../api'
 import { formatTimestamp } from '../../lib'
 import type { PlanRecord, UserSubscriptionRecord } from '../../types'
+
+function toDateTimeLocal(unixSeconds: number) {
+  if (!unixSeconds) return ''
+  const date = new Date(unixSeconds * 1000)
+  const offset = date.getTimezoneOffset()
+  const local = new Date(date.getTime() - offset * 60 * 1000)
+  return local.toISOString().slice(0, 16)
+}
+
+function fromDateTimeLocal(value: string) {
+  if (!value) return 0
+  return Math.floor(new Date(value).getTime() / 1000)
+}
+
+function getCurrencySymbol(currency?: string) {
+  const normalized = (currency || '').toUpperCase()
+  if (normalized === 'CNY') return 'RMB '
+  if (normalized === 'EUR') return 'EUR '
+  return '$'
+}
 
 interface Props {
   open: boolean
@@ -67,11 +97,11 @@ function SubscriptionStatusBadge(props: {
   sub: UserSubscriptionRecord['subscription']
   t: (key: string) => string
 }) {
-  // eslint-disable-next-line react-hooks/purity
   const now = Date.now() / 1000
   const isExpired = (props.sub.end_time || 0) > 0 && props.sub.end_time < now
   const isActive = props.sub.status === 'active' && !isExpired
-  if (isActive)
+
+  if (isActive) {
     return (
       <StatusBadge
         label={props.t('Active')}
@@ -79,7 +109,9 @@ function SubscriptionStatusBadge(props: {
         copyable={false}
       />
     )
-  if (props.sub.status === 'cancelled')
+  }
+
+  if (props.sub.status === 'cancelled') {
     return (
       <StatusBadge
         label={props.t('Invalidated')}
@@ -87,6 +119,8 @@ function SubscriptionStatusBadge(props: {
         copyable={false}
       />
     )
+  }
+
   return (
     <StatusBadge
       label={props.t('Expired')}
@@ -102,30 +136,50 @@ export function UserSubscriptionsDialog(props: Props) {
   const [creating, setCreating] = useState(false)
   const [plans, setPlans] = useState<PlanRecord[]>([])
   const [subs, setSubs] = useState<UserSubscriptionRecord[]>([])
-  const [selectedPlanId, setSelectedPlanId] = useState<string>('')
+  const [selectedPlanId, setSelectedPlanId] = useState('')
   const [confirmAction, setConfirmAction] = useState<{
     type: 'invalidate' | 'delete'
     subId: number
   } | null>(null)
+  const [editingSub, setEditingSub] =
+    useState<UserSubscriptionRecord['subscription'] | null>(null)
+  const [editValues, setEditValues] = useState({
+    start_time: '',
+    end_time: '',
+    status: 'active',
+    amount_total: '0',
+    amount_used: '0',
+    period_amount: '0',
+    period_used: '0',
+    model_limits: '',
+  })
 
   const planTitleMap = useMemo(() => {
     const map = new Map<number, string>()
     plans.forEach((p) => {
-      if (p.plan.id) map.set(p.plan.id, p.plan.title || `#${p.plan.id}`)
+      if (p.plan.id) {
+        map.set(p.plan.id, p.plan.title || `#${p.plan.id}`)
+      }
     })
     return map
   }, [plans])
 
   const loadData = useCallback(async () => {
     if (!props.user?.id) return
+
     setLoading(true)
     try {
       const [plansRes, subsRes] = await Promise.all([
         getAdminPlans(),
         getUserSubscriptions(props.user.id),
       ])
-      if (plansRes.success) setPlans(plansRes.data || [])
-      if (subsRes.success) setSubs(subsRes.data || [])
+
+      if (plansRes.success) {
+        setPlans(plansRes.data || [])
+      }
+      if (subsRes.success) {
+        setSubs(subsRes.data || [])
+      }
     } catch {
       toast.error(t('Loading failed'))
     } finally {
@@ -145,6 +199,7 @@ export function UserSubscriptionsDialog(props: Props) {
       toast.error(t('Please select a subscription plan'))
       return
     }
+
     setCreating(true)
     try {
       const res = await createUserSubscription(props.user.id, {
@@ -165,6 +220,7 @@ export function UserSubscriptionsDialog(props: Props) {
 
   const handleConfirmAction = async () => {
     if (!confirmAction) return
+
     try {
       if (confirmAction.type === 'invalidate') {
         const res = await invalidateUserSubscription(confirmAction.subId)
@@ -188,6 +244,45 @@ export function UserSubscriptionsDialog(props: Props) {
     }
   }
 
+  const openEditDialog = (sub: UserSubscriptionRecord['subscription']) => {
+    setEditingSub(sub)
+    setEditValues({
+      start_time: toDateTimeLocal(sub.start_time),
+      end_time: toDateTimeLocal(sub.end_time),
+      status: sub.status || 'active',
+      amount_total: String(Number(sub.amount_total || 0)),
+      amount_used: String(Number(sub.amount_used || 0)),
+      period_amount: String(Number(sub.period_amount || 0)),
+      period_used: String(Number(sub.period_used || 0)),
+      model_limits: sub.model_limits || '',
+    })
+  }
+
+  const handleSaveEdit = async () => {
+    if (!editingSub) return
+
+    try {
+      const res = await updateUserSubscription(editingSub.id, {
+        start_time: fromDateTimeLocal(editValues.start_time),
+        end_time: fromDateTimeLocal(editValues.end_time),
+        status: editValues.status,
+        amount_total: Number(editValues.amount_total || 0),
+        amount_used: Number(editValues.amount_used || 0),
+        period_amount: Number(editValues.period_amount || 0),
+        period_used: Number(editValues.period_used || 0),
+        model_limits: editValues.model_limits || '',
+      })
+      if (res.success) {
+        toast.success(res.data?.message || t('Update succeeded'))
+        setEditingSub(null)
+        await loadData()
+        props.onSuccess?.()
+      }
+    } catch {
+      toast.error(t('Request failed'))
+    }
+  }
+
   return (
     <>
       <Sheet open={props.open} onOpenChange={props.onOpenChange}>
@@ -205,16 +300,15 @@ export function UserSubscriptionsDialog(props: Props) {
                 items={[
                   ...plans.map((p) => ({
                     value: String(p.plan.id),
-                    label: (
-                      <>
-                        {p.plan.title}($
-                        {Number(p.plan.price_amount || 0).toFixed(2)})
-                      </>
-                    ),
+                    label: `${p.plan.title} (${getCurrencySymbol(
+                      p.plan.currency
+                    )}${Number(p.plan.price_amount || 0).toFixed(2)})`,
                   })),
                 ]}
                 value={selectedPlanId}
-                onValueChange={(v) => v !== null && setSelectedPlanId(v)}
+                onValueChange={(value) =>
+                  value !== null && setSelectedPlanId(value)
+                }
               >
                 <SelectTrigger className='flex-1'>
                   <SelectValue placeholder={t('Select subscription plan')} />
@@ -223,7 +317,7 @@ export function UserSubscriptionsDialog(props: Props) {
                   <SelectGroup>
                     {plans.map((p) => (
                       <SelectItem key={p.plan.id} value={String(p.plan.id)}>
-                        {p.plan.title} ($
+                        {p.plan.title} ({getCurrencySymbol(p.plan.currency)}
                         {Number(p.plan.price_amount || 0).toFixed(2)})
                       </SelectItem>
                     ))}
@@ -247,7 +341,7 @@ export function UserSubscriptionsDialog(props: Props) {
                     <TableHead>{t('Plan')}</TableHead>
                     <TableHead>{t('Status')}</TableHead>
                     <TableHead>{t('Validity')}</TableHead>
-                    <TableHead>{t('Total Quota')}</TableHead>
+                    <TableHead>{t('Quota')}</TableHead>
                     <TableHead className='text-right'>{t('Actions')}</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -283,8 +377,7 @@ export function UserSubscriptionsDialog(props: Props) {
                           <TableCell>
                             <div>
                               <div className='font-medium'>
-                                {planTitleMap.get(sub.plan_id) ||
-                                  `#${sub.plan_id}`}
+                                {planTitleMap.get(sub.plan_id) || `#${sub.plan_id}`}
                               </div>
                               <div className='text-muted-foreground text-xs'>
                                 {t('Source')}: {sub.source || '-'}
@@ -305,10 +398,29 @@ export function UserSubscriptionsDialog(props: Props) {
                             </div>
                           </TableCell>
                           <TableCell>
-                            {total > 0 ? `${used}/${total}` : t('Unlimited')}
+                            <div className='text-xs'>
+                              <div>
+                                {t('Total')}:{' '}
+                                {total > 0 ? `${used}/${total}` : t('Unlimited')}
+                              </div>
+                              <div>
+                                {t('Period')}:{' '}
+                                {Number(sub.period_amount || 0) > 0
+                                  ? `${Number(sub.period_used || 0)}/${Number(sub.period_amount || 0)}`
+                                  : t('Disabled')}
+                              </div>
+                            </div>
                           </TableCell>
                           <TableCell className='text-right'>
                             <div className='flex justify-end gap-1'>
+                              <Button
+                                size='sm'
+                                variant='outline'
+                                onClick={() => openEditDialog(sub)}
+                              >
+                                <Pencil className='mr-1 h-3.5 w-3.5' />
+                                {t('Edit')}
+                              </Button>
                               <Button
                                 size='sm'
                                 variant='outline'
@@ -350,7 +462,7 @@ export function UserSubscriptionsDialog(props: Props) {
       {confirmAction && (
         <ConfirmDialog
           open
-          onOpenChange={(v) => !v && setConfirmAction(null)}
+          onOpenChange={(open) => !open && setConfirmAction(null)}
           title={
             confirmAction.type === 'invalidate'
               ? t('Confirm invalidate')
@@ -369,6 +481,147 @@ export function UserSubscriptionsDialog(props: Props) {
           destructive={confirmAction.type === 'delete'}
         />
       )}
+
+      <Dialog
+        open={!!editingSub}
+        onOpenChange={(open) => !open && setEditingSub(null)}
+      >
+        <DialogContent className='sm:max-w-xl'>
+          <DialogHeader>
+            <DialogTitle>{t('Edit Subscription')}</DialogTitle>
+          </DialogHeader>
+          <div className='grid gap-4 sm:grid-cols-2'>
+            <div className='space-y-2'>
+              <label className='text-sm font-medium'>{t('Start Time')}</label>
+              <Input
+                type='datetime-local'
+                value={editValues.start_time}
+                onChange={(event) =>
+                  setEditValues((prev) => ({
+                    ...prev,
+                    start_time: event.target.value,
+                  }))
+                }
+              />
+            </div>
+            <div className='space-y-2'>
+              <label className='text-sm font-medium'>{t('End Time')}</label>
+              <Input
+                type='datetime-local'
+                value={editValues.end_time}
+                onChange={(event) =>
+                  setEditValues((prev) => ({
+                    ...prev,
+                    end_time: event.target.value,
+                  }))
+                }
+              />
+            </div>
+            <div className='space-y-2'>
+              <label className='text-sm font-medium'>{t('Status')}</label>
+              <Select
+                items={[
+                  { value: 'active', label: t('Active') },
+                  { value: 'expired', label: t('Expired') },
+                  { value: 'cancelled', label: t('Invalidated') },
+                ]}
+                value={editValues.status}
+                onValueChange={(value) =>
+                  value !== null &&
+                  setEditValues((prev) => ({ ...prev, status: value }))
+                }
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent alignItemWithTrigger={false}>
+                  <SelectGroup>
+                    <SelectItem value='active'>{t('Active')}</SelectItem>
+                    <SelectItem value='expired'>{t('Expired')}</SelectItem>
+                    <SelectItem value='cancelled'>
+                      {t('Invalidated')}
+                    </SelectItem>
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className='space-y-2'>
+              <label className='text-sm font-medium'>{t('Total Quota')}</label>
+              <Input
+                type='number'
+                value={editValues.amount_total}
+                onChange={(event) =>
+                  setEditValues((prev) => ({
+                    ...prev,
+                    amount_total: event.target.value,
+                  }))
+                }
+              />
+            </div>
+            <div className='space-y-2'>
+              <label className='text-sm font-medium'>{t('Used Quota')}</label>
+              <Input
+                type='number'
+                value={editValues.amount_used}
+                onChange={(event) =>
+                  setEditValues((prev) => ({
+                    ...prev,
+                    amount_used: event.target.value,
+                  }))
+                }
+              />
+            </div>
+            <div className='space-y-2'>
+              <label className='text-sm font-medium'>{t('Period Quota')}</label>
+              <Input
+                type='number'
+                value={editValues.period_amount}
+                onChange={(event) =>
+                  setEditValues((prev) => ({
+                    ...prev,
+                    period_amount: event.target.value,
+                  }))
+                }
+              />
+            </div>
+            <div className='space-y-2'>
+              <label className='text-sm font-medium'>{t('Period Used')}</label>
+              <Input
+                type='number'
+                value={editValues.period_used}
+                onChange={(event) =>
+                  setEditValues((prev) => ({
+                    ...prev,
+                    period_used: event.target.value,
+                  }))
+                }
+              />
+            </div>
+            <div className='space-y-2 sm:col-span-2'>
+              <label className='text-sm font-medium'>
+                {t('Model Limits JSON')}
+              </label>
+              <Textarea
+                rows={5}
+                value={editValues.model_limits}
+                onChange={(event) =>
+                  setEditValues((prev) => ({
+                    ...prev,
+                    model_limits: event.target.value,
+                  }))
+                }
+                placeholder='{"gpt-4.1":300,"codex-mini-latest":100}'
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant='outline' onClick={() => setEditingSub(null)}>
+              {t('Cancel')}
+            </Button>
+            <Button onClick={handleSaveEdit}>{t('Save changes')}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

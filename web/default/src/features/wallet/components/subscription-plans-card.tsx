@@ -88,6 +88,13 @@ function getBillingPreferenceLabel(
   }
 }
 
+function getCurrencySymbol(currency?: string): string {
+  const normalized = (currency || '').toUpperCase()
+  if (normalized === 'CNY') return 'RMB '
+  if (normalized === 'EUR') return 'EUR '
+  return '$'
+}
+
 export function SubscriptionPlansCard({
   topupInfo,
   onAvailabilityChange,
@@ -151,6 +158,22 @@ export function SubscriptionPlansCard({
     }
     init()
   }, [fetchPlans, fetchSelfSubscription])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const handleSubscriptionChanged = () => {
+      fetchSelfSubscription()
+    }
+
+    window.addEventListener('subscription:changed', handleSubscriptionChanged)
+    return () => {
+      window.removeEventListener(
+        'subscription:changed',
+        handleSubscriptionChanged
+      )
+    }
+  }, [fetchSelfSubscription])
 
   const handleRefresh = async () => {
     setRefreshing(true)
@@ -284,7 +307,7 @@ export function SubscriptionPlansCard({
                 )}
                 {allSubscriptions.length > activeSubscriptions.length && (
                   <>
-                    <span className='text-muted-foreground/30'>·</span>
+                    <span className='text-muted-foreground/30'>|</span>
                     <span className='text-muted-foreground'>
                       {allSubscriptions.length - activeSubscriptions.length}{' '}
                       {t('expired')}
@@ -413,7 +436,7 @@ export function SubscriptionPlansCard({
                         <div className='flex items-center gap-2'>
                           <span className='font-medium'>
                             {planTitle
-                              ? `${planTitle} · ${t('Subscription')} #${subscription?.id}`
+                              ? `${planTitle} | ${t('Subscription')} #${subscription?.id}`
                               : `${t('Subscription')} #${subscription?.id}`}
                           </span>
                           {isActive ? (
@@ -470,11 +493,11 @@ export function SubscriptionPlansCard({
                               render={<span className='cursor-help' />}
                             >
                               {formatQuota(usedAmount)}/
-                              {formatQuota(totalAmount)} · {t('Remaining')}{' '}
+                              {formatQuota(totalAmount)} | {t('Remaining')}{' '}
                               {formatQuota(remainAmount)}
                             </TooltipTrigger>
                             <TooltipContent>
-                              {t('Raw Quota')}: {usedAmount}/{totalAmount} ·{' '}
+                              {t('Raw Quota')}: {usedAmount}/{totalAmount} |{' '}
                               {t('Remaining')} {remainAmount}
                             </TooltipContent>
                           </Tooltip>
@@ -511,6 +534,8 @@ export function SubscriptionPlansCard({
               const plan = p?.plan
               if (!plan) return null
               const totalAmount = Number(plan.total_amount || 0)
+              const periodAmount = Number(plan.period_amount || 0)
+              const currencySymbol = getCurrencySymbol(plan.currency)
               const price = Number(plan.price_amount || 0).toFixed(2)
               const isPopular = index === 0 && plans.length > 1
               const limit = Number(plan.max_purchase_per_user || 0)
@@ -521,6 +546,9 @@ export function SubscriptionPlansCard({
                 `${t('Validity Period')}: ${formatDuration(plan, t)}`,
                 formatResetPeriod(plan, t) !== t('No Reset')
                   ? `${t('Quota Reset')}: ${formatResetPeriod(plan, t)}`
+                  : null,
+                periodAmount > 0
+                  ? `${t('Period Quota')}: ${formatQuota(periodAmount)}`
                   : null,
                 totalAmount > 0
                   ? `${t('Total Quota')}: ${formatQuota(totalAmount)}`
@@ -565,7 +593,8 @@ export function SubscriptionPlansCard({
 
                     <div className='py-2'>
                       <span className='text-primary text-2xl font-bold'>
-                        ${price}
+                        {currencySymbol}
+                        {price}
                       </span>
                     </div>
 

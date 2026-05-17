@@ -294,6 +294,9 @@ func migrateDB() error {
 			return err
 		}
 	}
+	if err := SeedDefaultSubscriptionPlans(); err != nil {
+		return err
+	}
 	return nil
 }
 
@@ -363,6 +366,9 @@ func migrateDBFast() error {
 			return err
 		}
 	}
+	if err := SeedDefaultSubscriptionPlans(); err != nil {
+		return err
+	}
 	common.SysLog("database migrated")
 	return nil
 }
@@ -402,6 +408,8 @@ func ensureSubscriptionPlanTableSQLite() error {
 ` + "`max_purchase_per_user`" + ` integer DEFAULT 0,
 ` + "`upgrade_group`" + ` varchar(64) DEFAULT '',
 ` + "`total_amount`" + ` bigint NOT NULL DEFAULT 0,
+` + "`period_amount`" + ` bigint NOT NULL DEFAULT 0,
+` + "`model_limits`" + ` text,
 ` + "`quota_reset_period`" + ` varchar(16) DEFAULT 'never',
 ` + "`quota_reset_custom_seconds`" + ` bigint DEFAULT 0,
 ` + "`created_at`" + ` bigint,
@@ -435,6 +443,8 @@ PRIMARY KEY (` + "`id`" + `)
 		{Name: "max_purchase_per_user", DDL: "`max_purchase_per_user` integer DEFAULT 0"},
 		{Name: "upgrade_group", DDL: "`upgrade_group` varchar(64) DEFAULT ''"},
 		{Name: "total_amount", DDL: "`total_amount` bigint NOT NULL DEFAULT 0"},
+		{Name: "period_amount", DDL: "`period_amount` bigint NOT NULL DEFAULT 0"},
+		{Name: "model_limits", DDL: "`model_limits` text"},
 		{Name: "quota_reset_period", DDL: "`quota_reset_period` varchar(16) DEFAULT 'never'"},
 		{Name: "quota_reset_custom_seconds", DDL: "`quota_reset_custom_seconds` bigint DEFAULT 0"},
 		{Name: "created_at", DDL: "`created_at` bigint"},
