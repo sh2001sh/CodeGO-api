@@ -59,17 +59,17 @@ function EmptyAboutState() {
           <p>
             codexforall repository:{' '}
             <a
-              href='https://github.com/s2644752646/new-api'
+              href='https://github.com/sh2001sh/new-api'
               target='_blank'
               rel='noopener noreferrer'
               className='text-primary hover:underline'
             >
-              https://github.com/s2644752646/new-api
+              https://github.com/sh2001sh/new-api
             </a>
           </p>
           <p className='text-muted-foreground'>
             <a
-              href='https://github.com/s2644752646/new-api'
+              href='https://github.com/sh2001sh/new-api'
               target='_blank'
               rel='noopener noreferrer'
               className='text-primary hover:underline'
@@ -107,7 +107,7 @@ function EmptyAboutState() {
           <p className='text-muted-foreground'>
             {t('This project must be used in compliance with the')}{' '}
             <a
-              href='https://github.com/s2644752646/new-api/blob/main/LICENSE'
+              href='https://github.com/sh2001sh/new-api/blob/main/LICENSE'
               target='_blank'
               rel='noopener noreferrer'
               className='text-primary hover:underline'

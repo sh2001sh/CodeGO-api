@@ -15,17 +15,17 @@
 </p>
 
 <p align="center">
-  <a href="https://raw.githubusercontent.com/s2644752646/new-api/main/LICENSE">
-    <img src="https://img.shields.io/github/license/s2644752646/new-api?color=brightgreen" alt="license">
+  <a href="https://raw.githubusercontent.com/sh2001sh/new-api/main/LICENSE">
+    <img src="https://img.shields.io/github/license/sh2001sh/new-api?color=brightgreen" alt="license">
   </a><!--
-  --><a href="https://github.com/s2644752646/new-api/releases/latest">
-    <img src="https://img.shields.io/github/v/release/s2644752646/new-api?color=brightgreen&include_prereleases" alt="release">
+  --><a href="https://github.com/sh2001sh/new-api/releases/latest">
+    <img src="https://img.shields.io/github/v/release/sh2001sh/new-api?color=brightgreen&include_prereleases" alt="release">
   </a><!--
   --><a href="https://hub.docker.com/r/s2644752646/new-api">
     <img src="https://img.shields.io/badge/docker-dockerHub-blue" alt="docker">
   </a><!--
-  --><a href="https://goreportcard.com/report/github.com/s2644752646/new-api">
-    <img src="https://goreportcard.com/badge/github.com/s2644752646/new-api" alt="GoReportCard">
+  --><a href="https://goreportcard.com/report/github.com/sh2001sh/new-api">
+    <img src="https://goreportcard.com/badge/github.com/sh2001sh/new-api" alt="GoReportCard">
   </a>
 </p>
 
@@ -34,7 +34,7 @@
     <img src="https://trendshift.io/api/badge/repositories/20180" alt="codexforall | Trendshift" style="width: 250px; height: 55px;" width="250" height="55"/>
   </a>
   <br>
-  <a href="https://github.com/s2644752646/new-api" target="_blank">
+  <a href="https://github.com/sh2001sh/new-api" target="_blank">
     <img src="https://api.hellogithub.com/v1/widgets/recommend.svg?rid=539ac4217e69431684ad4a0bab768811&claim_uid=tbFPfKIDHpc4TzR" alt="Featured｜HelloGitHub" style="width: 250px; height: 54px;" width="250" height="54" />
   </a><!--
   --><a href="https://www.producthunt.com/products/new-api/launches/new-api?embed=true&utm_source=badge-featured&utm_medium=badge&utm_campaign=badge-new-api" target="_blank" rel="noopener noreferrer">
@@ -111,7 +111,7 @@
 
 ```bash
 # プロジェクトをクローン
-git clone https://github.com/s2644752646/new-api.git
+git clone https://github.com/sh2001sh/new-api.git
 cd new-api
 
 # docker-compose.yml 設定を編集
@@ -163,7 +163,7 @@ docker run --name new-api -d --restart always \
 
 <div align="center">
 
-### 📖 [公式ドキュメント](https://docs.newapi.pro/ja/docs) | [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/s2644752646/new-api)
+### 📖 [公式ドキュメント](https://docs.newapi.pro/ja/docs) | [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/sh2001sh/new-api)
 
 </div>
 
@@ -342,7 +342,7 @@ docker run --name new-api -d --restart always \
 
 ```bash
 # プロジェクトをクローン
-git clone https://github.com/s2644752646/new-api.git
+git clone https://github.com/sh2001sh/new-api.git
 cd new-api
 
 # 設定を編集
@@ -461,7 +461,7 @@ docker run --name new-api -d --restart always \
 
 <div align="center">
 
-[![スター履歴チャート](https://api.star-history.com/svg?repos=s2644752646/new-api&type=Date)](https://star-history.com/#s2644752646/new-api&Date)
+[![スター履歴チャート](https://api.star-history.com/svg?repos=sh2001sh/new-api&type=Date)](https://star-history.com/#sh2001sh/new-api&Date)
 
 </div>
 
@@ -473,7 +473,7 @@ docker run --name new-api -d --restart always \
 
 このプロジェクトがあなたのお役に立てたなら、ぜひ ⭐️ スターをください！
 
-**[公式ドキュメント](https://docs.newapi.pro/ja/docs)** • **[問題フィードバック](https://github.com/s2644752646/new-api/issues)** • **[最新リリース](https://github.com/s2644752646/new-api/releases)**
+**[公式ドキュメント](https://docs.newapi.pro/ja/docs)** • **[問題フィードバック](https://github.com/sh2001sh/new-api/issues)** • **[最新リリース](https://github.com/sh2001sh/new-api/releases)**
 
 <sub>Built for codexforall by s2644752646</sub>
 
