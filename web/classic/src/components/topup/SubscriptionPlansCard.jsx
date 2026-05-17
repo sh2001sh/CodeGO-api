@@ -31,7 +31,6 @@ import {
   Typography,
 } from '@douyinfe/semi-ui';
 import { API, showError, showSuccess, renderQuota } from '../../helpers';
-import { getCurrencyConfig } from '../../helpers/render';
 import { RefreshCw, Sparkles } from 'lucide-react';
 import SubscriptionPurchaseModal from './modals/SubscriptionPurchaseModal';
 import {
@@ -40,6 +39,41 @@ import {
 } from '../../helpers/subscriptionFormat';
 
 const { Text } = Typography;
+
+function formatPlanPrice(priceAmount, currency) {
+  const normalized = String(currency || '').toUpperCase();
+  const formatted = Number(priceAmount || 0)
+    .toFixed(2)
+    .replace(/\.00$/, '')
+    .replace(/(\.\d)0$/, '$1');
+
+  if (normalized === 'CNY') return `${formatted} 元`;
+  if (normalized === 'EUR') return `EUR ${formatted}`;
+  return `$${formatted}`;
+}
+
+function getPlanSubtitle(plan) {
+  const subtitle = String(plan?.subtitle || '').trim();
+  if (subtitle) return subtitle;
+  const durationCount = Number(plan?.duration_count || 0);
+  const durationUnit = String(plan?.duration_unit || '').toLowerCase();
+  if (durationUnit === 'day' && durationCount > 0 && durationCount <= 2) {
+    return '日卡';
+  }
+  return '月卡';
+}
+
+function getPlanDetailsText(plan, totalAmount, periodAmount, t) {
+  const periodLabel =
+    plan?.quota_reset_period === 'weekly' ? '每周额度' : '周期额度';
+  const totalLabel = totalAmount > 0 ? renderQuota(totalAmount) : '不限';
+  const parts = [
+    `有效期 ${formatSubscriptionDuration(plan, t)}`,
+    periodAmount > 0 ? `${periodLabel} ${renderQuota(periodAmount)}` : null,
+    `总额度 ${totalLabel}`,
+  ];
+  return parts.filter(Boolean).join('，');
+}
 
 // 过滤易支付方式
 function getEpayMethods(payMethods = []) {
@@ -510,15 +544,20 @@ const SubscriptionPlansCard = ({
               {plans.map((p, index) => {
                 const plan = p?.plan;
                 const totalAmount = Number(plan?.total_amount || 0);
-                const { symbol, rate } = getCurrencyConfig();
-                const price = Number(plan?.price_amount || 0);
-                const convertedPrice = price * rate;
-                const displayPrice = convertedPrice.toFixed(
-                  Number.isInteger(convertedPrice) ? 0 : 2,
+                const periodAmount = Number(plan?.period_amount || 0);
+                const displayPrice = formatPlanPrice(
+                  Number(plan?.price_amount || 0),
+                  plan?.currency,
                 );
                 const isPopular = index === 0 && plans.length > 1;
                 const limit = Number(plan?.max_purchase_per_user || 0);
                 const limitLabel = limit > 0 ? `${t('限购')} ${limit}` : null;
+                const detailText = getPlanDetailsText(
+                  plan,
+                  totalAmount,
+                  periodAmount,
+                  t,
+                );
                 const totalLabel =
                   totalAmount > 0
                     ? `${t('总额度')}: ${renderQuota(totalAmount)}`
@@ -572,24 +611,19 @@ const SubscriptionPlansCard = ({
                         >
                           {plan?.title || t('订阅套餐')}
                         </Typography.Title>
-                        {plan?.subtitle && (
-                          <Text
-                            type='tertiary'
-                            size='small'
-                            ellipsis={{ rows: 1, showTooltip: true }}
-                            style={{ display: 'block' }}
-                          >
-                            {plan.subtitle}
-                          </Text>
-                        )}
+                        <Text
+                          type='tertiary'
+                          size='small'
+                          ellipsis={{ rows: 1, showTooltip: true }}
+                          style={{ display: 'block' }}
+                        >
+                          {getPlanSubtitle(plan)}
+                        </Text>
                       </div>
 
                       {/* 价格区域 */}
                       <div className='py-2'>
                         <div className='flex items-baseline justify-start'>
-                          <span className='text-xl font-bold text-purple-600'>
-                            {symbol}
-                          </span>
                           <span className='text-3xl font-bold text-purple-600'>
                             {displayPrice}
                           </span>
@@ -623,6 +657,15 @@ const SubscriptionPlansCard = ({
                             </Tooltip>
                           );
                         })}
+                      </div>
+
+                      <div className='mb-3 w-full rounded-lg border border-gray-200 bg-gray-50 p-3'>
+                        <div className='text-xs font-semibold text-gray-800'>
+                          套餐详情
+                        </div>
+                        <div className='mt-1 text-xs leading-5 text-gray-500'>
+                          {detailText}
+                        </div>
                       </div>
 
                       <div className='mt-auto'>

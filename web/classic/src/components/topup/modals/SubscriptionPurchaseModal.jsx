@@ -32,13 +32,47 @@ import { Crown, CalendarClock, Package } from 'lucide-react';
 import { SiStripe } from 'react-icons/si';
 import { IconCreditCard } from '@douyinfe/semi-icons';
 import { renderQuota } from '../../../helpers';
-import { getCurrencyConfig } from '../../../helpers/render';
 import {
   formatSubscriptionDuration,
   formatSubscriptionResetPeriod,
 } from '../../../helpers/subscriptionFormat';
 
 const { Text } = Typography;
+
+function formatPlanPrice(priceAmount, currency) {
+  const normalized = String(currency || '').toUpperCase();
+  const formatted = Number(priceAmount || 0)
+    .toFixed(2)
+    .replace(/\.00$/, '')
+    .replace(/(\.\d)0$/, '$1');
+
+  if (normalized === 'CNY') return `${formatted} 元`;
+  if (normalized === 'EUR') return `EUR ${formatted}`;
+  return `$${formatted}`;
+}
+
+function getPlanSubtitle(plan) {
+  const subtitle = String(plan?.subtitle || '').trim();
+  if (subtitle) return subtitle;
+  const durationCount = Number(plan?.duration_count || 0);
+  const durationUnit = String(plan?.duration_unit || '').toLowerCase();
+  if (durationUnit === 'day' && durationCount > 0 && durationCount <= 2) {
+    return '日卡';
+  }
+  return '月卡';
+}
+
+function getPlanDetailsText(plan, totalAmount, periodAmount, t) {
+  const periodLabel =
+    plan?.quota_reset_period === 'weekly' ? '每周额度' : '周期额度';
+  const totalLabel = totalAmount > 0 ? renderQuota(totalAmount) : '不限';
+  const parts = [
+    `有效期 ${formatSubscriptionDuration(plan, t)}`,
+    periodAmount > 0 ? `${periodLabel} ${renderQuota(periodAmount)}` : null,
+    `总额度 ${totalLabel}`,
+  ];
+  return parts.filter(Boolean).join('，');
+}
 
 const SubscriptionPurchaseModal = ({
   t,
@@ -59,12 +93,12 @@ const SubscriptionPurchaseModal = ({
 }) => {
   const plan = selectedPlan?.plan;
   const totalAmount = Number(plan?.total_amount || 0);
-  const { symbol, rate } = getCurrencyConfig();
-  const price = plan ? Number(plan.price_amount || 0) : 0;
-  const convertedPrice = price * rate;
-  const displayPrice = convertedPrice.toFixed(
-    Number.isInteger(convertedPrice) ? 0 : 2,
+  const periodAmount = Number(plan?.period_amount || 0);
+  const displayPrice = formatPlanPrice(
+    Number(plan?.price_amount || 0),
+    plan?.currency,
   );
+  const detailText = getPlanDetailsText(plan, totalAmount, periodAmount, t);
   // 只有当管理员开启支付网关 AND 套餐配置了对应的支付ID时才显示
   const hasStripe = enableStripeTopUp && !!plan?.stripe_price_id;
   const hasCreem = enableCreemTopUp && !!plan?.creem_product_id;
@@ -102,11 +136,19 @@ const SubscriptionPurchaseModal = ({
                   ellipsis={{ rows: 1, showTooltip: true }}
                   className='text-slate-900 dark:text-slate-100'
                   style={{ maxWidth: 200 }}
-                >
-                  {plan.title}
-                </Typography.Text>
-              </div>
-              <div className='flex justify-between items-center'>
+	                >
+	                  {plan.title}
+	                </Typography.Text>
+	              </div>
+	              <div className='flex justify-between items-center'>
+	                <Text strong className='text-slate-700 dark:text-slate-200'>
+	                  副标题:
+	                </Text>
+	                <Text className='text-slate-900 dark:text-slate-100'>
+	                  {getPlanSubtitle(plan)}
+	                </Text>
+	              </div>
+	              <div className='flex justify-between items-center'>
                 <Text strong className='text-slate-700 dark:text-slate-200'>
                   {t('有效期')}：
                 </Text>
@@ -155,16 +197,25 @@ const SubscriptionPurchaseModal = ({
                     {plan.upgrade_group}
                   </Text>
                 </div>
-              ) : null}
-              <Divider margin={8} />
+	              ) : null}
+	              <div className='rounded-lg border border-slate-200 bg-white/80 p-3 dark:border-slate-700 dark:bg-slate-900/40'>
+	                <Text strong className='text-slate-700 dark:text-slate-200'>
+	                  套餐详情
+	                </Text>
+	                <div className='mt-1'>
+	                  <Text className='text-xs leading-5 text-slate-500 dark:text-slate-300'>
+	                    {detailText}
+	                  </Text>
+	                </div>
+	              </div>
+	              <Divider margin={8} />
               <div className='flex justify-between items-center'>
                 <Text strong className='text-slate-700 dark:text-slate-200'>
                   {t('应付金额')}：
                 </Text>
-                <Text strong className='text-xl text-purple-600'>
-                  {symbol}
-                  {displayPrice}
-                </Text>
+	                <Text strong className='text-xl text-purple-600'>
+	                  {displayPrice}
+	                </Text>
               </div>
             </div>
           </Card>

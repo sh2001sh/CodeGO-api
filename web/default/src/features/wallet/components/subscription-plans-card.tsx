@@ -90,9 +90,49 @@ function getBillingPreferenceLabel(
 
 function getCurrencySymbol(currency?: string): string {
   const normalized = (currency || '').toUpperCase()
-  if (normalized === 'CNY') return 'RMB '
+  if (normalized === 'CNY') return '¥'
   if (normalized === 'EUR') return 'EUR '
   return '$'
+}
+
+function formatPlanPrice(priceAmount: number, currency?: string): string {
+  const normalized = (currency || '').toUpperCase()
+  const formatted = priceAmount
+    .toFixed(2)
+    .replace(/\.00$/, '')
+    .replace(/(\.\d)0$/, '$1')
+
+  if (normalized === 'CNY') return `${formatted} 元`
+  return `${getCurrencySymbol(currency)}${formatted}`
+}
+
+function getPlanSubtitle(plan: PlanRecord['plan'] | null | undefined): string {
+  const subtitle = String(plan?.subtitle || '').trim()
+  if (subtitle) return subtitle
+  const durationCount = Number(plan?.duration_count || 0)
+  const durationUnit = String(plan?.duration_unit || '').toLowerCase()
+  if (durationUnit === 'day' && durationCount > 0 && durationCount <= 2) {
+    return '日卡'
+  }
+  return '月卡'
+}
+
+function getPlanDetailsText(
+  plan: PlanRecord['plan'] | null | undefined,
+  totalAmount: number,
+  periodAmount: number,
+  t: (key: string) => string
+): string {
+  if (!plan) return ''
+  const periodLabel =
+    plan.quota_reset_period === 'weekly' ? '每周额度' : '周期额度'
+  const totalLabel = totalAmount > 0 ? formatQuota(totalAmount) : '不限'
+  const parts = [
+    `有效期 ${formatDuration(plan, t)}`,
+    periodAmount > 0 ? `${periodLabel} ${formatQuota(periodAmount)}` : null,
+    `总额度 ${totalLabel}`,
+  ]
+  return parts.filter(Boolean).join('，')
 }
 
 export function SubscriptionPlansCard({
@@ -559,12 +599,18 @@ export function SubscriptionPlansCard({
               if (!plan) return null
               const totalAmount = Number(plan.total_amount || 0)
               const periodAmount = Number(plan.period_amount || 0)
-              const currencySymbol = getCurrencySymbol(plan.currency)
-              const price = Number(plan.price_amount || 0).toFixed(2)
+              const priceAmount = Number(plan.price_amount || 0)
+              const displayPrice = formatPlanPrice(priceAmount, plan.currency)
               const isPopular = index === 0 && plans.length > 1
               const limit = Number(plan.max_purchase_per_user || 0)
               const count = planPurchaseCountMap.get(plan.id) || 0
               const reached = limit > 0 && count >= limit
+              const detailText = getPlanDetailsText(
+                plan,
+                totalAmount,
+                periodAmount,
+                t
+              )
 
               const benefits = [
                 `${t('Validity Period')}: ${formatDuration(plan, t)}`,
@@ -597,11 +643,9 @@ export function SubscriptionPlansCard({
                         <h4 className='truncate font-semibold'>
                           {plan.title || t('Subscription Plans')}
                         </h4>
-                        {plan.subtitle && (
-                          <p className='text-muted-foreground truncate text-xs'>
-                            {plan.subtitle}
-                          </p>
-                        )}
+                        <p className='text-muted-foreground truncate text-xs'>
+                          {getPlanSubtitle(plan)}
+                        </p>
                       </div>
                       {isPopular && (
                         <StatusBadge
@@ -617,8 +661,7 @@ export function SubscriptionPlansCard({
 
                     <div className='py-2'>
                       <span className='text-primary text-2xl font-bold'>
-                        {currencySymbol}
-                        {price}
+                        {displayPrice}
                       </span>
                     </div>
 
@@ -632,6 +675,15 @@ export function SubscriptionPlansCard({
                           <span>{label}</span>
                         </div>
                       ))}
+                    </div>
+
+                    <div className='bg-muted/40 mb-3 rounded-md border p-2.5'>
+                      <div className='text-foreground text-xs font-medium'>
+                        套餐详情
+                      </div>
+                      <div className='text-muted-foreground mt-1 text-xs leading-5'>
+                        {detailText}
+                      </div>
                     </div>
 
                     <Separator className='mb-3' />

@@ -68,8 +68,47 @@ interface Props {
 function getCurrencySymbol(currency?: string) {
   const normalized = (currency || '').toUpperCase()
   if (normalized === 'CNY') return '¥'
-  if (normalized === 'EUR') return '€'
+  if (normalized === 'EUR') return 'EUR '
   return '$'
+}
+
+function formatPlanPrice(priceAmount: number, currency?: string): string {
+  const normalized = (currency || '').toUpperCase()
+  const formatted = priceAmount
+    .toFixed(2)
+    .replace(/\.00$/, '')
+    .replace(/(\.\d)0$/, '$1')
+
+  if (normalized === 'CNY') return `${formatted} 元`
+  return `${getCurrencySymbol(currency)}${formatted}`
+}
+
+function getPlanSubtitle(plan: PlanRecord['plan'] | null | undefined): string {
+  const subtitle = String(plan?.subtitle || '').trim()
+  if (subtitle) return subtitle
+  const durationCount = Number(plan?.duration_count || 0)
+  const durationUnit = String(plan?.duration_unit || '').toLowerCase()
+  if (durationUnit === 'day' && durationCount > 0 && durationCount <= 2) {
+    return '日卡'
+  }
+  return '月卡'
+}
+
+function getPlanDetailsText(
+  plan: PlanRecord['plan'],
+  totalAmount: number,
+  periodAmount: number,
+  t: (key: string) => string
+): string {
+  const periodLabel =
+    plan.quota_reset_period === 'weekly' ? '每周额度' : '周期额度'
+  const totalLabel = totalAmount > 0 ? formatQuota(totalAmount) : '不限'
+  const parts = [
+    `有效期 ${formatDuration(plan, t)}`,
+    periodAmount > 0 ? `${periodLabel} ${formatQuota(periodAmount)}` : null,
+    `总额度 ${totalLabel}`,
+  ]
+  return parts.filter(Boolean).join('，')
 }
 
 export function SubscriptionPurchaseDialog(props: Props) {
@@ -100,11 +139,14 @@ export function SubscriptionPurchaseDialog(props: Props) {
     t('Select payment method')
   const totalAmount = Number(plan.total_amount || 0)
   const periodAmount = Number(plan.period_amount || 0)
-  const currencySymbol = getCurrencySymbol(plan.currency)
-  const price = Number(plan.price_amount || 0).toFixed(2)
+  const displayPrice = formatPlanPrice(
+    Number(plan.price_amount || 0),
+    plan.currency
+  )
   const limitReached =
     (props.purchaseLimit || 0) > 0 &&
     (props.purchaseCount || 0) >= (props.purchaseLimit || 0)
+  const detailText = getPlanDetailsText(plan, totalAmount, periodAmount, t)
 
   const handlePayStripe = async () => {
     setPaying(true)
@@ -233,6 +275,12 @@ export function SubscriptionPurchaseDialog(props: Props) {
                 {plan.title}
               </span>
             </div>
+            <div className='flex justify-between'>
+              <span className='text-muted-foreground text-sm'>副标题</span>
+              <span className='max-w-[200px] truncate text-sm font-medium'>
+                {getPlanSubtitle(plan)}
+              </span>
+            </div>
             <div className='flex items-center justify-between'>
               <span className='text-muted-foreground text-sm'>
                 {t('Validity Period')}
@@ -275,12 +323,17 @@ export function SubscriptionPurchaseDialog(props: Props) {
                 <GroupBadge group={plan.upgrade_group} />
               </div>
             )}
+            <div className='rounded-md border bg-background/70 p-3'>
+              <div className='text-sm font-medium'>套餐详情</div>
+              <div className='text-muted-foreground mt-1 text-xs leading-5'>
+                {detailText}
+              </div>
+            </div>
             <Separator />
             <div className='flex items-center justify-between'>
               <span className='text-sm font-medium'>{t('Amount Due')}</span>
               <span className='text-primary text-lg font-bold'>
-                {currencySymbol}
-                {price}
+                {displayPrice}
               </span>
             </div>
           </div>
