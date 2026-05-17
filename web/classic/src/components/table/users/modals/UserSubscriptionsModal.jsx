@@ -373,6 +373,10 @@ const UserSubscriptionsModal = ({ visible, onCancel, user, t, onSuccess }) => {
               <div>
                 {t('End')}: {formatTs(sub?.end_time)}
               </div>
+              <div>
+                {t('Next reset')}:{' '}
+                {sub?.next_reset_time ? formatTs(sub?.next_reset_time) : t('Disabled')}
+              </div>
             </div>
           );
         },

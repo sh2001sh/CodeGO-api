@@ -69,7 +69,7 @@ function FooterLinkItem(props: { link: FooterLink }) {
 }
 
 function ProjectAttribution(props: { currentYear: number }) {
-  const attributionUrl = 'https://github.com/s2644752646/new-api'
+  const attributionUrl = 'https://github.com/sh2001sh/new-api'
 
   return (
     <div className='text-muted-foreground/45 text-center text-xs sm:text-right'>
@@ -109,33 +109,16 @@ export function Footer(props: FooterProps) {
         title: t('footer.columns.about.title'),
         links: [
           {
-            text: t('footer.columns.about.links.aboutProject'),
-            href: 'https://docs.newapi.pro/wiki/project-introduction/',
+            text: 'GitHub',
+            href: 'https://github.com/sh2001sh/new-api',
           },
           {
-            text: t('footer.columns.about.links.contact'),
-            href: 'https://docs.newapi.pro/support/community-interaction/',
+            text: 'Docker Hub',
+            href: 'https://hub.docker.com/r/s2644752646/new-api',
           },
           {
-            text: t('footer.columns.about.links.features'),
-            href: 'https://docs.newapi.pro/wiki/features-introduction/',
-          },
-        ],
-      },
-      {
-        title: t('footer.columns.docs.title'),
-        links: [
-          {
-            text: t('footer.columns.docs.links.quickStart'),
-            href: 'https://docs.newapi.pro/getting-started/',
-          },
-          {
-            text: t('footer.columns.docs.links.installation'),
-            href: 'https://docs.newapi.pro/installation/',
-          },
-          {
-            text: t('footer.columns.docs.links.apiDocs'),
-            href: 'https://docs.newapi.pro/api/',
+            text: t('Model Square'),
+            href: '/pricing',
           },
         ],
       },
@@ -210,7 +193,7 @@ export function Footer(props: FooterProps) {
 
           {/* Links columns */}
           {isDemoSiteMode && (
-            <div className='grid grid-cols-3 gap-8 md:gap-16'>
+            <div className='grid grid-cols-2 gap-8 md:gap-16'>
               {displayColumns.map((column, index) => (
                 <div key={index}>
                   <p className='text-muted-foreground/50 mb-3 text-xs font-medium tracking-wider uppercase'>

@@ -383,9 +383,15 @@ const SubscriptionPlansCard = ({
                     const subscription = sub.subscription;
                     const totalAmount = Number(subscription?.amount_total || 0);
                     const usedAmount = Number(subscription?.amount_used || 0);
+                    const periodAmount = Number(subscription?.period_amount || 0);
+                    const periodUsed = Number(subscription?.period_used || 0);
                     const remainAmount =
                       totalAmount > 0
                         ? Math.max(0, totalAmount - usedAmount)
+                        : 0;
+                    const remainPeriodAmount =
+                      periodAmount > 0
+                        ? Math.max(0, periodAmount - periodUsed)
                         : 0;
                     const planTitle =
                       planTitleMap.get(subscription?.plan_id) || '';
@@ -442,6 +448,20 @@ const SubscriptionPlansCard = ({
                             (subscription?.end_time || 0) * 1000,
                           ).toLocaleString()}
                         </div>
+                        {periodAmount > 0 && (
+                          <div className='text-xs text-gray-500 mb-2'>
+                            {t('Period')}:{' '}
+                            <Tooltip
+                              content={`${t('鍘熺敓棰濆害')}锛?${periodUsed}/${periodAmount} 路 ${t('鍓╀綑')} ${remainPeriodAmount}`}
+                            >
+                              <span>
+                                {renderQuota(periodUsed)}/
+                                {renderQuota(periodAmount)} 路 {t('鍓╀綑')}{' '}
+                                {renderQuota(remainPeriodAmount)}
+                              </span>
+                            </Tooltip>
+                          </div>
+                        )}
                         {isActive && subscription?.next_reset_time > 0 && (
                           <div className='text-xs text-gray-500 mb-2'>
                             {t('下一次重置')}:{' '}

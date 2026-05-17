@@ -395,6 +395,12 @@ export function UserSubscriptionsDialog(props: Props) {
                               <div>
                                 {t('End')}: {formatTimestamp(sub.end_time)}
                               </div>
+                              <div>
+                                {t('Next reset')}:{' '}
+                                {sub.next_reset_time
+                                  ? formatTimestamp(sub.next_reset_time)
+                                  : t('Disabled')}
+                              </div>
                             </div>
                           </TableCell>
                           <TableCell>

@@ -415,8 +415,14 @@ export function SubscriptionPlansCard({
                   const subscription = sub.subscription
                   const totalAmount = Number(subscription?.amount_total || 0)
                   const usedAmount = Number(subscription?.amount_used || 0)
+                  const periodAmount = Number(subscription?.period_amount || 0)
+                  const periodUsed = Number(subscription?.period_used || 0)
                   const remainAmount =
                     totalAmount > 0 ? Math.max(0, totalAmount - usedAmount) : 0
+                  const remainPeriodAmount =
+                    periodAmount > 0
+                      ? Math.max(0, periodAmount - periodUsed)
+                      : 0
                   const planTitle =
                     planTitleMap.get(subscription?.plan_id) || ''
                   const remainDays = getRemainingDays(sub)
@@ -477,6 +483,24 @@ export function SubscriptionPlansCard({
                           (subscription?.end_time || 0) * 1000
                         ).toLocaleString()}
                       </div>
+                      {periodAmount > 0 && (
+                        <div className='text-muted-foreground mt-1'>
+                          {t('Period')}:{' '}
+                          <Tooltip>
+                            <TooltipTrigger
+                              render={<span className='cursor-help' />}
+                            >
+                              {formatQuota(periodUsed)}/
+                              {formatQuota(periodAmount)} | {t('Remaining')}{' '}
+                              {formatQuota(remainPeriodAmount)}
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              {t('Raw Quota')}: {periodUsed}/{periodAmount} |{' '}
+                              {t('Remaining')} {remainPeriodAmount}
+                            </TooltipContent>
+                          </Tooltip>
+                        </div>
+                      )}
                       {isActive && (subscription?.next_reset_time ?? 0) > 0 && (
                         <div className='text-muted-foreground mt-1'>
                           {t('Next reset')}:{' '}
