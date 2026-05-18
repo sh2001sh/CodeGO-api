@@ -475,7 +475,7 @@ const SubscriptionPurchaseModal = ({
               className='!rounded-xl'
               closeIcon={null}
             />
-          )}
+          ) : null}
         </div>
       ) : null}
     </Modal>
