@@ -331,7 +331,7 @@ export function Wallet(props: WalletProps) {
       <SectionPageLayout>
         <SectionPageLayout.Title>{t('Wallet')}</SectionPageLayout.Title>
         <SectionPageLayout.Content>
-          <div className='mx-auto grid w-full max-w-7xl items-start gap-4 xl:grid-cols-[minmax(0,1fr)_340px]'>
+          <div className='mx-auto grid w-full max-w-[1760px] items-start gap-4 xl:grid-cols-[minmax(0,1fr)_300px] 2xl:grid-cols-[minmax(0,1fr)_320px]'>
             <div className='min-w-0 rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_18px_48px_rgba(15,23,42,0.06)] sm:p-5'>
               <Tabs
                 value={activeTab}

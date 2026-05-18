@@ -317,7 +317,7 @@ export function SubscriptionPlansCard({
             </div>
           ) : null}
 
-          <div className='grid grid-cols-2 gap-2 xl:grid-cols-4'>
+          <div className='grid grid-cols-2 gap-2'>
             <MetricCard label='有效期' value={formatDuration(plan, t)} />
             <MetricCard
               label={periodAmount > 0 ? '每周额度' : '套餐额度'}
@@ -608,13 +608,13 @@ function PlanSection(props: {
       </div>
 
       {props.loading ? (
-        <div className='grid grid-cols-1 gap-3 lg:grid-cols-2 2xl:grid-cols-4'>
+        <div className='grid grid-cols-1 gap-3 md:grid-cols-2 2xl:grid-cols-3'>
           {Array.from({ length: 4 }).map((_, index) => (
             <Skeleton key={index} className='h-[280px] w-full rounded-[22px]' />
           ))}
         </div>
       ) : childArray.length > 0 ? (
-        <div className='grid grid-cols-1 gap-3 lg:grid-cols-2 2xl:grid-cols-4'>
+        <div className='grid grid-cols-1 gap-3 md:grid-cols-2 2xl:grid-cols-3'>
           {childArray}
         </div>
       ) : (
