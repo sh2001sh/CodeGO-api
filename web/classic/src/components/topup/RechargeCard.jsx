@@ -100,19 +100,14 @@ const RechargeCard = ({
 }) => {
   const onlineFormApiRef = useRef(null);
   const redeemFormApiRef = useRef(null);
-  const initialTabSetRef = useRef(false);
   const showAmountSkeleton = useMinimumLoadingTime(amountLoading);
-  const [activeTab, setActiveTab] = useState('topup');
+  const [activeTab, setActiveTab] = useState('subscription');
   const shouldShowSubscription =
-    !subscriptionLoading && subscriptionPlans.length > 0;
+    subscriptionLoading ||
+    subscriptionPlans.length > 0 ||
+    activeSubscriptions.length > 0 ||
+    allSubscriptions.length > 0;
   const regularPayMethods = payMethods || [];
-
-  useEffect(() => {
-    if (initialTabSetRef.current) return;
-    if (subscriptionLoading) return;
-    setActiveTab(shouldShowSubscription ? 'subscription' : 'topup');
-    initialTabSetRef.current = true;
-  }, [shouldShowSubscription, subscriptionLoading]);
 
   useEffect(() => {
     if (!shouldShowSubscription && activeTab !== 'topup') {
@@ -633,7 +628,7 @@ const RechargeCard = ({
   );
 
   return (
-    <Card className='!rounded-2xl shadow-sm border-0'>
+    <Card className='!rounded-[28px] border-0 shadow-[0_22px_60px_rgba(15,23,42,0.08)]'>
       {/* 卡片头部 */}
       <div className='flex items-center justify-between mb-4'>
         <div className='flex items-center'>
@@ -657,7 +652,18 @@ const RechargeCard = ({
       </div>
 
       {shouldShowSubscription ? (
-        <Tabs type='card' activeKey={activeTab} onChange={setActiveTab}>
+        <Tabs
+          type='card'
+          activeKey={activeTab}
+          onChange={setActiveTab}
+          tabBarExtraContent={
+            <Text type='tertiary' size='small'>
+              {activeTab === 'subscription'
+                ? t('开通日卡或月卡后立即生效')
+                : t('按量充值后可直接消耗钱包额度')}
+            </Text>
+          }
+        >
           <TabPane
             tab={
               <div className='flex items-center gap-2'>

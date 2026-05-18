@@ -23,6 +23,7 @@ import {
   Button,
   Card,
   Divider,
+  Progress,
   Select,
   Skeleton,
   Space,
@@ -30,7 +31,7 @@ import {
   Tooltip,
   Typography,
 } from '@douyinfe/semi-ui';
-import { RefreshCw, Sparkles } from 'lucide-react';
+import { Crown, RefreshCw, Sparkles } from 'lucide-react';
 import { API, renderQuota, showError, showSuccess } from '../../helpers';
 import {
   formatSubscriptionDuration,
@@ -127,6 +128,12 @@ function getPlanSubtitle(plan) {
     return TEXT.dayPass;
   }
   return TEXT.monthPass;
+}
+
+function isDayPassPlan(plan) {
+  const durationCount = Number(plan?.duration_value || 0);
+  const durationUnit = String(plan?.duration_unit || '').toLowerCase();
+  return durationUnit === 'day' && durationCount > 0 && durationCount <= 2;
 }
 
 function getPlanDetailsText(plan, totalAmount, periodAmount, t) {
@@ -267,6 +274,20 @@ const SubscriptionPlansCard = ({
       map.set(plan.id, plan.title || '');
     });
     return map;
+  }, [plans]);
+
+  const groupedPlans = useMemo(() => {
+    const month = [];
+    const day = [];
+    (plans || []).forEach((record) => {
+      if (!record?.plan) return;
+      if (isDayPassPlan(record.plan)) {
+        day.push(record);
+      } else {
+        month.push(record);
+      }
+    });
+    return { month, day };
   }, [plans]);
 
   const getPlanPurchaseCount = (planId) => planPurchaseCountMap.get(planId) || 0;
@@ -511,6 +532,172 @@ const SubscriptionPlansCard = ({
     return Math.round((used / total) * 100);
   };
 
+  const renderPlanCard = (planRecord, index, isDayPassSection = false) => {
+    const plan = planRecord?.plan;
+    if (!plan) return null;
+
+    const totalAmount = Number(plan?.total_amount || 0);
+    const periodAmount = Number(plan?.period_amount || 0);
+    const priceAmount = Number(plan?.price_amount || 0);
+    const effectiveAmount = Number(planRecord?.amount_due ?? priceAmount ?? 0);
+    const displayPrice = formatPlanPrice(effectiveAmount, plan?.currency);
+    const isPopular = index === 0 && !isDayPassSection;
+    const limit = Number(plan?.max_purchase_per_user || 0);
+    const count = getPlanPurchaseCount(plan?.id);
+    const reached = limit > 0 && count >= limit;
+    const blockedByRule = planRecord?.action === 'disabled';
+    const actionLabel = getPlanActionLabel(planRecord?.action);
+    const detailText = getPlanDetailsText(plan, totalAmount, periodAmount, t);
+    const introText = getPlanIntroText(plan, totalAmount, periodAmount);
+    const resetText = formatSubscriptionResetPeriod(plan, t);
+    const metrics = [
+      {
+        label: TEXT.validFor,
+        value: formatSubscriptionDuration(plan, t),
+      },
+      resetText === '\u4e0d\u91cd\u7f6e'
+        ? null
+        : {
+            label: '\u989d\u5ea6\u91cd\u7f6e',
+            value: resetText,
+          },
+      {
+        label: periodAmount > 0 ? TEXT.weeklyQuota : TEXT.totalQuota,
+        value:
+          periodAmount > 0
+            ? renderQuota(periodAmount)
+            : totalAmount > 0
+              ? renderQuota(totalAmount)
+              : TEXT.unlimited,
+      },
+      periodAmount > 0
+        ? {
+            label: TEXT.totalQuota,
+            value: totalAmount > 0 ? renderQuota(totalAmount) : TEXT.unlimited,
+          }
+        : null,
+    ].filter(Boolean);
+
+    return (
+      <Card
+        key={plan?.id}
+        className={`!rounded-[26px] overflow-hidden border border-slate-200 bg-white/95 shadow-[0_20px_55px_rgba(15,23,42,0.08)] transition-all duration-200 hover:-translate-y-1 hover:shadow-[0_28px_70px_rgba(15,23,42,0.12)] ${
+          isPopular ? 'ring-4 ring-sky-100 border-sky-300' : ''
+        }`}
+        bodyStyle={{ padding: 0 }}
+      >
+        <div className='flex h-full flex-col'>
+          <div className='border-b border-slate-200 bg-[linear-gradient(135deg,rgba(14,165,233,0.12),rgba(255,255,255,0.95))] px-5 pb-4 pt-5'>
+            <div className='flex items-start justify-between gap-3'>
+              <div className='min-w-0'>
+                <div className='text-[11px] font-semibold uppercase tracking-[0.24em] text-sky-700'>
+                  {getPlanSubtitle(plan)}
+                </div>
+                <Typography.Title
+                  heading={4}
+                  ellipsis={{ rows: 1, showTooltip: true }}
+                  style={{ margin: '10px 0 0', color: '#0f172a' }}
+                >
+                  {plan?.title || '\u8ba2\u9605\u5957\u9910'}
+                </Typography.Title>
+                <Text
+                  type='secondary'
+                  size='small'
+                  ellipsis={{ rows: 2, showTooltip: true }}
+                  style={{ display: 'block', marginTop: 8, lineHeight: 1.7 }}
+                >
+                  {introText}
+                </Text>
+              </div>
+              {isPopular && (
+                <Tag color='blue' shape='circle' size='small'>
+                  <Sparkles size={10} className='mr-1' />
+                  {TEXT.recommended}
+                </Tag>
+              )}
+            </div>
+          </div>
+
+          <div className='flex flex-1 flex-col px-5 pb-5 pt-4'>
+            <div className='flex items-end gap-2'>
+              <span className='text-3xl font-semibold tracking-tight text-sky-700'>
+                {displayPrice}
+              </span>
+              <span className='pb-1 text-xs text-slate-400'>/ \u6bcf\u5957</span>
+            </div>
+            {effectiveAmount !== priceAmount && (
+              <Text type='tertiary' size='small' style={{ marginTop: 4 }}>
+                {`\u539f\u4ef7 ${formatPlanPrice(priceAmount, plan?.currency)}`}
+              </Text>
+            )}
+
+            {planRecord?.action && planRecord.action !== 'subscribe' && (
+              <Text
+                type='primary'
+                size='small'
+                style={{ display: 'block', marginTop: 10, fontWeight: 700 }}
+              >
+                {actionLabel}
+              </Text>
+            )}
+
+            <div className='mt-4 grid grid-cols-2 gap-2.5'>
+              {metrics.map((metric) => (
+                <div
+                  key={`${plan.id}-${metric.label}`}
+                  className='rounded-2xl border border-slate-200 bg-slate-50/80 p-3'
+                >
+                  <div className='text-[11px] tracking-wide text-slate-500'>
+                    {metric.label}
+                  </div>
+                  <div className='mt-1 text-sm font-semibold text-slate-900'>
+                    {metric.value}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className='mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-3'>
+              <div className='text-xs font-semibold text-slate-900'>
+                {TEXT.packageDetail}
+              </div>
+              <div className='mt-1 text-xs leading-6 text-slate-500'>
+                {detailText}
+              </div>
+            </div>
+
+            <div className='mt-auto pt-4'>
+              {reached || blockedByRule ? (
+                <Tooltip
+                  content={
+                    reached
+                      ? `${TEXT.purchaseLimitReached} (${count}/${limit})`
+                      : planRecord?.disabled_reason ||
+                        '\u5f53\u524d\u5df2\u6709\u751f\u6548\u5957\u9910\uff0c\u4e0d\u652f\u6301\u964d\u7ea7\u8ba2\u8d2d\u3002'
+                  }
+                  position='top'
+                >
+                  <Button theme='outline' type='primary' block disabled>
+                    {reached ? TEXT.limitReached : actionLabel}
+                  </Button>
+                </Tooltip>
+              ) : (
+                <Button
+                  theme='solid'
+                  type='primary'
+                  block
+                  onClick={() => openBuy(planRecord)}
+                >
+                  {actionLabel}
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      </Card>
+    );
+  };
+
   const cardContent = loading ? (
     <div className='space-y-4'>
       <Card className='!rounded-xl w-full' bodyStyle={{ padding: '12px' }}>
@@ -728,6 +915,32 @@ const SubscriptionPlansCard = ({
                       )}
                     </div>
 
+                    {isActive && periodAmount > 0 && (
+                      <Progress
+                        percent={
+                          periodAmount > 0
+                            ? Math.min(
+                                100,
+                                Math.round((periodUsed / periodAmount) * 100),
+                              )
+                            : 0
+                        }
+                        stroke='#0ea5e9'
+                        showInfo={false}
+                        size='small'
+                        style={{ marginBottom: 8 }}
+                      />
+                    )}
+
+                    {isActive && totalAmount > 0 && (
+                      <Progress
+                        percent={usagePercent}
+                        stroke='#0284c7'
+                        showInfo={false}
+                        size='small'
+                      />
+                    )}
+
                     {!isLast && <Divider margin={12} />}
                   </div>
                 );
@@ -740,158 +953,53 @@ const SubscriptionPlansCard = ({
       </Card>
 
       {plans.length > 0 ? (
-        <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3 gap-5 w-full px-1'>
-          {plans.map((planRecord, index) => {
-            const plan = planRecord?.plan;
-            const totalAmount = Number(plan?.total_amount || 0);
-            const periodAmount = Number(plan?.period_amount || 0);
-            const priceAmount = Number(plan?.price_amount || 0);
-            const effectiveAmount = Number(planRecord?.amount_due ?? priceAmount ?? 0);
-            const displayPrice = formatPlanPrice(
-              effectiveAmount,
-              plan?.currency,
-            );
-            const isPopular = index === 0 && plans.length > 1;
-            const limit = Number(plan?.max_purchase_per_user || 0);
-            const count = getPlanPurchaseCount(plan?.id);
-            const reached = limit > 0 && count >= limit;
-            const blockedByRule = planRecord?.action === 'disabled';
-            const actionLabel = getPlanActionLabel(planRecord?.action);
-            const detailText = getPlanDetailsText(plan, totalAmount, periodAmount, t);
-            const introText = getPlanIntroText(plan, totalAmount, periodAmount);
-            const resetText = formatSubscriptionResetPeriod(plan, t);
-            const planBenefits = [
-              `${TEXT.validFor}: ${formatSubscriptionDuration(plan, t)}`,
-              resetText === '\u4e0d\u91cd\u7f6e'
-                ? null
-                : `\u989d\u5ea6\u91cd\u7f6e: ${resetText}`,
-              totalAmount > 0
-                ? `${TEXT.totalQuota}: ${renderQuota(totalAmount)}`
-                : `${TEXT.totalQuota}: ${TEXT.unlimited}`,
-              limit > 0 ? `\u9650\u8d2d ${limit}` : null,
-              plan?.upgrade_group
-                ? `\u5347\u7ea7\u5206\u7ec4: ${plan.upgrade_group}`
-                : null,
-            ].filter(Boolean);
-
-            return (
-              <Card
-                key={plan?.id}
-                className={`!rounded-xl transition-all hover:shadow-lg w-full h-full ${
-                  isPopular ? 'ring-2 ring-purple-500' : ''
-                }`}
-                bodyStyle={{ padding: 0 }}
-              >
-                <div className='p-4 h-full flex flex-col'>
-                  {isPopular && (
-                    <div className='mb-2'>
-                      <Tag color='purple' shape='circle' size='small'>
-                        <Sparkles size={10} className='mr-1' />
-                        {TEXT.recommended}
-                      </Tag>
-                    </div>
-                  )}
-
-                  <div className='mb-3'>
-                    <Typography.Title
-                      heading={5}
-                      ellipsis={{ rows: 1, showTooltip: true }}
-                      style={{ margin: 0 }}
-                    >
-                      {plan?.title || '\u8ba2\u9605\u5957\u9910'}
-                    </Typography.Title>
-                    <Text
-                      type='tertiary'
-                      size='small'
-                      ellipsis={{ rows: 1, showTooltip: true }}
-                      style={{ display: 'block' }}
-                    >
-                      {getPlanSubtitle(plan)}
-                    </Text>
-                    {planRecord?.action && planRecord.action !== 'subscribe' && (
-                      <Text
-                        type='primary'
-                        size='small'
-                        style={{ display: 'block', marginTop: 4, fontWeight: 600 }}
-                      >
-                        {actionLabel}
-                      </Text>
-                    )}
-                    <Text
-                      type='secondary'
-                      size='small'
-                      ellipsis={{ rows: 2, showTooltip: true }}
-                      style={{ display: 'block', marginTop: 4 }}
-                    >
-                      {introText}
-                    </Text>
+        <div className='space-y-5 px-1'>
+          {groupedPlans.month.length > 0 && (
+            <div className='rounded-[30px] border border-sky-100 bg-[linear-gradient(180deg,rgba(248,251,255,0.98),rgba(255,255,255,0.94))] p-4 shadow-[0_24px_60px_rgba(15,23,42,0.06)] sm:p-5'>
+              <div className='mb-4 flex items-end justify-between gap-4'>
+                <div>
+                  <div className='text-[11px] font-semibold uppercase tracking-[0.24em] text-sky-700'>
+                    {TEXT.monthPass}
                   </div>
-
-                  <div className='py-2'>
-                    <div className='flex items-baseline justify-start'>
-                      <span className='text-3xl font-bold text-purple-600'>
-                        {displayPrice}
-                      </span>
-                    </div>
-                    {effectiveAmount !== priceAmount && (
-                      <Text type='tertiary' size='small'>
-                        {`\u539f\u4ef7 ${formatPlanPrice(priceAmount, plan?.currency)}`}
-                      </Text>
-                    )}
+                  <div className='mt-2 flex items-center gap-2 text-xl font-semibold tracking-tight text-slate-950'>
+                    <Crown size={18} />
+                    <span>Codex \u6708\u5361</span>
                   </div>
-
-                  <div className='flex flex-col items-start gap-1 pb-2'>
-                    {planBenefits.map((label) => (
-                      <div
-                        key={label}
-                        className='w-full flex items-center gap-2 text-xs text-gray-500'
-                      >
-                        <Badge dot type='tertiary' />
-                        <span>{label}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className='mb-3 w-full rounded-lg border border-gray-200 bg-gray-50 p-3'>
-                    <div className='text-xs font-semibold text-gray-800'>
-                      {TEXT.packageDetail}
-                    </div>
-                    <div className='mt-1 text-xs leading-5 text-gray-500'>
-                      {detailText}
-                    </div>
-                  </div>
-
-                  <div className='mt-auto'>
-                    <Divider margin={12} />
-                    {reached || blockedByRule ? (
-                      <Tooltip
-                        content={
-                          reached
-                            ? `${TEXT.purchaseLimitReached} (${count}/${limit})`
-                            : planRecord?.disabled_reason ||
-                              '\u5f53\u524d\u5df2\u6709\u751f\u6548\u5957\u9910\uff0c\u4e0d\u652f\u6301\u964d\u7ea7\u8ba2\u8d2d\u3002'
-                        }
-                        position='top'
-                      >
-                        <Button theme='outline' type='primary' block disabled>
-                          {reached ? TEXT.limitReached : actionLabel}
-                        </Button>
-                      </Tooltip>
-                    ) : (
-                      <Button
-                        theme='outline'
-                        type='primary'
-                        block
-                        onClick={() => openBuy(planRecord)}
-                      >
-                        {actionLabel}
-                      </Button>
-                    )}
-                  </div>
+                  <Text type='secondary' size='small' style={{ marginTop: 6, display: 'block' }}>
+                    \u9002\u5408\u957f\u671f\u4f7f\u7528\uff0c\u6309\u5468\u5237\u65b0\u914d\u989d\uff0c\u6309\u5957\u9910\u6709\u6548\u671f\u81ea\u52a8\u5931\u6548\u3002
+                  </Text>
                 </div>
-              </Card>
-            );
-          })}
+              </div>
+              <div className='grid grid-cols-1 gap-4 2xl:grid-cols-2'>
+                {groupedPlans.month.map((planRecord, index) =>
+                  renderPlanCard(planRecord, index, false),
+                )}
+              </div>
+            </div>
+          )}
+
+          {groupedPlans.day.length > 0 && (
+            <div className='rounded-[30px] border border-sky-100 bg-[linear-gradient(180deg,rgba(248,251,255,0.98),rgba(255,255,255,0.94))] p-4 shadow-[0_24px_60px_rgba(15,23,42,0.06)] sm:p-5'>
+              <div className='mb-4 flex items-end justify-between gap-4'>
+                <div>
+                  <div className='text-[11px] font-semibold uppercase tracking-[0.24em] text-sky-700'>
+                    {TEXT.dayPass}
+                  </div>
+                  <div className='mt-2 text-xl font-semibold tracking-tight text-slate-950'>
+                    Codex \u65e5\u5361
+                  </div>
+                  <Text type='secondary' size='small' style={{ marginTop: 6, display: 'block' }}>
+                    \u9002\u5408\u77ed\u671f\u51b2\u523a\u6216\u4e34\u65f6\u6269\u5bb9\uff0c\u5f00\u901a\u540e\u6309\u5929\u8ba1\u65f6\u3002
+                  </Text>
+                </div>
+              </div>
+              <div className='grid grid-cols-1 gap-4 xl:grid-cols-2'>
+                {groupedPlans.day.map((planRecord, index) =>
+                  renderPlanCard(planRecord, index, true),
+                )}
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className='text-center text-gray-400 text-sm py-4'>{TEXT.noPlans}</div>

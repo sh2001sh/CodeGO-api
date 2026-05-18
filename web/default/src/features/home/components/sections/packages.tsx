@@ -19,7 +19,6 @@ For commercial licensing, please contact support@quantumnous.com
 import { Check, Sparkles } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
-import { formatQuota } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -30,6 +29,7 @@ import {
   formatDuration,
   formatResetPeriod,
   formatSubscriptionPlanPrice,
+  formatSubscriptionQuotaAmount,
   getSubscriptionPlanDescription,
   getSubscriptionPlanDetailText,
   getSubscriptionPlanSubtitle,
@@ -130,10 +130,10 @@ export function Packages({
       `${t('Validity Period')}: ${formatDuration(plan, t)}`,
       resetText !== t('No Reset') ? `${t('Quota Reset')}: ${resetText}` : null,
       periodAmount > 0
-        ? `${t('Weekly Quota')}: ${formatQuota(periodAmount)}`
+        ? `周额度: ${formatSubscriptionQuotaAmount(periodAmount)}`
         : null,
       totalAmount > 0
-        ? `${t('Total Quota')}: ${formatQuota(totalAmount)}`
+        ? `${t('Total Quota')}: ${formatSubscriptionQuotaAmount(totalAmount)}`
         : `${t('Total Quota')}: ${t('Unlimited')}`,
     ].filter(Boolean) as string[]
 
@@ -172,7 +172,7 @@ export function Packages({
                 {formatSubscriptionPlanPrice(priceAmount, plan.currency)}
               </span>
               <span className='text-muted-foreground pb-1 text-sm'>
-                / {t('per plan')}
+                / 套餐
               </span>
             </div>
 
@@ -190,7 +190,7 @@ export function Packages({
 
             <div className='mt-5 rounded-3xl border border-slate-200 bg-slate-50/85 p-4'>
               <div className='text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase'>
-                {t('Package Details')}
+                套餐详情
               </div>
               <div className='mt-2 text-sm leading-6 text-slate-700'>
                 {detailText}
@@ -226,15 +226,13 @@ export function Packages({
       <div className='relative mx-auto max-w-7xl'>
         <div className='mx-auto max-w-3xl text-center'>
           <p className='text-primary text-xs font-semibold tracking-[0.28em] uppercase'>
-            {t('Codex Packages')}
+            Codex 套餐
           </p>
           <h2 className='mt-4 text-[clamp(2rem,4.4vw,3.4rem)] font-semibold tracking-tight text-slate-950'>
-            {t('Monthly cards for steady work, day passes for burst usage')}
+            月卡适合稳定使用，日卡适合临时冲量
           </h2>
           <p className='text-muted-foreground mt-4 text-base leading-7 md:text-lg'>
-            {t(
-              'All package payments are settled in CNY. Choose a long-running Codex plan or a one-day pass when you just need temporary capacity.'
-            )}
+            套餐价格以人民币支付，额度按美元信用额发放。可根据长期或短期使用需求选择月卡或日卡。
           </p>
         </div>
 
@@ -258,10 +256,10 @@ export function Packages({
             <div className='rounded-[32px] border border-sky-100 bg-white/88 p-5 shadow-[0_24px_60px_rgba(14,30,37,0.08)] backdrop-blur md:p-6'>
               <div className='mb-6'>
                 <p className='text-slate-500 text-xs font-semibold tracking-[0.24em] uppercase'>
-                  {t('Monthly Plans')}
+                  月卡套餐
                 </p>
                 <h3 className='mt-2 text-2xl font-semibold text-slate-950'>
-                  {t('Stable weekly refresh for long Codex sessions')}
+                  适合长期 Codex 使用，额度每周刷新
                 </h3>
               </div>
               <div className='grid gap-5 lg:grid-cols-2'>
@@ -274,10 +272,10 @@ export function Packages({
             <div className='rounded-[32px] border border-sky-100 bg-white/88 p-5 shadow-[0_24px_60px_rgba(14,30,37,0.08)] backdrop-blur md:p-6'>
               <div className='mb-6'>
                 <p className='text-slate-500 text-xs font-semibold tracking-[0.24em] uppercase'>
-                  {t('Day Passes')}
+                  日卡套餐
                 </p>
                 <h3 className='mt-2 text-2xl font-semibold text-slate-950'>
-                  {t('Short-term passes for temporary spikes')}
+                  适合短时冲量使用，按天生效
                 </h3>
               </div>
               <div className='grid gap-5'>

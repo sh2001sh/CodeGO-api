@@ -21,7 +21,8 @@ type SubscriptionPlanDTO struct {
 }
 
 type BillingPreferenceRequest struct {
-	BillingPreference string `json:"billing_preference"`
+	BillingPreference    string `json:"billing_preference"`
+	SubscriptionOrderIds []int  `json:"subscription_order_ids"`
 }
 
 type AdminUpsertSubscriptionPlanRequest struct {
@@ -198,11 +199,18 @@ func GetSubscriptionSelf(c *gin.Context) {
 	if err != nil {
 		activeSubscriptions = []model.SubscriptionSummary{}
 	}
+	activeSubscriptionOrderIds := make([]int, 0, len(activeSubscriptions))
+	for _, item := range activeSubscriptions {
+		if item.Subscription != nil && item.Subscription.Id > 0 {
+			activeSubscriptionOrderIds = append(activeSubscriptionOrderIds, item.Subscription.Id)
+		}
+	}
 
 	common.ApiSuccess(c, gin.H{
-		"billing_preference": pref,
-		"subscriptions":      activeSubscriptions,
-		"all_subscriptions":  allSubscriptions,
+		"billing_preference":     pref,
+		"subscription_order_ids": activeSubscriptionOrderIds,
+		"subscriptions":          activeSubscriptions,
+		"all_subscriptions":      allSubscriptions,
 	})
 }
 
@@ -214,6 +222,7 @@ func UpdateSubscriptionPreference(c *gin.Context) {
 		return
 	}
 	pref := common.NormalizeBillingPreference(req.BillingPreference)
+	orderIds := common.NormalizePositiveIntSlice(req.SubscriptionOrderIds)
 
 	user, err := model.GetUserById(userId, true)
 	if err != nil {
@@ -222,12 +231,18 @@ func UpdateSubscriptionPreference(c *gin.Context) {
 	}
 	current := user.GetSetting()
 	current.BillingPreference = pref
+	if req.SubscriptionOrderIds != nil {
+		current.SubscriptionOrderIds = orderIds
+	}
 	user.SetSetting(current)
 	if err := user.Update(false); err != nil {
 		common.ApiError(c, err)
 		return
 	}
-	common.ApiSuccess(c, gin.H{"billing_preference": pref})
+	common.ApiSuccess(c, gin.H{
+		"billing_preference":     pref,
+		"subscription_order_ids": current.SubscriptionOrderIds,
+	})
 }
 
 func AdminListSubscriptionPlans(c *gin.Context) {

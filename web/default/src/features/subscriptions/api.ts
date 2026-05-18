@@ -185,10 +185,17 @@ export async function getPublicPlans(): Promise<ApiResponse<PlanRecord[]>> {
 }
 
 export async function updateBillingPreference(
-  preference: string
-): Promise<ApiResponse<{ billing_preference?: string }>> {
+  preference: string,
+  subscriptionOrderIds?: number[]
+): Promise<
+  ApiResponse<{
+    billing_preference?: string
+    subscription_order_ids?: number[]
+  }>
+> {
   const res = await api.put('/api/subscription/self/preference', {
     billing_preference: preference,
+    subscription_order_ids: subscriptionOrderIds,
   })
   return res.data
 }

@@ -94,6 +94,7 @@ export default function SettingsSidebarModulesUser() {
       defaultConfig.personal = {
         enabled: true,
         topup: isSidebarModuleAllowed('personal', 'topup'),
+        rewards: isSidebarModuleAllowed('personal', 'rewards'),
         personal: isSidebarModuleAllowed('personal', 'personal'),
       };
     }
@@ -105,6 +106,7 @@ export default function SettingsSidebarModulesUser() {
         channel: isSidebarModuleAllowed('admin', 'channel'),
         models: isSidebarModuleAllowed('admin', 'models'),
         deployment: isSidebarModuleAllowed('admin', 'deployment'),
+        subscription: isSidebarModuleAllowed('admin', 'subscription'),
         redemption: isSidebarModuleAllowed('admin', 'redemption'),
         user: isSidebarModuleAllowed('admin', 'user'),
         setting: isSidebarModuleAllowed('admin', 'setting'),
@@ -326,6 +328,11 @@ export default function SettingsSidebarModulesUser() {
       modules: [
         { key: 'topup', title: t('钱包管理'), description: t('余额充值管理') },
         {
+          key: 'rewards',
+          title: t('邀请奖励'),
+          description: t('邀请链接和返利额度管理'),
+        },
+        {
           key: 'personal',
           title: t('个人设置'),
           description: t('个人信息设置'),
@@ -343,6 +350,11 @@ export default function SettingsSidebarModulesUser() {
           key: 'deployment',
           title: t('模型部署'),
           description: t('模型部署管理'),
+        },
+        {
+          key: 'subscription',
+          title: t('套餐管理'),
+          description: t('订阅套餐与订单管理'),
         },
         {
           key: 'redemption',

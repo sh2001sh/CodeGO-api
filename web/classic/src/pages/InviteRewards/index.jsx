@@ -1,5 +1,5 @@
 /*
-Copyright (C) 2023-2026 QuantumNous
+Copyright (C) 2025 QuantumNous
 
 This program is free software: you can redistribute it and/or modify
 it under the terms of the GNU Affero General Public License as
@@ -16,22 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-export { formatDuration, formatResetPeriod, formatTimestamp } from './format'
-export {
-  formatSubscriptionQuotaAmount,
-  formatSubscriptionPlanPrice,
-  getSubscriptionPlanActionLabel,
-  getSubscriptionPlanDescription,
-  getSubscriptionPlanDetailText,
-  getSubscriptionPlanSubtitle,
-  getSubscriptionCurrencyLabel,
-  isDayPassPlan,
-  normalizeSubscriptionText,
-} from './display'
-export {
-  getPlanFormSchema,
-  PLAN_FORM_DEFAULTS,
-  planToFormValues,
-  formValuesToPlanPayload,
-  type PlanFormValues,
-} from './plan-form'
+
+import InviteRewardsPage from '../../components/topup/InviteRewardsPage';
+
+export default InviteRewardsPage;

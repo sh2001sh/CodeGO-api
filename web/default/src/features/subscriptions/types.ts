@@ -148,6 +148,7 @@ export interface UpdateUserSubscriptionRequest {
 
 export interface SelfSubscriptionData {
   billing_preference: string
+  subscription_order_ids: number[]
   subscriptions: UserSubscriptionRecord[]
   all_subscriptions: UserSubscriptionRecord[]
 }

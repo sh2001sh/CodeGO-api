@@ -22,6 +22,12 @@ import { getSelf } from '@/lib/api'
 import { useStatus } from '@/hooks/use-status'
 import { useSystemConfig } from '@/hooks/use-system-config'
 import { SectionPageLayout } from '@/components/layout'
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from '@/components/ui/tabs'
 import { BillingHistoryDialog } from './components/dialogs/billing-history-dialog'
 import { CreemConfirmDialog } from './components/dialogs/creem-confirm-dialog'
 import { PaymentConfirmDialog } from './components/dialogs/payment-confirm-dialog'
@@ -53,6 +59,20 @@ interface WalletProps {
   initialShowHistory?: boolean
 }
 
+type WalletTab = 'subscription' | 'topup'
+
+function getInitialWalletTab(): WalletTab {
+  if (typeof window === 'undefined') return 'subscription'
+  return window.location.hash === '#wallet-add-funds' ? 'topup' : 'subscription'
+}
+
+function setWalletHash(tab: WalletTab) {
+  if (typeof window === 'undefined') return
+  const hash = tab === 'topup' ? '#wallet-add-funds' : '#wallet-subscriptions'
+  if (window.location.hash === hash) return
+  window.history.replaceState({}, '', `${window.location.pathname}${hash}`)
+}
+
 export function Wallet(props: WalletProps) {
   const { t } = useTranslation()
   const [user, setUser] = useState<UserWalletData | null>(null)
@@ -69,6 +89,7 @@ export function Wallet(props: WalletProps) {
   const [selectedCreemProduct, setSelectedCreemProduct] =
     useState<CreemProduct | null>(null)
   const [showSubscriptionPanel, setShowSubscriptionPanel] = useState(true)
+  const [activeTab, setActiveTab] = useState<WalletTab>(getInitialWalletTab)
 
   const { status } = useStatus()
   const { currency } = useSystemConfig()
@@ -122,6 +143,22 @@ export function Wallet(props: WalletProps) {
       window.history.replaceState({}, '', window.location.pathname)
     }
   }, [props.initialShowHistory])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const syncTabFromHash = () => {
+      setActiveTab(
+        window.location.hash === '#wallet-add-funds' ? 'topup' : 'subscription'
+      )
+    }
+
+    syncTabFromHash()
+    window.addEventListener('hashchange', syncTabFromHash)
+    return () => {
+      window.removeEventListener('hashchange', syncTabFromHash)
+    }
+  }, [])
 
   // Initialize topup amount when topup info is loaded
   useEffect(() => {
@@ -241,6 +278,13 @@ export function Wallet(props: WalletProps) {
     []
   )
 
+  useEffect(() => {
+    if (!showSubscriptionPanel && activeTab === 'subscription') {
+      setActiveTab('topup')
+      setWalletHash('topup')
+    }
+  }, [activeTab, showSubscriptionPanel])
+
   return (
     <>
       <SectionPageLayout>
@@ -252,51 +296,89 @@ export function Wallet(props: WalletProps) {
           <div className='mx-auto flex w-full max-w-7xl flex-col gap-4 sm:gap-5'>
             <WalletStatsCard user={user} loading={userLoading} />
 
-            <div
-              className={
-                showSubscriptionPanel
-                  ? 'grid gap-4 xl:grid-cols-[minmax(0,1.02fr)_minmax(390px,0.98fr)] xl:items-start'
-                  : 'grid gap-4'
-              }
-            >
-              <div id='wallet-add-funds' className='scroll-mt-4'>
-                <RechargeFormCard
-                  topupInfo={topupInfo}
-                  presetAmounts={presetAmounts}
-                  selectedPreset={selectedPreset}
-                  onSelectPreset={handleSelectPreset}
-                  topupAmount={topupAmount}
-                  onTopupAmountChange={handleTopupAmountChange}
-                  paymentAmount={paymentAmount}
-                  calculating={calculating}
-                  onPaymentMethodSelect={handlePaymentMethodSelect}
-                  paymentLoading={paymentLoading}
-                  redemptionCode={redemptionCode}
-                  onRedemptionCodeChange={setRedemptionCode}
-                  onRedeem={handleRedeem}
-                  redeeming={redeeming}
-                  topupLink={topupInfo?.topup_link}
-                  loading={topupLoading}
-                  priceRatio={(status?.price as number) || 1}
-                  usdExchangeRate={effectiveUsdExchangeRate}
-                  onOpenBilling={() => setBillingDialogOpen(true)}
-                  creemProducts={topupInfo?.creem_products}
-                  enableCreemTopup={topupInfo?.enable_creem_topup}
-                  onCreemProductSelect={handleCreemProductSelect}
-                  enableWaffoTopup={topupInfo?.enable_waffo_topup}
-                  waffoPayMethods={topupInfo?.waffo_pay_methods}
-                  waffoMinTopup={topupInfo?.waffo_min_topup}
-                  onWaffoMethodSelect={handleWaffoMethodSelect}
-                  enableWaffoPancakeTopup={
-                    topupInfo?.enable_waffo_pancake_topup
-                  }
-                />
-              </div>
+            <div className='rounded-[28px] border border-sky-100 bg-[linear-gradient(180deg,rgba(248,251,255,0.98),rgba(255,255,255,0.94))] p-4 shadow-[0_24px_60px_rgba(15,23,42,0.06)] sm:p-5'>
+              <Tabs
+                value={activeTab}
+                onValueChange={(value) => {
+                  const nextTab = value as WalletTab
+                  setActiveTab(nextTab)
+                  setWalletHash(nextTab)
+                }}
+                className='space-y-5'
+              >
+                <div className='flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between'>
+                  <div>
+                    <p className='text-primary text-[11px] font-semibold tracking-[0.24em] uppercase'>
+                      钱包操作
+                    </p>
+                    <h2 className='mt-2 text-2xl font-semibold tracking-tight text-slate-950'>
+                      充值额度或购买套餐
+                    </h2>
+                    <p className='text-muted-foreground mt-2 text-sm leading-6'>
+                      充值和套餐购买立即可切换，套餐信息会在面板内独立加载。
+                    </p>
+                  </div>
 
-              <SubscriptionPlansCard
-                topupInfo={topupInfo}
-                onAvailabilityChange={handleSubscriptionAvailabilityChange}
-              />
+                  <TabsList className='grid h-11 w-full grid-cols-2 rounded-2xl bg-slate-100 p-1 sm:w-[320px]'>
+                    <TabsTrigger
+                      value='subscription'
+                      disabled={!showSubscriptionPanel}
+                      className='rounded-xl text-sm font-medium'
+                    >
+                      套餐购买
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value='topup'
+                      className='rounded-xl text-sm font-medium'
+                    >
+                      额度充值
+                    </TabsTrigger>
+                  </TabsList>
+                </div>
+
+                <TabsContent value='subscription' className='mt-0'>
+                  <SubscriptionPlansCard
+                    topupInfo={topupInfo}
+                    onAvailabilityChange={handleSubscriptionAvailabilityChange}
+                  />
+                </TabsContent>
+
+                <TabsContent value='topup' className='mt-0'>
+                  <div id='wallet-add-funds' className='scroll-mt-4'>
+                    <RechargeFormCard
+                      topupInfo={topupInfo}
+                      presetAmounts={presetAmounts}
+                      selectedPreset={selectedPreset}
+                      onSelectPreset={handleSelectPreset}
+                      topupAmount={topupAmount}
+                      onTopupAmountChange={handleTopupAmountChange}
+                      paymentAmount={paymentAmount}
+                      calculating={calculating}
+                      onPaymentMethodSelect={handlePaymentMethodSelect}
+                      paymentLoading={paymentLoading}
+                      redemptionCode={redemptionCode}
+                      onRedemptionCodeChange={setRedemptionCode}
+                      onRedeem={handleRedeem}
+                      redeeming={redeeming}
+                      topupLink={topupInfo?.topup_link}
+                      loading={topupLoading}
+                      priceRatio={(status?.price as number) || 1}
+                      usdExchangeRate={effectiveUsdExchangeRate}
+                      onOpenBilling={() => setBillingDialogOpen(true)}
+                      creemProducts={topupInfo?.creem_products}
+                      enableCreemTopup={topupInfo?.enable_creem_topup}
+                      onCreemProductSelect={handleCreemProductSelect}
+                      enableWaffoTopup={topupInfo?.enable_waffo_topup}
+                      waffoPayMethods={topupInfo?.waffo_pay_methods}
+                      waffoMinTopup={topupInfo?.waffo_min_topup}
+                      onWaffoMethodSelect={handleWaffoMethodSelect}
+                      enableWaffoPancakeTopup={
+                        topupInfo?.enable_waffo_pancake_topup
+                      }
+                    />
+                  </div>
+                </TabsContent>
+              </Tabs>
             </div>
           </div>
         </SectionPageLayout.Content>

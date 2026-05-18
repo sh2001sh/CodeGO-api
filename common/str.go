@@ -116,6 +116,25 @@ func NormalizeBillingPreference(pref string) string {
 	}
 }
 
+func NormalizePositiveIntSlice(values []int) []int {
+	if len(values) == 0 {
+		return []int{}
+	}
+	seen := make(map[int]struct{}, len(values))
+	result := make([]int, 0, len(values))
+	for _, value := range values {
+		if value <= 0 {
+			continue
+		}
+		if _, ok := seen[value]; ok {
+			continue
+		}
+		seen[value] = struct{}{}
+		result = append(result, value)
+	}
+	return result
+}
+
 // MaskEmail masks a user email to prevent PII leakage in logs
 // Returns "***masked***" if email is empty, otherwise shows only the domain part
 func MaskEmail(email string) string {

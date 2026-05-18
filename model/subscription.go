@@ -3,12 +3,14 @@ package model
 import (
 	"errors"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/QuantumNous/new-api/common"
+	"github.com/QuantumNous/new-api/dto"
 	"github.com/QuantumNous/new-api/pkg/cachex"
 	"github.com/samber/hot"
 	"gorm.io/gorm"
@@ -1170,6 +1172,10 @@ func GetAllActiveUserSubscriptions(userId int) ([]SubscriptionSummary, error) {
 	if err != nil {
 		return nil, err
 	}
+	subs, _, err = orderActiveUserSubscriptionsTx(nil, userId, subs)
+	if err != nil {
+		return nil, err
+	}
 	return buildSubscriptionSummaries(subs), nil
 }
 
@@ -1216,6 +1222,70 @@ func buildSubscriptionSummaries(subs []UserSubscription) []SubscriptionSummary {
 		})
 	}
 	return result
+}
+
+func orderActiveUserSubscriptionsTx(tx *gorm.DB, userId int, subs []UserSubscription) ([]UserSubscription, []int, error) {
+	if len(subs) == 0 {
+		return []UserSubscription{}, []int{}, nil
+	}
+
+	setting, err := GetUserSetting(userId, false)
+	if err != nil {
+		setting = dto.UserSetting{}
+	}
+	explicitOrder := common.NormalizePositiveIntSlice(setting.SubscriptionOrderIds)
+	explicitRank := make(map[int]int, len(explicitOrder))
+	for index, id := range explicitOrder {
+		explicitRank[id] = index
+	}
+
+	planMap := make(map[int]*SubscriptionPlan, len(subs))
+	for _, sub := range subs {
+		if _, ok := planMap[sub.PlanId]; ok {
+			continue
+		}
+		plan, err := getSubscriptionPlanByIdTx(tx, sub.PlanId)
+		if err == nil && plan != nil {
+			planMap[sub.PlanId] = plan
+		}
+	}
+
+	ordered := append([]UserSubscription(nil), subs...)
+	sort.SliceStable(ordered, func(i, j int) bool {
+		left := ordered[i]
+		right := ordered[j]
+
+		leftRank, leftHasRank := explicitRank[left.Id]
+		rightRank, rightHasRank := explicitRank[right.Id]
+		switch {
+		case leftHasRank && rightHasRank && leftRank != rightRank:
+			return leftRank < rightRank
+		case leftHasRank != rightHasRank:
+			return leftHasRank
+		}
+
+		leftBucket := 1
+		if IsSubscriptionDayPassPlan(planMap[left.PlanId]) {
+			leftBucket = 0
+		}
+		rightBucket := 1
+		if IsSubscriptionDayPassPlan(planMap[right.PlanId]) {
+			rightBucket = 0
+		}
+		if leftBucket != rightBucket {
+			return leftBucket < rightBucket
+		}
+		if left.EndTime != right.EndTime {
+			return left.EndTime < right.EndTime
+		}
+		return left.Id < right.Id
+	})
+
+	orderedIds := make([]int, 0, len(ordered))
+	for _, sub := range ordered {
+		orderedIds = append(orderedIds, sub.Id)
+	}
+	return ordered, orderedIds, nil
 }
 
 // AdminInvalidateUserSubscription marks a user subscription as cancelled and ends it immediately.
@@ -1440,7 +1510,7 @@ func AdminUpdateUserSubscription(userSubscriptionId int, input AdminUpdateUserSu
 	}
 	if cacheGroup != "" && userId > 0 {
 		_ = UpdateUserGroupCache(userId, cacheGroup)
-		return fmt.Sprintf("鐢ㄦ埛鍒嗙粍宸叉洿鏂颁负 %s", cacheGroup), nil
+		return fmt.Sprintf("用户分组已同步为 %s", cacheGroup), nil
 	}
 	return "", nil
 }
@@ -1658,6 +1728,10 @@ func PreConsumeUserSubscription(requestId string, userId int, modelName string, 
 		}
 		if len(subs) == 0 {
 			return errors.New("no active subscription")
+		}
+		subs, _, err := orderActiveUserSubscriptionsTx(tx, userId, subs)
+		if err != nil {
+			return err
 		}
 		for _, candidate := range subs {
 			sub := candidate

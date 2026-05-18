@@ -17,6 +17,24 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
+import React from 'react';
 import TopUp from '../../components/topup';
 
-export default TopUp;
+const TopUpPage = () => (
+  <div className='classic-wallet-page'>
+    <style>
+      {`
+        .classic-wallet-page .grid.grid-cols-1.lg\\:grid-cols-2.gap-6 {
+          display: block !important;
+        }
+
+        .classic-wallet-page .grid.grid-cols-1.lg\\:grid-cols-2.gap-6 > :nth-child(2) {
+          display: none !important;
+        }
+      `}
+    </style>
+    <TopUp />
+  </div>
+);
+
+export default TopUpPage;
