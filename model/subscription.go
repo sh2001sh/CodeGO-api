@@ -3,6 +3,7 @@ package model
 import (
 	"errors"
 	"fmt"
+	"math"
 	"sort"
 	"strconv"
 	"strings"
@@ -1939,6 +1940,13 @@ func PostConsumeUserSubscriptionUsageDelta(userSubscriptionId int, modelName str
 	})
 }
 
+func quotaUnitsFromUSD(amount float64) int64 {
+	if amount <= 0 {
+		return 0
+	}
+	return int64(math.Round(amount * common.QuotaPerUnit))
+}
+
 func defaultSubscriptionPlans() []SubscriptionPlan {
 	return []SubscriptionPlan{
 		{
@@ -1950,8 +1958,8 @@ func defaultSubscriptionPlans() []SubscriptionPlan {
 			DurationValue:      1,
 			Enabled:            true,
 			SortOrder:          60,
-			TotalAmount:        300,
-			PeriodAmount:       75,
+			TotalAmount:        quotaUnitsFromUSD(300),
+			PeriodAmount:       quotaUnitsFromUSD(75),
 			QuotaResetPeriod:   SubscriptionResetWeekly,
 			ModelLimits:        "",
 			UpgradeGroup:       "",
@@ -1966,8 +1974,8 @@ func defaultSubscriptionPlans() []SubscriptionPlan {
 			DurationValue:    1,
 			Enabled:          true,
 			SortOrder:        50,
-			TotalAmount:      600,
-			PeriodAmount:     150,
+			TotalAmount:      quotaUnitsFromUSD(600),
+			PeriodAmount:     quotaUnitsFromUSD(150),
 			QuotaResetPeriod: SubscriptionResetWeekly,
 		},
 		{
@@ -1979,8 +1987,8 @@ func defaultSubscriptionPlans() []SubscriptionPlan {
 			DurationValue:    1,
 			Enabled:          true,
 			SortOrder:        40,
-			TotalAmount:      1500,
-			PeriodAmount:     375,
+			TotalAmount:      quotaUnitsFromUSD(1500),
+			PeriodAmount:     quotaUnitsFromUSD(375),
 			QuotaResetPeriod: SubscriptionResetWeekly,
 		},
 		{
@@ -1992,8 +2000,8 @@ func defaultSubscriptionPlans() []SubscriptionPlan {
 			DurationValue:    1,
 			Enabled:          true,
 			SortOrder:        30,
-			TotalAmount:      4000,
-			PeriodAmount:     1000,
+			TotalAmount:      quotaUnitsFromUSD(4000),
+			PeriodAmount:     quotaUnitsFromUSD(1000),
 			QuotaResetPeriod: SubscriptionResetWeekly,
 		},
 		{
@@ -2005,7 +2013,7 @@ func defaultSubscriptionPlans() []SubscriptionPlan {
 			DurationValue:    1,
 			Enabled:          true,
 			SortOrder:        20,
-			TotalAmount:      50,
+			TotalAmount:      quotaUnitsFromUSD(50),
 			QuotaResetPeriod: SubscriptionResetNever,
 		},
 		{
@@ -2017,7 +2025,7 @@ func defaultSubscriptionPlans() []SubscriptionPlan {
 			DurationValue:    1,
 			Enabled:          true,
 			SortOrder:        10,
-			TotalAmount:      100,
+			TotalAmount:      quotaUnitsFromUSD(100),
 			QuotaResetPeriod: SubscriptionResetNever,
 		},
 	}
@@ -2119,6 +2127,82 @@ func syncPresetSubscriptionPlanFields(existing *SubscriptionPlan, preset Subscri
 	return updates
 }
 
+func getLegacyPresetPlanQuota(title string) (totalAmount int64, periodAmount int64, ok bool) {
+	switch strings.TrimSpace(title) {
+	case "Lite月卡":
+		return 300, 75, true
+	case "Standard月卡":
+		return 600, 150, true
+	case "Pro月卡":
+		return 1500, 375, true
+	case "Ultra月卡":
+		return 4000, 1000, true
+	case "50刀日卡":
+		return 50, 0, true
+	case "100刀日卡":
+		return 100, 0, true
+	default:
+		return 0, 0, false
+	}
+}
+
+func migratePresetUserSubscriptions(plan *SubscriptionPlan) error {
+	if plan == nil || plan.Id <= 0 {
+		return nil
+	}
+	legacyTotal, legacyPeriod, ok := getLegacyPresetPlanQuota(plan.Title)
+	if !ok {
+		return nil
+	}
+
+	suspiciousThreshold := int64(common.QuotaPerUnit)
+
+	err := DB.Transaction(func(tx *gorm.DB) error {
+		var subs []UserSubscription
+		if err := tx.Where("plan_id = ?", plan.Id).Find(&subs).Error; err != nil {
+			return err
+		}
+		for _, sub := range subs {
+			updateMap := map[string]interface{}{}
+
+			shouldFixTotal := false
+			switch {
+			case legacyTotal > 0 && sub.AmountTotal == legacyTotal:
+				shouldFixTotal = true
+			case plan.TotalAmount > 0 && sub.AmountTotal > 0 && sub.AmountTotal < suspiciousThreshold:
+				shouldFixTotal = true
+			}
+			if shouldFixTotal && sub.AmountTotal != plan.TotalAmount {
+				updateMap["amount_total"] = plan.TotalAmount
+			}
+
+			shouldFixPeriod := false
+			switch {
+			case legacyPeriod > 0 && sub.PeriodAmount == legacyPeriod:
+				shouldFixPeriod = true
+			case plan.PeriodAmount > 0 && sub.PeriodAmount > 0 && sub.PeriodAmount < suspiciousThreshold:
+				shouldFixPeriod = true
+			}
+			if shouldFixPeriod && sub.PeriodAmount != plan.PeriodAmount {
+				updateMap["period_amount"] = plan.PeriodAmount
+			}
+
+			if len(updateMap) == 0 {
+				continue
+			}
+			updateMap["updated_at"] = common.GetTimestamp()
+			if err := tx.Model(&UserSubscription{}).Where("id = ?", sub.Id).Updates(updateMap).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // SeedDefaultSubscriptionPlans creates missing preset plans and safely syncs
 // same-title presets in existing databases to the latest built-in defaults.
 func SeedDefaultSubscriptionPlans() error {
@@ -2136,12 +2220,18 @@ func SeedDefaultSubscriptionPlans() error {
 				}
 				InvalidateSubscriptionPlanCache(existing.Id)
 			}
+			if err := migratePresetUserSubscriptions(existing); err != nil {
+				return err
+			}
 			continue
 		}
 		if !errors.Is(err, gorm.ErrRecordNotFound) {
 			return err
 		}
 		if err := DB.Create(&plans[index]).Error; err != nil {
+			return err
+		}
+		if err := migratePresetUserSubscriptions(&plans[index]); err != nil {
 			return err
 		}
 	}
