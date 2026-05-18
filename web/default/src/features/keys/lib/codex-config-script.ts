@@ -31,8 +31,23 @@ function normalizeApiKey(value?: string): string {
 }
 
 function normalizeServerAddress(value?: string): string {
-  const base = value || getServerAddress() || PLACEHOLDER_SERVER_URL
-  return base.replace(/\/+$/, '')
+  const raw = (value || getServerAddress() || PLACEHOLDER_SERVER_URL).trim()
+  const base = raw.replace(/\/+$/, '').replace(/\/v1$/i, '')
+
+  try {
+    const url = new URL(base)
+    const isLocalhost = ['localhost', '127.0.0.1', '0.0.0.0'].includes(
+      url.hostname
+    )
+
+    if (url.protocol === 'http:' && !isLocalhost) {
+      url.protocol = 'https:'
+    }
+
+    return url.toString().replace(/\/+$/, '')
+  } catch {
+    return base
+  }
 }
 
 function sanitizeLabel(value?: string): string {
@@ -46,17 +61,21 @@ function sanitizeLabel(value?: string): string {
   return normalized || 'template'
 }
 
-function buildCodexConfigBlock(serverAddress: string, model: string): string {
-  return `# BEGIN CODEXFORALL MANAGED
+function buildCodexRootBlock(model: string): string {
+  return `# BEGIN CODEXFORALL MANAGED ROOT
 model = "${model}"
 model_provider = "${CODEX_PROVIDER}"
+# END CODEXFORALL MANAGED ROOT`
+}
 
+function buildCodexProviderBlock(serverAddress: string): string {
+  return `# BEGIN CODEXFORALL MANAGED PROVIDER
 [model_providers.${CODEX_PROVIDER}]
 name = "${CODEX_PROVIDER}"
 base_url = "${serverAddress}/v1"
 wire_api = "responses"
 requires_openai_auth = true
-# END CODEXFORALL MANAGED`
+# END CODEXFORALL MANAGED PROVIDER`
 }
 
 function buildWindowsScript(
@@ -64,63 +83,106 @@ function buildWindowsScript(
   apiKey: string,
   model: string
 ) {
-  const codexConfigBlock = buildCodexConfigBlock(serverAddress, model)
+  const apiBase = `${serverAddress}/v1`
   return `@echo off
-setlocal DisableDelayedExpansion
+setlocal enabledelayedexpansion
+
+:: CodexForAll Windows setup script (ASCII only)
+echo.
+echo CodexForAll Windows Setup
+echo ======================
+echo.
 
 set "CODEXFORALL_SERVER_URL=${serverAddress}"
-set "CODEXFORALL_API_BASE=%CODEXFORALL_SERVER_URL%/v1"
-set "CODEXFORALL_API_KEY=${apiKey}"
-set "CODEXFORALL_MODEL=${model}"
-set "CODEXFORALL_CONFIG_DIR=%USERPROFILE%\\.codex"
-set "CODEXFORALL_CONFIG_FILE=%CODEXFORALL_CONFIG_DIR%\\config.toml"
+set "API_KEY=${apiKey}"
+set "MODEL=${model}"
 
-echo Configuring Codex CLI for codexforall...
+if "!API_KEY!"=="" goto :error_no_key
+if "!API_KEY!"=="__API_KEY__" goto :error_no_key
+
+set "codexDir=%USERPROFILE%\\.codex"
+echo Config dir: !codexDir!
 echo.
 
-if not exist "%CODEXFORALL_CONFIG_DIR%" mkdir "%CODEXFORALL_CONFIG_DIR%"
+if exist "!codexDir!" (
+    for /f "usebackq delims=" %%a in (\`powershell -NoProfile -Command "[DateTime]::Now.ToString('yyyyMMdd_HHmmss')"\`) do set TIMESTAMP=%%a
 
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$configPath = Join-Path $env:USERPROFILE '.codex\\config.toml'; $managedBlock = @'
-${codexConfigBlock}
-'@; $existing = ''; if (Test-Path $configPath) { $existing = Get-Content -Raw $configPath }; $pattern = '(?ms)^# BEGIN CODEXFORALL MANAGED\\r?\\n.*?^# END CODEXFORALL MANAGED\\r?\\n?'; $cleaned = [regex]::Replace($existing, $pattern, '').TrimEnd(); if ($cleaned.Length -gt 0) { $cleaned += [Environment]::NewLine + [Environment]::NewLine }; $encoding = New-Object System.Text.UTF8Encoding($false); [System.IO.File]::WriteAllText($configPath, $cleaned + $managedBlock + [Environment]::NewLine, $encoding)"
-if errorlevel 1 (
-  echo Failed to update %CODEXFORALL_CONFIG_FILE%.
-  exit /b 1
+    if not defined TIMESTAMP (
+        echo WARN: Failed to get timestamp, skipping backup.
+        set "TIMESTAMP=manual"
+    )
+
+    if exist "!codexDir!\\config.toml" (
+        copy "!codexDir!\\config.toml" "!codexDir!\\config.toml.backup_!TIMESTAMP!" >nul 2>&1
+    )
+
+    if exist "!codexDir!\\auth.json" (
+        copy "!codexDir!\\auth.json" "!codexDir!\\auth.json.backup_!TIMESTAMP!" >nul 2>&1
+    )
+) else (
+    mkdir "!codexDir!" 2>nul
+    if !errorlevel! neq 0 (
+        goto :error_mkdir
+    )
 )
 
-setx OPENAI_BASE_URL "%CODEXFORALL_API_BASE%" >nul
-setx OPENAI_API_BASE "%CODEXFORALL_API_BASE%" >nul
-setx OPENAI_API_KEY "%CODEXFORALL_API_KEY%" >nul
-setx OPENAI_MODEL "%CODEXFORALL_MODEL%" >nul
-
-set "OPENAI_BASE_URL=%CODEXFORALL_API_BASE%"
-set "OPENAI_API_BASE=%CODEXFORALL_API_BASE%"
-set "OPENAI_API_KEY=%CODEXFORALL_API_KEY%"
-set "OPENAI_MODEL=%CODEXFORALL_MODEL%"
-
-echo Saved the following environment variables:
-echo   OPENAI_BASE_URL=%OPENAI_BASE_URL%
-echo   OPENAI_API_BASE=%OPENAI_API_BASE%
-echo   OPENAI_API_KEY=%OPENAI_API_KEY%
-echo   OPENAI_MODEL=%OPENAI_MODEL%
+(
+echo model_provider = "${CODEX_PROVIDER}"
+echo model = "${model}"
+echo model_reasoning_effort = "high"
+echo disable_response_storage = false
 echo.
-echo Updated Codex config file:
-echo   %CODEXFORALL_CONFIG_FILE%
-echo.
-echo Reopen your terminal, then run: codex
-where codex >nul 2>nul
-if errorlevel 1 (
-  echo.
-  echo Codex CLI was not found in PATH.
-  echo Install it with: npm install -g @openai/codex
+echo [model_providers.${CODEX_PROVIDER}]
+echo name = "${CODEX_PROVIDER}"
+echo base_url = "${apiBase}"
+echo wire_api = "responses"
+echo requires_openai_auth = true
+echo web_search = "live"
+) > "!codexDir!\\config.toml" 2>nul
+
+if !errorlevel! neq 0 (
+    goto :error_write_config
 )
 
-pause
+(
+echo {
+echo   "OPENAI_API_KEY": "!API_KEY!"
+echo }
+) > "!codexDir!\\auth.json" 2>nul
+
+if !errorlevel! neq 0 (
+    goto :error_write_auth
+)
+
+attrib +h "!codexDir!\\auth.json" >nul 2>&1
+
+echo Completed. Files:
+echo   - config.toml: !codexDir!\\config.toml
+echo   - auth.json:  !codexDir!\\auth.json
+
+exit /b 0
+
+:error_no_key
+echo ERROR: API Key not set.
+exit /b 1
+
+:error_mkdir
+echo ERROR: Cannot create directory !codexDir!
+exit /b 1
+
+:error_write_config
+echo ERROR: Cannot write config.toml
+exit /b 1
+
+:error_write_auth
+echo ERROR: Cannot write auth.json
+exit /b 1
 `
 }
 
 function buildLinuxScript(serverAddress: string, apiKey: string, model: string) {
-  const codexConfigBlock = buildCodexConfigBlock(serverAddress, model)
+  const codexRootBlock = buildCodexRootBlock(model)
+  const codexProviderBlock = buildCodexProviderBlock(serverAddress)
   return `#!/usr/bin/env bash
 set -euo pipefail
 
@@ -133,6 +195,7 @@ TARGET_DIR="\${HOME}/.config/codexforall"
 TARGET_FILE="\${TARGET_DIR}/codex-env.sh"
 CODEX_DIR="\${HOME}/.codex"
 CODEX_CONFIG_FILE="\${CODEX_DIR}/config.toml"
+CODEX_AUTH_FILE="\${CODEX_DIR}/auth.json"
 TMP_CONFIG_FILE="\${CODEX_DIR}/config.toml.tmp"
 PROFILE_FILE="\${HOME}/.bashrc"
 SOURCE_LINE='[ -f "$HOME/.config/codexforall/codex-env.sh" ] && source "$HOME/.config/codexforall/codex-env.sh"'
@@ -152,23 +215,50 @@ export OPENAI_MODEL="\${MODEL}"
 EOF
 
 if [[ -f "\${CODEX_CONFIG_FILE}" ]]; then
-  sed '/^# BEGIN CODEXFORALL MANAGED$/,/^# END CODEXFORALL MANAGED$/d' "\${CODEX_CONFIG_FILE}" > "\${TMP_CONFIG_FILE}"
+  awk '
+    BEGIN { in_managed = 0; in_provider = 0 }
+    /^# BEGIN CODEXFORALL MANAGED/ { in_managed = 1; next }
+    in_managed && /^# END CODEXFORALL MANAGED/ { in_managed = 0; next }
+    in_managed { next }
+    /^model[[:space:]]*=/ { next }
+    /^model_provider[[:space:]]*=/ { next }
+    /^\\[model_providers\\.${CODEX_PROVIDER}\\]$/ { in_provider = 1; next }
+    in_provider {
+      if (/^\\[/) {
+        in_provider = 0
+        print \$0
+      }
+      next
+    }
+    { print }
+  ' "\${CODEX_CONFIG_FILE}" > "\${TMP_CONFIG_FILE}"
 else
   : > "\${TMP_CONFIG_FILE}"
 fi
 
-if [[ -s "\${TMP_CONFIG_FILE}" ]]; then
-  printf '\\n' >> "\${TMP_CONFIG_FILE}"
+mv "\${TMP_CONFIG_FILE}" "\${CODEX_CONFIG_FILE}"
+cleaned_content="$(cat "\${CODEX_CONFIG_FILE}")"
+
+cat > "\${TMP_CONFIG_FILE}" <<'EOF'
+${codexRootBlock}
+EOF
+
+if [[ -n "\${cleaned_content}" ]]; then
+  printf '\\n%s\\n' "\${cleaned_content}" >> "\${TMP_CONFIG_FILE}"
 fi
 
+printf '\\n' >> "\${TMP_CONFIG_FILE}"
+
 cat >> "\${TMP_CONFIG_FILE}" <<'EOF'
-${codexConfigBlock}
+${codexProviderBlock}
 EOF
 
 mv "\${TMP_CONFIG_FILE}" "\${CODEX_CONFIG_FILE}"
 
 chmod 600 "\${TARGET_FILE}"
 chmod 600 "\${CODEX_CONFIG_FILE}"
+printf '{"OPENAI_API_KEY":"%s"}\n' "\${API_KEY}" > "\${CODEX_AUTH_FILE}"
+chmod 600 "\${CODEX_AUTH_FILE}"
 touch "\${PROFILE_FILE}"
 
 if ! grep -qxF "\${SOURCE_LINE}" "\${PROFILE_FILE}"; then
@@ -178,6 +268,7 @@ fi
 printf 'Configured Codex CLI for codexforall.\\n'
 printf 'Environment file: %s\\n' "\${TARGET_FILE}"
 printf 'Codex config file: %s\\n' "\${CODEX_CONFIG_FILE}"
+printf 'Codex auth file: %s\\n' "\${CODEX_AUTH_FILE}"
 printf 'Shell profile: %s\\n' "\${PROFILE_FILE}"
 printf 'Run: source "%s"\\n' "\${PROFILE_FILE}"
 printf 'Then start Codex with: codex\\n'

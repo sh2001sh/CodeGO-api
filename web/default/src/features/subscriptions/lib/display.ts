@@ -22,6 +22,31 @@ import type { SubscriptionPlan } from '../types'
 
 const DAY_PASS_KEYWORDS = ['day pass', '日卡']
 
+const PLAN_DISCOUNT_TEXT_MAP: Array<{
+  match: (title: string) => boolean
+  text: string
+}> = [
+  { match: (title) => title.includes('lite'), text: '比官方 Plus 优惠约 89.7%' },
+  {
+    match: (title) => title.includes('standard'),
+    text: '比官方 Plus 优惠约 90.8%',
+  },
+  { match: (title) => title.includes('pro'), text: '比官方 Plus 优惠约 93.0%' },
+  { match: (title) => title.includes('ultra'), text: '比官方 Plus 优惠约 94.5%' },
+  {
+    match: (title) =>
+      (title.includes('50') && title.includes('日卡')) ||
+      title.includes('day pass 50'),
+    text: '比官方 Plus 优惠约 87.7%',
+  },
+  {
+    match: (title) =>
+      (title.includes('100') && title.includes('日卡')) ||
+      title.includes('day pass 100'),
+    text: '比官方 Plus 优惠约 87.7%',
+  },
+]
+
 function trimText(value?: string | null): string {
   return String(value || '').replace(/\u0000/g, '').trim()
 }
@@ -29,9 +54,15 @@ function trimText(value?: string | null): string {
 function formatNumber(value: number): string {
   const abs = Math.abs(value)
   if (abs === 0) return '0'
-  if (abs >= 100) return value.toFixed(Number.isInteger(value) ? 0 : 2).replace(/\.00$/, '')
-  if (abs >= 1) return value.toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1')
-  if (abs >= 0.01) return value.toFixed(4).replace(/0+$/, '').replace(/\.$/, '')
+  if (abs >= 100) {
+    return value.toFixed(Number.isInteger(value) ? 0 : 2).replace(/\.00$/, '')
+  }
+  if (abs >= 1) {
+    return value.toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1')
+  }
+  if (abs >= 0.01) {
+    return value.toFixed(4).replace(/0+$/, '').replace(/\.$/, '')
+  }
   return value.toFixed(6).replace(/0+$/, '').replace(/\.$/, '')
 }
 
@@ -82,6 +113,14 @@ export function getSubscriptionPlanSubtitle(
   return isDayPassPlan(plan) ? '日卡' : '月卡'
 }
 
+export function getSubscriptionPlanDiscountText(
+  plan?: Partial<SubscriptionPlan> | null
+): string {
+  const title = normalizeSubscriptionText(plan?.title).toLowerCase()
+  const matched = PLAN_DISCOUNT_TEXT_MAP.find((item) => item.match(title))
+  return matched?.text || ''
+}
+
 export function getSubscriptionPlanActionLabel(
   action: string | undefined,
   t: TFunction
@@ -104,18 +143,22 @@ export function getSubscriptionPlanDescription(
   plan: Partial<SubscriptionPlan>,
   totalAmount: number,
   periodAmount: number,
-  _t: TFunction
+  t: TFunction
 ): string {
   if (isDayPassPlan(plan)) {
-    return `有效期 ${formatDuration(plan, _t)}；总额度 ${formatSubscriptionQuotaAmount(totalAmount)}；日卡额度独立结算，优先于月卡消耗。`
+    const totalText =
+      totalAmount > 0 ? formatSubscriptionQuotaAmount(totalAmount) : '不限'
+    return `有效期 ${formatDuration(plan, t)}；总额度 ${totalText}；日卡额度独立结算，默认优先于月卡消耗。`
   }
   if (periodAmount > 0) {
-    return `额度每周更新一次，周额度 ${formatSubscriptionQuotaAmount(periodAmount)}，总额度 ${formatSubscriptionQuotaAmount(totalAmount)}。`
+    const totalText =
+      totalAmount > 0 ? formatSubscriptionQuotaAmount(totalAmount) : '不限'
+    return `额度每周更新一次；每周额度 ${formatSubscriptionQuotaAmount(periodAmount)}；总额度 ${totalText}。`
   }
   if (totalAmount > 0) {
-    return `有效期 ${formatDuration(plan, _t)}；总额度 ${formatSubscriptionQuotaAmount(totalAmount)}。`
+    return `有效期 ${formatDuration(plan, t)}；总额度 ${formatSubscriptionQuotaAmount(totalAmount)}。`
   }
-  return `有效期 ${formatDuration(plan, _t)}；总额度不限。`
+  return `有效期 ${formatDuration(plan, t)}；总额度不限。`
 }
 
 export function getSubscriptionPlanDetailText(

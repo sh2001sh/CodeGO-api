@@ -332,7 +332,7 @@ export function Wallet(props: WalletProps) {
         <SectionPageLayout.Title>{t('Wallet')}</SectionPageLayout.Title>
         <SectionPageLayout.Content>
           <div className='mx-auto grid w-full max-w-[1760px] items-start gap-4 xl:grid-cols-[minmax(0,1fr)_300px] 2xl:grid-cols-[minmax(0,1fr)_320px]'>
-            <div className='min-w-0 rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_18px_48px_rgba(15,23,42,0.06)] sm:p-5'>
+            <div className='min-w-0 rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_18px_48px_rgba(15,23,42,0.06)] dark:border-slate-800 dark:bg-slate-950/70 dark:shadow-[0_18px_48px_rgba(2,6,23,0.45)] sm:p-5'>
               <Tabs
                 value={activeTab}
                 onValueChange={(value) => {
@@ -343,10 +343,10 @@ export function Wallet(props: WalletProps) {
                 className='space-y-3'
               >
                 <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
-                  <h2 className='text-lg font-semibold tracking-tight text-slate-950'>
+                  <h2 className='text-lg font-semibold tracking-tight text-foreground'>
                     钱包操作
                   </h2>
-                  <TabsList className='grid h-11 w-full grid-cols-2 rounded-2xl bg-slate-100 p-1 sm:w-[320px]'>
+                  <TabsList className='grid h-11 w-full grid-cols-2 rounded-2xl bg-slate-100 p-1 dark:bg-slate-900 sm:w-[320px]'>
                     <TabsTrigger
                       value='subscription'
                       disabled={!showSubscriptionPanel}

@@ -115,6 +115,21 @@ function getPlanDetailsText(plan, totalAmount, periodAmount, t) {
   return parts.filter(Boolean).join('\uFF1B');
 }
 
+function getPlanDiscountText(plan) {
+  const title = String(plan?.title || '').trim().toLowerCase();
+  if (title.includes('lite')) return '比官方 Plus 优惠约 89.7%';
+  if (title.includes('standard')) return '比官方 Plus 优惠约 90.8%';
+  if (title.includes('pro')) return '比官方 Plus 优惠约 93.0%';
+  if (title.includes('ultra')) return '比官方 Plus 优惠约 94.5%';
+  if ((title.includes('50') && title.includes('日卡')) || title.includes('day pass 50')) {
+    return '比官方 Plus 优惠约 87.7%';
+  }
+  if ((title.includes('100') && title.includes('日卡')) || title.includes('day pass 100')) {
+    return '比官方 Plus 优惠约 87.7%';
+  }
+  return '';
+}
+
 const SubscriptionPurchaseModal = ({
   t,
   visible,
@@ -141,6 +156,7 @@ const SubscriptionPurchaseModal = ({
     Number(selectedPlan?.amount_due ?? plan?.price_amount ?? 0),
     plan?.currency,
   );
+  const discountText = getPlanDiscountText(plan);
   const detailText = getPlanDetailsText(plan, totalAmount, periodAmount, t);
   const resetText = formatSubscriptionResetPeriod(plan, t);
   const hasStripe = enableStripeTopUp && !!plan?.stripe_price_id;
@@ -278,6 +294,16 @@ const SubscriptionPurchaseModal = ({
         <div className='space-y-4 pb-10'>
           <Card className='!rounded-xl !border-0 bg-slate-50 dark:bg-slate-800'>
             <div className='space-y-3'>
+              <div className='flex flex-wrap items-center gap-2'>
+                <Tag color='dark' size='small' shape='circle'>
+                  套餐
+                </Tag>
+                {discountText ? (
+                  <Tag color='orange' size='small' shape='circle'>
+                    {discountText}
+                  </Tag>
+                ) : null}
+              </div>
               <div className='flex justify-between items-center'>
                 <Text strong className='text-slate-700 dark:text-slate-200'>
                   {TEXT.planName}:

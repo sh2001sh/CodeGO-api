@@ -579,8 +579,14 @@ func (user *User) Update(updatePassword bool) error {
 		return err
 	}
 
+	updatedUser := User{}
+	if err = DB.First(&updatedUser, newUser.Id).Error; err != nil {
+		return err
+	}
+	*user = updatedUser
+
 	// Update cache
-	return updateUserCache(*user)
+	return updateUserCache(updatedUser)
 }
 
 func (user *User) Edit(updatePassword bool) error {
@@ -608,8 +614,14 @@ func (user *User) Edit(updatePassword bool) error {
 		return err
 	}
 
+	updatedUser := User{}
+	if err = DB.First(&updatedUser, newUser.Id).Error; err != nil {
+		return err
+	}
+	*user = updatedUser
+
 	// Update cache
-	return updateUserCache(*user)
+	return updateUserCache(updatedUser)
 }
 
 func (user *User) ClearBinding(bindingType string) error {

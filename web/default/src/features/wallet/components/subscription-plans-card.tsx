@@ -39,6 +39,7 @@ import {
   formatSubscriptionQuotaAmount,
   getSubscriptionPlanActionLabel,
   getSubscriptionPlanDescription,
+  getSubscriptionPlanDiscountText,
   getSubscriptionPlanDetailText,
   getSubscriptionPlanSubtitle,
   isDayPassPlan,
@@ -264,6 +265,7 @@ export function SubscriptionPlansCard({
       periodAmount,
       t
     )
+    const discountText = getSubscriptionPlanDiscountText(plan)
     const blockedReason =
       normalizeSubscriptionText(record.disabled_reason) ||
       '当前已有生效中的更高等级套餐，暂不支持降级订阅。'
@@ -272,8 +274,9 @@ export function SubscriptionPlansCard({
       <Card
         key={plan.id}
         className={cn(
-          'overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-[0_16px_36px_rgba(15,23,42,0.06)]',
-          isRecommended && 'border-sky-300 ring-2 ring-sky-100'
+          'overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-[0_16px_36px_rgba(15,23,42,0.06)] dark:border-slate-800 dark:bg-slate-950/70 dark:shadow-[0_16px_36px_rgba(2,6,23,0.4)]',
+          isRecommended &&
+            'border-sky-300 ring-2 ring-sky-100 dark:border-sky-500/80 dark:ring-sky-500/20'
         )}
       >
         <CardContent className='space-y-4 p-4'>
@@ -283,21 +286,29 @@ export function SubscriptionPlansCard({
                 {getSubscriptionPlanSubtitle(plan)}
               </p>
               <div className='mt-1.5 flex flex-wrap items-center gap-2'>
-                <h4 className='truncate text-xl font-semibold tracking-tight text-slate-950'>
+                <span className='rounded-full bg-slate-900 px-2.5 py-1 text-[11px] font-semibold tracking-[0.18em] text-white dark:bg-slate-100 dark:text-slate-900'>
+                  套餐
+                </span>
+                <h4 className='truncate text-xl font-semibold tracking-tight text-foreground'>
                   {title}
                 </h4>
-                <span className='rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[11px] text-sky-700'>
+                <span className='rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[11px] text-sky-700 dark:border-sky-500/40 dark:bg-sky-500/10 dark:text-sky-200'>
                   {presentation.badge}
                 </span>
               </div>
-              <p className='mt-2 text-sm leading-6 text-slate-700'>
+              {discountText ? (
+                <div className='mt-2 inline-flex rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[12px] font-semibold text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200'>
+                  {discountText}
+                </div>
+              ) : null}
+              <p className='mt-2 text-sm leading-6 text-slate-700 dark:text-slate-300'>
                 {presentation.summary}
               </p>
             </div>
 
             <div className='text-right'>
               {isRecommended ? (
-                <div className='inline-flex items-center rounded-full bg-sky-50 px-3 py-1 text-xs font-medium text-sky-700'>
+                <div className='inline-flex items-center rounded-full bg-sky-50 px-3 py-1 text-xs font-medium text-sky-700 dark:bg-sky-500/10 dark:text-sky-200'>
                   <Sparkles className='mr-1 h-3.5 w-3.5' />
                   推荐
                 </div>
@@ -341,8 +352,8 @@ export function SubscriptionPlansCard({
             />
           </div>
 
-          <div className='rounded-2xl border border-slate-200 bg-slate-50/80 px-3.5 py-3'>
-            <div className='text-sm font-semibold text-slate-950'>套餐介绍</div>
+          <div className='rounded-2xl border border-slate-200 bg-slate-50/80 px-3.5 py-3 dark:border-slate-800 dark:bg-slate-900/70'>
+            <div className='text-sm font-semibold text-foreground'>套餐介绍</div>
             <p className='text-muted-foreground mt-1.5 text-sm leading-6'>
               {summaryText}
             </p>
@@ -424,10 +435,10 @@ export function SubscriptionPlansCard({
             )}
           </PlanSection>
 
-          <Card className='rounded-[22px] border-slate-200 shadow-none'>
+          <Card className='rounded-[22px] border-slate-200 shadow-none dark:border-slate-800 dark:bg-slate-950/70'>
             <CardContent className='space-y-4 p-4'>
               <div>
-                <div className='text-base font-semibold text-slate-950'>
+                <div className='text-base font-semibold text-foreground'>
                   已购套餐使用情况
                 </div>
                 <p className='text-muted-foreground mt-1 text-sm'>
@@ -442,7 +453,7 @@ export function SubscriptionPlansCard({
                   ))}
                 </div>
               ) : allSubscriptions.length === 0 ? (
-                <div className='rounded-2xl border border-dashed px-4 py-6 text-sm text-slate-600'>
+                <div className='rounded-2xl border border-dashed border-slate-300 px-4 py-6 text-sm text-slate-600 dark:border-slate-700 dark:text-slate-300'>
                   当前还没有任何订阅记录。购买套餐后，这里会显示每张套餐的额度使用进度。
                 </div>
               ) : (
@@ -477,16 +488,16 @@ export function SubscriptionPlansCard({
                     return (
                       <Card
                         key={subscription.id}
-                        className='rounded-2xl border-slate-200 shadow-none'
+                        className='rounded-2xl border-slate-200 shadow-none dark:border-slate-800 dark:bg-slate-950/50'
                       >
                         <CardContent className='space-y-3 p-4'>
                           <div className='flex flex-wrap items-start justify-between gap-2'>
                             <div>
                               <div className='flex flex-wrap items-center gap-2'>
-                                <div className='font-semibold text-slate-950'>
+                                <div className='font-semibold text-foreground'>
                                   {title}
                                 </div>
-                                <span className='rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] text-slate-600'>
+                                <span className='rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'>
                                   {active
                                     ? '生效中'
                                     : subscription.status === 'cancelled'
@@ -597,11 +608,16 @@ function PlanSection(props: {
     : [props.children].filter(Boolean)
 
   return (
-    <section className='rounded-[24px] border border-sky-100 bg-[linear-gradient(180deg,rgba(248,251,255,0.98),rgba(255,255,255,0.94))] p-4 shadow-[0_20px_48px_rgba(15,23,42,0.05)]'>
+    <section className='rounded-[24px] border border-sky-100 bg-[linear-gradient(180deg,rgba(248,251,255,0.98),rgba(255,255,255,0.94))] p-4 shadow-[0_20px_48px_rgba(15,23,42,0.05)] dark:border-slate-800 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(2,6,23,0.82))] dark:shadow-[0_20px_48px_rgba(2,6,23,0.4)]'>
       <div className='mb-4'>
-        <p className='text-primary text-[11px] font-semibold tracking-[0.24em] uppercase'>
-          {props.title}
-        </p>
+        <div className='flex flex-wrap items-center gap-2'>
+          <span className='rounded-full bg-slate-900 px-2.5 py-1 text-[11px] font-semibold tracking-[0.18em] text-white dark:bg-slate-100 dark:text-slate-900'>
+            套餐
+          </span>
+          <p className='text-primary text-[11px] font-semibold tracking-[0.24em] uppercase'>
+            {props.title}
+          </p>
+        </div>
         <p className='text-muted-foreground mt-2 text-sm leading-6'>
           {props.description}
         </p>
@@ -618,7 +634,7 @@ function PlanSection(props: {
           {childArray}
         </div>
       ) : (
-        <div className='rounded-2xl border border-dashed px-4 py-8 text-sm text-slate-600'>
+        <div className='rounded-2xl border border-dashed border-slate-300 px-4 py-8 text-sm text-slate-600 dark:border-slate-700 dark:text-slate-300'>
           {props.emptyText}
         </div>
       )}
@@ -628,11 +644,11 @@ function PlanSection(props: {
 
 function MetricCard(props: { label: string; value: string }) {
   return (
-    <div className='rounded-2xl border bg-white px-3 py-3 shadow-[0_6px_20px_rgba(15,23,42,0.04)]'>
+    <div className='rounded-2xl border bg-white px-3 py-3 shadow-[0_6px_20px_rgba(15,23,42,0.04)] dark:border-slate-800 dark:bg-slate-900/70 dark:shadow-[0_6px_20px_rgba(2,6,23,0.35)]'>
       <div className='text-muted-foreground text-[11px] font-medium tracking-wide'>
         {props.label}
       </div>
-      <div className='mt-1 text-sm font-semibold text-slate-900'>
+      <div className='mt-1 text-sm font-semibold text-foreground'>
         {props.value}
       </div>
     </div>
@@ -649,7 +665,7 @@ function UsageBlock(props: {
 }) {
   if (props.total <= 0) {
     return (
-      <div className='rounded-2xl border bg-slate-50/70 p-3 text-sm text-slate-600'>
+      <div className='rounded-2xl border border-slate-200 bg-slate-50/70 p-3 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-300'>
         {props.label}：不限
       </div>
     )
@@ -657,7 +673,7 @@ function UsageBlock(props: {
   return (
     <div className='space-y-2'>
       <div className='flex flex-wrap items-center justify-between gap-2 text-sm'>
-        <span className='font-medium text-slate-900'>{props.label}</span>
+        <span className='font-medium text-foreground'>{props.label}</span>
         <span className='text-muted-foreground text-xs'>
           {formatSubscriptionQuotaAmount(props.used)}/
           {formatSubscriptionQuotaAmount(props.total)} · 剩余{' '}
@@ -671,11 +687,11 @@ function UsageBlock(props: {
 
 function InfoItem(props: { label: string; value: string }) {
   return (
-    <div className='rounded-xl border bg-slate-50/70 px-3 py-2.5'>
+    <div className='rounded-xl border border-slate-200 bg-slate-50/70 px-3 py-2.5 dark:border-slate-800 dark:bg-slate-900/70'>
       <div className='text-muted-foreground text-[11px] font-medium'>
         {props.label}
       </div>
-      <div className='mt-1 text-xs font-medium text-slate-900'>
+      <div className='mt-1 text-xs font-medium text-foreground'>
         {props.value}
       </div>
     </div>

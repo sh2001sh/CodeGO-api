@@ -199,16 +199,33 @@ func GetSubscriptionSelf(c *gin.Context) {
 	if err != nil {
 		activeSubscriptions = []model.SubscriptionSummary{}
 	}
-	activeSubscriptionOrderIds := make([]int, 0, len(activeSubscriptions))
+	activeSubscriptionIds := make([]int, 0, len(activeSubscriptions))
+	activeSubscriptionSet := make(map[int]struct{}, len(activeSubscriptions))
 	for _, item := range activeSubscriptions {
 		if item.Subscription != nil && item.Subscription.Id > 0 {
-			activeSubscriptionOrderIds = append(activeSubscriptionOrderIds, item.Subscription.Id)
+			activeSubscriptionIds = append(activeSubscriptionIds, item.Subscription.Id)
+			activeSubscriptionSet[item.Subscription.Id] = struct{}{}
 		}
+	}
+	orderedIds := make([]int, 0, len(activeSubscriptionIds))
+	for _, id := range common.NormalizePositiveIntSlice(settingMap.SubscriptionOrderIds) {
+		if _, ok := activeSubscriptionSet[id]; !ok {
+			continue
+		}
+		orderedIds = append(orderedIds, id)
+		delete(activeSubscriptionSet, id)
+	}
+	for _, id := range activeSubscriptionIds {
+		if _, ok := activeSubscriptionSet[id]; !ok {
+			continue
+		}
+		orderedIds = append(orderedIds, id)
+		delete(activeSubscriptionSet, id)
 	}
 
 	common.ApiSuccess(c, gin.H{
 		"billing_preference":     pref,
-		"subscription_order_ids": activeSubscriptionOrderIds,
+		"subscription_order_ids": orderedIds,
 		"subscriptions":          activeSubscriptions,
 		"all_subscriptions":      allSubscriptions,
 	})

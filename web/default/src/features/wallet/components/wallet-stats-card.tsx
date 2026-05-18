@@ -247,7 +247,7 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
         {Array.from({ length: 3 }).map((_, index) => (
           <div
             key={index}
-            className='rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_16px_36px_rgba(15,23,42,0.06)]'
+            className='rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_16px_36px_rgba(15,23,42,0.06)] dark:border-slate-800 dark:bg-slate-950/70 dark:shadow-[0_16px_36px_rgba(2,6,23,0.4)]'
           >
             <Skeleton className='h-5 w-28' />
             <Skeleton className='mt-3 h-10 w-full' />
@@ -260,8 +260,8 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
 
   return (
     <aside className='space-y-4 lg:sticky lg:top-4'>
-      <div className='rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_16px_36px_rgba(15,23,42,0.06)]'>
-        <div className='flex items-center gap-2 text-sm font-semibold text-slate-950'>
+      <div className='rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_16px_36px_rgba(15,23,42,0.06)] dark:border-slate-800 dark:bg-slate-950/70 dark:shadow-[0_16px_36px_rgba(2,6,23,0.4)]'>
+        <div className='flex items-center gap-2 text-sm font-semibold text-foreground'>
           <Gift className='h-4 w-4 text-sky-600' />
           兑换码兑换
         </div>
@@ -285,19 +285,19 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
             href={props.topupLink}
             target='_blank'
             rel='noopener noreferrer'
-            className='text-muted-foreground mt-3 inline-flex text-xs hover:text-slate-900'
+            className='text-muted-foreground mt-3 inline-flex text-xs hover:text-foreground'
           >
             去获取兑换码
           </a>
         ) : null}
       </div>
 
-      <div className='rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_16px_36px_rgba(15,23,42,0.06)]'>
-        <div className='flex items-center gap-2 text-sm font-semibold text-slate-950'>
+      <div className='rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_16px_36px_rgba(15,23,42,0.06)] dark:border-slate-800 dark:bg-slate-950/70 dark:shadow-[0_16px_36px_rgba(2,6,23,0.4)]'>
+        <div className='flex items-center gap-2 text-sm font-semibold text-foreground'>
           <WalletCards className='h-4 w-4 text-sky-600' />
           当前余额
         </div>
-        <div className='mt-3 font-mono text-3xl font-bold tracking-tight text-slate-950 tabular-nums'>
+        <div className='mt-3 font-mono text-3xl font-bold tracking-tight text-foreground tabular-nums'>
           {formatQuota(props.user?.quota ?? 0)}
         </div>
         <div className='mt-4 grid gap-2'>
@@ -305,15 +305,15 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
           <StatItem
             label='API 请求'
             value={(props.user?.request_count ?? 0).toLocaleString()}
-            icon={<Activity className='h-4 w-4 text-slate-500' />}
+            icon={<Activity className='h-4 w-4 text-slate-500 dark:text-slate-400' />}
           />
           <StatItem label='生效订阅' value={`${activeSubscriptions.length}`} />
         </div>
       </div>
 
-      <div className='rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_16px_36px_rgba(15,23,42,0.06)]'>
+      <div className='rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_16px_36px_rgba(15,23,42,0.06)] dark:border-slate-800 dark:bg-slate-950/70 dark:shadow-[0_16px_36px_rgba(2,6,23,0.4)]'>
         <div className='flex items-center justify-between gap-3'>
-          <div className='text-sm font-semibold text-slate-950'>扣费优先顺序</div>
+          <div className='text-sm font-semibold text-foreground'>扣费优先顺序</div>
           <Button
             variant='outline'
             size='icon'
@@ -372,11 +372,11 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
                 <Skeleton className='h-14 rounded-2xl' />
               </div>
             ) : draftPreference === 'wallet_only' ? (
-              <div className='rounded-2xl border border-dashed px-3 py-4 text-xs text-slate-600'>
+              <div className='rounded-2xl border border-dashed border-slate-300 px-3 py-4 text-xs text-slate-600 dark:border-slate-700 dark:text-slate-300'>
                 当前为仅从余额扣费，订阅不会参与扣费。
               </div>
             ) : !hasActiveSubscriptions ? (
-              <div className='rounded-2xl border border-dashed px-3 py-4 text-xs text-slate-600'>
+              <div className='rounded-2xl border border-dashed border-slate-300 px-3 py-4 text-xs text-slate-600 dark:border-slate-700 dark:text-slate-300'>
                 当前没有可排序的有效订阅。
               </div>
             ) : (
@@ -387,11 +387,11 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
                   return (
                     <div
                       key={subscription.id}
-                      className='rounded-2xl border border-slate-200 bg-slate-50/70 px-3 py-3'
+                      className='rounded-2xl border border-slate-200 bg-slate-50/70 px-3 py-3 dark:border-slate-800 dark:bg-slate-900/70'
                     >
                       <div className='flex items-start justify-between gap-3'>
                         <div className='min-w-0'>
-                          <div className='truncate text-sm font-semibold text-slate-950'>
+                          <div className='truncate text-sm font-semibold text-foreground'>
                             {index + 1}.{' '}
                             {meta?.title || `订阅 #${subscription.id}`}
                           </div>
@@ -459,12 +459,12 @@ function StatItem(props: {
   icon?: ReactNode
 }) {
   return (
-    <div className='flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 px-3 py-3'>
-      <div className='flex items-center gap-2 text-sm text-slate-600'>
+    <div className='flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 px-3 py-3 dark:border-slate-800 dark:bg-slate-900/70'>
+      <div className='flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300'>
         {props.icon}
         <span>{props.label}</span>
       </div>
-      <div className='font-mono text-sm font-semibold text-slate-950 tabular-nums'>
+      <div className='font-mono text-sm font-semibold text-foreground tabular-nums'>
         {props.value}
       </div>
     </div>

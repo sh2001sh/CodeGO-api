@@ -161,6 +161,21 @@ function getPlanIntroText(plan, totalAmount, periodAmount) {
   return parts.join(' | ');
 }
 
+function getPlanDiscountText(plan) {
+  const title = String(plan?.title || '').trim().toLowerCase();
+  if (title.includes('lite')) return '比官方 Plus 优惠约 89.7%';
+  if (title.includes('standard')) return '比官方 Plus 优惠约 90.8%';
+  if (title.includes('pro')) return '比官方 Plus 优惠约 93.0%';
+  if (title.includes('ultra')) return '比官方 Plus 优惠约 94.5%';
+  if ((title.includes('50') && title.includes('日卡')) || title.includes('day pass 50')) {
+    return '比官方 Plus 优惠约 87.7%';
+  }
+  if ((title.includes('100') && title.includes('日卡')) || title.includes('day pass 100')) {
+    return '比官方 Plus 优惠约 87.7%';
+  }
+  return '';
+}
+
 function getPlanActionLabel(action) {
   switch (action) {
     case 'renew':
@@ -549,6 +564,7 @@ const SubscriptionPlansCard = ({
     const actionLabel = getPlanActionLabel(planRecord?.action);
     const detailText = getPlanDetailsText(plan, totalAmount, periodAmount, t);
     const introText = getPlanIntroText(plan, totalAmount, periodAmount);
+    const discountText = getPlanDiscountText(plan);
     const resetText = formatSubscriptionResetPeriod(plan, t);
     const metrics = [
       {
@@ -593,13 +609,28 @@ const SubscriptionPlansCard = ({
                 <div className='text-[11px] font-semibold uppercase tracking-[0.24em] text-sky-700'>
                   {getPlanSubtitle(plan)}
                 </div>
-                <Typography.Title
-                  heading={4}
-                  ellipsis={{ rows: 1, showTooltip: true }}
-                  style={{ margin: '10px 0 0', color: '#0f172a' }}
-                >
-                  {plan?.title || '\u8ba2\u9605\u5957\u9910'}
-                </Typography.Title>
+                <div className='mt-2 flex flex-wrap items-center gap-2'>
+                  <Tag color='dark' size='small' shape='circle'>
+                    套餐
+                  </Tag>
+                  <Typography.Title
+                    heading={4}
+                    ellipsis={{ rows: 1, showTooltip: true }}
+                    style={{ margin: 0, color: '#0f172a' }}
+                  >
+                    {plan?.title || '\u8ba2\u9605\u5957\u9910'}
+                  </Typography.Title>
+                </div>
+                {discountText ? (
+                  <Tag
+                    color='orange'
+                    size='small'
+                    shape='circle'
+                    style={{ marginTop: 10, fontWeight: 700 }}
+                  >
+                    {discountText}
+                  </Tag>
+                ) : null}
                 <Text
                   type='secondary'
                   size='small'
@@ -958,8 +989,13 @@ const SubscriptionPlansCard = ({
             <div className='rounded-[30px] border border-sky-100 bg-[linear-gradient(180deg,rgba(248,251,255,0.98),rgba(255,255,255,0.94))] p-4 shadow-[0_24px_60px_rgba(15,23,42,0.06)] sm:p-5'>
               <div className='mb-4 flex items-end justify-between gap-4'>
                 <div>
-                  <div className='text-[11px] font-semibold uppercase tracking-[0.24em] text-sky-700'>
-                    {TEXT.monthPass}
+                  <div className='flex items-center gap-2'>
+                    <Tag color='dark' size='small' shape='circle'>
+                      套餐
+                    </Tag>
+                    <div className='text-[11px] font-semibold uppercase tracking-[0.24em] text-sky-700'>
+                      {TEXT.monthPass}
+                    </div>
                   </div>
                   <div className='mt-2 flex items-center gap-2 text-xl font-semibold tracking-tight text-slate-950'>
                     <Crown size={18} />
@@ -982,8 +1018,13 @@ const SubscriptionPlansCard = ({
             <div className='rounded-[30px] border border-sky-100 bg-[linear-gradient(180deg,rgba(248,251,255,0.98),rgba(255,255,255,0.94))] p-4 shadow-[0_24px_60px_rgba(15,23,42,0.06)] sm:p-5'>
               <div className='mb-4 flex items-end justify-between gap-4'>
                 <div>
-                  <div className='text-[11px] font-semibold uppercase tracking-[0.24em] text-sky-700'>
-                    {TEXT.dayPass}
+                  <div className='flex items-center gap-2'>
+                    <Tag color='dark' size='small' shape='circle'>
+                      套餐
+                    </Tag>
+                    <div className='text-[11px] font-semibold uppercase tracking-[0.24em] text-sky-700'>
+                      {TEXT.dayPass}
+                    </div>
                   </div>
                   <div className='mt-2 text-xl font-semibold tracking-tight text-slate-950'>
                     Codex \u65e5\u5361

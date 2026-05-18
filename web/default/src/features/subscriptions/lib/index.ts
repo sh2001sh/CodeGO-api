@@ -22,6 +22,7 @@ export {
   formatSubscriptionPlanPrice,
   getSubscriptionPlanActionLabel,
   getSubscriptionPlanDescription,
+  getSubscriptionPlanDiscountText,
   getSubscriptionPlanDetailText,
   getSubscriptionPlanSubtitle,
   getSubscriptionCurrencyLabel,

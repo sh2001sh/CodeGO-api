@@ -1,60 +1,93 @@
 @echo off
-setlocal DisableDelayedExpansion
+setlocal enabledelayedexpansion
+
+:: CodexForAll Windows setup script (ASCII only)
+echo.
+echo CodexForAll Windows Setup
+echo ======================
+echo.
 
 set "CODEXFORALL_SERVER_URL=https://your-codexforall.example.com"
-set "CODEXFORALL_API_BASE=%CODEXFORALL_SERVER_URL%/v1"
-set "CODEXFORALL_API_KEY=YOUR_CODEXFORALL_API_KEY"
-set "CODEXFORALL_MODEL=gpt-5.2"
-set "CODEXFORALL_CONFIG_DIR=%USERPROFILE%\.codex"
-set "CODEXFORALL_CONFIG_FILE=%CODEXFORALL_CONFIG_DIR%\config.toml"
+set "API_KEY=YOUR_CODEXFORALL_API_KEY"
+set "MODEL=gpt-5.2"
 
-echo Configuring Codex CLI for codexforall...
+if "!API_KEY!"=="" goto :error_no_key
+if "!API_KEY!"=="__API_KEY__" goto :error_no_key
+
+set "codexDir=%USERPROFILE%\.codex"
+echo Config dir: !codexDir!
 echo.
 
-if not exist "%CODEXFORALL_CONFIG_DIR%" mkdir "%CODEXFORALL_CONFIG_DIR%"
+if exist "!codexDir!" (
+    for /f "usebackq delims=" %%a in (`powershell -NoProfile -Command "[DateTime]::Now.ToString('yyyyMMdd_HHmmss')"`) do set TIMESTAMP=%%a
 
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$configPath = Join-Path $env:USERPROFILE '.codex\config.toml'; $managedBlock = @'
-# BEGIN CODEXFORALL MANAGED
-model = "gpt-5.2"
-model_provider = "codexforall"
+    if not defined TIMESTAMP (
+        echo WARN: Failed to get timestamp, skipping backup.
+        set "TIMESTAMP=manual"
+    )
 
-[model_providers.codexforall]
-name = "codexforall"
-base_url = "https://your-codexforall.example.com/v1"
-wire_api = "responses"
-requires_openai_auth = true
-# END CODEXFORALL MANAGED
-'@; $existing = ''; if (Test-Path $configPath) { $existing = Get-Content -Raw $configPath }; $pattern = '(?ms)^# BEGIN CODEXFORALL MANAGED\r?\n.*?^# END CODEXFORALL MANAGED\r?\n?'; $cleaned = [regex]::Replace($existing, $pattern, '').TrimEnd(); if ($cleaned.Length -gt 0) { $cleaned += [Environment]::NewLine + [Environment]::NewLine }; $encoding = New-Object System.Text.UTF8Encoding($false); [System.IO.File]::WriteAllText($configPath, $cleaned + $managedBlock + [Environment]::NewLine, $encoding)"
-if errorlevel 1 (
-  echo Failed to update %CODEXFORALL_CONFIG_FILE%.
-  exit /b 1
+    if exist "!codexDir!\config.toml" (
+        copy "!codexDir!\config.toml" "!codexDir!\config.toml.backup_!TIMESTAMP!" >nul 2>&1
+    )
+
+    if exist "!codexDir!\auth.json" (
+        copy "!codexDir!\auth.json" "!codexDir!\auth.json.backup_!TIMESTAMP!" >nul 2>&1
+    )
+) else (
+    mkdir "!codexDir!" 2>nul
+    if !errorlevel! neq 0 (
+        goto :error_mkdir
+    )
 )
 
-setx OPENAI_BASE_URL "%CODEXFORALL_API_BASE%" >nul
-setx OPENAI_API_BASE "%CODEXFORALL_API_BASE%" >nul
-setx OPENAI_API_KEY "%CODEXFORALL_API_KEY%" >nul
-setx OPENAI_MODEL "%CODEXFORALL_MODEL%" >nul
-
-set "OPENAI_BASE_URL=%CODEXFORALL_API_BASE%"
-set "OPENAI_API_BASE=%CODEXFORALL_API_BASE%"
-set "OPENAI_API_KEY=%CODEXFORALL_API_KEY%"
-set "OPENAI_MODEL=%CODEXFORALL_MODEL%"
-
-echo Saved the following environment variables:
-echo   OPENAI_BASE_URL=%OPENAI_BASE_URL%
-echo   OPENAI_API_BASE=%OPENAI_API_BASE%
-echo   OPENAI_API_KEY=%OPENAI_API_KEY%
-echo   OPENAI_MODEL=%OPENAI_MODEL%
+(
+echo model_provider = "codexforall"
+echo model = "gpt-5.2"
+echo model_reasoning_effort = "high"
+echo disable_response_storage = false
 echo.
-echo Updated Codex config file:
-echo   %CODEXFORALL_CONFIG_FILE%
-echo.
-echo Reopen your terminal, then run: codex
-where codex >nul 2>nul
-if errorlevel 1 (
-  echo.
-  echo Codex CLI was not found in PATH.
-  echo Install it with: npm install -g @openai/codex
+echo [model_providers.codexforall]
+echo name = "codexforall"
+echo base_url = "!CODEXFORALL_SERVER_URL!/v1"
+echo wire_api = "responses"
+echo requires_openai_auth = true
+echo web_search = "live"
+) > "!codexDir!\config.toml" 2>nul
+
+if !errorlevel! neq 0 (
+    goto :error_write_config
 )
 
-pause
+(
+echo {
+echo   "OPENAI_API_KEY": "!API_KEY!"
+echo }
+) > "!codexDir!\auth.json" 2>nul
+
+if !errorlevel! neq 0 (
+    goto :error_write_auth
+)
+
+attrib +h "!codexDir!\auth.json" >nul 2>&1
+
+echo Completed. Files:
+echo   - config.toml: !codexDir!\config.toml
+echo   - auth.json:  !codexDir!\auth.json
+
+exit /b 0
+
+:error_no_key
+echo ERROR: API Key not set.
+exit /b 1
+
+:error_mkdir
+echo ERROR: Cannot create directory !codexDir!
+exit /b 1
+
+:error_write_config
+echo ERROR: Cannot write config.toml
+exit /b 1
+
+:error_write_auth
+echo ERROR: Cannot write auth.json
+exit /b 1
