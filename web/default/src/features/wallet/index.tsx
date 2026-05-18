@@ -330,19 +330,9 @@ export function Wallet(props: WalletProps) {
     <>
       <SectionPageLayout>
         <SectionPageLayout.Title>{t('Wallet')}</SectionPageLayout.Title>
-        <SectionPageLayout.Description>
-          {t('查看当前余额、订阅状态，并在这里切换套餐购买或额度充值。')}
-        </SectionPageLayout.Description>
         <SectionPageLayout.Content>
-          <div className='mx-auto flex w-full max-w-7xl flex-col gap-4'>
-            <WalletStatsCard
-              user={user}
-              loading={userLoading}
-              subscriptionData={subscriptionData}
-              subscriptionLoading={subscriptionLoading}
-            />
-
-            <div className='rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_18px_48px_rgba(15,23,42,0.06)] sm:p-5'>
+          <div className='mx-auto grid w-full max-w-7xl items-start gap-4 xl:grid-cols-[minmax(0,1fr)_340px]'>
+            <div className='min-w-0 rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_18px_48px_rgba(15,23,42,0.06)] sm:p-5'>
               <Tabs
                 value={activeTab}
                 onValueChange={(value) => {
@@ -350,18 +340,12 @@ export function Wallet(props: WalletProps) {
                   setActiveTab(nextTab)
                   setWalletHash(nextTab)
                 }}
-                className='space-y-4'
+                className='space-y-3'
               >
                 <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
-                  <div>
-                    <h2 className='text-lg font-semibold tracking-tight text-slate-950'>
-                      钱包操作
-                    </h2>
-                    <p className='text-muted-foreground mt-1 text-sm'>
-                      套餐为主，充值作为补充；可直接切换到需要的购买方式。
-                    </p>
-                  </div>
-
+                  <h2 className='text-lg font-semibold tracking-tight text-slate-950'>
+                    钱包操作
+                  </h2>
                   <TabsList className='grid h-11 w-full grid-cols-2 rounded-2xl bg-slate-100 p-1 sm:w-[320px]'>
                     <TabsTrigger
                       value='subscription'
@@ -408,6 +392,7 @@ export function Wallet(props: WalletProps) {
                       redeeming={redeeming}
                       topupLink={topupInfo?.topup_link}
                       loading={topupLoading}
+                      showRedemptionSection={false}
                       priceRatio={(status?.price as number) || 1}
                       usdExchangeRate={effectiveUsdExchangeRate}
                       onOpenBilling={() => setBillingDialogOpen(true)}
@@ -426,6 +411,19 @@ export function Wallet(props: WalletProps) {
                 </TabsContent>
               </Tabs>
             </div>
+
+            <WalletStatsCard
+              user={user}
+              loading={userLoading}
+              topupLink={topupInfo?.topup_link}
+              redemptionCode={redemptionCode}
+              onRedemptionCodeChange={setRedemptionCode}
+              onRedeem={handleRedeem}
+              redeeming={redeeming}
+              subscriptionData={subscriptionData}
+              subscriptionLoading={subscriptionLoading}
+              onSubscriptionRefresh={fetchSubscriptionData}
+            />
           </div>
         </SectionPageLayout.Content>
       </SectionPageLayout>

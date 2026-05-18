@@ -388,19 +388,8 @@ export function SubscriptionPlansCard({
       <div id='wallet-subscriptions' className='scroll-mt-4'>
         <TitledCard
           title='套餐购买'
-          description='月卡与日卡分区排列，价格直接按人民币展示，先看套餐结构再决定购买。'
           icon={<Crown className='h-4 w-4' />}
-          contentClassName='space-y-4'
-        >
-          <div className='flex items-center justify-between gap-3 rounded-[20px] border border-slate-200 bg-slate-50/80 px-4 py-3'>
-            <div>
-              <div className='text-sm font-semibold text-slate-950'>
-                先看套餐，再决定是否充值
-              </div>
-              <p className='text-muted-foreground mt-1 text-xs leading-5'>
-                日卡额度独立结算，不会并入月卡总额度；当前订阅与扣费方式已合并到上方余额卡片。
-              </p>
-            </div>
+          action={
             <Button
               variant='outline'
               size='icon'
@@ -410,8 +399,9 @@ export function SubscriptionPlansCard({
             >
               <RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />
             </Button>
-          </div>
-
+          }
+          contentClassName='space-y-4'
+        >
           <PlanSection
             title='月卡套餐'
             description='适合长期使用 Codex。月卡有效期 1 个月，周额度每 7 天刷新一次，总额度限制整个月的上限。'
