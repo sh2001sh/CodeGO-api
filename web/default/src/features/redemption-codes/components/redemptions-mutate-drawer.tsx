@@ -59,6 +59,7 @@ import { createRedemption, getRedemption, updateRedemption } from '../api'
 import { REDEMPTION_TYPES, SUCCESS_MESSAGES } from '../constants'
 import {
   REDEMPTION_FORM_DEFAULT_VALUES,
+  downloadRedemptionTextFile,
   getRedemptionFormSchema,
   transformFormDataToPayload,
   transformRedemptionToFormDefaults,
@@ -161,7 +162,8 @@ export function RedemptionsMutateDrawer({
       } else {
         const result = await createRedemption(basePayload)
         if (result.success) {
-          const count = result.data?.length || 0
+          const generatedCodes = result.data || []
+          const count = generatedCodes.length
           toast.success(
             count > 1
               ? t('Successfully created {{count}} redemption codes', {
@@ -169,6 +171,12 @@ export function RedemptionsMutateDrawer({
                 })
               : t(SUCCESS_MESSAGES.REDEMPTION_CREATED)
           )
+          if (generatedCodes.length > 0) {
+            downloadRedemptionTextFile(
+              `${generatedCodes.join('\n')}\n`,
+              basePayload.name || t('redemptions')
+            )
+          }
           onOpenChange(false)
           triggerRefresh()
         }

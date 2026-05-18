@@ -94,10 +94,11 @@ func SearchRedemptions(keyword string, startIdx int, num int) (redemptions []*Re
 	}()
 
 	query := tx.Model(&Redemption{})
+	nameKeyword := "%" + keyword + "%"
 	if id, err := strconv.Atoi(keyword); err == nil {
-		query = query.Where("id = ? OR name LIKE ?", id, keyword+"%")
+		query = query.Where("id = ? OR name LIKE ?", id, nameKeyword)
 	} else {
-		query = query.Where("name LIKE ?", keyword+"%")
+		query = query.Where("name LIKE ?", nameKeyword)
 	}
 
 	err = query.Count(&total).Error

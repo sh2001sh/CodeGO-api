@@ -18,7 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useState, useMemo } from 'react'
 import { type Table } from '@tanstack/react-table'
-import { Trash2 } from 'lucide-react'
+import { Download, Trash2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
@@ -30,7 +30,8 @@ import {
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { CopyButton } from '@/components/copy-button'
 import { DataTableBulkActions as BulkActionsToolbar } from '@/components/data-table'
-import { deleteInvalidRedemptions } from '../api'
+import { deleteInvalidRedemptions, getRedemptions, searchRedemptions } from '../api'
+import { downloadRedemptionTextFile } from '../lib'
 import { type Redemption } from '../types'
 import { useRedemptions } from './redemptions-provider'
 
@@ -46,7 +47,10 @@ export function DataTableBulkActions<TData>({
   const [showDeleteInvalidConfirm, setShowDeleteInvalidConfirm] =
     useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
   const selectedRows = table.getFilteredSelectedRowModel().rows
+  const globalFilter = String(table.getState().globalFilter || '').trim()
+  const filteredRows = table.getFilteredRowModel().rows
 
   const contentToCopy = useMemo(() => {
     const selectedCodes = selectedRows.map((row) => {
@@ -55,6 +59,74 @@ export function DataTableBulkActions<TData>({
     })
     return selectedCodes.join('\n')
   }, [selectedRows])
+
+  const buildExportContent = (rows: Redemption[]) =>
+    rows.map((redemption) => `${redemption.name}\t${redemption.key}`).join('\n')
+
+  const exportRows = (rows: Redemption[], fileBaseName: string) => {
+    if (rows.length === 0) {
+      toast.error(t('No redemption codes to export'))
+      return
+    }
+    downloadRedemptionTextFile(`${buildExportContent(rows)}\n`, fileBaseName)
+    toast.success(
+      t('Exported {{count}} redemption codes', { count: rows.length })
+    )
+  }
+
+  const fetchAllRowsForCurrentFilter = async () => {
+    const pageSize = 200
+    let page = 1
+    let total = 0
+    const items: Redemption[] = []
+
+    do {
+      const result = globalFilter
+        ? await searchRedemptions({
+            keyword: globalFilter,
+            p: page,
+            page_size: pageSize,
+          })
+        : await getRedemptions({
+            p: page,
+            page_size: pageSize,
+          })
+      const batch = result.data?.items || []
+      total = result.data?.total || batch.length
+      items.push(...batch)
+      page += 1
+    } while (items.length < total)
+
+    return items
+  }
+
+  const handleExport = async () => {
+    setIsExporting(true)
+    try {
+      if (selectedRows.length > 0) {
+        exportRows(
+          selectedRows.map((row) => row.original as Redemption),
+          globalFilter
+            ? `${globalFilter}-selected-redemptions`
+            : 'selected-redemptions'
+        )
+        return
+      }
+
+      if (globalFilter) {
+        const rows = await fetchAllRowsForCurrentFilter()
+        exportRows(rows, `${globalFilter}-redemptions`)
+        return
+      }
+
+      exportRows(
+        filteredRows.map((row) => row.original as Redemption),
+        'redemptions-current-page'
+      )
+    } finally {
+      setIsExporting(false)
+    }
+  }
 
   const handleDeleteInvalid = async () => {
     setIsDeleting(true)
@@ -89,6 +161,34 @@ export function DataTableBulkActions<TData>({
           successTooltip={t('Codes copied!')}
           aria-label={t('Copy selected codes')}
         />
+
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                variant='outline'
+                size='icon'
+                onClick={handleExport}
+                className='size-8'
+                disabled={isExporting}
+                aria-label={t('Export redemption codes')}
+                title={t('Export redemption codes')}
+              />
+            }
+          >
+            <Download />
+            <span className='sr-only'>{t('Export redemption codes')}</span>
+          </TooltipTrigger>
+          <TooltipContent>
+            <p>
+              {selectedRows.length > 0
+                ? t('Export selected redemption codes')
+                : globalFilter
+                  ? t('Export all redemption codes matching the current filter')
+                  : t('Export current page redemption codes')}
+            </p>
+          </TooltipContent>
+        </Tooltip>
 
         <Tooltip>
           <TooltipTrigger

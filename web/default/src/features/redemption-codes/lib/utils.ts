@@ -43,3 +43,31 @@ export function isRedemptionExpired(
 ): boolean {
   return status === 1 && isTimestampExpired(expired_time)
 }
+
+export function sanitizeRedemptionFilename(
+  value: string,
+  fallback = 'redemptions'
+): string {
+  const normalized = String(value || '')
+    .trim()
+    .replace(/[\\/:*?"<>|]+/g, '-')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+  return normalized || fallback
+}
+
+export function downloadRedemptionTextFile(
+  content: string,
+  fileBaseName: string
+) {
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const anchor = document.createElement('a')
+  anchor.href = url
+  anchor.download = `${sanitizeRedemptionFilename(fileBaseName)}.txt`
+  document.body.appendChild(anchor)
+  anchor.click()
+  document.body.removeChild(anchor)
+  URL.revokeObjectURL(url)
+}
