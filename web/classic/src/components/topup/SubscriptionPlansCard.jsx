@@ -351,7 +351,12 @@ const SubscriptionPlansCard = ({
       orderId: String(resData?.order_id || ''),
       externalUrl,
       qrCodeUrl,
-      amountDue: Number(resData?.amount_due ?? selectedPlan?.amount_due ?? selectedPlan?.plan?.price_amount || 0),
+      amountDue: Number(
+        resData?.amount_due ??
+          selectedPlan?.amount_due ??
+          selectedPlan?.plan?.price_amount ??
+          0,
+      ),
       methodLabel,
       actionLabel: getPlanActionLabel(selectedPlan?.action),
       message:
@@ -741,7 +746,7 @@ const SubscriptionPlansCard = ({
             const totalAmount = Number(plan?.total_amount || 0);
             const periodAmount = Number(plan?.period_amount || 0);
             const priceAmount = Number(plan?.price_amount || 0);
-            const effectiveAmount = Number(planRecord?.amount_due ?? priceAmount || 0);
+            const effectiveAmount = Number(planRecord?.amount_due ?? priceAmount ?? 0);
             const displayPrice = formatPlanPrice(
               effectiveAmount,
               plan?.currency,

@@ -138,7 +138,7 @@ const SubscriptionPurchaseModal = ({
   const totalAmount = Number(plan?.total_amount || 0);
   const periodAmount = Number(plan?.period_amount || 0);
   const displayPrice = formatPlanPrice(
-    Number(selectedPlan?.amount_due ?? plan?.price_amount || 0),
+    Number(selectedPlan?.amount_due ?? plan?.price_amount ?? 0),
     plan?.currency,
   );
   const detailText = getPlanDetailsText(plan, totalAmount, periodAmount, t);

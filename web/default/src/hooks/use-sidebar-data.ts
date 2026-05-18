@@ -22,6 +22,7 @@ import {
   Key,
   FileText,
   Wallet,
+  Gift,
   Box,
   Users,
   Ticket,
@@ -108,6 +109,11 @@ export function useSidebarData(): SidebarData {
             title: t('Wallet'),
             url: '/wallet',
             icon: Wallet,
+          },
+          {
+            title: t('Invite Rewards'),
+            url: '/invite-rewards',
+            icon: Gift,
           },
           {
             title: t('Profile'),

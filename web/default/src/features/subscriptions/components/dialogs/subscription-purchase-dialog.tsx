@@ -288,7 +288,7 @@ export function SubscriptionPurchaseDialog(props: Props) {
   const totalAmount = Number(plan.total_amount || 0)
   const periodAmount = Number(plan.period_amount || 0)
   const actionLabel = getPlanActionLabel(planRecord.action, t)
-  const effectiveAmount = Number(planRecord.amount_due ?? plan.price_amount || 0)
+  const effectiveAmount = Number(planRecord.amount_due ?? plan.price_amount ?? 0)
   const displayPrice = formatPlanPrice(effectiveAmount, plan.currency)
   const limitReached =
     (props.purchaseLimit || 0) > 0 &&
@@ -306,7 +306,7 @@ export function SubscriptionPurchaseDialog(props: Props) {
     externalUrl: string,
     qrCodeUrl = ''
   ) => {
-    const amountDue = Number(response.data?.amount_due ?? effectiveAmount || 0)
+    const amountDue = Number(response.data?.amount_due ?? effectiveAmount ?? 0)
     setPaymentTracker({
       stage: 'pending',
       orderId: String(response.data?.order_id || ''),

@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { Crown, RefreshCw, Sparkles, Check } from 'lucide-react'
+import { Crown, RefreshCw, Sparkles } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { formatQuota } from '@/lib/format'
@@ -52,7 +52,16 @@ import {
   updateBillingPreference,
 } from '@/features/subscriptions/api'
 import { SubscriptionPurchaseDialog } from '@/features/subscriptions/components/dialogs/subscription-purchase-dialog'
-import { formatDuration, formatResetPeriod } from '@/features/subscriptions/lib'
+import {
+  formatDuration,
+  formatResetPeriod,
+  formatSubscriptionPlanPrice,
+  getSubscriptionPlanActionLabel,
+  getSubscriptionPlanDescription,
+  getSubscriptionPlanDetailText,
+  getSubscriptionPlanSubtitle,
+  isDayPassPlan,
+} from '@/features/subscriptions/lib'
 import type {
   PlanRecord,
   UserSubscriptionRecord,
@@ -85,71 +94,6 @@ function getBillingPreferenceLabel(
       return t('Wallet Only')
     default:
       return preference
-  }
-}
-
-function getCurrencySymbol(currency?: string): string {
-  const normalized = (currency || '').toUpperCase()
-  if (normalized === 'CNY') return '\u5143'
-  if (normalized === 'EUR') return 'EUR '
-  return '$'
-}
-
-function formatPlanPrice(priceAmount: number, currency?: string): string {
-  const normalized = (currency || '').toUpperCase()
-  const formatted = priceAmount
-    .toFixed(2)
-    .replace(/\.00$/, '')
-    .replace(/(\.\d)0$/, '$1')
-
-  if (normalized === 'CNY') return `${formatted} \u5143`
-  return `${getCurrencySymbol(currency)}${formatted}`
-}
-
-function getPlanSubtitle(plan: PlanRecord['plan'] | null | undefined): string {
-  const subtitle = String(plan?.subtitle || '').trim()
-  if (subtitle) return subtitle
-  const durationCount = Number(plan?.duration_value || 0)
-  const durationUnit = String(plan?.duration_unit || '').toLowerCase()
-  if (durationUnit === 'day' && durationCount > 0 && durationCount <= 2) {
-    return '\u65e5\u5361'
-  }
-  return '\u6708\u5361'
-}
-
-function getPlanDetailsText(
-  plan: PlanRecord['plan'] | null | undefined,
-  totalAmount: number,
-  periodAmount: number,
-  t: (key: string) => string
-): string {
-  if (!plan) return ''
-  const periodLabel =
-    plan.quota_reset_period === 'weekly'
-      ? '\u6bcf\u5468\u989d\u5ea6'
-      : '\u5468\u671f\u989d\u5ea6'
-  const totalLabel = totalAmount > 0 ? formatQuota(totalAmount) : '\u4e0d\u9650'
-  const parts = [
-    `\u6709\u6548\u671f ${formatDuration(plan, t)}`,
-    periodAmount > 0 ? `${periodLabel} ${formatQuota(periodAmount)}` : null,
-    `\u603b\u989d\u5ea6 ${totalLabel}`,
-  ]
-  return parts.filter(Boolean).join('\uFF1B')
-}
-
-function getPlanActionLabel(
-  action: PlanRecord['action'] | undefined,
-  t: (key: string) => string
-): string {
-  switch (action) {
-    case 'renew':
-      return '\u7eed\u8d39'
-    case 'upgrade':
-      return '\u5347\u7ea7'
-    case 'disabled':
-      return '\u4e0d\u53ef\u8ba2\u9605'
-    default:
-      return t('Subscribe Now')
   }
 }
 
@@ -295,6 +239,20 @@ export function SubscriptionPlansCard({
     return map
   }, [plans])
 
+  const groupedPlans = useMemo(() => {
+    const month: PlanRecord[] = []
+    const day: PlanRecord[] = []
+    for (const record of plans) {
+      if (!record?.plan) continue
+      if (isDayPassPlan(record.plan)) {
+        day.push(record)
+      } else {
+        month.push(record)
+      }
+    }
+    return { month, day }
+  }, [plans])
+
   const getRemainingDays = (sub: UserSubscriptionRecord) => {
     const endTime = sub?.subscription?.end_time || 0
     if (!endTime) return 0
@@ -307,6 +265,179 @@ export function SubscriptionPlansCard({
     const used = Number(sub?.subscription?.amount_used || 0)
     if (total <= 0) return 0
     return Math.round((used / total) * 100)
+  }
+
+  const renderPlanCard = (p: PlanRecord, index: number) => {
+    const plan = p?.plan
+    if (!plan) return null
+    const totalAmount = Number(plan.total_amount || 0)
+    const periodAmount = Number(plan.period_amount || 0)
+    const priceAmount = Number(plan.price_amount || 0)
+    const effectiveAmount = Number(p.amount_due ?? priceAmount ?? 0)
+    const displayPrice = formatSubscriptionPlanPrice(
+      effectiveAmount,
+      plan.currency
+    )
+    const isPopular = index === 0 && !isDayPassPlan(plan)
+    const limit = Number(plan.max_purchase_per_user || 0)
+    const count = planPurchaseCountMap.get(plan.id) || 0
+    const reached = limit > 0 && count >= limit
+    const blockedByRule = p.action === 'disabled'
+    const actionLabel = getSubscriptionPlanActionLabel(p.action, t)
+    const detailText = getSubscriptionPlanDetailText(
+      plan,
+      totalAmount,
+      periodAmount,
+      t
+    )
+    const summaryText = getSubscriptionPlanDescription(
+      plan,
+      totalAmount,
+      periodAmount,
+      t
+    )
+    const resetValue = formatResetPeriod(plan, t)
+    const metrics = [
+      {
+        label: t('Validity Period'),
+        value: formatDuration(plan, t),
+      },
+      resetValue !== t('No Reset')
+        ? {
+            label: t('Quota Reset'),
+            value: resetValue,
+          }
+        : null,
+      {
+        label: periodAmount > 0 ? t('Weekly Quota') : t('Total Quota'),
+        value:
+          periodAmount > 0
+            ? formatQuota(periodAmount)
+            : totalAmount > 0
+              ? formatQuota(totalAmount)
+              : t('Unlimited'),
+      },
+      periodAmount > 0
+        ? {
+            label: t('Total Quota'),
+            value: totalAmount > 0 ? formatQuota(totalAmount) : t('Unlimited'),
+          }
+        : null,
+    ].filter(Boolean) as Array<{ label: string; value: string }>
+
+    return (
+      <Card
+        key={plan.id}
+        className={cn(
+          'border-border/60 overflow-hidden rounded-[26px] border bg-white/95 shadow-[0_20px_55px_rgba(15,23,42,0.08)] transition-transform duration-200 hover:-translate-y-1 hover:shadow-[0_28px_70px_rgba(15,23,42,0.12)]',
+          isPopular && 'border-primary/40 ring-primary/10 ring-4'
+        )}
+      >
+        <CardContent className='flex h-full flex-col p-0'>
+          <div className='from-primary/[0.14] via-primary/[0.06] to-background border-b px-5 pt-5 pb-4 bg-gradient-to-br'>
+            <div className='flex items-start justify-between gap-3'>
+              <div className='min-w-0'>
+                <p className='text-muted-foreground text-[11px] font-semibold tracking-[0.22em] uppercase'>
+                  {getSubscriptionPlanSubtitle(plan)}
+                </p>
+                <h4 className='mt-2 truncate text-2xl font-semibold tracking-tight text-slate-950'>
+                  {plan.title || t('Subscription Plans')}
+                </h4>
+                <p className='text-muted-foreground mt-2 text-sm leading-6'>
+                  {summaryText}
+                </p>
+              </div>
+              {isPopular && (
+                <StatusBadge
+                  variant='info'
+                  copyable={false}
+                  className='shrink-0 rounded-full'
+                >
+                  <Sparkles className='mr-1 h-3 w-3' />
+                  {t('Recommended')}
+                </StatusBadge>
+              )}
+            </div>
+          </div>
+
+          <div className='flex flex-1 flex-col px-5 pt-4 pb-5'>
+            <div className='flex items-end gap-2'>
+              <span className='text-primary text-3xl font-semibold tracking-tight'>
+                {displayPrice}
+              </span>
+              <span className='text-muted-foreground pb-1 text-xs'>
+                / {t('per plan')}
+              </span>
+            </div>
+            {effectiveAmount !== priceAmount && (
+              <div className='text-muted-foreground mt-1 text-xs'>
+                \u539f\u4ef7{' '}
+                {formatSubscriptionPlanPrice(priceAmount, plan.currency)}
+              </div>
+            )}
+
+            {p.action && p.action !== 'subscribe' && (
+              <div className='text-primary mt-3 text-xs font-semibold tracking-wide'>
+                {actionLabel}
+              </div>
+            )}
+
+            <div className='mt-4 grid grid-cols-2 gap-2.5'>
+              {metrics.map((metric) => (
+                <div
+                  key={`${plan.id}-${metric.label}`}
+                  className='rounded-2xl border bg-slate-50/80 p-3'
+                >
+                  <div className='text-muted-foreground text-[11px] tracking-wide'>
+                    {metric.label}
+                  </div>
+                  <div className='mt-1 text-sm font-semibold text-slate-900'>
+                    {metric.value}
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className='mt-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-3'>
+              <div className='text-foreground text-xs font-medium'>
+                {'\u5957\u9910\u8be6\u60c5'}
+              </div>
+              <div className='text-muted-foreground mt-1 text-xs leading-6'>
+                {detailText}
+              </div>
+            </div>
+
+            <div className='mt-auto pt-4'>
+              {reached || blockedByRule ? (
+                <Tooltip>
+                  <TooltipTrigger render={<div />}>
+                    <Button className='w-full rounded-full' disabled>
+                      {reached ? t('Limit Reached') : actionLabel}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    {reached
+                      ? `${t('Purchase limit reached')} (${count}/${limit})`
+                      : p.disabled_reason ||
+                        '\u5f53\u524d\u5df2\u6709\u751f\u6548\u5957\u9910\uff0c\u4e0d\u652f\u6301\u964d\u7ea7\u8ba2\u8d2d\u3002'}
+                  </TooltipContent>
+                </Tooltip>
+              ) : (
+                <Button
+                  className='w-full rounded-full'
+                  onClick={() => {
+                    setSelectedPlan(p)
+                    setPurchaseOpen(true)
+                  }}
+                >
+                  {actionLabel}
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    )
   }
 
   if (loading) {
@@ -333,12 +464,13 @@ export function SubscriptionPlansCard({
 
   return (
     <>
-      <TitledCard
-        title={t('Subscription Plans')}
-        description={t('Subscribe to a plan for model access')}
-        icon={<Crown className='h-4 w-4' />}
-        contentClassName='space-y-4 sm:space-y-5'
-      >
+      <div id='wallet-subscriptions' className='scroll-mt-4'>
+        <TitledCard
+          title={t('Subscription Plans')}
+          description={t('Subscribe to a plan for model access')}
+          icon={<Crown className='h-4 w-4' />}
+          contentClassName='space-y-4 sm:space-y-5'
+        >
         {/* My subscriptions & billing preference */}
         <div className='rounded-xl border p-3 sm:p-4'>
           <div className='flex flex-wrap items-center justify-between gap-2.5 sm:gap-3'>
@@ -609,156 +741,55 @@ export function SubscriptionPlansCard({
           )}
         </div>
 
-        {/* Available plans grid */}
         {plans.length > 0 ? (
-          <div className='grid grid-cols-1 gap-3 2xl:grid-cols-2 2xl:gap-4'>
-            {plans.map((p, index) => {
-              const plan = p?.plan
-              if (!plan) return null
-              const totalAmount = Number(plan.total_amount || 0)
-              const periodAmount = Number(plan.period_amount || 0)
-              const priceAmount = Number(plan.price_amount || 0)
-              const effectiveAmount = Number(p.amount_due ?? priceAmount || 0)
-              const displayPrice = formatPlanPrice(
-                effectiveAmount,
-                plan.currency
-              )
-              const isPopular = index === 0 && plans.length > 1
-              const limit = Number(plan.max_purchase_per_user || 0)
-              const count = planPurchaseCountMap.get(plan.id) || 0
-              const reached = limit > 0 && count >= limit
-              const blockedByRule = p.action === 'disabled'
-              const actionLabel = getPlanActionLabel(p.action, t)
-              const detailText = getPlanDetailsText(
-                plan,
-                totalAmount,
-                periodAmount,
-                t
-              )
-
-              const benefits = [
-                `${t('Validity Period')}: ${formatDuration(plan, t)}`,
-                formatResetPeriod(plan, t) !== t('No Reset')
-                  ? `${t('Quota Reset')}: ${formatResetPeriod(plan, t)}`
-                  : null,
-                periodAmount > 0
-                  ? `${t('Period Quota')}: ${formatQuota(periodAmount)}`
-                  : null,
-                totalAmount > 0
-                  ? `${t('Total Quota')}: ${formatQuota(totalAmount)}`
-                  : `${t('Total Quota')}: ${t('Unlimited')}`,
-                limit > 0 ? `${t('Purchase Limit')}: ${limit}` : null,
-                plan.upgrade_group
-                  ? `${t('Upgrade Group')}: ${plan.upgrade_group}`
-                  : null,
-              ].filter(Boolean) as string[]
-
-              return (
-                <Card
-                  key={plan.id}
-                  className={cn(
-                    'transition-shadow hover:shadow-md',
-                    isPopular && 'border-primary/70 shadow-sm'
+          <div className='space-y-5'>
+            {groupedPlans.month.length > 0 && (
+              <div className='rounded-[30px] border border-sky-100 bg-[linear-gradient(180deg,rgba(248,251,255,0.98),rgba(255,255,255,0.94))] p-4 shadow-[0_24px_60px_rgba(15,23,42,0.06)] sm:p-5'>
+                <div className='mb-4 flex items-end justify-between gap-4'>
+                  <div>
+                    <p className='text-primary text-[11px] font-semibold tracking-[0.24em] uppercase'>
+                      {t('Monthly Plans')}
+                    </p>
+                    <h3 className='mt-2 text-xl font-semibold tracking-tight text-slate-950'>
+                      {t('Long-running Codex usage with weekly refresh')}
+                    </h3>
+                  </div>
+                </div>
+                <div className='grid grid-cols-1 gap-4 2xl:grid-cols-2'>
+                  {groupedPlans.month.map((plan, index) =>
+                    renderPlanCard(plan, index)
                   )}
-                >
-                  <CardContent className='flex h-full flex-col p-3.5 sm:p-4'>
-                    <div className='mb-2 flex items-start justify-between gap-3'>
-                      <div className='min-w-0'>
-                        <h4 className='truncate font-semibold'>
-                          {plan.title || t('Subscription Plans')}
-                        </h4>
-                        <p className='text-muted-foreground truncate text-xs'>
-                          {getPlanSubtitle(plan)}
-                        </p>
-                        {p.action && p.action !== 'subscribe' && (
-                          <p className='text-primary mt-1 text-xs font-medium'>
-                            {actionLabel}
-                          </p>
-                        )}
-                      </div>
-                      {isPopular && (
-                        <StatusBadge
-                          variant='info'
-                          copyable={false}
-                          className='shrink-0'
-                        >
-                          <Sparkles className='h-3 w-3' />
-                          {t('Recommended')}
-                        </StatusBadge>
-                      )}
-                    </div>
+                </div>
+              </div>
+            )}
 
-                    <div className='py-2'>
-                      <span className='text-primary text-2xl font-bold'>
-                        {displayPrice}
-                      </span>
-                      {effectiveAmount !== priceAmount && (
-                        <div className='text-muted-foreground mt-1 text-xs'>
-                          \u539f\u4ef7 {formatPlanPrice(priceAmount, plan.currency)}
-                        </div>
-                      )}
-                    </div>
-
-                    <div className='flex-1 space-y-1.5 pb-3'>
-                      {benefits.map((label) => (
-                        <div
-                          key={label}
-                          className='text-muted-foreground flex items-center gap-2 text-xs'
-                        >
-                          <Check className='text-primary h-3 w-3 shrink-0' />
-                          <span>{label}</span>
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className='bg-muted/40 mb-3 rounded-md border p-2.5'>
-                      <div className='text-foreground text-xs font-medium'>
-                        {'\u5957\u9910\u8be6\u60c5'}
-                      </div>
-                      <div className='text-muted-foreground mt-1 text-xs leading-5'>
-                        {detailText}
-                      </div>
-                    </div>
-
-                    <Separator className='mb-3' />
-
-                    {reached || blockedByRule ? (
-                      <Tooltip>
-                        <TooltipTrigger render={<div />}>
-                          <Button variant='outline' className='w-full' disabled>
-                            {reached ? t('Limit Reached') : actionLabel}
-                          </Button>
-                        </TooltipTrigger>
-                        <TooltipContent>
-                          {reached
-                            ? `${t('Purchase limit reached')} (${count}/${limit})`
-                            : p.disabled_reason ||
-                              '\u5f53\u524d\u5df2\u6709\u751f\u6548\u5957\u9910\uff0c\u4e0d\u652f\u6301\u964d\u7ea7\u8ba2\u8d2d\u3002'}
-                        </TooltipContent>
-                      </Tooltip>
-                    ) : (
-                      <Button
-                        variant='outline'
-                        className='w-full'
-                        onClick={() => {
-                          setSelectedPlan(p)
-                          setPurchaseOpen(true)
-                        }}
-                      >
-                        {actionLabel}
-                      </Button>
-                    )}
-                  </CardContent>
-                </Card>
-              )
-            })}
+            {groupedPlans.day.length > 0 && (
+              <div className='rounded-[30px] border border-sky-100 bg-[linear-gradient(180deg,rgba(248,251,255,0.98),rgba(255,255,255,0.94))] p-4 shadow-[0_24px_60px_rgba(15,23,42,0.06)] sm:p-5'>
+                <div className='mb-4 flex items-end justify-between gap-4'>
+                  <div>
+                    <p className='text-primary text-[11px] font-semibold tracking-[0.24em] uppercase'>
+                      {t('Day Passes')}
+                    </p>
+                    <h3 className='mt-2 text-xl font-semibold tracking-tight text-slate-950'>
+                      {t('One-day quota packs for temporary bursts')}
+                    </h3>
+                  </div>
+                </div>
+                <div className='grid grid-cols-1 gap-4 xl:grid-cols-2'>
+                  {groupedPlans.day.map((plan, index) =>
+                    renderPlanCard(plan, index)
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <p className='text-muted-foreground py-4 text-center text-sm'>
             {t('No plans available')}
           </p>
         )}
-      </TitledCard>
+        </TitledCard>
+      </div>
 
       <SubscriptionPurchaseDialog
         open={purchaseOpen}

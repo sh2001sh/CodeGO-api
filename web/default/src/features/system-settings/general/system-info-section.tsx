@@ -57,6 +57,7 @@ const _systemInfoSchema = z.object({
   Footer: z.string().optional(),
   About: z.string().optional(),
   HomePageContent: z.string().optional(),
+  HomePagePackagesContent: z.string().optional(),
   legal: z.object({
     user_agreement: z.string().optional(),
     privacy_policy: z.string().optional(),
@@ -86,10 +87,13 @@ export function SystemInfoSection({ defaultValues }: SystemInfoSectionProps) {
     SystemName: normalizeValue(defaultValues.SystemName),
     ServerAddress: normalizeValue(defaultValues.ServerAddress),
     Logo: normalizeValue(defaultValues.Logo),
-    Footer: normalizeValue(defaultValues.Footer),
-    About: normalizeValue(defaultValues.About),
-    HomePageContent: normalizeValue(defaultValues.HomePageContent),
-    legal: {
+  Footer: normalizeValue(defaultValues.Footer),
+  About: normalizeValue(defaultValues.About),
+  HomePageContent: normalizeValue(defaultValues.HomePageContent),
+  HomePagePackagesContent: normalizeValue(
+    defaultValues.HomePagePackagesContent
+  ),
+  legal: {
       user_agreement: normalizeValue(defaultValues.legal?.user_agreement),
       privacy_policy: normalizeValue(defaultValues.legal?.privacy_policy),
     },
@@ -107,6 +111,7 @@ export function SystemInfoSection({ defaultValues }: SystemInfoSectionProps) {
     Footer: z.string().optional(),
     About: z.string().optional(),
     HomePageContent: z.string().optional(),
+    HomePagePackagesContent: z.string().optional(),
     legal: z.object({
       user_agreement: z.string().optional(),
       privacy_policy: z.string().optional(),
@@ -308,6 +313,31 @@ export function SystemInfoSection({ defaultValues }: SystemInfoSectionProps) {
                   <FormDescription>
                     {t(
                       'Content displayed on the home page (supports Markdown)'
+                    )}
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={form.control}
+              name='HomePagePackagesContent'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>{t('Home Package Introduction')}</FormLabel>
+                  <FormControl>
+                    <Textarea
+                      placeholder={t(
+                        'Write package highlights, upgrade rules, payment instructions, or markdown formatted comparisons...'
+                      )}
+                      rows={6}
+                      {...field}
+                    />
+                  </FormControl>
+                  <FormDescription>
+                    {t(
+                      'Content displayed above the package cards on the public home page (supports Markdown)'
                     )}
                   </FormDescription>
                   <FormMessage />

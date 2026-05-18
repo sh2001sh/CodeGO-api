@@ -16,23 +16,9 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { api } from '@/lib/api'
-import type { HomePageContentResponse } from './types'
+import { createFileRoute } from '@tanstack/react-router'
+import { AffiliateRewardsPage } from '@/features/wallet/affiliate-rewards-page'
 
-// ============================================================================
-// Home Page APIs
-// ============================================================================
-
-/**
- * Get custom home page content
- * Returns Markdown/HTML content or iframe URL
- */
-export async function getHomePageContent(): Promise<HomePageContentResponse> {
-  const res = await api.get('/api/home_page_content')
-  return res.data
-}
-
-export async function getHomePagePackagesContent(): Promise<HomePageContentResponse> {
-  const res = await api.get('/api/home_page_packages_content')
-  return res.data
-}
+export const Route = createFileRoute('/_authenticated/invite-rewards/')({
+  component: AffiliateRewardsPage,
+})
