@@ -152,7 +152,7 @@ function submitExternalPaymentForm(
 
 function SummaryItem(props: { label: string; value: ReactNode }) {
   return (
-    <div className='rounded-2xl border bg-white/75 px-3 py-3'>
+    <div className='rounded-2xl border bg-white/80 px-3 py-3'>
       <div className='text-muted-foreground text-[11px] font-medium tracking-wide'>
         {props.label}
       </div>
@@ -165,7 +165,7 @@ function SummaryItem(props: { label: string; value: ReactNode }) {
 
 function StatusItem(props: { label: string; value: ReactNode }) {
   return (
-    <div className='rounded-xl border bg-white/85 px-3 py-2.5'>
+    <div className='rounded-xl border bg-white/90 px-3 py-2.5'>
       <div className='text-muted-foreground text-[11px] font-medium tracking-wide'>
         {props.label}
       </div>
@@ -283,9 +283,46 @@ export function SubscriptionPurchaseDialog(props: Props) {
   const blockedByRule = planRecord.action === 'disabled'
   const blockedMessage =
     normalizeSubscriptionText(planRecord.disabled_reason) ||
-    '当前已有更高等级的生效套餐，暂不支持降级订阅。'
+    '当前已有更高等级的有效套餐，暂不支持降级订阅。'
   const disablePurchase =
     paying || limitReached || blockedByRule || paymentTracker.stage === 'pending'
+  const resetText =
+    formatResetPeriod(plan, t) === t('No Reset')
+      ? '不重置'
+      : formatResetPeriod(plan, t)
+
+  const summaryItems = [
+    { label: '购买方式', value: actionLabel },
+    {
+      label: '有效期',
+      value: (
+        <span className='flex items-center gap-1.5'>
+          <CalendarClock className='h-3.5 w-3.5' />
+          {formatDuration(plan, t)}
+        </span>
+      ),
+    },
+    {
+      label: periodAmount > 0 ? '每周额度' : '总额度',
+      value: formatSubscriptionQuotaAmount(
+        periodAmount > 0 ? periodAmount : totalAmount
+      ),
+    },
+    {
+      label: periodAmount > 0 ? '月总额度' : '额度重置',
+      value:
+        periodAmount > 0
+          ? totalAmount > 0
+            ? formatSubscriptionQuotaAmount(totalAmount)
+            : '不限'
+          : resetText,
+    },
+    ...(periodAmount > 0 ? [{ label: '额度重置', value: resetText }] : []),
+    {
+      label: '支付价格',
+      value: formatSubscriptionPlanPrice(effectiveAmount, plan.currency),
+    },
+  ]
 
   const startPendingPayment = (
     response: SubscriptionPayResponse,
@@ -374,12 +411,7 @@ export function SubscriptionPurchaseDialog(props: Props) {
         const payUrl = response.data?.pay_url || ''
         const qrCodeUrl = response.data?.qrcode_url || ''
         if ((payUrl || qrCodeUrl) && response.data?.order_id) {
-          startPendingPayment(
-            response,
-            '微信支付',
-            payUrl,
-            qrCodeUrl
-          )
+          startPendingPayment(response, '微信支付', payUrl, qrCodeUrl)
           return
         }
       } else if (response.url && response.data?.form && response.data?.order_id) {
@@ -388,11 +420,7 @@ export function SubscriptionPurchaseDialog(props: Props) {
           response.data.form as Record<string, unknown>,
           isSafari
         )
-        startPendingPayment(
-          response,
-          selectedEpayMethodLabel,
-          response.url
-        )
+        startPendingPayment(response, selectedEpayMethodLabel, response.url)
         return
       }
 
@@ -465,12 +493,12 @@ export function SubscriptionPurchaseDialog(props: Props) {
         </div>
 
         {paymentTracker.qrCodeUrl && paymentTracker.stage === 'pending' ? (
-          <div className='space-y-3 rounded-2xl border bg-white/90 p-4'>
-            <div className='mx-auto w-full max-w-[220px] rounded-2xl border bg-white p-3 shadow-sm'>
+          <div className='space-y-3 rounded-2xl border bg-white/90 p-3'>
+            <div className='mx-auto w-full max-w-[180px] rounded-2xl border bg-white p-3 shadow-sm'>
               <img
                 src={paymentTracker.qrCodeUrl}
                 alt='wechat-pay-qrcode'
-                className='mx-auto h-44 w-44 object-contain'
+                className='mx-auto h-36 w-36 object-contain'
               />
             </div>
             <p className='text-center text-xs text-muted-foreground'>
@@ -498,7 +526,7 @@ export function SubscriptionPurchaseDialog(props: Props) {
                   ...current,
                   stage: 'cancelled',
                   message:
-                    '你已取消当前等待。如果支付页中继续完成了付款，回传成功后套餐仍会自动生效。',
+                    '你已取消当前等待。如果支付页中继续完成付款，结果回传后套餐仍会自动生效。',
                 }))
               }
             >
@@ -516,186 +544,144 @@ export function SubscriptionPurchaseDialog(props: Props) {
 
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
-      <DialogContent className='max-sm:w-[calc(100vw-1.5rem)] sm:max-w-xl'>
-        <DialogHeader>
-          <DialogTitle className='flex items-center gap-2'>
+      <DialogContent className='flex max-h-[calc(100vh-1rem)] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl'>
+        <DialogHeader className='border-b border-slate-200 px-4 py-4 sm:px-5'>
+          <DialogTitle className='flex items-center gap-2 text-lg'>
             <Crown className='h-5 w-5' />
-            套餐订阅
+            套餐购买
           </DialogTitle>
         </DialogHeader>
 
-        <div className='space-y-4'>
-          <div className='overflow-hidden rounded-[24px] border border-sky-100 bg-[linear-gradient(180deg,rgba(248,251,255,0.98),rgba(255,255,255,0.94))] shadow-[0_20px_50px_rgba(15,23,42,0.06)]'>
-            <div className='border-b border-sky-100 px-4 pt-4 pb-3 sm:px-5'>
-              <p className='text-primary text-[11px] font-semibold tracking-[0.22em] uppercase'>
-                {getSubscriptionPlanSubtitle(plan)}
-              </p>
-              <div className='mt-2 flex items-end justify-between gap-4'>
-                <div className='min-w-0'>
-                  <h3 className='truncate text-2xl font-semibold tracking-tight text-slate-950'>
-                    {normalizeSubscriptionText(plan.title) || t('Plan Name')}
-                  </h3>
-                  <p className='text-muted-foreground mt-2 text-sm leading-6'>
-                    {detailText}
-                  </p>
-                </div>
-                <div className='text-right'>
-                  <div className='text-primary text-2xl font-semibold tracking-tight sm:text-3xl'>
-                    {displayPrice}
+        <div className='flex-1 overflow-y-auto px-4 pb-4 pt-4 sm:px-5 sm:pb-5'>
+          <div className='space-y-4'>
+            <div className='overflow-hidden rounded-[24px] border border-sky-100 bg-[linear-gradient(180deg,rgba(248,251,255,0.98),rgba(255,255,255,0.94))] shadow-[0_20px_50px_rgba(15,23,42,0.06)]'>
+              <div className='border-b border-sky-100 px-4 py-4 sm:px-5'>
+                <div className='flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between'>
+                  <div className='min-w-0'>
+                    <p className='text-primary text-[11px] font-semibold tracking-[0.22em] uppercase'>
+                      {getSubscriptionPlanSubtitle(plan)}
+                    </p>
+                    <h3 className='mt-1 truncate text-xl font-semibold tracking-tight text-slate-950 sm:text-2xl'>
+                      {normalizeSubscriptionText(plan.title) || t('Plan Name')}
+                    </h3>
+                    <p className='text-muted-foreground mt-2 text-sm leading-6'>
+                      {detailText}
+                    </p>
                   </div>
-                  <div className='text-muted-foreground mt-1 text-xs'>
-                    应付金额
+                  <div className='shrink-0 text-left sm:text-right'>
+                    <div className='text-primary text-2xl font-semibold tracking-tight sm:text-3xl'>
+                      {displayPrice}
+                    </div>
+                    <div className='text-muted-foreground mt-1 text-xs'>
+                      应付金额
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            <div className='space-y-4 px-4 py-4 sm:px-5'>
-              <div className='grid gap-3 sm:grid-cols-2'>
-                <SummaryItem
-                  label='套餐名称'
-                  value={normalizeSubscriptionText(plan.title)}
-                />
-                <SummaryItem
-                  label='套餐类型'
-                  value={getSubscriptionPlanSubtitle(plan)}
-                />
-                <SummaryItem label='购买方式' value={actionLabel} />
-                <SummaryItem
-                  label='有效期'
-                  value={
-                    <span className='flex items-center gap-1.5'>
-                      <CalendarClock className='h-3.5 w-3.5' />
-                      {formatDuration(plan, t)}
-                    </span>
-                  }
-                />
-                <SummaryItem
-                  label='总额度'
-                  value={
-                    totalAmount > 0
-                      ? formatSubscriptionQuotaAmount(totalAmount)
-                      : '不限'
-                  }
-                />
-                {periodAmount > 0 ? (
-                  <SummaryItem
-                    label='每周额度'
-                    value={formatSubscriptionQuotaAmount(periodAmount)}
-                  />
-                ) : null}
-                <SummaryItem
-                  label='额度重置'
-                  value={
-                    formatResetPeriod(plan, t) === t('No Reset')
-                      ? '不重置'
-                      : formatResetPeriod(plan, t)
-                  }
-                />
-                <SummaryItem
-                  label='支付价格'
-                  value={formatSubscriptionPlanPrice(
-                    effectiveAmount,
-                    plan.currency
-                  )}
-                />
-              </div>
-
-              <div className='rounded-2xl border bg-white/75 p-4'>
-                <div className='flex items-center gap-2 text-sm font-medium text-slate-950'>
-                  <QrCode className='h-4 w-4 text-sky-600' />
-                  套餐详情
-                </div>
-                <div className='text-muted-foreground mt-2 text-sm leading-6'>
-                  {detailText}
+              <div className='px-4 py-4 sm:px-5'>
+                <div className='grid gap-3 sm:grid-cols-2 xl:grid-cols-3'>
+                  {summaryItems.map((item) => (
+                    <SummaryItem
+                      key={item.label}
+                      label={item.label}
+                      value={item.value}
+                    />
+                  ))}
                 </div>
               </div>
             </div>
-          </div>
 
-          {limitReached ? (
-            <Alert variant='destructive'>
-              <AlertDescription>
-                已达到该套餐购买上限（{props.purchaseCount}/{props.purchaseLimit}）。
-              </AlertDescription>
-            </Alert>
-          ) : null}
-
-          {blockedByRule ? (
-            <Alert variant='destructive'>
-              <AlertDescription>{blockedMessage}</AlertDescription>
-            </Alert>
-          ) : null}
-
-          {renderPaymentStatus()}
-
-          {paymentTracker.stage === 'idle' ? (
-            hasStripe || hasCreem || hasEpay ? (
-              <div className='space-y-3'>
-                <p className='text-muted-foreground text-xs'>选择支付方式</p>
-
-                {hasStripe || hasCreem ? (
-                  <div className='grid grid-cols-2 gap-2 sm:flex'>
-                    {hasStripe ? (
-                      <Button
-                        variant='outline'
-                        className='flex-1'
-                        onClick={() => void handlePayStripe()}
-                        disabled={disablePurchase}
-                      >
-                        Stripe
-                      </Button>
-                    ) : null}
-                    {hasCreem ? (
-                      <Button
-                        variant='outline'
-                        className='flex-1'
-                        onClick={() => void handlePayCreem()}
-                        disabled={disablePurchase}
-                      >
-                        Creem
-                      </Button>
-                    ) : null}
-                  </div>
-                ) : null}
-
-                {hasEpay ? (
-                  <div className='grid grid-cols-[minmax(0,1fr)_auto] gap-2'>
-                    <Select
-                      value={selectedEpayMethod}
-                      onValueChange={(value) =>
-                        value !== null && setSelectedEpayMethod(value)
-                      }
-                      disabled={disablePurchase}
-                    >
-                      <SelectTrigger className='flex-1'>
-                        <SelectValue>{selectedEpayMethodLabel}</SelectValue>
-                      </SelectTrigger>
-                      <SelectContent alignItemWithTrigger={false}>
-                        <SelectGroup>
-                          {paymentMethods.map((item) => (
-                            <SelectItem key={item.type} value={item.type}>
-                              {getMethodLabel(item.type, paymentMethods, t)}
-                            </SelectItem>
-                          ))}
-                        </SelectGroup>
-                      </SelectContent>
-                    </Select>
-                    <Button
-                      onClick={() => void handlePayEpay()}
-                      disabled={disablePurchase || !selectedEpayMethod}
-                    >
-                      {actionLabel}
-                    </Button>
-                  </div>
-                ) : null}
-              </div>
-            ) : (
-              <Alert>
-                <AlertDescription>当前套餐暂未配置可用支付方式。</AlertDescription>
+            {limitReached ? (
+              <Alert variant='destructive'>
+                <AlertDescription>
+                  已达到该套餐购买上限（{props.purchaseCount}/{props.purchaseLimit}）。
+                </AlertDescription>
               </Alert>
-            )
-          ) : null}
+            ) : null}
+
+            {blockedByRule ? (
+              <Alert variant='destructive'>
+                <AlertDescription>{blockedMessage}</AlertDescription>
+              </Alert>
+            ) : null}
+
+            {renderPaymentStatus()}
+
+            {paymentTracker.stage === 'idle' ? (
+              hasStripe || hasCreem || hasEpay ? (
+                <div className='rounded-2xl border bg-white p-4 shadow-sm'>
+                  <div className='mb-3 flex items-center gap-2 text-sm font-medium text-slate-950'>
+                    <QrCode className='h-4 w-4 text-sky-600' />
+                    选择支付方式
+                  </div>
+
+                  <div className='space-y-3'>
+                    {hasStripe || hasCreem ? (
+                      <div className='grid grid-cols-2 gap-2'>
+                        {hasStripe ? (
+                          <Button
+                            variant='outline'
+                            className='w-full'
+                            onClick={() => void handlePayStripe()}
+                            disabled={disablePurchase}
+                          >
+                            Stripe
+                          </Button>
+                        ) : null}
+                        {hasCreem ? (
+                          <Button
+                            variant='outline'
+                            className='w-full'
+                            onClick={() => void handlePayCreem()}
+                            disabled={disablePurchase}
+                          >
+                            Creem
+                          </Button>
+                        ) : null}
+                      </div>
+                    ) : null}
+
+                    {hasEpay ? (
+                      <div className='grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]'>
+                        <Select
+                          value={selectedEpayMethod}
+                          onValueChange={(value) =>
+                            value !== null && setSelectedEpayMethod(value)
+                          }
+                          disabled={disablePurchase}
+                        >
+                          <SelectTrigger className='w-full'>
+                            <SelectValue>{selectedEpayMethodLabel}</SelectValue>
+                          </SelectTrigger>
+                          <SelectContent alignItemWithTrigger={false}>
+                            <SelectGroup>
+                              {paymentMethods.map((item) => (
+                                <SelectItem key={item.type} value={item.type}>
+                                  {getMethodLabel(item.type, paymentMethods, t)}
+                                </SelectItem>
+                              ))}
+                            </SelectGroup>
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          className='w-full sm:w-auto'
+                          onClick={() => void handlePayEpay()}
+                          disabled={disablePurchase || !selectedEpayMethod}
+                        >
+                          {actionLabel}
+                        </Button>
+                      </div>
+                    ) : null}
+                  </div>
+                </div>
+              ) : (
+                <Alert>
+                  <AlertDescription>当前套餐暂未配置可用支付方式。</AlertDescription>
+                </Alert>
+              )
+            ) : null}
+          </div>
         </div>
       </DialogContent>
     </Dialog>
