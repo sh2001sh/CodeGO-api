@@ -22,7 +22,11 @@ import { useTranslation } from 'react-i18next'
 import { DataTableColumnHeader } from '@/components/data-table'
 import { GroupBadge } from '@/components/group-badge'
 import { StatusBadge } from '@/components/status-badge'
-import { formatDuration, formatResetPeriod } from '../lib'
+import {
+  formatDuration,
+  formatResetPeriod,
+  formatSubscriptionQuotaAmount,
+} from '../lib'
 import type { PlanRecord } from '../types'
 import { DataTableRowActions } from './data-table-row-actions'
 
@@ -184,8 +188,14 @@ export function useSubscriptionsColumns(): ColumnDef<PlanRecord>[] {
           const period = Number(row.original.plan.period_amount || 0)
           return (
             <div className='text-muted-foreground text-xs'>
-              <div>{total > 0 ? total : t('Unlimited')}</div>
-              {period > 0 && <div>{t('Period')}: {period}</div>}
+              <div>
+                {total > 0 ? formatSubscriptionQuotaAmount(total) : t('Unlimited')}
+              </div>
+              {period > 0 && (
+                <div>
+                  {t('Period')}: {formatSubscriptionQuotaAmount(period)}
+                </div>
+              )}
             </div>
           )
         },

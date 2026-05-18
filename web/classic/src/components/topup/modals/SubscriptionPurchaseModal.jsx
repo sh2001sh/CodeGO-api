@@ -40,7 +40,7 @@ import {
   XCircle,
 } from 'lucide-react';
 import { SiStripe } from 'react-icons/si';
-import { renderQuota } from '../../../helpers';
+import { renderQuotaAsUSD } from '../../../helpers';
 import {
   formatSubscriptionDuration,
   formatSubscriptionResetPeriod,
@@ -106,10 +106,10 @@ function getPlanSubtitle(plan) {
 function getPlanDetailsText(plan, totalAmount, periodAmount, t) {
   const periodLabel =
     plan?.quota_reset_period === 'weekly' ? TEXT.weeklyQuota : TEXT.cycleQuota;
-  const totalLabel = totalAmount > 0 ? renderQuota(totalAmount) : TEXT.unlimited;
+  const totalLabel = totalAmount > 0 ? renderQuotaAsUSD(totalAmount) : TEXT.unlimited;
   const parts = [
     `${TEXT.validFor} ${formatSubscriptionDuration(plan, t)}`,
-    periodAmount > 0 ? `${periodLabel} ${renderQuota(periodAmount)}` : null,
+    periodAmount > 0 ? `${periodLabel} ${renderQuotaAsUSD(periodAmount)}` : null,
     `${TEXT.totalQuota} ${totalLabel}`,
   ];
   return parts.filter(Boolean).join('\uFF1B');
@@ -367,7 +367,7 @@ const SubscriptionPurchaseModal = ({
                   {totalAmount > 0 ? (
                     <Tooltip content={`${TEXT.originalQuota}: ${totalAmount}`}>
                       <Text className='text-slate-900 dark:text-slate-100'>
-                        {renderQuota(totalAmount)}
+                        {renderQuotaAsUSD(totalAmount)}
                       </Text>
                     </Tooltip>
                   ) : (

@@ -298,7 +298,7 @@ export function SubscriptionsMutateDrawer({
                     name='total_amount'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>{t('Total Quota')}</FormLabel>
+                        <FormLabel>{t('Total Quota')} (USD)</FormLabel>
                         <FormControl>
                           <Input
                             {...field}
@@ -328,8 +328,8 @@ export function SubscriptionsMutateDrawer({
                       <FormItem>
                         <FormLabel>
                           {isMonthlyCard && quotaMode === 'weekly'
-                            ? t('Weekly Quota')
-                            : t('Period Quota')}
+                            ? `${t('Weekly Quota')} (USD)`
+                            : `${t('Period Quota')} (USD)`}
                         </FormLabel>
                         <FormControl>
                           <Input
@@ -349,7 +349,9 @@ export function SubscriptionsMutateDrawer({
                                   amount: weeklyTotalAmount,
                                 }
                               )
-                            : t('Quota cap inside each reset period, 0 means disabled')}
+                            : t(
+                                'Quota cap inside each reset period, 0 means disabled'
+                              )}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>

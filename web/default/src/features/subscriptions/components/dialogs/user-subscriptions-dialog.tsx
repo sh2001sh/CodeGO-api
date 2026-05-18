@@ -63,7 +63,12 @@ import {
   invalidateUserSubscription,
   updateUserSubscription,
 } from '../../api'
-import { formatTimestamp } from '../../lib'
+import {
+  formatSubscriptionQuotaAmount,
+  formatTimestamp,
+  parseSubscriptionQuotaUSDToUnits,
+  subscriptionQuotaUnitsToUSD,
+} from '../../lib'
 import type { PlanRecord, UserSubscriptionRecord } from '../../types'
 
 function toDateTimeLocal(unixSeconds: number) {
@@ -250,10 +255,10 @@ export function UserSubscriptionsDialog(props: Props) {
       start_time: toDateTimeLocal(sub.start_time),
       end_time: toDateTimeLocal(sub.end_time),
       status: sub.status || 'active',
-      amount_total: String(Number(sub.amount_total || 0)),
-      amount_used: String(Number(sub.amount_used || 0)),
-      period_amount: String(Number(sub.period_amount || 0)),
-      period_used: String(Number(sub.period_used || 0)),
+      amount_total: String(subscriptionQuotaUnitsToUSD(sub.amount_total)),
+      amount_used: String(subscriptionQuotaUnitsToUSD(sub.amount_used)),
+      period_amount: String(subscriptionQuotaUnitsToUSD(sub.period_amount)),
+      period_used: String(subscriptionQuotaUnitsToUSD(sub.period_used)),
       model_limits: sub.model_limits || '',
     })
   }
@@ -266,10 +271,10 @@ export function UserSubscriptionsDialog(props: Props) {
         start_time: fromDateTimeLocal(editValues.start_time),
         end_time: fromDateTimeLocal(editValues.end_time),
         status: editValues.status,
-        amount_total: Number(editValues.amount_total || 0),
-        amount_used: Number(editValues.amount_used || 0),
-        period_amount: Number(editValues.period_amount || 0),
-        period_used: Number(editValues.period_used || 0),
+        amount_total: parseSubscriptionQuotaUSDToUnits(editValues.amount_total),
+        amount_used: parseSubscriptionQuotaUSDToUnits(editValues.amount_used),
+        period_amount: parseSubscriptionQuotaUSDToUnits(editValues.period_amount),
+        period_used: parseSubscriptionQuotaUSDToUnits(editValues.period_used),
         model_limits: editValues.model_limits || '',
       })
       if (res.success) {
@@ -407,12 +412,14 @@ export function UserSubscriptionsDialog(props: Props) {
                             <div className='text-xs'>
                               <div>
                                 {t('Total')}:{' '}
-                                {total > 0 ? `${used}/${total}` : t('Unlimited')}
+                                {total > 0
+                                  ? `${formatSubscriptionQuotaAmount(used)}/${formatSubscriptionQuotaAmount(total)}`
+                                  : t('Unlimited')}
                               </div>
                               <div>
                                 {t('Period')}:{' '}
                                 {Number(sub.period_amount || 0) > 0
-                                  ? `${Number(sub.period_used || 0)}/${Number(sub.period_amount || 0)}`
+                                  ? `${formatSubscriptionQuotaAmount(Number(sub.period_used || 0))}/${formatSubscriptionQuotaAmount(Number(sub.period_amount || 0))}`
                                   : t('Disabled')}
                               </div>
                             </div>
@@ -552,7 +559,9 @@ export function UserSubscriptionsDialog(props: Props) {
               </Select>
             </div>
             <div className='space-y-2'>
-              <label className='text-sm font-medium'>{t('Total Quota')}</label>
+              <label className='text-sm font-medium'>
+                {t('Total Quota')} (USD)
+              </label>
               <Input
                 type='number'
                 value={editValues.amount_total}
@@ -565,7 +574,9 @@ export function UserSubscriptionsDialog(props: Props) {
               />
             </div>
             <div className='space-y-2'>
-              <label className='text-sm font-medium'>{t('Used Quota')}</label>
+              <label className='text-sm font-medium'>
+                {t('Used Quota')} (USD)
+              </label>
               <Input
                 type='number'
                 value={editValues.amount_used}
@@ -578,7 +589,9 @@ export function UserSubscriptionsDialog(props: Props) {
               />
             </div>
             <div className='space-y-2'>
-              <label className='text-sm font-medium'>{t('Period Quota')}</label>
+              <label className='text-sm font-medium'>
+                {t('Period Quota')} (USD)
+              </label>
               <Input
                 type='number'
                 value={editValues.period_amount}
@@ -591,7 +604,9 @@ export function UserSubscriptionsDialog(props: Props) {
               />
             </div>
             <div className='space-y-2'>
-              <label className='text-sm font-medium'>{t('Period Used')}</label>
+              <label className='text-sm font-medium'>
+                {t('Period Used')} (USD)
+              </label>
               <Input
                 type='number'
                 value={editValues.period_used}

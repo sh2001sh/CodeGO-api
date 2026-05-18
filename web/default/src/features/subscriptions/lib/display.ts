@@ -17,10 +17,12 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import type { TFunction } from 'i18next'
+import { getCurrencyDisplay } from '@/lib/currency'
 import { formatDuration, formatResetPeriod } from './format'
 import type { SubscriptionPlan } from '../types'
 
 const DAY_PASS_KEYWORDS = ['day pass', '日卡']
+const DEFAULT_QUOTA_PER_UNIT = 500000
 
 const PLAN_DISCOUNT_TEXT_MAP: Array<{
   match: (title: string) => boolean
@@ -66,6 +68,23 @@ function formatNumber(value: number): string {
   return value.toFixed(6).replace(/0+$/, '').replace(/\.$/, '')
 }
 
+function getSubscriptionQuotaPerUnit(): number {
+  const quotaPerUnit = Number(getCurrencyDisplay().config.quotaPerUnit || 0)
+  return quotaPerUnit > 0 ? quotaPerUnit : DEFAULT_QUOTA_PER_UNIT
+}
+
+export function subscriptionQuotaUnitsToUSD(amount?: number | null): number {
+  return Number(amount || 0) / getSubscriptionQuotaPerUnit()
+}
+
+export function parseSubscriptionQuotaUSDToUnits(
+  amount?: number | string | null
+): number {
+  const numericAmount = Number(amount || 0)
+  if (!Number.isFinite(numericAmount)) return 0
+  return Math.round(numericAmount * getSubscriptionQuotaPerUnit())
+}
+
 export function normalizeSubscriptionText(value?: string | null): string {
   return trimText(value)
 }
@@ -87,6 +106,8 @@ export function getSubscriptionCurrencyLabel(
     case 'CNY':
     case 'RMB':
       return '¥'
+    case 'EUR':
+      return 'EUR '
     case 'USD':
     default:
       return '$'
@@ -102,7 +123,8 @@ export function formatSubscriptionPlanPrice(
 }
 
 export function formatSubscriptionQuotaAmount(amount?: number | null): string {
-  return `$${formatNumber(Number(amount || 0))}`
+  const usdAmount = subscriptionQuotaUnitsToUSD(amount)
+  return `$${formatNumber(usdAmount)}`
 }
 
 export function getSubscriptionPlanSubtitle(
@@ -171,11 +193,11 @@ export function getSubscriptionPlanDetailText(
   const resetLabel = formatResetPeriod(plan, t)
 
   if (isDayPassPlan(plan)) {
-    if (totalAmount > 0) {
-      detailParts.push(`总额度 ${formatSubscriptionQuotaAmount(totalAmount)}`)
-    } else {
-      detailParts.push('总额度不限')
-    }
+    detailParts.push(
+      totalAmount > 0
+        ? `总额度 ${formatSubscriptionQuotaAmount(totalAmount)}`
+        : '总额度不限'
+    )
     detailParts.push('日卡额度独立结算，扣费时默认优先于月卡')
     return detailParts.join('；')
   }

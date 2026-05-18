@@ -29,7 +29,7 @@ import {
   Tooltip,
   Typography,
 } from '@douyinfe/semi-ui';
-import { renderQuota } from '../../../helpers';
+import { renderQuotaAsUSD } from '../../../helpers';
 import { convertUSDToCurrency } from '../../../helpers/render';
 import {
   formatSubscriptionDuration,
@@ -91,7 +91,7 @@ function renderPlanTitle(title, record, t) {
         </Text>
 
         <Text type='tertiary'>{TEXT.totalQuota}</Text>
-        <Text>{totalAmount > 0 ? renderQuota(totalAmount) : TEXT.unlimited}</Text>
+        <Text>{totalAmount > 0 ? renderQuotaAsUSD(totalAmount) : TEXT.unlimited}</Text>
 
         <Text type='tertiary'>{TEXT.upgradeGroup}</Text>
         <Text>{plan?.upgrade_group || TEXT.noUpgrade}</Text>
@@ -173,7 +173,7 @@ function renderTotalAmount(record) {
     <Text type={total > 0 ? 'secondary' : 'tertiary'}>
       {total > 0 ? (
         <Tooltip content={`${TEXT.rawQuota}：${total}`}>
-          <span>{renderQuota(total)}</span>
+          <span>{renderQuotaAsUSD(total)}</span>
         </Tooltip>
       ) : (
         TEXT.unlimited

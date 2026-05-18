@@ -32,7 +32,7 @@ import {
   Typography,
 } from '@douyinfe/semi-ui';
 import { Crown, RefreshCw, Sparkles } from 'lucide-react';
-import { API, renderQuota, showError, showSuccess } from '../../helpers';
+import { API, renderQuotaAsUSD, showError, showSuccess } from '../../helpers';
 import {
   formatSubscriptionDuration,
   formatSubscriptionResetPeriod,
@@ -139,10 +139,10 @@ function isDayPassPlan(plan) {
 function getPlanDetailsText(plan, totalAmount, periodAmount, t) {
   const periodLabel =
     plan?.quota_reset_period === 'weekly' ? TEXT.weeklyQuota : TEXT.cycleQuota;
-  const totalLabel = totalAmount > 0 ? renderQuota(totalAmount) : TEXT.unlimited;
+  const totalLabel = totalAmount > 0 ? renderQuotaAsUSD(totalAmount) : TEXT.unlimited;
   const parts = [
     `${TEXT.validFor} ${formatSubscriptionDuration(plan, t)}`,
-    periodAmount > 0 ? `${periodLabel} ${renderQuota(periodAmount)}` : null,
+    periodAmount > 0 ? `${periodLabel} ${renderQuotaAsUSD(periodAmount)}` : null,
     `${TEXT.totalQuota} ${totalLabel}`,
   ];
   return parts.filter(Boolean).join('\uFF1B');
@@ -151,11 +151,11 @@ function getPlanDetailsText(plan, totalAmount, periodAmount, t) {
 function getPlanIntroText(plan, totalAmount, periodAmount) {
   const parts = [getPlanSubtitle(plan)];
   if (periodAmount > 0) {
-    parts.push(`${TEXT.weeklyQuota} ${renderQuota(periodAmount)}`);
+    parts.push(`${TEXT.weeklyQuota} ${renderQuotaAsUSD(periodAmount)}`);
   }
   parts.push(
     totalAmount > 0
-      ? `${TEXT.totalQuota} ${renderQuota(totalAmount)}`
+      ? `${TEXT.totalQuota} ${renderQuotaAsUSD(totalAmount)}`
       : `${TEXT.totalQuota} ${TEXT.unlimited}`,
   );
   return parts.join(' | ');
@@ -581,15 +581,15 @@ const SubscriptionPlansCard = ({
         label: periodAmount > 0 ? TEXT.weeklyQuota : TEXT.totalQuota,
         value:
           periodAmount > 0
-            ? renderQuota(periodAmount)
+            ? renderQuotaAsUSD(periodAmount)
             : totalAmount > 0
-              ? renderQuota(totalAmount)
+              ? renderQuotaAsUSD(totalAmount)
               : TEXT.unlimited,
       },
       periodAmount > 0
         ? {
             label: TEXT.totalQuota,
-            value: totalAmount > 0 ? renderQuota(totalAmount) : TEXT.unlimited,
+            value: totalAmount > 0 ? renderQuotaAsUSD(totalAmount) : TEXT.unlimited,
           }
         : null,
     ].filter(Boolean);
@@ -911,8 +911,8 @@ const SubscriptionPlansCard = ({
                           content={`${TEXT.originalQuota}: ${periodUsed}/${periodAmount} | ${TEXT.remaining} ${remainPeriodAmount}`}
                         >
                           <span>
-                            {renderQuota(periodUsed)}/{renderQuota(periodAmount)} |{' '}
-                            {TEXT.remaining} {renderQuota(remainPeriodAmount)}
+                            {renderQuotaAsUSD(periodUsed)}/{renderQuotaAsUSD(periodAmount)} |{' '}
+                            {TEXT.remaining} {renderQuotaAsUSD(remainPeriodAmount)}
                           </span>
                         </Tooltip>
                       </div>
@@ -932,8 +932,8 @@ const SubscriptionPlansCard = ({
                           content={`${TEXT.originalQuota}: ${usedAmount}/${totalAmount} | ${TEXT.remaining} ${remainAmount}`}
                         >
                           <span>
-                            {renderQuota(usedAmount)}/{renderQuota(totalAmount)} |{' '}
-                            {TEXT.remaining} {renderQuota(remainAmount)}
+                            {renderQuotaAsUSD(usedAmount)}/{renderQuotaAsUSD(totalAmount)} |{' '}
+                            {TEXT.remaining} {renderQuotaAsUSD(remainAmount)}
                           </span>
                         </Tooltip>
                       ) : (

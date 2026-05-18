@@ -29,7 +29,7 @@ import {
   Typography,
 } from '@douyinfe/semi-ui';
 import { RefreshCw } from 'lucide-react';
-import { API, renderQuota, showError } from '../../helpers';
+import { API, renderQuotaAsUSD, showError } from '../../helpers';
 
 const { Text } = Typography;
 
@@ -194,8 +194,8 @@ const SubscriptionUsagePanel = () => {
                     <div className='mb-1 flex items-center justify-between text-xs text-gray-500'>
                       <span>{TEXT.periodQuota}</span>
                       <span>
-                        {renderQuota(periodUsed)}/{renderQuota(periodAmount)} | {TEXT.used}{' '}
-                        {periodPercent}% | {TEXT.remaining} {renderQuota(periodRemain)}
+                        {renderQuotaAsUSD(periodUsed)}/{renderQuotaAsUSD(periodAmount)} | {TEXT.used}{' '}
+                        {periodPercent}% | {TEXT.remaining} {renderQuotaAsUSD(periodRemain)}
                       </span>
                     </div>
                     <Progress
@@ -212,7 +212,7 @@ const SubscriptionUsagePanel = () => {
                     <span>{TEXT.totalQuota}</span>
                     <span>
                       {totalAmount > 0
-                        ? `${renderQuota(usedAmount)}/${renderQuota(totalAmount)} | ${TEXT.used} ${totalPercent}% | ${TEXT.remaining} ${renderQuota(totalRemain)}`
+                        ? `${renderQuotaAsUSD(usedAmount)}/${renderQuotaAsUSD(totalAmount)} | ${TEXT.used} ${totalPercent}% | ${TEXT.remaining} ${renderQuotaAsUSD(totalRemain)}`
                         : TEXT.unlimited}
                     </span>
                   </div>

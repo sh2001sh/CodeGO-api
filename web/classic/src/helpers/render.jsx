@@ -1183,6 +1183,28 @@ export function renderQuota(quota, digits = 2) {
   return symbol + fixedResult;
 }
 
+export function renderQuotaAsUSD(quota, digits = 2) {
+  let quotaPerUnit = parseFloat(localStorage.getItem('quota_per_unit'));
+  if (!Number.isFinite(quotaPerUnit) || quotaPerUnit <= 0) {
+    quotaPerUnit = 500000;
+  }
+
+  const usdAmount = Number(quota || 0) / quotaPerUnit;
+  const abs = Math.abs(usdAmount);
+  let precision = digits;
+  if (abs > 0 && abs < 1) {
+    precision = Math.max(precision, abs >= 0.01 ? 4 : 6);
+  }
+  const fixedResult = usdAmount.toFixed(precision);
+
+  if (parseFloat(fixedResult) === 0 && quota > 0 && usdAmount > 0) {
+    const minValue = Math.pow(10, -precision);
+    return '$' + minValue.toFixed(precision);
+  }
+
+  return '$' + fixedResult;
+}
+
 function isValidGroupRatio(ratio) {
   return Number.isFinite(ratio) && ratio !== -1;
 }

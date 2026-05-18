@@ -28,6 +28,8 @@ export {
   getSubscriptionCurrencyLabel,
   isDayPassPlan,
   normalizeSubscriptionText,
+  parseSubscriptionQuotaUSDToUnits,
+  subscriptionQuotaUnitsToUSD,
 } from './display'
 export {
   getPlanFormSchema,

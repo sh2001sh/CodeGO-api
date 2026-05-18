@@ -19,6 +19,10 @@ For commercial licensing, please contact support@quantumnous.com
 import { z } from 'zod'
 import type { TFunction } from 'i18next'
 import type { SubscriptionPlan, PlanPayload } from '../types'
+import {
+  parseSubscriptionQuotaUSDToUnits,
+  subscriptionQuotaUnitsToUSD,
+} from './display'
 
 type PlanQuotaMode = 'total' | 'weekly'
 
@@ -112,8 +116,8 @@ export function planToFormValues(plan: SubscriptionPlan): PlanFormValues {
     sort_order: Number(plan.sort_order || 0),
     max_purchase_per_user: Number(plan.max_purchase_per_user || 0),
     quota_mode: deriveQuotaMode(plan),
-    total_amount: Number(plan.total_amount || 0),
-    period_amount: Number(plan.period_amount || 0),
+    total_amount: subscriptionQuotaUnitsToUSD(plan.total_amount),
+    period_amount: subscriptionQuotaUnitsToUSD(plan.period_amount),
     model_limits: plan.model_limits || '',
     upgrade_group: plan.upgrade_group || '',
     stripe_price_id: plan.stripe_price_id || '',
@@ -127,14 +131,16 @@ export function formValuesToPlanPayload(values: PlanFormValues): PlanPayload {
     Number(values.duration_value || 0)
   )
   const useWeeklyQuota = isMonthlyCard && values.quota_mode === 'weekly'
-  const periodAmount = useWeeklyQuota
+  const periodAmountUSD = useWeeklyQuota
     ? Number(values.period_amount || 0)
     : isMonthlyCard
       ? 0
       : Number(values.period_amount || 0)
-  const totalAmount = useWeeklyQuota
-    ? periodAmount * 4
+  const totalAmountUSD = useWeeklyQuota
+    ? periodAmountUSD * 4
     : Number(values.total_amount || 0)
+  const periodAmount = parseSubscriptionQuotaUSDToUnits(periodAmountUSD)
+  const totalAmount = parseSubscriptionQuotaUSDToUnits(totalAmountUSD)
   const quotaResetPeriod = useWeeklyQuota
     ? 'weekly'
     : values.quota_reset_period || 'never'
