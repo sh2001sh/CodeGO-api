@@ -17,10 +17,18 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useState, useCallback } from 'react'
-import { Check, Copy, Loader2 } from 'lucide-react'
+import { Check, Copy, Download, Loader2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { toast } from 'sonner'
 import { copyToClipboard } from '@/lib/copy-to-clipboard'
 import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuShortcut,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
   Popover,
   PopoverContent,
@@ -32,6 +40,7 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { StatusBadge } from '@/components/status-badge'
+import { downloadCodexSetupScript } from '../lib/codex-config-script'
 import { type ApiKey } from '../types'
 import { useApiKeys } from './api-keys-provider'
 
@@ -68,6 +77,27 @@ export function ApiKeyCell({ apiKey }: { apiKey: ApiKey }) {
       if (ok) markKeyCopied(apiKey.id)
     }
   }, [resolvedFullKey, resolveRealKey, apiKey.id, markKeyCopied])
+
+  const handleDownloadScript = useCallback(
+    async (platform: 'windows' | 'linux') => {
+      const realKey = resolvedFullKey || (await resolveRealKey(apiKey.id))
+      if (!realKey) return
+
+      downloadCodexSetupScript(platform, {
+        apiKey: realKey,
+        label: apiKey.name || String(apiKey.id),
+      })
+
+      toast.success(
+        t(
+          platform === 'windows'
+            ? 'Downloaded Codex Windows setup script'
+            : 'Downloaded Codex Linux setup script'
+        )
+      )
+    },
+    [resolvedFullKey, resolveRealKey, apiKey.id, apiKey.name, t]
+  )
 
   return (
     <div className='flex items-center'>
@@ -136,6 +166,35 @@ export function ApiKeyCell({ apiKey }: { apiKey: ApiKey }) {
               : t('Copy API key')}
         </TooltipContent>
       </Tooltip>
+      <DropdownMenu modal={false}>
+        <DropdownMenuTrigger
+          render={
+            <Button
+              variant='ghost'
+              size='icon'
+              className='size-7 shrink-0'
+              disabled={isLoading}
+              aria-label={t('Download Codex Script')}
+            />
+          }
+        >
+          <Download className='size-3.5' />
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align='end'>
+          <DropdownMenuItem onClick={() => handleDownloadScript('windows')}>
+            {t('Windows Script')}
+            <DropdownMenuShortcut>
+              <Download size={16} />
+            </DropdownMenuShortcut>
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => handleDownloadScript('linux')}>
+            {t('Linux Script')}
+            <DropdownMenuShortcut>
+              <Download size={16} />
+            </DropdownMenuShortcut>
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   )
 }

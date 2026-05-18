@@ -43,6 +43,7 @@ import {
 import {
   IconTreeTriangleDown,
   IconCopy,
+  IconDownload,
   IconEyeOpened,
   IconEyeClosed,
 } from '@douyinfe/semi-icons';
@@ -158,6 +159,18 @@ const renderTokenKey = (
                 await toggleTokenVisibility(record);
               }}
             />
+            <Button
+              theme='borderless'
+              size='small'
+              type='tertiary'
+              icon={<IconCopy />}
+              loading={loading}
+              aria-label='copy token key'
+              onClick={async (e) => {
+                e.stopPropagation();
+                await copyTokenKey(record);
+              }}
+            />
             <Dropdown
               trigger='click'
               position='bottomRight'
@@ -189,9 +202,9 @@ const renderTokenKey = (
                 theme='borderless'
                 size='small'
                 type='tertiary'
-                icon={<IconCopy />}
+                icon={<IconDownload />}
                 loading={loading}
-                aria-label='copy token key'
+                aria-label='download token codex script'
                 onClick={async (e) => {
                   e.stopPropagation();
                 }}
