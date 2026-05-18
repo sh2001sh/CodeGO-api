@@ -38,6 +38,11 @@ import type {
   WaffoPaymentResponse,
   WaffoPancakePaymentRequest,
   WaffoPancakePaymentResponse,
+  BlindBoxSelfResponse,
+  BlindBoxAmountRequest,
+  BlindBoxPayRequest,
+  BlindBoxOpenRequest,
+  BlindBoxOpenResponse,
 } from './types'
 
 // ============================================================================
@@ -231,5 +236,38 @@ export async function completeOrder(
   request: CompleteOrderRequest
 ): Promise<ApiResponse> {
   const res = await api.post('/api/user/topup/complete', request)
+  return res.data
+}
+
+export async function getBlindBoxSelf(): Promise<BlindBoxSelfResponse> {
+  const res = await api.get('/api/blind-box/self')
+  return res.data
+}
+
+export async function calculateBlindBoxAmount(
+  request: BlindBoxAmountRequest
+): Promise<AmountResponse> {
+  const res = await api.post('/api/blind-box/amount', request, {
+    skipBusinessError: true,
+  } as Record<string, unknown>)
+  return res.data
+}
+
+export async function requestBlindBoxPayment(
+  request: BlindBoxPayRequest
+): Promise<PaymentResponse> {
+  const res = await api.post('/api/blind-box/pay', request, {
+    skipBusinessError: true,
+  } as Record<string, unknown>)
+  return {
+    ...res.data,
+    url: res.data.url || (res as unknown as { url?: string }).url,
+  }
+}
+
+export async function openBlindBoxes(
+  request: BlindBoxOpenRequest
+): Promise<BlindBoxOpenResponse> {
+  const res = await api.post('/api/blind-box/open', request)
   return res.data
 }

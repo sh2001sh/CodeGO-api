@@ -20,6 +20,7 @@ import { parseCurrencyDisplayType } from '@/lib/currency'
 import { CheckinSettingsSection } from '../general/checkin-settings-section'
 import { PricingSection } from '../general/pricing-section'
 import { QuotaSettingsSection } from '../general/quota-settings-section'
+import { BlindBoxSettingsSection } from '../integrations/blind-box-settings-section'
 import { PaymentSettingsSection } from '../integrations/payment-settings-section'
 import { RatioSettingsCard } from '../models/ratio-settings-card'
 import type { BillingSettings } from '../types'
@@ -211,6 +212,33 @@ const BILLING_SECTIONS = [
           enabled: settings['checkin_setting.enabled'],
           minQuota: settings['checkin_setting.min_quota'],
           maxQuota: settings['checkin_setting.max_quota'],
+        }}
+      />
+    ),
+  },
+  {
+    id: 'blind-box',
+    titleKey: 'Blind Box Event',
+    descriptionKey: 'Configure blind box pricing, probability tiers, and pity rules',
+    build: (settings: BillingSettings) => (
+      <BlindBoxSettingsSection
+        defaultValues={{
+          enabled: settings['blind_box_setting.enabled'],
+          unitPrice: settings['blind_box_setting.unit_price'],
+          expireDays: settings['blind_box_setting.expire_days'],
+          dailyLimit: settings['blind_box_setting.daily_limit'],
+          monthlyLimit: settings['blind_box_setting.monthly_limit'],
+          dailyOpenLimit: settings['blind_box_setting.daily_open_limit'],
+          pityThreshold: settings['blind_box_setting.pity_threshold'],
+          pityGuaranteeUSD: settings['blind_box_setting.pity_guarantee_usd'],
+          lowRewardThresholdUSD:
+            settings['blind_box_setting.low_reward_threshold_usd'],
+          subscriptionPrizeProbability:
+            settings['blind_box_setting.subscription_prize_probability'],
+          subscriptionPlanTitle:
+            settings['blind_box_setting.subscription_plan_title'],
+          countOptions: settings['blind_box_setting.count_options'],
+          tiers: settings['blind_box_setting.tiers'],
         }}
       />
     ),

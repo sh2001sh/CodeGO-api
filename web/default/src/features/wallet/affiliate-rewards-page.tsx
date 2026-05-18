@@ -23,7 +23,7 @@ import { SectionPageLayout } from '@/components/layout'
 import { AffiliateRewardsCard } from './components/affiliate-rewards-card'
 import { TransferDialog } from './components/dialogs/transfer-dialog'
 import { WalletStatsCard } from './components/wallet-stats-card'
-import { useAffiliate, useTopupInfo } from './hooks'
+import { useAffiliate, useRedemption, useTopupInfo } from './hooks'
 import type { UserWalletData } from './types'
 
 export function AffiliateRewardsPage() {
@@ -31,6 +31,7 @@ export function AffiliateRewardsPage() {
   const [user, setUser] = useState<UserWalletData | null>(null)
   const [userLoading, setUserLoading] = useState(true)
   const [transferDialogOpen, setTransferDialogOpen] = useState(false)
+  const [redemptionCode, setRedemptionCode] = useState('')
   const { topupInfo } = useTopupInfo()
   const {
     affiliateLink,
@@ -38,6 +39,7 @@ export function AffiliateRewardsPage() {
     transferQuota,
     transferring,
   } = useAffiliate()
+  const { redeeming, redeemCode } = useRedemption()
 
   const fetchUser = useCallback(async () => {
     try {
@@ -63,6 +65,16 @@ export function AffiliateRewardsPage() {
     return success
   }
 
+  const handleRedeem = async () => {
+    if (!redemptionCode) return
+
+    const success = await redeemCode(redemptionCode)
+    if (success) {
+      setRedemptionCode('')
+      await fetchUser()
+    }
+  }
+
   return (
     <>
       <SectionPageLayout>
@@ -74,7 +86,15 @@ export function AffiliateRewardsPage() {
         </SectionPageLayout.Description>
         <SectionPageLayout.Content>
           <div className='mx-auto flex w-full max-w-6xl flex-col gap-4 sm:gap-5'>
-            <WalletStatsCard user={user} loading={userLoading} />
+            <WalletStatsCard
+              user={user}
+              loading={userLoading}
+              topupLink={topupInfo?.topup_link}
+              redemptionCode={redemptionCode}
+              onRedemptionCodeChange={setRedemptionCode}
+              onRedeem={handleRedeem}
+              redeeming={redeeming}
+            />
             <AffiliateRewardsCard
               user={user}
               affiliateLink={affiliateLink}

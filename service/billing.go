@@ -10,6 +10,7 @@ import (
 )
 
 const (
+	BillingSourceBlindBox     = "blind_box"
 	BillingSourceWallet       = "wallet"
 	BillingSourceSubscription = "subscription"
 )
@@ -62,6 +63,8 @@ func SettleBilling(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, actualQuo
 		if actualQuota != 0 {
 			if relayInfo.BillingSource == BillingSourceSubscription {
 				checkAndSendSubscriptionQuotaNotify(relayInfo)
+			} else if relayInfo.BillingSource == BillingSourceBlindBox {
+				checkAndSendBlindBoxQuotaNotify(relayInfo)
 			} else {
 				checkAndSendQuotaNotify(relayInfo, actualQuota-preConsumed, preConsumed)
 			}

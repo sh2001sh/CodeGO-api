@@ -148,6 +148,10 @@ export function SidebarModulesSection({
         title: t('Package Management'),
         description: t('Manage subscription plans and pricing.'),
       },
+      blind_box: {
+        title: t('Blind Box Operations'),
+        description: t('Open the blind box operations workspace for admins.'),
+      },
     },
   }
   const formDefaults = useMemo(() => config, [config])

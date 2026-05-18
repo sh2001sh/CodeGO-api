@@ -425,6 +425,12 @@ export function SubscriptionUsagePanel() {
           </div>
         </div>
 
+        <div className='rounded-2xl border border-dashed px-4 py-3 text-sm text-muted-foreground'>
+          {t(
+            'The dashboard total used quota is the user-wide cumulative consumption. The used quota shown below is the usage tracked inside each subscription package.'
+          )}
+        </div>
+
         {isLoading ? (
           <div className='grid gap-3 lg:grid-cols-2'>
             {Array.from({ length: 2 }).map((_, index) => (

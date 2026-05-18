@@ -17,6 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { api } from '@/lib/api'
+import type { BlindBoxSelfData } from '@/features/wallet/types'
 import type {
   User,
   GetUsersParams,
@@ -179,5 +180,12 @@ export async function adminUnbindCustomOAuth(
   const res = await api.delete(
     `/api/user/${userId}/oauth/bindings/${providerId}`
   )
+  return res.data
+}
+
+export async function getUserBlindBoxOverview(
+  userId: number
+): Promise<ApiResponse<BlindBoxSelfData>> {
+  const res = await api.get(`/api/blind-box/admin/users/${userId}/overview`)
   return res.data
 }

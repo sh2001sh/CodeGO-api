@@ -31,6 +31,7 @@ import {
 import { getSelfSubscriptionFull } from '@/features/subscriptions/api'
 import type { SelfSubscriptionData } from '@/features/subscriptions/types'
 import { BillingHistoryDialog } from './components/dialogs/billing-history-dialog'
+import { BlindBoxCard } from './components/blind-box-card'
 import { CreemConfirmDialog } from './components/dialogs/creem-confirm-dialog'
 import { PaymentConfirmDialog } from './components/dialogs/payment-confirm-dialog'
 import { RechargeFormCard } from './components/recharge-form-card'
@@ -61,16 +62,23 @@ interface WalletProps {
   initialShowHistory?: boolean
 }
 
-type WalletTab = 'subscription' | 'topup'
+type WalletTab = 'subscription' | 'blind-box' | 'topup'
 
 function getInitialWalletTab(): WalletTab {
   if (typeof window === 'undefined') return 'subscription'
-  return window.location.hash === '#wallet-add-funds' ? 'topup' : 'subscription'
+  if (window.location.hash === '#wallet-add-funds') return 'topup'
+  if (window.location.hash === '#wallet-blind-box') return 'blind-box'
+  return 'subscription'
 }
 
 function setWalletHash(tab: WalletTab) {
   if (typeof window === 'undefined') return
-  const hash = tab === 'topup' ? '#wallet-add-funds' : '#wallet-subscriptions'
+  const hash =
+    tab === 'topup'
+      ? '#wallet-add-funds'
+      : tab === 'blind-box'
+        ? '#wallet-blind-box'
+        : '#wallet-subscriptions'
   if (window.location.hash === hash) return
   window.history.replaceState({}, '', `${window.location.pathname}${hash}`)
 }
@@ -173,7 +181,11 @@ export function Wallet(props: WalletProps) {
 
     const syncTabFromHash = () => {
       setActiveTab(
-        window.location.hash === '#wallet-add-funds' ? 'topup' : 'subscription'
+        window.location.hash === '#wallet-add-funds'
+          ? 'topup'
+          : window.location.hash === '#wallet-blind-box'
+            ? 'blind-box'
+            : 'subscription'
       )
     }
 
@@ -346,13 +358,19 @@ export function Wallet(props: WalletProps) {
                   <h2 className='text-lg font-semibold tracking-tight text-foreground'>
                     钱包操作
                   </h2>
-                  <TabsList className='grid h-11 w-full grid-cols-2 rounded-2xl bg-slate-100 p-1 dark:bg-slate-900 sm:w-[320px]'>
+                  <TabsList className='grid h-11 w-full grid-cols-3 rounded-2xl bg-slate-100 p-1 dark:bg-slate-900 sm:w-[420px]'>
                     <TabsTrigger
                       value='subscription'
                       disabled={!showSubscriptionPanel}
                       className='rounded-xl text-sm font-medium'
                     >
                       套餐购买
+                    </TabsTrigger>
+                    <TabsTrigger
+                      value='blind-box'
+                      className='rounded-xl text-sm font-medium'
+                    >
+                      Blind Box
                     </TabsTrigger>
                     <TabsTrigger
                       value='topup'
@@ -371,6 +389,15 @@ export function Wallet(props: WalletProps) {
                     onAvailabilityChange={handleSubscriptionAvailabilityChange}
                     onSubscriptionRefresh={fetchSubscriptionData}
                   />
+                </TabsContent>
+
+                <TabsContent value='blind-box' className='mt-0'>
+                  <div id='wallet-blind-box' className='scroll-mt-4'>
+                    <BlindBoxCard
+                      onSubscriptionRefresh={fetchSubscriptionData}
+                      onUserRefresh={fetchUser}
+                    />
+                  </div>
                 </TabsContent>
 
                 <TabsContent value='topup' className='mt-0'>

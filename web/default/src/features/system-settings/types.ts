@@ -21,6 +21,13 @@ export type SystemOption = {
   value: string
 }
 
+export type BlindBoxTierSetting = {
+  name: string
+  min_usd: number
+  max_usd: number
+  probability: number
+}
+
 export type SystemOptionKey = string
 
 export type SystemOptionsResponse = {
@@ -277,6 +284,19 @@ export type BillingSettings = {
   'checkin_setting.enabled': boolean
   'checkin_setting.min_quota': number
   'checkin_setting.max_quota': number
+  'blind_box_setting.enabled': boolean
+  'blind_box_setting.unit_price': number
+  'blind_box_setting.expire_days': number
+  'blind_box_setting.daily_limit': number
+  'blind_box_setting.monthly_limit': number
+  'blind_box_setting.daily_open_limit': number
+  'blind_box_setting.pity_threshold': number
+  'blind_box_setting.pity_guarantee_usd': number
+  'blind_box_setting.low_reward_threshold_usd': number
+  'blind_box_setting.subscription_prize_probability': number
+  'blind_box_setting.subscription_plan_title': string
+  'blind_box_setting.count_options': number[]
+  'blind_box_setting.tiers': BlindBoxTierSetting[]
 }
 
 export type OperationsSettings = {

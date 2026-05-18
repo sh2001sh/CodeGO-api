@@ -111,6 +111,25 @@ const defaultBillingSettings: BillingSettings = {
   'checkin_setting.enabled': false,
   'checkin_setting.min_quota': 1000,
   'checkin_setting.max_quota': 10000,
+  'blind_box_setting.enabled': false,
+  'blind_box_setting.unit_price': 2.5,
+  'blind_box_setting.expire_days': 7,
+  'blind_box_setting.daily_limit': 50,
+  'blind_box_setting.monthly_limit': 500,
+  'blind_box_setting.daily_open_limit': 5000,
+  'blind_box_setting.pity_threshold': 5,
+  'blind_box_setting.pity_guarantee_usd': 10,
+  'blind_box_setting.low_reward_threshold_usd': 5,
+  'blind_box_setting.subscription_prize_probability': 0.003,
+  'blind_box_setting.subscription_plan_title': 'Standard Monthly Plan',
+  'blind_box_setting.count_options': [1, 5, 10, 20, 50],
+  'blind_box_setting.tiers': [
+    { name: 'starter', min_usd: 1, max_usd: 3, probability: 0.18 },
+    { name: 'steady', min_usd: 4, max_usd: 7, probability: 0.3 },
+    { name: 'core', min_usd: 8, max_usd: 12, probability: 0.31 },
+    { name: 'boost', min_usd: 13, max_usd: 20, probability: 0.15 },
+    { name: 'lucky', min_usd: 21, max_usd: 50, probability: 0.057 },
+  ],
 }
 
 export function BillingSettings() {

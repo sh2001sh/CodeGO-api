@@ -152,6 +152,13 @@ export function useSidebarData(): SidebarData {
             icon: CreditCard,
           },
           {
+            title: t('Blind Box Operations'),
+            url: '/subscriptions#blind-box-admin',
+            activeUrls: ['/subscriptions'],
+            configUrls: ['/blind-box-admin'],
+            icon: Gift,
+          },
+          {
             title: t('System Settings'),
             url: '/system-settings/site',
             activeUrls: ['/system-settings'],

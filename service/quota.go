@@ -545,3 +545,29 @@ func checkAndSendSubscriptionQuotaNotify(relayInfo *relaycommon.RelayInfo) {
 		}
 	})
 }
+
+func checkAndSendBlindBoxQuotaNotify(relayInfo *relaycommon.RelayInfo) {
+	gopool.Go(func() {
+		if relayInfo == nil || relayInfo.UserId <= 0 {
+			return
+		}
+		overview, err := model.GetUserBlindBoxOverview(relayInfo.UserId, 1)
+		if err != nil || overview == nil {
+			return
+		}
+		threshold := common.QuotaRemindThreshold
+		if relayInfo.UserSetting.QuotaWarningThreshold != 0 {
+			threshold = int(relayInfo.UserSetting.QuotaWarningThreshold)
+		}
+		if overview.RemainingQuota >= int64(threshold) {
+			return
+		}
+		prompt := "您的盲盒短期额度即将用尽"
+		topUpLink := PaymentReturnURL("/console/topup#wallet-blind-box")
+		content := "{{value}}，当前盲盒短期剩余额度为 {{value}}，请及时使用或补充。<br/>活动入口：<a href='{{value}}'>{{value}}</a>"
+		values := []interface{}{prompt, logger.FormatQuota(int(overview.RemainingQuota)), topUpLink, topUpLink}
+		if err := NotifyUser(relayInfo.UserId, relayInfo.UserEmail, relayInfo.UserSetting, dto.NewNotify(dto.NotifyTypeQuotaExceed, prompt, content, values)); err != nil {
+			common.SysError(fmt.Sprintf("failed to send blind box quota notify to user %d: %s", relayInfo.UserId, err.Error()))
+		}
+	})
+}

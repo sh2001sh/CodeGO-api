@@ -21,6 +21,7 @@ import { Pencil, Plus } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/confirm-dialog'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -300,6 +301,14 @@ export function UserSubscriptionsDialog(props: Props) {
           </SheetHeader>
 
           <div className='mt-4 space-y-4'>
+            <Alert>
+              <AlertDescription>
+                {t(
+                  'Dashboard used quota is the user-wide cumulative consumption. The used quota inside this dialog is the usage inside each subscription package and does not need to match the dashboard value.'
+                )}
+              </AlertDescription>
+            </Alert>
+
             <div className='flex gap-2'>
               <Select
                 items={[

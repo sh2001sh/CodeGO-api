@@ -290,3 +290,83 @@ export interface BillingHistoryResponse {
 export interface CompleteOrderRequest {
   trade_no: string
 }
+
+export interface BlindBoxTier {
+  name: string
+  min_usd: number
+  max_usd: number
+  probability: number
+}
+
+export interface BlindBoxCredit {
+  id: number
+  remaining_amount: number
+  original_amount: number
+  reward_usd: number
+  expires_at: number
+  status: string
+}
+
+export interface BlindBoxRecord {
+  id: number
+  reward_type: 'quota' | 'subscription' | string
+  reward_usd: number
+  credit_amount: number
+  reward_title: string
+  reward_tier: string
+  user_subscription_id?: number
+  is_pity?: boolean
+  create_time: number
+}
+
+export interface BlindBoxOverview {
+  available_boxes: number
+  pending_boxes: number
+  active_credit_count: number
+  remaining_quota: number
+  next_expire_at: number
+  pity_progress: number
+  pity_threshold: number
+  purchased_today: number
+  purchased_this_month: number
+  recent_records: BlindBoxRecord[]
+  active_credits: BlindBoxCredit[]
+}
+
+export interface BlindBoxSelfData {
+  enabled: boolean
+  unit_price: number
+  expire_days: number
+  daily_limit: number
+  monthly_limit: number
+  daily_open_limit: number
+  count_options: number[]
+  tiers: BlindBoxTier[]
+  subscription_prize_probability: number
+  subscription_plan_title: string
+  pity_threshold: number
+  pity_guarantee_usd: number
+  low_reward_threshold_usd: number
+  pay_methods: PaymentMethod[]
+  overview: BlindBoxOverview
+}
+
+export type BlindBoxSelfResponse = ApiResponse<BlindBoxSelfData>
+export type BlindBoxOpenResponse = ApiResponse<{
+  records: BlindBoxRecord[]
+  overview: BlindBoxOverview
+  open_count: number
+}>
+
+export interface BlindBoxAmountRequest {
+  quantity: number
+}
+
+export interface BlindBoxPayRequest {
+  quantity: number
+  payment_method: string
+}
+
+export interface BlindBoxOpenRequest {
+  count: number
+}

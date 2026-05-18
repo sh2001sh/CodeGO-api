@@ -168,6 +168,12 @@ func appendBillingInfo(relayInfo *relaycommon.RelayInfo, other map[string]interf
 		// Wallet quota is not deducted when billed from subscription.
 		other["wallet_quota_deducted"] = 0
 	}
+	if relayInfo.BillingSource == BillingSourceBlindBox {
+		if relayInfo.BlindBoxRequestId != "" {
+			other["blind_box_request_id"] = relayInfo.BlindBoxRequestId
+		}
+		other["wallet_quota_deducted"] = 0
+	}
 }
 
 func appendRequestConversionChain(relayInfo *relaycommon.RelayInfo, other map[string]interface{}) {

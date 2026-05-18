@@ -187,6 +187,28 @@ func SetApiRouter(router *gin.Engine) {
 		apiRouter.POST("/subscription/xunhu/notify", controller.SubscriptionXunhuNotify)
 		apiRouter.GET("/subscription/xunhu/notify", controller.SubscriptionXunhuNotify)
 		apiRouter.GET("/subscription/xunhu/return", controller.SubscriptionXunhuReturn)
+
+		blindBoxRoute := apiRouter.Group("/blind-box")
+		blindBoxRoute.Use(middleware.UserAuth())
+		{
+			blindBoxRoute.GET("/self", controller.GetBlindBoxSelf)
+			blindBoxRoute.GET("/orders/:trade_no", controller.GetBlindBoxOrderStatus)
+			blindBoxRoute.POST("/amount", controller.BlindBoxRequestAmount)
+			blindBoxRoute.POST("/pay", middleware.CriticalRateLimit(), controller.BlindBoxRequestPay)
+			blindBoxRoute.POST("/open", middleware.CriticalRateLimit(), controller.BlindBoxOpen)
+		}
+		blindBoxAdminRoute := apiRouter.Group("/blind-box/admin")
+		blindBoxAdminRoute.Use(middleware.AdminAuth())
+		{
+			blindBoxAdminRoute.GET("/users/:id/overview", controller.AdminGetBlindBoxUserOverview)
+		}
+		apiRouter.POST("/blind-box/epay/notify", controller.BlindBoxEpayNotify)
+		apiRouter.GET("/blind-box/epay/notify", controller.BlindBoxEpayNotify)
+		apiRouter.GET("/blind-box/epay/return", controller.BlindBoxEpayReturn)
+		apiRouter.POST("/blind-box/epay/return", controller.BlindBoxEpayReturn)
+		apiRouter.POST("/blind-box/xunhu/notify", controller.BlindBoxXunhuNotify)
+		apiRouter.GET("/blind-box/xunhu/notify", controller.BlindBoxXunhuNotify)
+		apiRouter.GET("/blind-box/xunhu/return", controller.BlindBoxXunhuReturn)
 		optionRoute := apiRouter.Group("/option")
 		optionRoute.Use(middleware.RootAuth())
 		{
