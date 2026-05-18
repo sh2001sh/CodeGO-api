@@ -15,17 +15,40 @@ import (
 
 // GetAllModelsMeta 获取模型列表（分页）
 func GetAllModelsMeta(c *gin.Context) {
-
+	if err := model.EnsureEnabledModelsMeta(); err != nil {
+		common.ApiError(c, err)
+		return
+	}
 	pageInfo := common.GetPageQuery(c)
-	modelsMeta, err := model.GetAllModels(pageInfo.GetStartIdx(), pageInfo.GetPageSize())
+	status := c.Query("status")
+	syncOfficial := c.Query("sync_official")
+	modelsMeta, err := model.GetAllModels(
+		pageInfo.GetStartIdx(),
+		pageInfo.GetPageSize(),
+		status,
+		syncOfficial,
+	)
 	if err != nil {
 		common.ApiError(c, err)
 		return
 	}
 	// 批量填充附加字段，提升列表接口性能
 	enrichModels(modelsMeta)
+	query := model.DB.Model(&model.Model{})
+	switch strings.ToLower(strings.TrimSpace(status)) {
+	case "enabled", "1", "true", "yes":
+		query = query.Where("status = ?", 1)
+	case "disabled", "0", "false", "no":
+		query = query.Where("status = ?", 0)
+	}
+	switch strings.ToLower(strings.TrimSpace(syncOfficial)) {
+	case "yes", "enabled", "1", "true":
+		query = query.Where("sync_official = ?", 1)
+	case "no", "disabled", "0", "false":
+		query = query.Where("sync_official = ?", 0)
+	}
 	var total int64
-	model.DB.Model(&model.Model{}).Count(&total)
+	query.Count(&total)
 
 	// 统计供应商计数（全部数据，不受分页影响）
 	vendorCounts, _ := model.GetVendorModelCounts()
@@ -43,12 +66,24 @@ func GetAllModelsMeta(c *gin.Context) {
 
 // SearchModelsMeta 搜索模型列表
 func SearchModelsMeta(c *gin.Context) {
-
+	if err := model.EnsureEnabledModelsMeta(); err != nil {
+		common.ApiError(c, err)
+		return
+	}
 	keyword := c.Query("keyword")
 	vendor := c.Query("vendor")
+	status := c.Query("status")
+	syncOfficial := c.Query("sync_official")
 	pageInfo := common.GetPageQuery(c)
 
-	modelsMeta, total, err := model.SearchModels(keyword, vendor, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
+	modelsMeta, total, err := model.SearchModels(
+		keyword,
+		vendor,
+		status,
+		syncOfficial,
+		pageInfo.GetStartIdx(),
+		pageInfo.GetPageSize(),
+	)
 	if err != nil {
 		common.ApiError(c, err)
 		return

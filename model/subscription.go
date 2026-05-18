@@ -168,8 +168,9 @@ type SubscriptionPlan struct {
 	DurationValue int    `json:"duration_value" gorm:"type:int;not null;default:1"`
 	CustomSeconds int64  `json:"custom_seconds" gorm:"type:bigint;not null;default:0"`
 
-	Enabled   bool `json:"enabled" gorm:"default:true"`
-	SortOrder int  `json:"sort_order" gorm:"type:int;default:0"`
+	Enabled      bool `json:"enabled" gorm:"default:true"`
+	InternalOnly bool `json:"internal_only" gorm:"default:false;index"`
+	SortOrder    int  `json:"sort_order" gorm:"type:int;default:0"`
 
 	StripePriceId  string `json:"stripe_price_id" gorm:"type:varchar(128);default:''"`
 	CreemProductId string `json:"creem_product_id" gorm:"type:varchar(128);default:''"`
@@ -1957,6 +1958,7 @@ func defaultSubscriptionPlans() []SubscriptionPlan {
 			DurationUnit:       SubscriptionDurationMonth,
 			DurationValue:      1,
 			Enabled:            true,
+			InternalOnly:       false,
 			SortOrder:          60,
 			TotalAmount:        quotaUnitsFromUSD(300),
 			PeriodAmount:       quotaUnitsFromUSD(75),
@@ -1973,6 +1975,7 @@ func defaultSubscriptionPlans() []SubscriptionPlan {
 			DurationUnit:     SubscriptionDurationMonth,
 			DurationValue:    1,
 			Enabled:          true,
+			InternalOnly:     false,
 			SortOrder:        50,
 			TotalAmount:      quotaUnitsFromUSD(600),
 			PeriodAmount:     quotaUnitsFromUSD(150),
@@ -1986,6 +1989,7 @@ func defaultSubscriptionPlans() []SubscriptionPlan {
 			DurationUnit:     SubscriptionDurationMonth,
 			DurationValue:    1,
 			Enabled:          true,
+			InternalOnly:     false,
 			SortOrder:        40,
 			TotalAmount:      quotaUnitsFromUSD(1500),
 			PeriodAmount:     quotaUnitsFromUSD(375),
@@ -1999,6 +2003,7 @@ func defaultSubscriptionPlans() []SubscriptionPlan {
 			DurationUnit:     SubscriptionDurationMonth,
 			DurationValue:    1,
 			Enabled:          true,
+			InternalOnly:     false,
 			SortOrder:        30,
 			TotalAmount:      quotaUnitsFromUSD(4000),
 			PeriodAmount:     quotaUnitsFromUSD(1000),
@@ -2012,6 +2017,7 @@ func defaultSubscriptionPlans() []SubscriptionPlan {
 			DurationUnit:     SubscriptionDurationDay,
 			DurationValue:    1,
 			Enabled:          true,
+			InternalOnly:     false,
 			SortOrder:        20,
 			TotalAmount:      quotaUnitsFromUSD(50),
 			QuotaResetPeriod: SubscriptionResetNever,
@@ -2024,6 +2030,7 @@ func defaultSubscriptionPlans() []SubscriptionPlan {
 			DurationUnit:     SubscriptionDurationDay,
 			DurationValue:    1,
 			Enabled:          true,
+			InternalOnly:     false,
 			SortOrder:        10,
 			TotalAmount:      quotaUnitsFromUSD(100),
 			QuotaResetPeriod: SubscriptionResetNever,
@@ -2099,6 +2106,9 @@ func syncPresetSubscriptionPlanFields(existing *SubscriptionPlan, preset Subscri
 	}
 	if existing.Enabled != preset.Enabled {
 		updates["enabled"] = preset.Enabled
+	}
+	if existing.InternalOnly != preset.InternalOnly {
+		updates["internal_only"] = preset.InternalOnly
 	}
 	if existing.SortOrder != preset.SortOrder {
 		updates["sort_order"] = preset.SortOrder

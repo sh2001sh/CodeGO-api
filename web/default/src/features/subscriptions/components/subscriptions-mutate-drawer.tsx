@@ -461,6 +461,34 @@ export function SubscriptionsMutateDrawer({
                     </FormItem>
                   )}
                 />
+
+                <FormField
+                  control={form.control}
+                  name='internal_only'
+                  render={({ field }) => (
+                    <FormItem className='space-y-2 rounded-lg border border-dashed p-3 sm:col-span-2'>
+                      <div className='flex items-center justify-between gap-3'>
+                        <div className='space-y-1'>
+                          <FormLabel className='!mt-0'>
+                            {t('Internal Plan')}
+                          </FormLabel>
+                          <FormDescription>
+                            {t(
+                              'Hidden from frontend purchase pages. Admins can still assign it to users manually.'
+                            )}
+                          </FormDescription>
+                        </div>
+                        <FormControl>
+                          <Switch
+                            checked={field.value}
+                            onCheckedChange={field.onChange}
+                          />
+                        </FormControl>
+                      </div>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
             </div>
 

@@ -58,7 +58,14 @@ export function useSubscriptionsColumns(): ColumnDef<PlanRecord>[] {
           const plan = row.original.plan
           return (
             <div className='max-w-[200px]'>
-              <div className='truncate font-medium'>{plan.title}</div>
+              <div className='flex items-center gap-2'>
+                <div className='truncate font-medium'>{plan.title}</div>
+                <StatusBadge
+                  label={plan.internal_only ? t('Internal') : t('Public')}
+                  variant={plan.internal_only ? 'warning' : 'neutral'}
+                  copyable={false}
+                />
+              </div>
               {plan.subtitle && (
                 <div className='text-muted-foreground truncate text-xs'>
                   {plan.subtitle}

@@ -53,6 +53,8 @@ const TEXT = {
   paymentChannel: '\u652f\u4ed8\u6e20\u9053',
   upgradeGroup: '\u5347\u7ea7\u5206\u7ec4',
   actions: '\u64cd\u4f5c',
+  internalPlan: '\u5185\u90e8\u5957\u9910',
+  publicPlan: '\u516c\u5f00\u5957\u9910',
   wechatPay: '\u5fae\u4fe1\u652f\u4ed8',
   enabled: '\u5df2\u542f\u7528',
   disabled: '\u5df2\u7981\u7528',
@@ -115,9 +117,18 @@ function renderPlanTitle(title, record, t) {
   return (
     <Popover content={popoverContent} position='rightTop' showArrow>
       <div style={{ cursor: 'pointer', maxWidth: 180 }}>
-        <Text strong ellipsis={{ showTooltip: false }}>
-          {title}
-        </Text>
+        <Space spacing={6} align='center'>
+          <Text strong ellipsis={{ showTooltip: false }}>
+            {title}
+          </Text>
+          <Tag
+            color={plan?.internal_only ? 'orange' : 'grey'}
+            shape='circle'
+            size='small'
+          >
+            {plan?.internal_only ? TEXT.internalPlan : TEXT.publicPlan}
+          </Tag>
+        </Space>
         {subtitle && (
           <Text
             type='tertiary'

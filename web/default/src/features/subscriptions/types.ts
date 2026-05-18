@@ -34,6 +34,7 @@ export const subscriptionPlanSchema = z.object({
   quota_reset_period: z.enum(['never', 'daily', 'weekly', 'monthly', 'custom']),
   quota_reset_custom_seconds: z.number().optional(),
   enabled: z.boolean(),
+  internal_only: z.boolean().default(false),
   sort_order: z.number(),
   max_purchase_per_user: z.number(),
   total_amount: z.number(),

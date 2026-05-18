@@ -49,6 +49,10 @@ func SubscriptionRequestCreemPay(c *gin.Context) {
 		common.ApiErrorMsg(c, "plan is disabled")
 		return
 	}
+	if plan.InternalOnly {
+		common.ApiErrorMsg(c, "internal plan cannot be purchased")
+		return
+	}
 	if plan.CreemProductId == "" {
 		common.ApiErrorMsg(c, "Creem product is not configured for this plan")
 		return

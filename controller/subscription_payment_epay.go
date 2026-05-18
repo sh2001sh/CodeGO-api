@@ -50,6 +50,10 @@ func SubscriptionRequestEpay(c *gin.Context) {
 		common.ApiErrorMsg(c, "plan is disabled")
 		return
 	}
+	if plan.InternalOnly {
+		common.ApiErrorMsg(c, "internal plan cannot be purchased")
+		return
+	}
 
 	userId := c.GetInt("id")
 	preview, err := model.ResolveSubscriptionPurchasePreview(userId, plan)

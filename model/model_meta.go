@@ -2,6 +2,7 @@ package model
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/QuantumNous/new-api/common"
 
@@ -103,9 +104,88 @@ func GetVendorModelCounts() (map[int64]int64, error) {
 	return m, nil
 }
 
-func GetAllModels(offset int, limit int) ([]*Model, error) {
+func normalizeModelStatusFilter(status string) *int {
+	switch strings.ToLower(strings.TrimSpace(status)) {
+	case "", "all":
+		return nil
+	case "enabled", "1", "true", "yes":
+		value := 1
+		return &value
+	case "disabled", "0", "false", "no":
+		value := 0
+		return &value
+	default:
+		return nil
+	}
+}
+
+func normalizeModelSyncFilter(syncOfficial string) *int {
+	switch strings.ToLower(strings.TrimSpace(syncOfficial)) {
+	case "", "all":
+		return nil
+	case "yes", "enabled", "1", "true":
+		value := 1
+		return &value
+	case "no", "disabled", "0", "false":
+		value := 0
+		return &value
+	default:
+		return nil
+	}
+}
+
+func EnsureEnabledModelsMeta() error {
+	missing, err := GetMissingModels()
+	if err != nil {
+		return err
+	}
+	for _, modelName := range missing {
+		if strings.TrimSpace(modelName) == "" {
+			continue
+		}
+		var existing Model
+		if err := DB.Where("model_name = ?", modelName).First(&existing).Error; err == nil {
+			continue
+		} else if err != gorm.ErrRecordNotFound {
+			return err
+		}
+
+		endpoints := GetModelSupportEndpointTypes(modelName)
+		endpointsJSON := ""
+		if len(endpoints) > 0 {
+			if data, marshalErr := common.Marshal(endpoints); marshalErr == nil {
+				endpointsJSON = string(data)
+			}
+		}
+
+		placeholder := &Model{
+			ModelName:    modelName,
+			Endpoints:    endpointsJSON,
+			Status:       1,
+			SyncOfficial: 1,
+			NameRule:     NameRuleExact,
+		}
+		if err := placeholder.Insert(); err != nil {
+			duplicated, dupErr := IsModelNameDuplicated(0, modelName)
+			if dupErr == nil && duplicated {
+				continue
+			}
+			return err
+		}
+	}
+	return nil
+}
+
+func GetAllModels(offset int, limit int, status string, syncOfficial string) ([]*Model, error) {
 	var models []*Model
-	err := DB.Order("id DESC").Offset(offset).Limit(limit).Find(&models).Error
+	db := DB.Model(&Model{})
+	if statusValue := normalizeModelStatusFilter(status); statusValue != nil {
+		db = db.Where("status = ?", *statusValue)
+	}
+	if syncValue := normalizeModelSyncFilter(syncOfficial); syncValue != nil {
+		db = db.Where("sync_official = ?", *syncValue)
+	}
+	err := db.Order("id DESC").Offset(offset).Limit(limit).Find(&models).Error
 	return models, err
 }
 
@@ -135,7 +215,7 @@ func GetBoundChannelsByModelsMap(modelNames []string) (map[string][]BoundChannel
 	return result, nil
 }
 
-func SearchModels(keyword string, vendor string, offset int, limit int) ([]*Model, int64, error) {
+func SearchModels(keyword string, vendor string, status string, syncOfficial string, offset int, limit int) ([]*Model, int64, error) {
 	var models []*Model
 	db := DB.Model(&Model{})
 	if keyword != "" {
@@ -148,6 +228,12 @@ func SearchModels(keyword string, vendor string, offset int, limit int) ([]*Mode
 		} else {
 			db = db.Joins("JOIN vendors ON vendors.id = models.vendor_id").Where("vendors.name LIKE ?", "%"+vendor+"%")
 		}
+	}
+	if statusValue := normalizeModelStatusFilter(status); statusValue != nil {
+		db = db.Where("models.status = ?", *statusValue)
+	}
+	if syncValue := normalizeModelSyncFilter(syncOfficial); syncValue != nil {
+		db = db.Where("models.sync_official = ?", *syncValue)
 	}
 	var total int64
 	if err := db.Count(&total).Error; err != nil {
