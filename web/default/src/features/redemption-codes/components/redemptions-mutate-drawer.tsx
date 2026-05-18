@@ -18,6 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useEffect, useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
+import type { FieldErrors } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
@@ -80,6 +81,25 @@ function getPlanCurrencyPrefix(currency?: string) {
   return normalized ? `${normalized} ` : '$'
 }
 
+function trimToMaxRunes(value: string, maxRunes = 20) {
+  return Array.from(value).slice(0, maxRunes).join('')
+}
+
+function formatCompactAmount(value: number) {
+  const abs = Math.abs(value)
+  if (abs === 0) return '0'
+  if (abs >= 100) {
+    return value.toFixed(Number.isInteger(value) ? 0 : 2).replace(/\.00$/, '')
+  }
+  if (abs >= 1) {
+    return value.toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1')
+  }
+  if (abs >= 0.01) {
+    return value.toFixed(4).replace(/0+$/, '').replace(/\.$/, '')
+  }
+  return value.toFixed(6).replace(/0+$/, '').replace(/\.$/, '')
+}
+
 export function RedemptionsMutateDrawer({
   open,
   onOpenChange,
@@ -123,7 +143,10 @@ export function RedemptionsMutateDrawer({
   const onSubmit = async (data: RedemptionFormValues) => {
     setIsSubmitting(true)
     try {
-      const basePayload = transformFormDataToPayload(data)
+      const basePayload = transformFormDataToPayload({
+        ...data,
+        name: resolveRedemptionName(data),
+      })
 
       if (isUpdate && currentRow) {
         const result = await updateRedemption({
@@ -150,9 +173,20 @@ export function RedemptionsMutateDrawer({
           triggerRefresh()
         }
       }
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : t('Request failed'))
     } finally {
       setIsSubmitting(false)
     }
+  }
+
+  const onInvalid = (errors: FieldErrors<RedemptionFormValues>) => {
+    const firstError = Object.values(errors)[0]
+    const message =
+      typeof firstError?.message === 'string'
+        ? firstError.message
+        : t('Please complete the required fields')
+    toast.error(message)
   }
 
   const handleSetExpiry = (months: number, days: number, hours: number) => {
@@ -190,6 +224,27 @@ export function RedemptionsMutateDrawer({
     return options
   }, [plans, selectedPlanId, t])
 
+  const resolveRedemptionName = (data: RedemptionFormValues) => {
+    const customName = String(data.name || '').trim()
+    if (customName) {
+      return trimToMaxRunes(customName)
+    }
+
+    if (data.redeem_type === REDEMPTION_TYPES.SUBSCRIPTION) {
+      const selectedPlan = plans.find(
+        (record) => record.plan.id === Number(data.plan_id || 0)
+      )
+      return trimToMaxRunes(
+        selectedPlan?.plan.title || t('Subscription Redemption')
+      )
+    }
+
+    const quotaText = tokensOnly
+      ? `${t('Quota')} ${Math.round(Number(data.quota_dollars || 0))}`
+      : `${t('Quota')} ${currencyLabel}${formatCompactAmount(Number(data.quota_dollars || 0))}`
+    return trimToMaxRunes(quotaText)
+  }
+
   return (
     <Sheet
       open={open}
@@ -219,7 +274,7 @@ export function RedemptionsMutateDrawer({
         <Form {...form}>
           <form
             id='redemption-form'
-            onSubmit={form.handleSubmit(onSubmit)}
+            onSubmit={form.handleSubmit(onSubmit, onInvalid)}
             className='flex-1 space-y-4 overflow-y-auto px-3 py-3 pb-4 sm:space-y-6 sm:px-4'
           >
             <FormField
@@ -229,10 +284,15 @@ export function RedemptionsMutateDrawer({
                 <FormItem>
                   <FormLabel>{t('Name')}</FormLabel>
                   <FormControl>
-                    <Input {...field} placeholder={t('Enter a name')} />
+                    <Input
+                      {...field}
+                      placeholder={t('Leave empty to auto-generate')}
+                    />
                   </FormControl>
                   <FormDescription>
-                    {t('Name for this redemption code (1-20 characters)')}
+                    {t(
+                      'Optional. Leave empty to auto-generate a name (max 20 characters)'
+                    )}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

@@ -31,13 +31,6 @@ export function getRedemptionFormSchema(t: TFunction) {
     .object({
       name: z
         .string()
-        .min(
-          REDEMPTION_VALIDATION.NAME_MIN_LENGTH,
-          t('Name must be between {{min}} and {{max}} characters', {
-            min: REDEMPTION_VALIDATION.NAME_MIN_LENGTH,
-            max: REDEMPTION_VALIDATION.NAME_MAX_LENGTH,
-          })
-        )
         .max(
           REDEMPTION_VALIDATION.NAME_MAX_LENGTH,
           t('Name must be between {{min}} and {{max}} characters', {
