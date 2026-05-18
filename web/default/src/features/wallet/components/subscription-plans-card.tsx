@@ -23,38 +23,18 @@ import {
   useMemo,
   useState,
 } from 'react'
-import {
-  ArrowRight,
-  CalendarClock,
-  Crown,
-  RefreshCw,
-  Sparkles,
-} from 'lucide-react'
+import { ArrowRight, Crown, RefreshCw, Sparkles } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
-import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
 import { TitledCard } from '@/components/ui/titled-card'
-import {
-  getPublicPlans,
-  getSelfSubscriptionFull,
-  updateBillingPreference,
-} from '@/features/subscriptions/api'
+import { getPublicPlans } from '@/features/subscriptions/api'
 import { SubscriptionPurchaseDialog } from '@/features/subscriptions/components/dialogs/subscription-purchase-dialog'
 import {
   formatDuration,
-  formatResetPeriod,
   formatSubscriptionPlanPrice,
   formatSubscriptionQuotaAmount,
   getSubscriptionPlanActionLabel,
@@ -66,31 +46,22 @@ import {
 } from '@/features/subscriptions/lib'
 import type {
   PlanRecord,
+  SelfSubscriptionData,
   UserSubscriptionRecord,
 } from '@/features/subscriptions/types'
 import type { PaymentMethod, TopupInfo } from '../types'
 
 interface SubscriptionPlansCardProps {
   topupInfo: TopupInfo | null
+  subscriptionData?: SelfSubscriptionData | null
+  subscriptionLoading?: boolean
   onAvailabilityChange?: (available: boolean) => void
+  onSubscriptionRefresh?: () => Promise<void>
 }
 
 interface PlanPresentation {
   badge: string
   summary: string
-}
-
-type BillingPreference =
-  | 'subscription_first'
-  | 'wallet_first'
-  | 'subscription_only'
-  | 'wallet_only'
-
-const BILLING_LABELS: Record<BillingPreference, string> = {
-  subscription_first: '订阅优先，余额兜底',
-  wallet_first: '余额优先，订阅兜底',
-  subscription_only: '仅从订阅扣费',
-  wallet_only: '仅从余额扣费',
 }
 
 function getEpayMethods(payMethods: PaymentMethod[] = []): PaymentMethod[] {
@@ -157,28 +128,16 @@ function getUsagePercent(used: number, total: number) {
   return Math.round((used / total) * 100)
 }
 
-function getBillingLabel(preference: string) {
-  return (
-    BILLING_LABELS[preference as BillingPreference] || BILLING_LABELS.subscription_first
-  )
-}
-
 export function SubscriptionPlansCard({
   topupInfo,
+  subscriptionData,
+  subscriptionLoading = false,
   onAvailabilityChange,
+  onSubscriptionRefresh,
 }: SubscriptionPlansCardProps) {
   const { t } = useTranslation()
   const [plans, setPlans] = useState<PlanRecord[]>([])
-  const [activeSubscriptions, setActiveSubscriptions] = useState<
-    UserSubscriptionRecord[]
-  >([])
-  const [allSubscriptions, setAllSubscriptions] = useState<
-    UserSubscriptionRecord[]
-  >([])
-  const [billingPreference, setBillingPreference] =
-    useState<BillingPreference>('subscription_first')
   const [loadingPlans, setLoadingPlans] = useState(true)
-  const [loadingSubscriptions, setLoadingSubscriptions] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [purchaseOpen, setPurchaseOpen] = useState(false)
   const [selectedPlan, setSelectedPlan] = useState<PlanRecord | null>(null)
@@ -190,6 +149,7 @@ export function SubscriptionPlansCard({
     () => getEpayMethods(topupInfo?.pay_methods),
     [topupInfo?.pay_methods]
   )
+  const allSubscriptions = subscriptionData?.all_subscriptions || []
 
   const fetchPlans = useCallback(async () => {
     setLoadingPlans(true)
@@ -203,38 +163,13 @@ export function SubscriptionPlansCard({
     }
   }, [])
 
-  const fetchSelfSubscription = useCallback(async () => {
-    setLoadingSubscriptions(true)
-    try {
-      const response = await getSelfSubscriptionFull()
-      if (response.success && response.data) {
-        setBillingPreference(
-          (response.data.billing_preference as BillingPreference) ||
-            'subscription_first'
-        )
-        setActiveSubscriptions(response.data.subscriptions || [])
-        setAllSubscriptions(response.data.all_subscriptions || [])
-      } else {
-        setActiveSubscriptions([])
-        setAllSubscriptions([])
-      }
-    } catch {
-      setActiveSubscriptions([])
-      setAllSubscriptions([])
-    } finally {
-      setLoadingSubscriptions(false)
-    }
-  }, [])
-
   useEffect(() => {
     void fetchPlans()
-    void fetchSelfSubscription()
-  }, [fetchPlans, fetchSelfSubscription])
+  }, [fetchPlans])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
     const handleSubscriptionChanged = () => {
-      void fetchSelfSubscription()
       void fetchPlans()
     }
     window.addEventListener('subscription:changed', handleSubscriptionChanged)
@@ -244,39 +179,22 @@ export function SubscriptionPlansCard({
         handleSubscriptionChanged
       )
     }
-  }, [fetchPlans, fetchSelfSubscription])
+  }, [fetchPlans])
 
   const handleRefresh = async () => {
     setRefreshing(true)
     try {
-      await Promise.all([fetchSelfSubscription(), fetchPlans()])
+      await Promise.all([fetchPlans(), onSubscriptionRefresh?.()])
     } finally {
       setRefreshing(false)
     }
   }
 
-  const handlePreferenceChange = async (preference: string) => {
-    const nextPreference = preference as BillingPreference
-    const previous = billingPreference
-    setBillingPreference(nextPreference)
-    try {
-      const response = await updateBillingPreference(nextPreference)
-      if (!response.success) {
-        toast.error(response.message || '扣费策略更新失败')
-        setBillingPreference(previous)
-        return
-      }
-      toast.success('扣费策略已更新')
-    } catch {
-      toast.error('扣费策略更新失败')
-      setBillingPreference(previous)
-    }
-  }
-
-  const hasActiveSubscriptions = activeSubscriptions.length > 0
-  const hasAnySubscription = allSubscriptions.length > 0
   const isAvailable =
-    loadingPlans || loadingSubscriptions || plans.length > 0 || hasAnySubscription
+    loadingPlans ||
+    subscriptionLoading ||
+    plans.length > 0 ||
+    allSubscriptions.length > 0
 
   useEffect(() => {
     onAvailabilityChange?.(isAvailable)
@@ -346,7 +264,6 @@ export function SubscriptionPlansCard({
       periodAmount,
       t
     )
-    const resetText = formatResetPeriod(plan, t)
     const blockedReason =
       normalizeSubscriptionText(record.disabled_reason) ||
       '当前已有生效中的更高等级套餐，暂不支持降级订阅。'
@@ -355,25 +272,25 @@ export function SubscriptionPlansCard({
       <Card
         key={plan.id}
         className={cn(
-          'overflow-hidden rounded-[26px] border border-slate-200 bg-white shadow-[0_20px_50px_rgba(15,23,42,0.07)]',
-          isRecommended && 'border-sky-300 ring-4 ring-sky-100'
+          'overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-[0_16px_36px_rgba(15,23,42,0.06)]',
+          isRecommended && 'border-sky-300 ring-2 ring-sky-100'
         )}
       >
-        <CardContent className='space-y-5 p-5'>
-          <div className='flex items-start justify-between gap-4'>
+        <CardContent className='space-y-4 p-4'>
+          <div className='flex items-start justify-between gap-3'>
             <div className='min-w-0'>
               <p className='text-primary text-[11px] font-semibold tracking-[0.22em] uppercase'>
                 {getSubscriptionPlanSubtitle(plan)}
               </p>
-              <div className='mt-2 flex flex-wrap items-center gap-2'>
-                <h4 className='truncate text-2xl font-semibold tracking-tight text-slate-950'>
+              <div className='mt-1.5 flex flex-wrap items-center gap-2'>
+                <h4 className='truncate text-xl font-semibold tracking-tight text-slate-950'>
                   {title}
                 </h4>
                 <span className='rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[11px] text-sky-700'>
                   {presentation.badge}
                 </span>
               </div>
-              <p className='mt-3 text-sm leading-6 text-slate-700'>
+              <p className='mt-2 text-sm leading-6 text-slate-700'>
                 {presentation.summary}
               </p>
             </div>
@@ -385,10 +302,12 @@ export function SubscriptionPlansCard({
                   推荐
                 </div>
               ) : null}
-              <div className='text-primary mt-3 text-3xl font-semibold tracking-tight'>
+              <div className='text-primary mt-2 text-2xl font-semibold tracking-tight'>
                 {displayPrice}
               </div>
-              <div className='text-muted-foreground mt-1 text-xs'>按套餐支付</div>
+              <div className='text-muted-foreground mt-1 text-xs'>
+                人民币 / 套餐
+              </div>
             </div>
           </div>
 
@@ -398,7 +317,7 @@ export function SubscriptionPlansCard({
             </div>
           ) : null}
 
-          <div className='grid gap-3 sm:grid-cols-2'>
+          <div className='grid grid-cols-2 gap-2 xl:grid-cols-4'>
             <MetricCard label='有效期' value={formatDuration(plan, t)} />
             <MetricCard
               label={periodAmount > 0 ? '每周额度' : '套餐额度'}
@@ -410,26 +329,24 @@ export function SubscriptionPlansCard({
                     : '不限'
               }
             />
-            <MetricCard label='总额度' value={totalAmount > 0 ? formatSubscriptionQuotaAmount(totalAmount) : '不限'} />
             <MetricCard
-              label='额度重置'
-              value={resetText === t('No Reset') ? '不重置' : resetText}
+              label='总额度'
+              value={
+                totalAmount > 0 ? formatSubscriptionQuotaAmount(totalAmount) : '不限'
+              }
+            />
+            <MetricCard
+              label='套餐类型'
+              value={isDayPassPlan(plan) ? '独立日卡' : '周刷月卡'}
             />
           </div>
 
-          <div className='rounded-2xl border bg-slate-50/80 p-4'>
-            <div className='text-sm font-semibold text-slate-950'>套餐简介</div>
-            <p className='text-muted-foreground mt-2 text-sm leading-6'>
+          <div className='rounded-2xl border border-slate-200 bg-slate-50/80 px-3.5 py-3'>
+            <div className='text-sm font-semibold text-slate-950'>套餐介绍</div>
+            <p className='text-muted-foreground mt-1.5 text-sm leading-6'>
               {summaryText}
             </p>
-          </div>
-
-          <div className='rounded-2xl border bg-white p-4'>
-            <div className='flex items-center gap-2 text-sm font-semibold text-slate-950'>
-              <CalendarClock className='h-4 w-4 text-sky-600' />
-              套餐详情
-            </div>
-            <p className='text-muted-foreground mt-2 text-sm leading-6'>
+            <p className='text-muted-foreground mt-2 text-xs leading-5'>
               {detailText}
             </p>
           </div>
@@ -471,106 +388,72 @@ export function SubscriptionPlansCard({
       <div id='wallet-subscriptions' className='scroll-mt-4'>
         <TitledCard
           title='套餐购买'
-          description='月卡和日卡分开展示，先看结构与额度，再决定购买。'
+          description='月卡与日卡分区排列，价格直接按人民币展示，先看套餐结构再决定购买。'
           icon={<Crown className='h-4 w-4' />}
-          contentClassName='space-y-5'
+          contentClassName='space-y-4'
         >
-          <Card className='rounded-[26px] border-slate-200 shadow-none'>
-            <CardHeader className='space-y-3'>
-              <div className='flex flex-wrap items-center justify-between gap-3'>
-                <div>
-                  <CardTitle className='text-base'>当前订阅与扣费方式</CardTitle>
-                  <p className='text-muted-foreground mt-1 text-sm'>
-                    日卡额度独立结算，默认优先于月卡；余额与订阅的先后关系由这里控制。
-                  </p>
+          <div className='flex items-center justify-between gap-3 rounded-[20px] border border-slate-200 bg-slate-50/80 px-4 py-3'>
+            <div>
+              <div className='text-sm font-semibold text-slate-950'>
+                先看套餐，再决定是否充值
+              </div>
+              <p className='text-muted-foreground mt-1 text-xs leading-5'>
+                日卡额度独立结算，不会并入月卡总额度；当前订阅与扣费方式已合并到上方余额卡片。
+              </p>
+            </div>
+            <Button
+              variant='outline'
+              size='icon'
+              className='h-9 w-9 shrink-0'
+              onClick={() => void handleRefresh()}
+              disabled={refreshing}
+            >
+              <RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />
+            </Button>
+          </div>
+
+          <PlanSection
+            title='月卡套餐'
+            description='适合长期使用 Codex。月卡有效期 1 个月，周额度每 7 天刷新一次，总额度限制整个月的上限。'
+            loading={loadingPlans}
+            emptyText='当前没有可购买的月卡套餐。'
+          >
+            {groupedPlans.monthPlans.map((record, index) =>
+              renderPlanCard(record, index)
+            )}
+          </PlanSection>
+
+          <PlanSection
+            title='日卡套餐'
+            description='适合临时补量。日卡额度独立结算，不并入月卡总额度，扣费时默认优先于月卡。'
+            loading={loadingPlans}
+            emptyText='当前没有可购买的日卡套餐。'
+          >
+            {groupedPlans.dayPlans.map((record, index) =>
+              renderPlanCard(record, index)
+            )}
+          </PlanSection>
+
+          <Card className='rounded-[22px] border-slate-200 shadow-none'>
+            <CardContent className='space-y-4 p-4'>
+              <div>
+                <div className='text-base font-semibold text-slate-950'>
+                  已购套餐使用情况
                 </div>
-                <Button
-                  variant='outline'
-                  size='icon'
-                  className='h-9 w-9'
-                  onClick={() => void handleRefresh()}
-                  disabled={refreshing}
-                >
-                  <RefreshCw
-                    className={cn('h-4 w-4', refreshing && 'animate-spin')}
-                  />
-                </Button>
+                <p className='text-muted-foreground mt-1 text-sm'>
+                  在这里查看每个订阅的剩余天数、周额度与总额度消耗。
+                </p>
               </div>
 
-              <div className='grid gap-3 lg:grid-cols-[280px_minmax(0,1fr)]'>
-                <div className='rounded-2xl border bg-slate-50/80 p-4'>
-                  <div className='text-sm font-medium text-slate-950'>
-                    扣费模式
-                  </div>
-                  <Select
-                    value={billingPreference}
-                    onValueChange={(value) =>
-                      value !== null && void handlePreferenceChange(value)
-                    }
-                  >
-                    <SelectTrigger className='mt-3 h-11'>
-                      <SelectValue>{getBillingLabel(billingPreference)}</SelectValue>
-                    </SelectTrigger>
-                    <SelectContent alignItemWithTrigger={false}>
-                      <SelectGroup>
-                        <SelectItem
-                          value='subscription_first'
-                          disabled={!hasActiveSubscriptions}
-                        >
-                          订阅优先，余额兜底
-                        </SelectItem>
-                        <SelectItem value='wallet_first'>
-                          余额优先，订阅兜底
-                        </SelectItem>
-                        <SelectItem
-                          value='subscription_only'
-                          disabled={!hasActiveSubscriptions}
-                        >
-                          仅从订阅扣费
-                        </SelectItem>
-                        <SelectItem value='wallet_only'>
-                          仅从余额扣费
-                        </SelectItem>
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                  {!hasActiveSubscriptions ? (
-                    <p className='mt-3 text-xs text-amber-700'>
-                      当前没有有效订阅，涉及“订阅”的模式会自动退回余额扣费。
-                    </p>
-                  ) : null}
-                </div>
-
-                <div className='grid gap-3 sm:grid-cols-3'>
-                  <StatCard
-                    label='有效订阅'
-                    value={`${activeSubscriptions.length}`}
-                    tip={hasActiveSubscriptions ? '当前有可用套餐额度' : '当前没有生效中的套餐'}
-                  />
-                  <StatCard
-                    label='历史订阅'
-                    value={`${allSubscriptions.length}`}
-                    tip='包含已过期与已取消的订阅记录'
-                  />
-                  <StatCard
-                    label='当前模式'
-                    value={getBillingLabel(billingPreference)}
-                    tip='概览页可进一步自定义订阅扣费顺序'
-                  />
-                </div>
-              </div>
-            </CardHeader>
-
-            <CardContent className='pt-0'>
-              {loadingSubscriptions ? (
+              {subscriptionLoading ? (
                 <div className='grid gap-3 xl:grid-cols-2'>
                   {Array.from({ length: 2 }).map((_, index) => (
-                    <Skeleton key={index} className='h-40 w-full rounded-2xl' />
+                    <Skeleton key={index} className='h-36 w-full rounded-2xl' />
                   ))}
                 </div>
               ) : allSubscriptions.length === 0 ? (
                 <div className='rounded-2xl border border-dashed px-4 py-6 text-sm text-slate-600'>
-                  当前还没有任何订阅记录。购买套餐后，这里会展示每个订阅的剩余天数、总额度和周额度使用情况。
+                  当前还没有任何订阅记录。购买套餐后，这里会显示每张套餐的额度使用进度。
                 </div>
               ) : (
                 <div className='grid gap-3 xl:grid-cols-2'>
@@ -602,7 +485,10 @@ export function SubscriptionPlansCard({
                       subscription.end_time > Date.now() / 1000
 
                     return (
-                      <Card key={subscription.id} className='rounded-2xl border-slate-200 shadow-none'>
+                      <Card
+                        key={subscription.id}
+                        className='rounded-2xl border-slate-200 shadow-none'
+                      >
                         <CardContent className='space-y-3 p-4'>
                           <div className='flex flex-wrap items-start justify-between gap-2'>
                             <div>
@@ -611,12 +497,18 @@ export function SubscriptionPlansCard({
                                   {title}
                                 </div>
                                 <span className='rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] text-slate-600'>
-                                  {active ? '生效中' : subscription.status === 'cancelled' ? '已取消' : '已过期'}
+                                  {active
+                                    ? '生效中'
+                                    : subscription.status === 'cancelled'
+                                      ? '已取消'
+                                      : '已过期'}
                                 </span>
                               </div>
                               <p className='text-muted-foreground mt-1 text-xs'>
                                 {active ? `剩余 ${remainDays} 天` : '该订阅已结束'} · 到期时间{' '}
-                                {new Date(subscription.end_time * 1000).toLocaleString()}
+                                {new Date(
+                                  subscription.end_time * 1000
+                                ).toLocaleString()}
                               </p>
                             </div>
                           </div>
@@ -643,7 +535,7 @@ export function SubscriptionPlansCard({
 
                           <div className='grid gap-2 sm:grid-cols-2'>
                             <InfoItem
-                              label='下次重置'
+                              label='下一次重置'
                               value={
                                 subscription.next_reset_time
                                   ? new Date(
@@ -654,7 +546,13 @@ export function SubscriptionPlansCard({
                             />
                             <InfoItem
                               label='订阅状态'
-                              value={active ? '生效中' : subscription.status === 'cancelled' ? '已取消' : '已过期'}
+                              value={
+                                active
+                                  ? '生效中'
+                                  : subscription.status === 'cancelled'
+                                    ? '已取消'
+                                    : '已过期'
+                              }
                             />
                           </div>
                         </CardContent>
@@ -665,28 +563,6 @@ export function SubscriptionPlansCard({
               )}
             </CardContent>
           </Card>
-
-          <PlanSection
-            title='月卡套餐'
-            description='适合长期使用 Codex。月卡有效期 1 个月，周额度每 7 天刷新一次，总额度限制整个月的上限。'
-            loading={loadingPlans}
-            emptyText='当前没有可购买的月卡套餐。'
-          >
-            {groupedPlans.monthPlans.map((record, index) =>
-              renderPlanCard(record, index)
-            )}
-          </PlanSection>
-
-          <PlanSection
-            title='日卡套餐'
-            description='适合临时补量。日卡额度独立结算，不并入月卡总额度，扣费时默认优先于月卡。'
-            loading={loadingPlans}
-            emptyText='当前没有可购买的日卡套餐。'
-          >
-            {groupedPlans.dayPlans.map((record, index) =>
-              renderPlanCard(record, index)
-            )}
-          </PlanSection>
         </TitledCard>
       </div>
 
@@ -695,8 +571,8 @@ export function SubscriptionPlansCard({
         onOpenChange={(open) => {
           setPurchaseOpen(open)
           if (!open) {
-            void fetchSelfSubscription()
             void fetchPlans()
+            void onSubscriptionRefresh?.()
           }
         }}
         plan={selectedPlan}
@@ -731,7 +607,7 @@ function PlanSection(props: {
     : [props.children].filter(Boolean)
 
   return (
-    <section className='rounded-[30px] border border-sky-100 bg-[linear-gradient(180deg,rgba(248,251,255,0.98),rgba(255,255,255,0.94))] p-4 shadow-[0_24px_60px_rgba(15,23,42,0.06)] sm:p-5'>
+    <section className='rounded-[24px] border border-sky-100 bg-[linear-gradient(180deg,rgba(248,251,255,0.98),rgba(255,255,255,0.94))] p-4 shadow-[0_20px_48px_rgba(15,23,42,0.05)]'>
       <div className='mb-4'>
         <p className='text-primary text-[11px] font-semibold tracking-[0.24em] uppercase'>
           {props.title}
@@ -742,13 +618,13 @@ function PlanSection(props: {
       </div>
 
       {props.loading ? (
-        <div className='grid grid-cols-1 gap-4 2xl:grid-cols-2'>
-          {Array.from({ length: 2 }).map((_, index) => (
-            <Skeleton key={index} className='h-[360px] w-full rounded-[26px]' />
+        <div className='grid grid-cols-1 gap-3 lg:grid-cols-2 2xl:grid-cols-4'>
+          {Array.from({ length: 4 }).map((_, index) => (
+            <Skeleton key={index} className='h-[280px] w-full rounded-[22px]' />
           ))}
         </div>
       ) : childArray.length > 0 ? (
-        <div className='grid grid-cols-1 gap-4 2xl:grid-cols-2'>
+        <div className='grid grid-cols-1 gap-3 lg:grid-cols-2 2xl:grid-cols-4'>
           {childArray}
         </div>
       ) : (
@@ -769,18 +645,6 @@ function MetricCard(props: { label: string; value: string }) {
       <div className='mt-1 text-sm font-semibold text-slate-900'>
         {props.value}
       </div>
-    </div>
-  )
-}
-
-function StatCard(props: { label: string; value: string; tip: string }) {
-  return (
-    <div className='rounded-2xl border bg-white px-4 py-4'>
-      <div className='text-muted-foreground text-xs'>{props.label}</div>
-      <div className='mt-1 text-lg font-semibold text-slate-950'>
-        {props.value}
-      </div>
-      <p className='text-muted-foreground mt-2 text-xs leading-5'>{props.tip}</p>
     </div>
   )
 }

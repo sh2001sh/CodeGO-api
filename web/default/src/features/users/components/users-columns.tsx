@@ -159,6 +159,44 @@ export function useUsersColumns(): ColumnDef<User>[] {
       meta: { label: t('Status'), mobileBadge: true },
     },
     {
+      id: 'current_subscription',
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title='当前订阅' />
+      ),
+      cell: ({ row }) => {
+        const user = row.original
+        const hasActiveSubscription =
+          user.current_subscription_status === 'active' &&
+          !!user.current_subscription_plan_title
+
+        if (!hasActiveSubscription) {
+          return (
+            <StatusBadge
+              label='无订阅'
+              variant='neutral'
+              copyable={false}
+            />
+          )
+        }
+
+        return (
+          <div className='min-w-[180px] space-y-1'>
+            <StatusBadge
+              label={user.current_subscription_plan_title || '生效中'}
+              variant='success'
+              showDot
+              copyable={false}
+            />
+            <div className='text-muted-foreground text-xs'>
+              到期：{formatTimestamp(user.current_subscription_end_time || 0)}
+            </div>
+          </div>
+        )
+      },
+      enableSorting: false,
+      meta: { label: '当前订阅' },
+    },
+    {
       id: 'quota',
       accessorKey: 'quota',
       header: ({ column }) => (

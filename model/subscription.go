@@ -1384,24 +1384,15 @@ func AdminDeleteSubscriptionPlan(planId int) (string, error) {
 		return "", err
 	}
 
-	var orderCount int64
-	if err := DB.Model(&SubscriptionOrder{}).
-		Where("plan_id = ?", planId).
-		Count(&orderCount).Error; err != nil {
-		return "", err
-	}
-	if orderCount > 0 {
-		return "", errors.New("cannot delete a plan that already has subscription orders")
-	}
-
+	now := common.GetTimestamp()
 	var subscriptionCount int64
 	if err := DB.Model(&UserSubscription{}).
-		Where("plan_id = ?", planId).
+		Where("plan_id = ? AND status = ? AND end_time > ?", planId, "active", now).
 		Count(&subscriptionCount).Error; err != nil {
 		return "", err
 	}
 	if subscriptionCount > 0 {
-		return "", errors.New("cannot delete a plan that is already bound to user subscriptions")
+		return "", errors.New("cannot delete a plan that still has active subscriptions")
 	}
 
 	if err := DB.Where("id = ?", planId).Delete(&SubscriptionPlan{}).Error; err != nil {
@@ -1951,7 +1942,7 @@ func PostConsumeUserSubscriptionUsageDelta(userSubscriptionId int, modelName str
 func defaultSubscriptionPlans() []SubscriptionPlan {
 	return []SubscriptionPlan{
 		{
-			Title:              "Lite",
+			Title:              "Lite月卡",
 			Subtitle:           "月卡",
 			PriceAmount:        50,
 			Currency:           "CNY",
@@ -1967,7 +1958,7 @@ func defaultSubscriptionPlans() []SubscriptionPlan {
 			MaxPurchasePerUser: 0,
 		},
 		{
-			Title:            "Standard",
+			Title:            "Standard月卡",
 			Subtitle:         "月卡",
 			PriceAmount:      90,
 			Currency:         "CNY",
@@ -1980,7 +1971,7 @@ func defaultSubscriptionPlans() []SubscriptionPlan {
 			QuotaResetPeriod: SubscriptionResetWeekly,
 		},
 		{
-			Title:            "Pro",
+			Title:            "Pro月卡",
 			Subtitle:         "月卡",
 			PriceAmount:      170,
 			Currency:         "CNY",
@@ -1993,7 +1984,7 @@ func defaultSubscriptionPlans() []SubscriptionPlan {
 			QuotaResetPeriod: SubscriptionResetWeekly,
 		},
 		{
-			Title:            "Ultra",
+			Title:            "Ultra月卡",
 			Subtitle:         "月卡",
 			PriceAmount:      360,
 			Currency:         "CNY",
@@ -2006,7 +1997,7 @@ func defaultSubscriptionPlans() []SubscriptionPlan {
 			QuotaResetPeriod: SubscriptionResetWeekly,
 		},
 		{
-			Title:            "Day Pass 50",
+			Title:            "50刀日卡",
 			Subtitle:         "日卡",
 			PriceAmount:      10,
 			Currency:         "CNY",
@@ -2018,7 +2009,7 @@ func defaultSubscriptionPlans() []SubscriptionPlan {
 			QuotaResetPeriod: SubscriptionResetNever,
 		},
 		{
-			Title:            "Day Pass 100",
+			Title:            "100刀日卡",
 			Subtitle:         "日卡",
 			PriceAmount:      20,
 			Currency:         "CNY",
@@ -2030,6 +2021,49 @@ func defaultSubscriptionPlans() []SubscriptionPlan {
 			QuotaResetPeriod: SubscriptionResetNever,
 		},
 	}
+}
+
+func legacyPresetSubscriptionPlanTitleMap() map[string]string {
+	return map[string]string{
+		"Lite":         "Lite月卡",
+		"Standard":     "Standard月卡",
+		"Pro":          "Pro月卡",
+		"Ultra":        "Ultra月卡",
+		"Day Pass 50":  "50刀日卡",
+		"Day Pass 100": "100刀日卡",
+	}
+}
+
+func getPresetPlanLegacyTitles(title string) []string {
+	titleMap := legacyPresetSubscriptionPlanTitleMap()
+	aliases := make([]string, 0, 2)
+	for legacy, current := range titleMap {
+		if current == title {
+			aliases = append(aliases, legacy)
+		}
+	}
+	return aliases
+}
+
+func findPresetSubscriptionPlan(title string) (*SubscriptionPlan, error) {
+	var existing SubscriptionPlan
+	err := DB.Where("title = ?", title).First(&existing).Error
+	if err == nil {
+		return &existing, nil
+	}
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, err
+	}
+	for _, legacyTitle := range getPresetPlanLegacyTitles(title) {
+		err = DB.Where("title = ?", legacyTitle).First(&existing).Error
+		if err == nil {
+			return &existing, nil
+		}
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, err
+		}
+	}
+	return nil, gorm.ErrRecordNotFound
 }
 
 func syncPresetSubscriptionPlanFields(existing *SubscriptionPlan, preset SubscriptionPlan) map[string]interface{} {
@@ -2090,12 +2124,14 @@ func syncPresetSubscriptionPlanFields(existing *SubscriptionPlan, preset Subscri
 func SeedDefaultSubscriptionPlans() error {
 	plans := defaultSubscriptionPlans()
 	for index := range plans {
-		var existing SubscriptionPlan
-		err := DB.Where("title = ?", plans[index].Title).First(&existing).Error
+		existing, err := findPresetSubscriptionPlan(plans[index].Title)
 		if err == nil {
-			updates := syncPresetSubscriptionPlanFields(&existing, plans[index])
+			updates := syncPresetSubscriptionPlanFields(existing, plans[index])
+			if existing.Title != plans[index].Title {
+				updates["title"] = plans[index].Title
+			}
 			if len(updates) > 0 {
-				if err := DB.Model(&existing).Updates(updates).Error; err != nil {
+				if err := DB.Model(existing).Updates(updates).Error; err != nil {
 					return err
 				}
 				InvalidateSubscriptionPlanCache(existing.Id)

@@ -28,6 +28,8 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs'
+import { getSelfSubscriptionFull } from '@/features/subscriptions/api'
+import type { SelfSubscriptionData } from '@/features/subscriptions/types'
 import { BillingHistoryDialog } from './components/dialogs/billing-history-dialog'
 import { CreemConfirmDialog } from './components/dialogs/creem-confirm-dialog'
 import { PaymentConfirmDialog } from './components/dialogs/payment-confirm-dialog'
@@ -77,6 +79,9 @@ export function Wallet(props: WalletProps) {
   const { t } = useTranslation()
   const [user, setUser] = useState<UserWalletData | null>(null)
   const [userLoading, setUserLoading] = useState(true)
+  const [subscriptionData, setSubscriptionData] =
+    useState<SelfSubscriptionData | null>(null)
+  const [subscriptionLoading, setSubscriptionLoading] = useState(true)
   const [topupAmount, setTopupAmount] = useState(0)
   const [selectedPreset, setSelectedPreset] = useState<number | null>(null)
   const [selectedPaymentMethod, setSelectedPaymentMethod] =
@@ -133,9 +138,28 @@ export function Wallet(props: WalletProps) {
     }
   }, [])
 
+  const fetchSubscriptionData = useCallback(async () => {
+    try {
+      setSubscriptionLoading(true)
+      const response = await getSelfSubscriptionFull()
+      if (response.success && response.data) {
+        setSubscriptionData(response.data)
+      } else {
+        setSubscriptionData(null)
+      }
+    } catch (error) {
+      // eslint-disable-next-line no-console
+      console.error('Failed to fetch subscription data:', error)
+      setSubscriptionData(null)
+    } finally {
+      setSubscriptionLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     fetchUser()
-  }, [fetchUser])
+    fetchSubscriptionData()
+  }, [fetchSubscriptionData, fetchUser])
 
   useEffect(() => {
     if (props.initialShowHistory) {
@@ -159,6 +183,23 @@ export function Wallet(props: WalletProps) {
       window.removeEventListener('hashchange', syncTabFromHash)
     }
   }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const handleSubscriptionChanged = () => {
+      void fetchSubscriptionData()
+      void fetchUser()
+    }
+
+    window.addEventListener('subscription:changed', handleSubscriptionChanged)
+    return () => {
+      window.removeEventListener(
+        'subscription:changed',
+        handleSubscriptionChanged
+      )
+    }
+  }, [fetchSubscriptionData, fetchUser])
 
   // Initialize topup amount when topup info is loaded
   useEffect(() => {
@@ -290,13 +331,18 @@ export function Wallet(props: WalletProps) {
       <SectionPageLayout>
         <SectionPageLayout.Title>{t('Wallet')}</SectionPageLayout.Title>
         <SectionPageLayout.Description>
-          {t('Manage your balance and payment methods')}
+          {t('查看当前余额、订阅状态，并在这里切换套餐购买或额度充值。')}
         </SectionPageLayout.Description>
         <SectionPageLayout.Content>
-          <div className='mx-auto flex w-full max-w-7xl flex-col gap-4 sm:gap-5'>
-            <WalletStatsCard user={user} loading={userLoading} />
+          <div className='mx-auto flex w-full max-w-7xl flex-col gap-4'>
+            <WalletStatsCard
+              user={user}
+              loading={userLoading}
+              subscriptionData={subscriptionData}
+              subscriptionLoading={subscriptionLoading}
+            />
 
-            <div className='rounded-[28px] border border-sky-100 bg-[linear-gradient(180deg,rgba(248,251,255,0.98),rgba(255,255,255,0.94))] p-4 shadow-[0_24px_60px_rgba(15,23,42,0.06)] sm:p-5'>
+            <div className='rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_18px_48px_rgba(15,23,42,0.06)] sm:p-5'>
               <Tabs
                 value={activeTab}
                 onValueChange={(value) => {
@@ -304,18 +350,15 @@ export function Wallet(props: WalletProps) {
                   setActiveTab(nextTab)
                   setWalletHash(nextTab)
                 }}
-                className='space-y-5'
+                className='space-y-4'
               >
-                <div className='flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between'>
+                <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
                   <div>
-                    <p className='text-primary text-[11px] font-semibold tracking-[0.24em] uppercase'>
+                    <h2 className='text-lg font-semibold tracking-tight text-slate-950'>
                       钱包操作
-                    </p>
-                    <h2 className='mt-2 text-2xl font-semibold tracking-tight text-slate-950'>
-                      充值额度或购买套餐
                     </h2>
-                    <p className='text-muted-foreground mt-2 text-sm leading-6'>
-                      充值和套餐购买立即可切换，套餐信息会在面板内独立加载。
+                    <p className='text-muted-foreground mt-1 text-sm'>
+                      套餐为主，充值作为补充；可直接切换到需要的购买方式。
                     </p>
                   </div>
 
@@ -339,7 +382,10 @@ export function Wallet(props: WalletProps) {
                 <TabsContent value='subscription' className='mt-0'>
                   <SubscriptionPlansCard
                     topupInfo={topupInfo}
+                    subscriptionData={subscriptionData}
+                    subscriptionLoading={subscriptionLoading}
                     onAvailabilityChange={handleSubscriptionAvailabilityChange}
+                    onSubscriptionRefresh={fetchSubscriptionData}
                   />
                 </TabsContent>
 
