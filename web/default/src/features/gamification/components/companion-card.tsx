@@ -144,7 +144,7 @@ export function CompanionCard(props: CompanionCardProps) {
                   onClick={handleFeed}
                   disabled={props.feeding}
                 >
-                  {props.feeding ? '投喂中...' : '投喂升级'}
+                  {props.feeding ? '投喂中...' : '投喂宠物'}
                 </Button>
 
                 <Button

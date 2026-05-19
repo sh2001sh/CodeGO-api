@@ -11,7 +11,7 @@ import (
 
 const (
 	CompanionPetMaxLevel              = 5
-	CompanionFeedBaseExperiencePerUSD = 20.0
+	CompanionFeedBaseExperiencePerUSD = 5.0
 	companionBasePityThreshold        = 5
 	companionMaxDiscountRate          = 0.8
 )
@@ -148,10 +148,10 @@ var companionBuffBlueprints = map[string]companionBuffBlueprint{
 
 var companionPetLevelThresholds = map[int]int64{
 	1: 0,
-	2: 40,
-	3: 130,
-	4: 310,
-	5: 630,
+	2: 60,
+	3: 180,
+	4: 420,
+	5: 820,
 }
 
 var companionPetUpgradeCostUSD = map[int]float64{

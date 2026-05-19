@@ -115,6 +115,39 @@ function getOrderedSubscriptions(
   return ordered
 }
 
+function getSubscriptionUsageStatus(record: UserSubscriptionRecord): {
+  label: string
+  note: string | null
+} {
+  const subscription = record.subscription
+  const active =
+    subscription.status === 'active' &&
+    Number(subscription.end_time || 0) > Date.now() / 1000
+  if (!active) {
+    return {
+      label: subscription.status === 'cancelled' ? '已取消' : '已过期',
+      note: null,
+    }
+  }
+
+  const totalAmount = Number(subscription.amount_total || 0)
+  const usedAmount = Number(subscription.amount_used || 0)
+  const totalRemain =
+    totalAmount > 0 ? Math.max(0, totalAmount - usedAmount) : 0
+  const periodAmount = Number(subscription.period_amount || 0)
+  const periodUsed = Number(subscription.period_used || 0)
+  const periodRemain =
+    periodAmount > 0 ? Math.max(0, periodAmount - periodUsed) : 0
+
+  if (totalAmount > 0 && totalRemain <= 0) {
+    return { label: '额度已用完', note: '当前扣费会自动跳过这张套餐卡。' }
+  }
+  if (periodAmount > 0 && periodRemain <= 0) {
+    return { label: '等待刷新', note: '本期额度已用完，等待下次刷新。' }
+  }
+  return { label: '生效中', note: null }
+}
+
 function getBillingLabel(value: BillingPreference): string {
   return BILLING_OPTIONS.find((item) => item.value === value)?.label || value
 }
@@ -366,6 +399,7 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
                 {orderedSubscriptions.map((record, index) => {
                   const subscription = record.subscription
                   const meta = planMetaMap.get(subscription.plan_id)
+                  const usageStatus = getSubscriptionUsageStatus(record)
                   return (
                     <div
                       key={subscription.id}
@@ -379,6 +413,9 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
                           <div className='text-muted-foreground mt-1 text-xs'>
                             {meta?.subtitle || '订阅'} · 剩余{' '}
                             {getRemainingDays(subscription.end_time)} 天
+                          </div>
+                          <div className='mt-1 text-xs text-amber-700'>
+                            {usageStatus.note || usageStatus.label}
                           </div>
                           <div className='text-muted-foreground mt-1 text-xs'>
                             到期：{formatDateTime(subscription.end_time)}

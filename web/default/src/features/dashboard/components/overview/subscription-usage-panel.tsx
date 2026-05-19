@@ -138,6 +138,39 @@ function getOrderedSubscriptions(
   return ordered
 }
 
+function getSubscriptionUsageStatus(record: UserSubscriptionRecord): {
+  label: string
+  note: string | null
+} {
+  const subscription = record.subscription
+  const active =
+    subscription.status === 'active' &&
+    Number(subscription.end_time || 0) > Date.now() / 1000
+  if (!active) {
+    return {
+      label: subscription.status === 'cancelled' ? '已取消' : '已过期',
+      note: null,
+    }
+  }
+
+  const totalAmount = Number(subscription.amount_total || 0)
+  const usedAmount = Number(subscription.amount_used || 0)
+  const totalRemain =
+    totalAmount > 0 ? Math.max(0, totalAmount - usedAmount) : 0
+  const periodAmount = Number(subscription.period_amount || 0)
+  const periodUsed = Number(subscription.period_used || 0)
+  const periodRemain =
+    periodAmount > 0 ? Math.max(0, periodAmount - periodUsed) : 0
+
+  if (totalAmount > 0 && totalRemain <= 0) {
+    return { label: '额度已用完', note: '当前扣费会自动跳过这张套餐卡。' }
+  }
+  if (periodAmount > 0 && periodRemain <= 0) {
+    return { label: '等待刷新', note: '本期额度已用完，等待下次刷新后恢复。' }
+  }
+  return { label: '生效中', note: null }
+}
+
 export function SubscriptionUsagePanel() {
   const { t } = useTranslation()
   const [draftPreference, setDraftPreference] =
@@ -373,6 +406,7 @@ export function SubscriptionUsagePanel() {
                     const subscription = record.subscription
                     const meta = planMetaMap.get(subscription.plan_id)
                     const remainDays = getRemainingDays(subscription.end_time)
+                    const usageStatus = getSubscriptionUsageStatus(record)
                     return (
                       <div
                         key={subscription.id}
@@ -390,8 +424,16 @@ export function SubscriptionUsagePanel() {
                           <p className='text-muted-foreground mt-1 text-xs'>
                             剩余 {remainDays} 天，到期时间 {formatDateTime(subscription.end_time)}
                           </p>
+                          {usageStatus.note ? (
+                            <p className='mt-1 text-xs text-amber-700'>
+                              {usageStatus.note}
+                            </p>
+                          ) : null}
                         </div>
                         <div className='flex items-center gap-2'>
+                          <span className='rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] text-slate-600'>
+                            {usageStatus.label}
+                          </span>
                           <Button
                             variant='outline'
                             size='icon'
@@ -512,6 +554,7 @@ function SubscriptionCard(props: {
   periodPercent: number
 }) {
   const subscription = props.record.subscription
+  const usageStatus = getSubscriptionUsageStatus(props.record)
 
   return (
     <div className='bg-background/60 rounded-xl border p-4'>
@@ -528,9 +571,12 @@ function SubscriptionCard(props: {
           </div>
         </div>
         <span className='rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700'>
-          生效中
+          {usageStatus.label}
         </span>
       </div>
+      {usageStatus.note ? (
+        <div className='mt-2 text-xs text-amber-700'>{usageStatus.note}</div>
+      ) : null}
 
       <div className='mt-4 space-y-3'>
         {props.periodAmount > 0 && (

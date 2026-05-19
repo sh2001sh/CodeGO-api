@@ -1,0 +1,167 @@
+package model
+
+import (
+	"testing"
+	"time"
+
+	"github.com/QuantumNous/new-api/common"
+	"github.com/QuantumNous/new-api/dto"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+)
+
+func ensureSubscriptionUsageTestSchema(t *testing.T) {
+	t.Helper()
+	require.NoError(t, DB.AutoMigrate(&SubscriptionPreConsumeRecord{}))
+	t.Cleanup(func() {
+		DB.Exec("DELETE FROM subscription_pre_consume_records")
+	})
+}
+
+func pickFirstBillableSubscriptionID(
+	t *testing.T,
+	userID int,
+	amount int64,
+) int {
+	t.Helper()
+
+	summaries, err := GetAllActiveUserSubscriptions(userID)
+	require.NoError(t, err)
+
+	for _, summary := range summaries {
+		sub := summary.Subscription
+		plan, err := getSubscriptionPlanByIdTx(nil, sub.PlanId)
+		require.NoError(t, err)
+
+		if sub.AmountTotal > 0 {
+			remain := sub.AmountTotal - sub.AmountUsed
+			if remain < amount {
+				continue
+			}
+		}
+
+		periodAmount := getSubscriptionPeriodAmount(plan, sub)
+		if !usesLegacyPeriodicQuota(plan, sub) && periodAmount > 0 {
+			periodRemain := periodAmount - sub.PeriodUsed
+			if periodRemain < amount {
+				continue
+			}
+		}
+		return sub.Id
+	}
+	return 0
+}
+
+func insertSubscriptionUsageTestUser(t *testing.T, id int, orderIds []int) {
+	t.Helper()
+	user := &User{
+		Id:       id,
+		Username: "subscription_usage_test_user",
+		Status:   common.UserStatusEnabled,
+	}
+	setting := dto.UserSetting{
+		BillingPreference:    "subscription_first",
+		SubscriptionOrderIds: orderIds,
+	}
+	user.SetSetting(setting)
+	require.NoError(t, DB.Create(user).Error)
+}
+
+func TestSeedDefaultSubscriptionPlans_FixesLegacyPresetUsageUnits(t *testing.T) {
+	truncateTables(t)
+	ensureSubscriptionUsageTestSchema(t)
+
+	now := time.Now().Unix()
+	preset := defaultSubscriptionPlans()[4]
+	legacyPlan := preset
+	legacyPlan.Id = 9101
+	legacyPlan.TotalAmount = 50
+	legacyPlan.PeriodAmount = 0
+	require.NoError(t, DB.Create(&legacyPlan).Error)
+
+	insertSubscriptionUsageTestUser(t, 9101, []int{9201})
+	legacySub := &UserSubscription{
+		Id:          9201,
+		UserId:      9101,
+		PlanId:      legacyPlan.Id,
+		AmountTotal: 50,
+		AmountUsed:  50,
+		StartTime:   now - 3600,
+		EndTime:     now + 86400,
+		Status:      "active",
+	}
+	require.NoError(t, DB.Create(legacySub).Error)
+
+	require.NoError(t, SeedDefaultSubscriptionPlans())
+
+	var reloadedSub UserSubscription
+	require.NoError(t, DB.Where("id = ?", legacySub.Id).First(&reloadedSub).Error)
+
+	expectedQuota := quotaUnitsFromUSD(50)
+	assert.Equal(t, expectedQuota, reloadedSub.AmountTotal)
+	assert.Equal(t, expectedQuota, reloadedSub.AmountUsed)
+
+	selectedID := pickFirstBillableSubscriptionID(t, 9101, int64(common.QuotaPerUnit))
+	assert.Zero(t, selectedID)
+}
+
+func TestPreConsumeUserSubscription_KeepsExhaustedDayPassVisibleButSkipsBilling(t *testing.T) {
+	truncateTables(t)
+	ensureSubscriptionUsageTestSchema(t)
+
+	now := time.Now().Unix()
+	dayPlan := defaultSubscriptionPlans()[4]
+	dayPlan.Id = 9301
+	require.NoError(t, DB.Create(&dayPlan).Error)
+
+	monthPlan := defaultSubscriptionPlans()[0]
+	monthPlan.Id = 9302
+	require.NoError(t, DB.Create(&monthPlan).Error)
+
+	daySub := &UserSubscription{
+		Id:          9401,
+		UserId:      9301,
+		PlanId:      dayPlan.Id,
+		AmountTotal: dayPlan.TotalAmount,
+		AmountUsed:  dayPlan.TotalAmount,
+		StartTime:   now - 3600,
+		EndTime:     now + 86400,
+		Status:      "active",
+	}
+	monthSub := &UserSubscription{
+		Id:            9402,
+		UserId:        9301,
+		PlanId:        monthPlan.Id,
+		AmountTotal:   monthPlan.TotalAmount,
+		AmountUsed:    0,
+		PeriodAmount:  monthPlan.PeriodAmount,
+		PeriodUsed:    0,
+		StartTime:     now - 3600,
+		EndTime:       now + 30*86400,
+		Status:        "active",
+		LastResetTime: now - 3600,
+		NextResetTime: now + 6*86400,
+	}
+
+	insertSubscriptionUsageTestUser(t, 9301, []int{daySub.Id, monthSub.Id})
+	require.NoError(t, DB.Create(daySub).Error)
+	require.NoError(t, DB.Create(monthSub).Error)
+
+	activeSubs, err := GetAllActiveUserSubscriptions(9301)
+	require.NoError(t, err)
+	require.Len(t, activeSubs, 2)
+	assert.Equal(t, daySub.Id, activeSubs[0].Subscription.Id)
+	assert.Equal(t, monthSub.Id, activeSubs[1].Subscription.Id)
+
+	selectedID := pickFirstBillableSubscriptionID(t, 9301, int64(common.QuotaPerUnit))
+	assert.Equal(t, monthSub.Id, selectedID)
+
+	var reloadedDay UserSubscription
+	require.NoError(t, DB.Where("id = ?", daySub.Id).First(&reloadedDay).Error)
+	assert.Equal(t, dayPlan.TotalAmount, reloadedDay.AmountUsed)
+	assert.Equal(t, "active", reloadedDay.Status)
+
+	var reloadedMonth UserSubscription
+	require.NoError(t, DB.Where("id = ?", monthSub.Id).First(&reloadedMonth).Error)
+	assert.Zero(t, reloadedMonth.AmountUsed)
+}

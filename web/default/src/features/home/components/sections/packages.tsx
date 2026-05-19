@@ -240,7 +240,7 @@ export function Packages({
                   月卡套餐
                 </p>
                 <h3 className='mt-2 text-2xl font-semibold text-slate-950 dark:text-white'>
-                  适合长期 Code Go 使用，额度按周期刷新
+                  适合长期 Code Go 使用，周额度会按周期刷新
                 </h3>
               </div>
               <div className='grid gap-5 lg:grid-cols-2'>

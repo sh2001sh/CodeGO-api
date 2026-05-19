@@ -29,7 +29,7 @@ export function BlindBoxPage() {
   return (
     <WalletWorkspaceShell
       title='盲盒活动'
-      description='这里单独展示盲盒购买、开启记录、保底规则以及宠物对盲盒链路的增益影响。'
+      description='购买盲盒、查看开奖记录与当前增益。'
       main={
         <div className='space-y-4'>
           <div className='flex items-center gap-3 rounded-[22px] border border-amber-100 bg-[linear-gradient(135deg,rgba(255,244,227,0.96),rgba(255,255,255,0.98))] px-4 py-4 dark:border-slate-800 dark:bg-[linear-gradient(135deg,rgba(45,24,20,0.9),rgba(15,23,42,0.88))]'>
@@ -38,27 +38,41 @@ export function BlindBoxPage() {
             </div>
             <div className='space-y-1'>
               <div className='text-sm font-semibold text-foreground'>
-                购买、开盒、保底和宠物增益都集中在这里
-              </div>
-              <div className='text-sm text-muted-foreground'>
-                盲盒临时额度优先于订阅和钱包余额消耗；若当前出战宠物带有盲盒增益，会直接影响保底触发速度或每次开盒返还。
+                单个盲盒 2.5 元，连续 5 次低于 5 美元后，下次保底 10 美元
               </div>
             </div>
           </div>
 
+          <div className='rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40'>
+            <div className='grid gap-3 md:grid-cols-3'>
+                <div className='rounded-2xl border bg-background/70 p-3 text-xs leading-6 text-muted-foreground'>
+                  <div className='font-medium text-foreground'>01 购买盲盒</div>
+                  单个盲盒价格 2.5 元，数量自由调整，不再固定几个挡位。
+                </div>
+                <div className='rounded-2xl border bg-background/70 p-3 text-xs leading-6 text-muted-foreground'>
+                  <div className='font-medium text-foreground'>02 保底规则</div>
+                  连续 5 次都低于 5 美元额度时触发保底，下次必定获得 10 美元额度。
+                </div>
+                <div className='rounded-2xl border bg-background/70 p-3 text-xs leading-6 text-muted-foreground'>
+                  <div className='font-medium text-foreground'>03 宠物增益</div>
+                  若当前出战宠物带有盲盒增益，它会减少保底所需的低奖励次数，或在每次开盒时额外返还额度。
+                </div>
+              </div>
+          </div>
+
+          <BlindBoxCard
+            onSubscriptionRefresh={workspace.fetchSubscriptionData}
+            onUserRefresh={workspace.fetchUser}
+          />
+
           <div className='grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]'>
             <div className='rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40'>
               <div className='flex items-center justify-between gap-3'>
-                <div>
-                  <div className='text-sm font-semibold text-foreground'>
-                    盲盒宠物示意
-                  </div>
-                  <div className='mt-1 text-sm text-muted-foreground'>
-                    开盒、幸运大奖和套餐大奖都对应图鉴里的宠物，盲盒页会把相关角色和作用一起说清楚。
-                  </div>
+                <div className='text-sm font-semibold text-foreground'>
+                  盲盒宠物示意
                 </div>
                 <div className='rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700 dark:bg-amber-500/10 dark:text-amber-200'>
-                  盲盒线路
+                  相关宠物
                 </div>
               </div>
 
@@ -81,21 +95,6 @@ export function BlindBoxPage() {
                     </div>
                   </div>
                 ))}
-              </div>
-
-              <div className='mt-4 grid gap-3 md:grid-cols-3'>
-                <div className='rounded-2xl border bg-background/70 p-3 text-xs leading-6 text-muted-foreground'>
-                  <div className='font-medium text-foreground'>01 购买盲盒</div>
-                  单个盲盒价格 2.5 元，数量自由调整，不再固定几个挡位。
-                </div>
-                <div className='rounded-2xl border bg-background/70 p-3 text-xs leading-6 text-muted-foreground'>
-                  <div className='font-medium text-foreground'>02 保底规则</div>
-                  连续 5 次都低于 5 美元额度时触发保底，下次必定获得 10 美元额度。
-                </div>
-                <div className='rounded-2xl border bg-background/70 p-3 text-xs leading-6 text-muted-foreground'>
-                  <div className='font-medium text-foreground'>03 宠物增益</div>
-                  若当前出战宠物带有盲盒增益，它会减少保底所需的低奖励次数，或在每次开盒时额外返还额度。
-                </div>
               </div>
             </div>
 
@@ -136,11 +135,6 @@ export function BlindBoxPage() {
               )}
             </div>
           </div>
-
-          <BlindBoxCard
-            onSubscriptionRefresh={workspace.fetchSubscriptionData}
-            onUserRefresh={workspace.fetchUser}
-          />
         </div>
       }
       sidebar={

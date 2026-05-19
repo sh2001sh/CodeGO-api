@@ -125,8 +125,8 @@ func buildCompanionSummary(ctx *gamificationContext) CompanionSummary {
 		ProgressTarget:   progressTarget,
 		MaxLevel:         model.CompanionPetMaxLevel,
 		OnlyOneEquipRule: "同一时间只能装备一只宠物，切换出战后，新宠物的增益会立刻接管全站玩法。",
-		FeedingRule:      "输入要投喂的美元额度后，系统会按你的扣费顺序优先消耗套餐或余额；额度不够就会直接失败，不允许欠款。1 美元额度基础可换 20 EXP，若当前出战宠物带有投喂加成，拿到的经验会更多。",
-		UpgradeRule:      "宠物满级为 5 级。先靠任务和投喂攒经验，经验到线后再点击升级；升级消耗也会按你的套餐/余额顺序扣除，前期便宜，后期更贵。",
+		FeedingRule:      "输入要投喂给宠物的额度后，系统会按你的扣费顺序优先消耗套餐或余额；额度不够就会直接失败，不允许欠款。投喂后，这部分额度会转成宠物经验；如果当前出战宠物带有投喂加成，拿到的经验会更多。",
+		UpgradeRule:      "宠物满级为 5 级。先靠任务和投喂攒经验，经验到线后再点击升级；升级消耗也会按你的套餐/余额顺序扣除。",
 		DailyMissionRule: "完成每日任务会同时给当前出战宠物发放经验；如果当前出战宠物带有任务奖励或任务经验加成，这两部分会一起变多。",
 		BuffRule:         "所有宠物都会提前展示解锁方式、Lv.1 效果和 Lv.5 效果。越难解锁的宠物，效果越直接，像永久 0.95 倍或 0.90 倍扣费这类强增益只会出现在后期主宠上。",
 	}
@@ -134,7 +134,7 @@ func buildCompanionSummary(ctx *gamificationContext) CompanionSummary {
 		if achievement, ok := findAchievementDefinition(ctx.equippedPet.AchievementKey); ok {
 			summary.Name = achievement.Name
 			summary.Title = "当前出战宠物"
-			summary.Flavor = "当前宠物的增益已经接入任务、成就、盲盒、升级和真实扣费链路。投喂、做任务和继续消费都会把它养得更强。"
+			summary.Flavor = "当前宠物的增益已经接入任务、成就、盲盒、升级和真实扣费链路。投喂和做任务都会把它养得更强。"
 		}
 		summary.Level = ctx.equippedPet.Level
 		summary.EquippedPet = buildCompanionPetView(ctx, *ctx.equippedPet)

@@ -193,7 +193,7 @@ export function AchievementGrid(props: AchievementGridProps) {
                             投喂规则
                           </div>
                           <div className='mt-1 text-muted-foreground'>
-                            输入美元额度后立即投喂，系统会按套餐/余额顺序扣费；1 美元额度当前约等于 {pet.feed_exp_per_usd} EXP。
+                            输入美元额度后会立即把这部分额度投喂给宠物，系统会按套餐/余额顺序扣费；当前投喂效率约为 1 美元 = {pet.feed_exp_per_usd} EXP。
                           </div>
                         </div>
 

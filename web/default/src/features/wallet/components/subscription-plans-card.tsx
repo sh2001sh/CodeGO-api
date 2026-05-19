@@ -397,7 +397,7 @@ export function SubscriptionPlansCard({
         >
           <PlanSection
             title='月卡套餐'
-            description='适合长期使用 Code Go。月卡有效期 1 个月，周额度每 7 天刷新一次，并受整月总额度约束。'
+            description='适合长期使用 Code Go。月卡有效期 1 个月，周额度用完后会等待下次刷新，或在到期后结束。'
             loading={loadingPlans}
             emptyText='当前没有可购买的月卡套餐。'
           >
@@ -466,6 +466,21 @@ export function SubscriptionPlansCard({
                     const active =
                       subscription.status === 'active' &&
                       subscription.end_time > Date.now() / 1000
+                    const totalExhausted =
+                      totalAmount > 0 && totalRemain <= 0
+                    const periodExhausted =
+                      periodAmount > 0 &&
+                      periodRemain <= 0 &&
+                      totalRemain > 0
+                    const statusLabel = active
+                      ? totalExhausted
+                        ? '额度已用完'
+                        : periodExhausted
+                          ? '等待刷新'
+                          : '生效中'
+                      : subscription.status === 'cancelled'
+                        ? '已取消'
+                        : '已过期'
 
                     return (
                       <Card
@@ -480,11 +495,7 @@ export function SubscriptionPlansCard({
                                   {title}
                                 </div>
                                 <span className='rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'>
-                                  {active
-                                    ? '生效中'
-                                    : subscription.status === 'cancelled'
-                                      ? '已取消'
-                                      : '已过期'}
+                                  {statusLabel}
                                 </span>
                               </div>
                               <p className='text-muted-foreground mt-1 text-xs'>
