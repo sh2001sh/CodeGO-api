@@ -219,10 +219,10 @@ func syncDefaultBrandingOptions() {
 	}
 
 	if _, ok := legacySystemNames[strings.TrimSpace(common.SystemName)]; ok {
-		_ = UpdateOption("SystemName", "精灵工坊")
+		_ = UpdateOption("SystemName", "Code Go")
 	}
 	if _, ok := legacyLogos[strings.TrimSpace(common.Logo)]; ok {
-		_ = UpdateOption("Logo", "/spirit-workshop-logo.svg")
+		_ = UpdateOption("Logo", "/code-go-logo.svg")
 	}
 }
 

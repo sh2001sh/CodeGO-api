@@ -26,8 +26,8 @@ import {
 const defaultSiteSettings: SiteSettings = {
   'theme.frontend': 'default',
   Notice: '',
-  SystemName: '精灵工坊',
-  Logo: '/spirit-workshop-logo.svg',
+  SystemName: 'Code Go',
+  Logo: '/code-go-logo.svg',
   Footer: '',
   About: '',
   HomePageContent: '',
