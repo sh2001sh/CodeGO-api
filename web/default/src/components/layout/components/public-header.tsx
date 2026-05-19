@@ -44,6 +44,7 @@ import type { TopNavLink } from '../types'
 import { HeaderLogo } from './header-logo'
 
 const AUTH_PROMPT_SECONDS = 5
+const SITE_URL_HINT = 'https://shu26.cfd'
 
 type AuthPromptTarget = {
   title: string
@@ -215,9 +216,18 @@ export function PublicHeader(props: PublicHeaderProps) {
                   />
                 )}
               </div>
-              <span className='text-sm font-semibold tracking-tight'>
-                {loading ? <Skeleton className='h-4 w-16' /> : displaySiteName}
-              </span>
+              <div className='flex flex-col leading-tight'>
+                <span className='text-sm font-semibold tracking-tight'>
+                  {loading ? <Skeleton className='h-4 w-16' /> : displaySiteName}
+                </span>
+                {!loading ? (
+                  <span className='text-[10px] font-medium text-muted-foreground'>
+                    {SITE_URL_HINT}
+                  </span>
+                ) : (
+                  <Skeleton className='mt-1 h-3 w-24' />
+                )}
+              </div>
             </Link>
 
             {/* Desktop nav */}

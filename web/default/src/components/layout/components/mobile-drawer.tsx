@@ -42,6 +42,8 @@ interface BrandLogoProps {
   onClick?: () => void
 }
 
+const SITE_URL_HINT = 'https://shu26.cfd'
+
 function BrandLogo({
   homeUrl,
   displayLogo,
@@ -53,7 +55,7 @@ function BrandLogo({
   return (
     <Link
       to={homeUrl}
-      className='flex items-center gap-2 text-xl font-bold'
+      className='flex items-center gap-2'
       onClick={onClick}
     >
       <div className='relative h-6 w-6'>
@@ -62,7 +64,21 @@ function BrandLogo({
         ) : null}
         {displayLogo}
       </div>
-      {loading ? <Skeleton className='h-5 w-20' /> : displaySiteName}
+      <div className='flex flex-col leading-tight'>
+        {loading ? (
+          <>
+            <Skeleton className='h-5 w-20' />
+            <Skeleton className='mt-1 h-3 w-24' />
+          </>
+        ) : (
+          <>
+            <span className='text-xl font-bold'>{displaySiteName}</span>
+            <span className='text-[10px] font-medium text-muted-foreground'>
+              {SITE_URL_HINT}
+            </span>
+          </>
+        )}
+      </div>
     </Link>
   )
 }
