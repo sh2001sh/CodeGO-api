@@ -19,10 +19,8 @@ interface AchievementGridProps {
   achievements: AchievementItem[]
   onEquip: (achievementKey: string) => void
   onFeed: (achievementKey: string, feedUSD: number) => void
-  onUpgrade: (achievementKey: string) => void
   equippingKey?: string | null
   feedingKey?: string | null
-  upgradingKey?: string | null
 }
 
 function getTierStyle(tier: string) {
@@ -192,7 +190,7 @@ export function AchievementGrid(props: AchievementGridProps) {
                             投喂规则
                           </div>
                           <div className='mt-1 text-muted-foreground'>
-                            输入美元额度后会立即把这部分额度投喂给宠物，系统会按套餐/余额顺序扣费；当前投喂效率约为 1 美元 = {pet.feed_exp_per_usd} EXP。
+                            输入美元额度后即可投喂；当前投喂效率约为 1 美元 = {pet.feed_exp_per_usd} EXP。
                           </div>
                         </div>
 
@@ -251,28 +249,11 @@ export function AchievementGrid(props: AchievementGridProps) {
                               </Button>
                             </div>
                           ) : null}
-
-                          <Button
-                            size='sm'
-                            onClick={(event) => {
-                              event.preventDefault()
-                              event.stopPropagation()
-                              props.onUpgrade(achievement.key)
-                            }}
-                            disabled={
-                              props.upgradingKey === achievement.key ||
-                              pet.is_max_level ||
-                              !pet.can_upgrade
-                            }
-                          >
-                            {props.upgradingKey === achievement.key
-                              ? '升级中...'
-                              : pet.is_max_level
-                                ? '已满级'
-                                : pet.can_upgrade
-                                  ? `点击升级 - ${pet.upgrade_cost_usd.toFixed(2)} 美元`
-                                  : '经验不足'}
-                          </Button>
+                          <div className='rounded-xl border bg-background/80 px-3 py-2 text-xs leading-5 text-muted-foreground'>
+                            {pet.is_max_level
+                              ? '当前宠物已经满级，后续投喂只建议留给其他宠物。'
+                              : `下一等级目标：Lv.${Math.min(pet.max_level, pet.level + 1)} · ${pet.next_level_exp} EXP。`}
+                          </div>
                         </div>
                       </>
                     ) : (

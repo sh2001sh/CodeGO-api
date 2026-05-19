@@ -13,13 +13,13 @@ type achievementDefinition struct {
 }
 
 type missionDefinition struct {
-	Key         string
-	Name        string
-	Description string
-	Icon        string
-	RewardUSD   float64
+	Key          string
+	Name         string
+	Description  string
+	Icon         string
+	RewardUSD    float64
 	PetExpReward int64
-	Target      int64
+	Target       int64
 }
 
 type companionStage struct {
@@ -211,31 +211,31 @@ var achievementCatalog = []achievementDefinition{
 
 var missionCatalog = []missionDefinition{
 	{
-		Key:         "daily-share-link",
-		Name:        "今日分享邀请链接",
-		Description: "复制一次邀请链接，让更多伙伴看到你的工坊",
-		Icon:        "users",
-		RewardUSD:   0.2,
+		Key:          "daily-share-link",
+		Name:         "今日分享邀请链接",
+		Description:  "复制一次邀请链接，让更多伙伴看到你的工坊",
+		Icon:         "users",
+		RewardUSD:    0.05,
+		PetExpReward: 6,
+		Target:       1,
+	},
+	{
+		Key:          "daily-calls",
+		Name:         "今日调用 10 次",
+		Description:  "任意成功调用累计达到 10 次",
+		Icon:         "zap",
+		RewardUSD:    0.15,
 		PetExpReward: 12,
-		Target:      1,
+		Target:       10,
 	},
 	{
-		Key:         "daily-calls",
-		Name:        "今日调用 10 次",
-		Description: "任意成功调用累计达到 10 次",
-		Icon:        "zap",
-		RewardUSD:   0.5,
-		PetExpReward: 20,
-		Target:      10,
-	},
-	{
-		Key:         "daily-blind-box",
-		Name:        "今日开启盲盒 1 次",
-		Description: "今天开启一次盲盒，补充临时额度或抽中套餐大奖",
-		Icon:        "gift",
-		RewardUSD:   0.3,
-		PetExpReward: 16,
-		Target:      1,
+		Key:          "daily-blind-box",
+		Name:         "今日开启盲盒 1 次",
+		Description:  "今天开启一次盲盒，补充临时额度或抽中套餐大奖",
+		Icon:         "gift",
+		RewardUSD:    0.20,
+		PetExpReward: 10,
+		Target:       1,
 	},
 }
 

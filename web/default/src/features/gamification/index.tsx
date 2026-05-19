@@ -6,7 +6,6 @@ import {
   feedGamificationPet,
   getGamificationDashboard,
   getGamificationHallOfFame,
-  upgradeGamificationPet,
 } from './api'
 import { AchievementGrid } from './components/achievement-grid'
 import { CompanionCard } from './components/companion-card'
@@ -36,33 +35,24 @@ function useCompanionActions() {
     },
   })
 
-  const upgradeMutation = useMutation({
-    mutationFn: upgradeGamificationPet,
-    onSuccess: async () => {
-      toast.success('宠物升级成功')
-      await queryClient.invalidateQueries({
-        queryKey: ['gamification'],
-      })
-      await queryClient.invalidateQueries({
-        queryKey: ['blind-box', 'self'],
-      })
-    },
-    onError: (error: Error) => {
-      toast.error(error.message || '宠物升级失败')
-    },
-  })
-
   const feedMutation = useMutation({
     mutationFn: feedGamificationPet,
     onSuccess: async (result) => {
       const data = result.data
       const consumedUSD = data?.consumed_usd ?? 0
       const gainedExp = data?.gained_exp ?? 0
+      const upgradedText =
+        data?.leveled_up && data?.current_level
+          ? `，并自动升到 Lv.${data.current_level}`
+          : ''
       toast.success(
-        `投喂成功，已消耗 ${formatFundingSource(data?.funding_source)} ${consumedUSD.toFixed(2)} 美元额度，获得 ${gainedExp} EXP`
+        `投喂成功，已消耗 ${formatFundingSource(data?.funding_source)} ${consumedUSD.toFixed(2)} 美元额度，获得 ${gainedExp} EXP${upgradedText}`
       )
       await queryClient.invalidateQueries({
         queryKey: ['gamification'],
+      })
+      await queryClient.invalidateQueries({
+        queryKey: ['blind-box', 'self'],
       })
     },
     onError: (error: Error) => {
@@ -73,7 +63,6 @@ function useCompanionActions() {
   return {
     equipMutation,
     feedMutation,
-    upgradeMutation,
   }
 }
 
@@ -83,7 +72,7 @@ export function WorkshopOverviewPanel() {
     queryFn: getGamificationDashboard,
     staleTime: 60 * 1000,
   })
-  const { feedMutation, upgradeMutation } = useCompanionActions()
+  const { feedMutation } = useCompanionActions()
 
   if (dashboardQuery.isLoading) {
     return (
@@ -107,8 +96,6 @@ export function WorkshopOverviewPanel() {
             feedMutation.mutate({ achievementKey, feedUSD })
           }
           feeding={feedMutation.isPending}
-          onUpgrade={(achievementKey) => upgradeMutation.mutate(achievementKey)}
-          upgrading={upgradeMutation.isPending}
         />
         <DailyMissionsCard missions={data.daily_missions} />
       </div>
@@ -123,7 +110,7 @@ export function WorkshopDexSection() {
     queryFn: getGamificationDashboard,
     staleTime: 60 * 1000,
   })
-  const { equipMutation, feedMutation, upgradeMutation } = useCompanionActions()
+  const { equipMutation, feedMutation } = useCompanionActions()
 
   if (dashboardQuery.isLoading) {
     return (
@@ -147,8 +134,6 @@ export function WorkshopDexSection() {
             feedMutation.mutate({ achievementKey, feedUSD })
           }
           feeding={feedMutation.isPending}
-          onUpgrade={(achievementKey) => upgradeMutation.mutate(achievementKey)}
-          upgrading={upgradeMutation.isPending}
         />
         <DailyMissionsCard missions={data.daily_missions} />
       </div>
@@ -159,10 +144,8 @@ export function WorkshopDexSection() {
         onFeed={(achievementKey, feedUSD) =>
           feedMutation.mutate({ achievementKey, feedUSD })
         }
-        onUpgrade={(achievementKey) => upgradeMutation.mutate(achievementKey)}
         equippingKey={equipMutation.variables}
         feedingKey={feedMutation.variables?.achievementKey}
-        upgradingKey={upgradeMutation.variables}
       />
     </div>
   )

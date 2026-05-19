@@ -50,7 +50,10 @@ func companionFeedExperienceWithBonus(activeBonus *model.CompanionAppliedBonus, 
 	if activeBonus == nil {
 		return model.CompanionPetFeedExperience(consumedQuota, 0)
 	}
-	return model.CompanionPetFeedExperience(consumedQuota, activeBonus.Buff.FeedExpBonusRate)
+	return model.CompanionPetFeedExperience(
+		consumedQuota,
+		model.CompanionPetEffectiveFeedExpBonusRate(activeBonus.Buff),
+	)
 }
 
 func isSubscriptionQuotaError(err error) bool {

@@ -114,6 +114,9 @@ type CompanionFeedResult struct {
 	ConsumedUSD   float64           `json:"consumed_usd"`
 	GainedExp     int64             `json:"gained_exp"`
 	FundingSource string            `json:"funding_source"`
+	PreviousLevel int               `json:"previous_level"`
+	CurrentLevel  int               `json:"current_level"`
+	LeveledUp     bool              `json:"leveled_up"`
 }
 
 // HallOfFameResponse is the full leaderboard response.

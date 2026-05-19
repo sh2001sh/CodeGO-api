@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Progress } from '@/components/ui/progress'
-import { formatQuota, formatTimestampToDate } from '@/lib/format'
+import { formatTimestampToDate } from '@/lib/format'
 import type { AchievementStats, CompanionSummary } from '../types'
 import { PixelPetSprite, getPetProfile } from '../pet-catalog'
 
@@ -13,8 +13,6 @@ interface CompanionCardProps {
   stats: AchievementStats
   onFeed?: (achievementKey: string, feedUSD: number) => void
   feeding?: boolean
-  onUpgrade?: (achievementKey: string) => void
-  upgrading?: boolean
 }
 
 function RuleChip(props: {
@@ -115,7 +113,7 @@ export function CompanionCard(props: CompanionCardProps) {
                 {equippedPet
                   ? equippedPet.is_max_level
                     ? '当前宠物已满级，增益已经达到上限。'
-                    : `经验 ${equippedPet.experience}/${equippedPet.next_level_exp}，先投喂或做任务拿经验，够线后再点击升级。`
+                    : `经验 ${equippedPet.experience}/${equippedPet.next_level_exp}，继续投喂或完成任务就能成长。`
                   : `图鉴已点亮 ${props.companion.progress_current}/${props.companion.progress_target}，先解锁宠物再开始养成。`}
               </div>
             </div>
@@ -147,17 +145,6 @@ export function CompanionCard(props: CompanionCardProps) {
                   {props.feeding ? '投喂中...' : '投喂宠物'}
                 </Button>
 
-                <Button
-                  size='sm'
-                  onClick={() => props.onUpgrade?.(equippedPet.achievement_key)}
-                  disabled={props.upgrading || !equippedPet.can_upgrade}
-                >
-                  {props.upgrading
-                    ? '升级中...'
-                    : equippedPet.can_upgrade
-                      ? `点击升级 - ${equippedPet.upgrade_cost_usd.toFixed(2)} 美元`
-                      : '经验不足'}
-                </Button>
               </div>
             ) : null}
           </div>
@@ -183,21 +170,21 @@ export function CompanionCard(props: CompanionCardProps) {
                 {equippedPet ? `1 美元额度 ≈ ${equippedPet.feed_exp_per_usd} EXP` : '-'}
               </div>
               <div className='mt-1 text-xs leading-5 text-muted-foreground'>
-                投喂会按你的套餐/余额顺序扣除额度，额度不够就会直接失败。
+                投喂会消耗你的可用额度，并把这部分额度转成宠物经验。
               </div>
             </div>
 
             <div className='rounded-2xl border bg-background/70 p-3'>
-              <div className='text-xs text-muted-foreground'>下次升级消耗</div>
+              <div className='text-xs text-muted-foreground'>成长目标</div>
               <div className='mt-1 text-sm font-semibold'>
                 {equippedPet
                   ? equippedPet.is_max_level
                     ? '已满级'
-                    : formatQuota(equippedPet.upgrade_cost_quota)
+                    : `下一等级：${equippedPet.next_level_exp} EXP`
                   : '-'}
               </div>
               <div className='mt-1 text-xs leading-5 text-muted-foreground'>
-                经验够了以后，再点升级按钮才会扣这部分额度。
+                投喂和任务都会增加经验，等级越高增益越强。
               </div>
             </div>
 

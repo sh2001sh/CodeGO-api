@@ -42,7 +42,23 @@ func GetUserCompanionPetsByUser(userId int) ([]UserCompanionPet, error) {
 	err := DB.Where("user_id = ?", userId).
 		Order("equipped desc, updated_at desc, id asc").
 		Find(&pets).Error
-	return pets, err
+	if err != nil {
+		return nil, err
+	}
+	for index := range pets {
+		pet := &pets[index]
+		targetLevel := CompanionPetLevelForExperience(pet.Experience)
+		if targetLevel <= pet.Level {
+			continue
+		}
+		if updateErr := DB.Model(&UserCompanionPet{}).
+			Where("id = ?", pet.Id).
+			Update("level", targetLevel).Error; updateErr != nil {
+			return nil, updateErr
+		}
+		pet.Level = targetLevel
+	}
+	return pets, nil
 }
 
 func GetUserCompanionPetByUserAndKey(userId int, achievementKey string) (*UserCompanionPet, error) {
@@ -112,9 +128,23 @@ func AddCompanionPetExperienceTx(tx *gorm.DB, userId int, achievementKey string,
 	if userId <= 0 || achievementKey == "" || exp <= 0 {
 		return nil
 	}
-	return tx.Model(&UserCompanionPet{}).
+	var pet UserCompanionPet
+	if err := tx.Set("gorm:query_option", "FOR UPDATE").
 		Where("user_id = ? AND achievement_key = ?", userId, achievementKey).
-		Update("experience", gorm.Expr("experience + ?", exp)).Error
+		First(&pet).Error; err != nil {
+		return err
+	}
+	newExperience := pet.Experience + exp
+	newLevel := CompanionPetLevelForExperience(newExperience)
+	updates := map[string]any{
+		"experience": newExperience,
+	}
+	if newLevel > pet.Level {
+		updates["level"] = newLevel
+	}
+	return tx.Model(&UserCompanionPet{}).
+		Where("id = ?", pet.Id).
+		Updates(updates).Error
 }
 
 func DecreaseUserQuotaTx(tx *gorm.DB, userId int, quota int64) error {

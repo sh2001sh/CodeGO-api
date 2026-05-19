@@ -39,15 +39,17 @@ var blindBoxSetting = BlindBoxSetting{
 	PityThreshold:                5,
 	PityGuaranteeUSD:             10,
 	LowRewardThresholdUSD:        5,
-	SubscriptionPrizeProbability: 0.003,
+	SubscriptionPrizeProbability: 0.001,
 	SubscriptionPlanTitle:        "Standard月卡",
 	CountOptions:                 []int{1, 5, 10, 20, 50},
 	Tiers: []BlindBoxTierSetting{
-		{Name: "starter", MinUSD: 1, MaxUSD: 3, Probability: 0.18},
-		{Name: "steady", MinUSD: 4, MaxUSD: 7, Probability: 0.30},
-		{Name: "core", MinUSD: 8, MaxUSD: 12, Probability: 0.31},
-		{Name: "boost", MinUSD: 13, MaxUSD: 20, Probability: 0.15},
-		{Name: "lucky", MinUSD: 21, MaxUSD: 50, Probability: 0.057},
+		{Name: "starter", MinUSD: 1.0, MaxUSD: 2.5, Probability: 0.16},
+		{Name: "steady", MinUSD: 2.6, MaxUSD: 4.8, Probability: 0.18},
+		{Name: "core", MinUSD: 5.0, MaxUSD: 8.0, Probability: 0.30},
+		{Name: "boost", MinUSD: 8.1, MaxUSD: 12.0, Probability: 0.20},
+		{Name: "lucky", MinUSD: 12.1, MaxUSD: 18.0, Probability: 0.10},
+		{Name: "epic", MinUSD: 18.1, MaxUSD: 30.0, Probability: 0.05},
+		{Name: "legendary", MinUSD: 30.1, MaxUSD: 50.0, Probability: 0.01},
 	},
 }
 

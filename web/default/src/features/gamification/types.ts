@@ -46,6 +46,9 @@ export interface CompanionFeedResult {
   consumed_usd: number
   gained_exp: number
   funding_source: string
+  previous_level: number
+  current_level: number
+  leveled_up: boolean
 }
 
 export interface AchievementItem {
