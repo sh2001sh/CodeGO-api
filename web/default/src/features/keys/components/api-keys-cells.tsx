@@ -91,8 +91,8 @@ export function ApiKeyCell({ apiKey }: { apiKey: ApiKey }) {
       toast.success(
         t(
           platform === 'windows'
-            ? 'Downloaded Codex Windows setup script'
-            : 'Downloaded Codex Linux setup script'
+            ? 'Downloaded Windows Codex config script'
+            : 'Downloaded Linux Codex config script'
         )
       )
     },
@@ -182,13 +182,13 @@ export function ApiKeyCell({ apiKey }: { apiKey: ApiKey }) {
         </DropdownMenuTrigger>
         <DropdownMenuContent align='end'>
           <DropdownMenuItem onClick={() => handleDownloadScript('windows')}>
-            {t('Windows Script')}
+            {t('Windows Codex Script')}
             <DropdownMenuShortcut>
               <Download size={16} />
             </DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuItem onClick={() => handleDownloadScript('linux')}>
-            {t('Linux Script')}
+            {t('Linux Codex Script')}
             <DropdownMenuShortcut>
               <Download size={16} />
             </DropdownMenuShortcut>

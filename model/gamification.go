@@ -14,20 +14,24 @@ type AchievementUnlock struct {
 	UserId         int    `json:"user_id" gorm:"index;uniqueIndex:idx_user_achievement_key"`
 	AchievementKey string `json:"achievement_key" gorm:"type:varchar(64);not null;uniqueIndex:idx_user_achievement_key"`
 	UnlockedAt     int64  `json:"unlocked_at" gorm:"bigint;index"`
+	RewardQuotaAwarded int64 `json:"reward_quota_awarded" gorm:"bigint;not null;default:0"`
+	RewardClaimedAt    int64 `json:"reward_claimed_at" gorm:"bigint;default:0"`
 	CreatedAt      int64  `json:"created_at" gorm:"bigint"`
 	UpdatedAt      int64  `json:"updated_at" gorm:"bigint"`
 }
 
 // DailyMissionReward stores one granted mission reward per user/day/mission.
 type DailyMissionReward struct {
-	Id           int    `json:"id"`
-	UserId       int    `json:"user_id" gorm:"index;uniqueIndex:idx_user_mission_reward"`
-	MissionKey   string `json:"mission_key" gorm:"type:varchar(64);not null;uniqueIndex:idx_user_mission_reward"`
-	RewardDate   string `json:"reward_date" gorm:"type:varchar(10);not null;uniqueIndex:idx_user_mission_reward"`
-	QuotaAwarded int64  `json:"quota_awarded" gorm:"bigint;not null;default:0"`
-	CompletedAt  int64  `json:"completed_at" gorm:"bigint"`
-	CreatedAt    int64  `json:"created_at" gorm:"bigint"`
-	UpdatedAt    int64  `json:"updated_at" gorm:"bigint"`
+	Id                 int    `json:"id"`
+	UserId             int    `json:"user_id" gorm:"index;uniqueIndex:idx_user_mission_reward"`
+	MissionKey         string `json:"mission_key" gorm:"type:varchar(64);not null;uniqueIndex:idx_user_mission_reward"`
+	RewardDate         string `json:"reward_date" gorm:"type:varchar(10);not null;uniqueIndex:idx_user_mission_reward"`
+	QuotaAwarded       int64  `json:"quota_awarded" gorm:"bigint;not null;default:0"`
+	PetExperienceAwarded int64  `json:"pet_experience_awarded" gorm:"bigint;not null;default:0"`
+	PetAchievementKey  string `json:"pet_achievement_key" gorm:"type:varchar(64);default:''"`
+	CompletedAt        int64  `json:"completed_at" gorm:"bigint"`
+	CreatedAt          int64  `json:"created_at" gorm:"bigint"`
+	UpdatedAt          int64  `json:"updated_at" gorm:"bigint"`
 }
 
 func (AchievementUnlock) TableName() string {
@@ -74,6 +78,16 @@ func GetAchievementUnlocksByUser(userId int) ([]AchievementUnlock, error) {
 	return unlocks, err
 }
 
+func GetAchievementUnlockByUserAndKey(userId int, achievementKey string) (*AchievementUnlock, error) {
+	var unlock AchievementUnlock
+	err := DB.Where("user_id = ? AND achievement_key = ?", userId, achievementKey).
+		First(&unlock).Error
+	if err != nil {
+		return nil, err
+	}
+	return &unlock, nil
+}
+
 // GetDailyMissionRewardsByUser returns today's or historical mission rewards for a user.
 func GetDailyMissionRewardsByUser(userId int, rewardDate string) ([]DailyMissionReward, error) {
 	var rewards []DailyMissionReward
@@ -103,6 +117,15 @@ func CountBlindBoxOpensByUser(userId int, startTime int64, endTime int64) (int64
 	return count, err
 }
 
+// CountBlindBoxOpenRecordsByUser counts all blind-box open records for a user.
+func CountBlindBoxOpenRecordsByUser(userId int) (int64, error) {
+	var count int64
+	err := DB.Model(&BlindBoxOpenRecord{}).
+		Where("user_id = ?", userId).
+		Count(&count).Error
+	return count, err
+}
+
 // HasBlindBoxRewardAbove checks whether the user has opened a large blind-box reward.
 func HasBlindBoxRewardAbove(userId int, minRewardUSD float64) (bool, error) {
 	var count int64
@@ -119,6 +142,15 @@ func HasSubscriptionHistory(userId int) (bool, error) {
 		Where("user_id = ?", userId).
 		Count(&count).Error
 	return count > 0, err
+}
+
+// CountUserSubscriptions returns the user's total subscription records.
+func CountUserSubscriptions(userId int) (int64, error) {
+	var count int64
+	err := DB.Model(&UserSubscription{}).
+		Where("user_id = ?", userId).
+		Count(&count).Error
+	return count, err
 }
 
 // HasCheckinToday checks whether the user has checked in today and returns that record.
@@ -181,7 +213,16 @@ func MaxCheckinStreak(userId int) (int, error) {
 }
 
 // AwardDailyMissionRewardTx creates the reward record and grants quota in one transaction.
-func AwardDailyMissionRewardTx(tx *gorm.DB, userId int, missionKey string, rewardDate string, quotaAwarded int64, completedAt int64) (bool, error) {
+func AwardDailyMissionRewardTx(
+	tx *gorm.DB,
+	userId int,
+	missionKey string,
+	rewardDate string,
+	quotaAwarded int64,
+	completedAt int64,
+	petExperienceAwarded int64,
+	petAchievementKey string,
+) (bool, error) {
 	if tx == nil {
 		tx = DB
 	}
@@ -200,13 +241,67 @@ func AwardDailyMissionRewardTx(tx *gorm.DB, userId int, missionKey string, rewar
 	}
 
 	reward := DailyMissionReward{
-		UserId:       userId,
-		MissionKey:   missionKey,
-		RewardDate:   rewardDate,
-		QuotaAwarded: quotaAwarded,
-		CompletedAt:  completedAt,
+		UserId:               userId,
+		MissionKey:           missionKey,
+		RewardDate:           rewardDate,
+		QuotaAwarded:         quotaAwarded,
+		PetExperienceAwarded: petExperienceAwarded,
+		PetAchievementKey:    petAchievementKey,
+		CompletedAt:          completedAt,
 	}
 	if err := tx.Create(&reward).Error; err != nil {
+		return false, err
+	}
+	if err := tx.Model(&User{}).
+		Where("id = ?", userId).
+		Update("quota", gorm.Expr("quota + ?", quotaAwarded)).Error; err != nil {
+		return false, err
+	}
+	if petExperienceAwarded > 0 && petAchievementKey != "" {
+		if err := AddCompanionPetExperienceTx(
+			tx,
+			userId,
+			petAchievementKey,
+			petExperienceAwarded,
+		); err != nil {
+			return false, err
+		}
+	}
+
+	go func() {
+		_ = cacheIncrUserQuota(userId, quotaAwarded)
+	}()
+	return true, nil
+}
+
+func GrantAchievementRewardTx(tx *gorm.DB, userId int, achievementKey string, quotaAwarded int64, claimedAt int64) (bool, error) {
+	if tx == nil {
+		tx = DB
+	}
+	if userId <= 0 || achievementKey == "" || quotaAwarded <= 0 {
+		return false, errors.New("invalid achievement reward")
+	}
+
+	var unlock AchievementUnlock
+	err := tx.Set("gorm:query_option", "FOR UPDATE").
+		Where("user_id = ? AND achievement_key = ?", userId, achievementKey).
+		First(&unlock).Error
+	if err != nil {
+		return false, err
+	}
+	if unlock.RewardClaimedAt > 0 || unlock.RewardQuotaAwarded > 0 {
+		return false, nil
+	}
+
+	if claimedAt <= 0 {
+		claimedAt = common.GetTimestamp()
+	}
+	if err := tx.Model(&AchievementUnlock{}).
+		Where("id = ?", unlock.Id).
+		Updates(map[string]any{
+			"reward_quota_awarded": quotaAwarded,
+			"reward_claimed_at":    claimedAt,
+		}).Error; err != nil {
 		return false, err
 	}
 	if err := tx.Model(&User{}).

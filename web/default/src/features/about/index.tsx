@@ -24,6 +24,38 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { PublicLayout } from '@/components/layout'
 import { getAboutContent } from './api'
 
+function SupportGroupCard() {
+  return (
+    <div className='overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950'>
+      <div className='grid gap-6 p-6 md:grid-cols-[minmax(0,1fr)_240px] md:items-center'>
+        <div className='space-y-3'>
+          <div className='text-xs font-semibold uppercase tracking-[0.24em] text-sky-600 dark:text-sky-300'>
+            售后支持
+          </div>
+          <h2 className='text-2xl font-semibold tracking-tight text-slate-950 dark:text-slate-50'>
+            售后 QQ 群
+          </h2>
+          <p className='text-sm leading-7 text-muted-foreground'>
+            注册、套餐、盲盒、宠物升级、脚本配置或控制台使用遇到问题时，可以直接进群处理。
+          </p>
+          <div className='rounded-2xl bg-slate-50 px-4 py-3 text-sm leading-7 text-slate-700 dark:bg-slate-900 dark:text-slate-200'>
+            群号：<span className='font-semibold'>996040309</span>
+          </div>
+        </div>
+
+        <div className='mx-auto w-full max-w-[220px] rounded-3xl border border-slate-200/80 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-900'>
+          <img
+            src='/guide/16-support-qq-group.png'
+            alt='Code Go 售后 QQ 群二维码'
+            className='h-auto w-full rounded-2xl'
+            loading='lazy'
+          />
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function isValidUrl(value: string) {
   try {
     const url = new URL(value)
@@ -116,6 +148,7 @@ function EmptyAboutState() {
             </a>
             .
           </p>
+          <SupportGroupCard />
         </div>
       </div>
     </div>
@@ -158,18 +191,24 @@ export function About() {
   if (isUrl) {
     return (
       <PublicLayout showMainContainer={false}>
-        <iframe
-          src={rawContent}
-          className='h-[calc(100vh-3.5rem)] w-full border-0'
-          title={t('About')}
-        />
+        <div className='space-y-4 px-4 py-6 md:px-6'>
+          <div className='mx-auto max-w-6xl'>
+            <SupportGroupCard />
+          </div>
+          <iframe
+            src={rawContent}
+            className='h-[calc(100vh-18rem)] w-full border-0'
+            title={t('About')}
+          />
+        </div>
       </PublicLayout>
     )
   }
 
   return (
     <PublicLayout>
-      <div className='mx-auto max-w-6xl px-4 py-8'>
+      <div className='mx-auto max-w-6xl space-y-6 px-4 py-8'>
+        <SupportGroupCard />
         {isHtml ? (
           <div
             className='prose prose-neutral dark:prose-invert max-w-none'

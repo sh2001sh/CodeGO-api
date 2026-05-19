@@ -1,27 +1,6 @@
-/*
-Copyright (C) 2023-2026 QuantumNous
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as
-published by the Free Software Foundation, either version 3 of the
-License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU Affero General Public License for more details.
-
-You should have received a copy of the GNU Affero General Public License
-along with this program. If not, see <https://www.gnu.org/licenses/>.
-
-For commercial licensing, please contact support@quantumnous.com
-*/
 import type { TFunction } from 'i18next'
 import { createSectionRegistry } from '@/features/system-settings/utils/section-registry'
 
-/**
- * Dashboard page section definitions
- */
 const DASHBOARD_SECTIONS = [
   {
     id: 'overview',
@@ -45,13 +24,13 @@ const DASHBOARD_SECTIONS = [
   {
     id: 'achievements',
     titleKey: '精灵图鉴',
-    descriptionKey: '查看你的成就、伙伴与今日工坊任务',
+    descriptionKey: '查看已解锁与未解锁宠物、奖励和解锁方式',
     build: () => null,
   },
   {
     id: 'hall-of-fame',
-    titleKey: '工坊荣誉榜',
-    descriptionKey: '查看本周消耗、邀请与成就收藏排行',
+    titleKey: '荣誉榜',
+    descriptionKey: '查看本周消耗、邀请与图鉴收集排行',
     build: () => null,
   },
 ] as const

@@ -130,6 +130,15 @@ func OpenBlindBoxes(userId int, count int) ([]BlindBoxOpenRecord, error) {
 		if err != nil {
 			return err
 		}
+		effectivePityThreshold := setting.PityThreshold
+		if appliedBonus, bonusErr := GetUserCompanionAppliedBonus(userId); bonusErr == nil &&
+			appliedBonus != nil &&
+			appliedBonus.Buff.BlindBoxPityReduction > 0 {
+			effectivePityThreshold -= appliedBonus.Buff.BlindBoxPityReduction
+			if effectivePityThreshold < 1 {
+				effectivePityThreshold = 1
+			}
+		}
 		subscriptionPlan, err := getBlindBoxSubscriptionPlanTx(tx)
 		if err != nil {
 			return err
@@ -167,7 +176,7 @@ func OpenBlindBoxes(userId int, count int) ([]BlindBoxOpenRecord, error) {
 				record.RewardUSD = 0
 				pityState.ConsecutiveLowRewards = 0
 			} else {
-				pityTriggered := pityState.ConsecutiveLowRewards >= setting.PityThreshold
+				pityTriggered := pityState.ConsecutiveLowRewards >= effectivePityThreshold
 				rewardUSD := 0.0
 				tierName := "pity"
 				if pityTriggered {

@@ -1,6 +1,8 @@
 import { api } from '@/lib/api'
 import type {
   AchievementItem,
+  CompanionPetView,
+  CompanionSummary,
   GamificationDashboard,
   HallOfFameResponse,
 } from './types'
@@ -31,5 +33,25 @@ export async function reportGamificationShareLink() {
     success: boolean
     data: { claimed: boolean; reward_usd: number }
   }>('/api/user/gamification/share-link')
+  return res.data
+}
+
+export async function equipGamificationPet(achievementKey: string) {
+  const res = await api.post<{ success: boolean; data: CompanionSummary }>(
+    '/api/user/gamification/equip',
+    {
+      achievement_key: achievementKey,
+    }
+  )
+  return res.data
+}
+
+export async function upgradeGamificationPet(achievementKey: string) {
+  const res = await api.post<{ success: boolean; data: CompanionPetView }>(
+    '/api/user/gamification/upgrade',
+    {
+      achievement_key: achievementKey,
+    }
+  )
   return res.data
 }

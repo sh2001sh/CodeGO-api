@@ -109,6 +109,7 @@ type BlindBoxOverview struct {
 	NextExpireAt       int64                `json:"next_expire_at"`
 	PityProgress       int                  `json:"pity_progress"`
 	PityThreshold      int                  `json:"pity_threshold"`
+	EffectivePityThreshold int              `json:"effective_pity_threshold"`
 	PurchasedToday     int                  `json:"purchased_today"`
 	PurchasedThisMonth int                  `json:"purchased_this_month"`
 	RecentRecords      []BlindBoxOpenRecord `json:"recent_records"`
@@ -264,6 +265,15 @@ func GetUserBlindBoxOverview(userId int, recentLimit int) (*BlindBoxOverview, er
 	}
 	setting := operation_setting.GetBlindBoxSetting()
 	overview.PityThreshold = setting.PityThreshold
+	overview.EffectivePityThreshold = setting.PityThreshold
+	if appliedBonus, err := GetUserCompanionAppliedBonus(userId); err == nil &&
+		appliedBonus != nil &&
+		appliedBonus.Buff.BlindBoxPityReduction > 0 {
+		overview.EffectivePityThreshold -= appliedBonus.Buff.BlindBoxPityReduction
+		if overview.EffectivePityThreshold < 1 {
+			overview.EffectivePityThreshold = 1
+		}
+	}
 	dayStart, dayEnd := getBlindBoxDayRange(now)
 	monthStart, monthEnd := getBlindBoxMonthRange(now)
 	if overview.PurchasedToday, err = sumBlindBoxOrderQuantity(userId, dayStart, dayEnd); err != nil {

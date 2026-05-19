@@ -327,6 +327,7 @@ export interface BlindBoxOverview {
   next_expire_at: number
   pity_progress: number
   pity_threshold: number
+  effective_pity_threshold: number
   purchased_today: number
   purchased_this_month: number
   recent_records: BlindBoxRecord[]

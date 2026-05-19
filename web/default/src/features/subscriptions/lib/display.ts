@@ -1,21 +1,3 @@
-/*
-Copyright (C) 2023-2026 QuantumNous
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as
-published by the Free Software Foundation, either version 3 of the
-License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU Affero General Public License for more details.
-
-You should have received a copy of the GNU Affero General Public License
-along with this program. If not, see <https://www.gnu.org/licenses/>.
-
-For commercial licensing, please contact support@quantumnous.com
-*/
 import type { TFunction } from 'i18next'
 import { getCurrencyDisplay } from '@/lib/currency'
 import { formatDuration, formatResetPeriod } from './format'
@@ -98,9 +80,7 @@ export function isDayPassPlan(plan?: Partial<SubscriptionPlan> | null): boolean 
   return DAY_PASS_KEYWORDS.some((keyword) => title.includes(keyword))
 }
 
-export function getSubscriptionCurrencyLabel(
-  currency?: string | null
-): string {
+export function getSubscriptionCurrencyLabel(currency?: string | null): string {
   const normalized = trimText(currency).toUpperCase()
   switch (normalized) {
     case 'CNY':
@@ -170,17 +150,20 @@ export function getSubscriptionPlanDescription(
   if (isDayPassPlan(plan)) {
     const totalText =
       totalAmount > 0 ? formatSubscriptionQuotaAmount(totalAmount) : '不限'
-    return `有效期 ${formatDuration(plan, t)}；总额度 ${totalText}；日卡额度独立结算，默认优先于月卡消耗。`
+    return `有效期 ${formatDuration(plan, t)}，总额度 ${totalText}，日卡额度独立结算，扣费时默认优先于月卡。`
   }
+
   if (periodAmount > 0) {
     const totalText =
       totalAmount > 0 ? formatSubscriptionQuotaAmount(totalAmount) : '不限'
-    return `额度每周更新一次；每周额度 ${formatSubscriptionQuotaAmount(periodAmount)}；总额度 ${totalText}。`
+    return `额度每周刷新一次，每周额度 ${formatSubscriptionQuotaAmount(periodAmount)}，总额度 ${totalText}。`
   }
+
   if (totalAmount > 0) {
-    return `有效期 ${formatDuration(plan, t)}；总额度 ${formatSubscriptionQuotaAmount(totalAmount)}。`
+    return `有效期 ${formatDuration(plan, t)}，总额度 ${formatSubscriptionQuotaAmount(totalAmount)}。`
   }
-  return `有效期 ${formatDuration(plan, t)}；总额度不限。`
+
+  return `有效期 ${formatDuration(plan, t)}，总额度不限。`
 }
 
 export function getSubscriptionPlanDetailText(
@@ -213,6 +196,6 @@ export function getSubscriptionPlanDetailText(
   } else {
     detailParts.push('总额度不限')
   }
-  detailParts.push('适合持续使用 Codex 与相关模型')
+  detailParts.push('适合持续使用 Code Go 与相关模型')
   return detailParts.join('；')
 }

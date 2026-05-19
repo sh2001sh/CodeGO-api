@@ -1,24 +1,6 @@
-/*
-Copyright (C) 2023-2026 QuantumNous
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as
-published by the Free Software Foundation, either version 3 of the
-License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU Affero General Public License for more details.
-
-You should have received a copy of the GNU Affero General Public License
-along with this program. If not, see <https://www.gnu.org/licenses/>.
-
-For commercial licensing, please contact support@quantumnous.com
-*/
-import { Check, Sparkles } from 'lucide-react'
+import type { TFunction } from 'i18next'
+import { Check, Crown } from 'lucide-react'
 import { useEffect, useMemo, useState } from 'react'
-import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -54,7 +36,7 @@ function usePublicPackagePlans() {
       }
     }
 
-    load()
+    void load()
 
     return () => {
       mounted = false
@@ -65,7 +47,7 @@ function usePublicPackagePlans() {
 }
 
 function getPurchaseRedirect() {
-  return '/wallet#wallet-subscriptions'
+  return '/packages'
 }
 
 function getPurchaseHref(isAuthenticated: boolean) {
@@ -73,6 +55,8 @@ function getPurchaseHref(isAuthenticated: boolean) {
   if (isAuthenticated) return redirectTarget
   return `/sign-in?redirect=${encodeURIComponent(redirectTarget)}`
 }
+
+const passthroughT = ((value: string) => value) as unknown as TFunction
 
 interface PackagesProps {
   isAuthenticated?: boolean
@@ -83,7 +67,6 @@ export function Packages({
   isAuthenticated = false,
   hidden = false,
 }: PackagesProps) {
-  const { t } = useTranslation()
   const packageIntro = useHomePagePackagesContent()
   const plans = usePublicPackagePlans()
 
@@ -112,46 +95,46 @@ export function Packages({
     const plan = record.plan
     const totalAmount = Number(plan.total_amount || 0)
     const periodAmount = Number(plan.period_amount || 0)
-    const priceAmount = Number(plan.price_amount || 0)
+    const priceAmount = Number(record.amount_due ?? (plan.price_amount || 0))
     const summary = getSubscriptionPlanDescription(
       plan,
       totalAmount,
       periodAmount,
-      t
+      passthroughT
     )
     const detailText = getSubscriptionPlanDetailText(
       plan,
       totalAmount,
       periodAmount,
-      t
+      passthroughT
     )
-    const resetText = formatResetPeriod(plan, t)
+    const resetText = formatResetPeriod(plan, passthroughT)
     const benefits = [
-      `${t('Validity Period')}: ${formatDuration(plan, t)}`,
-      resetText !== t('No Reset') ? `${t('Quota Reset')}: ${resetText}` : null,
+      `有效期：${formatDuration(plan, passthroughT)}`,
+      resetText !== 'No Reset' ? `额度重置：${resetText}` : null,
       periodAmount > 0
-        ? `周额度: ${formatSubscriptionQuotaAmount(periodAmount)}`
+        ? `周额度：${formatSubscriptionQuotaAmount(periodAmount)}`
         : null,
       totalAmount > 0
-        ? `${t('Total Quota')}: ${formatSubscriptionQuotaAmount(totalAmount)}`
-        : `${t('Total Quota')}: ${t('Unlimited')}`,
+        ? `总额度：${formatSubscriptionQuotaAmount(totalAmount)}`
+        : '总额度：不限',
     ].filter(Boolean) as string[]
 
     return (
       <Card
         key={plan.id}
         className={cn(
-          'border-border/60 bg-background/88 overflow-hidden rounded-[30px] border shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur',
+          'overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur',
           index === 0 && 'border-primary/40 ring-primary/10 ring-4'
         )}
       >
         <CardContent className='flex h-full flex-col p-0'>
-          <div className='from-primary/[0.16] via-primary/[0.08] to-background flex items-start justify-between gap-3 bg-gradient-to-br px-6 pt-6 pb-4'>
+          <div className='flex items-start justify-between gap-3 bg-gradient-to-br from-emerald-100/80 via-sky-50 to-white px-6 pb-4 pt-6 dark:from-slate-900 dark:via-slate-950 dark:to-slate-950'>
             <div className='min-w-0'>
               <p className='text-muted-foreground text-xs font-semibold tracking-[0.22em] uppercase'>
                 {getSubscriptionPlanSubtitle(plan)}
               </p>
-              <h3 className='mt-2 text-2xl font-semibold tracking-tight text-slate-950'>
+              <h3 className='mt-2 text-2xl font-semibold tracking-tight text-slate-950 dark:text-white'>
                 {plan.title}
               </h3>
               <p className='text-muted-foreground mt-2 text-sm leading-6'>
@@ -160,20 +143,17 @@ export function Packages({
             </div>
             {index === 0 && (
               <StatusBadge variant='info' copyable={false} className='rounded-full'>
-                <Sparkles className='mr-1 h-3 w-3' />
-                {t('Recommended')}
+                推荐
               </StatusBadge>
             )}
           </div>
 
-          <div className='flex flex-1 flex-col px-6 pt-2 pb-6'>
+          <div className='flex flex-1 flex-col px-6 pb-6 pt-2'>
             <div className='flex items-end gap-2'>
-              <span className='text-4xl font-semibold tracking-tight text-slate-950'>
+              <span className='text-4xl font-semibold tracking-tight text-slate-950 dark:text-white'>
                 {formatSubscriptionPlanPrice(priceAmount, plan.currency)}
               </span>
-              <span className='text-muted-foreground pb-1 text-sm'>
-                / 套餐
-              </span>
+              <span className='text-muted-foreground pb-1 text-sm'>/ 套餐</span>
             </div>
 
             <div className='mt-5 space-y-2.5'>
@@ -188,11 +168,11 @@ export function Packages({
               ))}
             </div>
 
-            <div className='mt-5 rounded-3xl border border-slate-200 bg-slate-50/85 p-4'>
+            <div className='mt-5 rounded-3xl border border-slate-200 bg-slate-50/85 p-4 dark:border-slate-800 dark:bg-slate-900/70'>
               <div className='text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase'>
                 套餐详情
               </div>
-              <div className='mt-2 text-sm leading-6 text-slate-700'>
+              <div className='mt-2 text-sm leading-6 text-slate-700 dark:text-slate-300'>
                 {detailText}
               </div>
             </div>
@@ -201,7 +181,7 @@ export function Packages({
               className='mt-6 h-11 w-full rounded-full text-sm font-medium'
               render={<a href={getPurchaseHref(isAuthenticated)} />}
             >
-              {isAuthenticated ? t('Buy Now') : t('Login to Purchase')}
+              {isAuthenticated ? '进入套餐页' : '登录后购买'}
             </Button>
           </div>
         </CardContent>
@@ -219,20 +199,21 @@ export function Packages({
         className='pointer-events-none absolute inset-0 opacity-80'
         style={{
           background:
-            'radial-gradient(circle at 18% 18%, rgba(56,189,248,0.16), transparent 38%), radial-gradient(circle at 86% 22%, rgba(37,99,235,0.14), transparent 34%), linear-gradient(180deg, rgba(248,251,255,0.96), rgba(255,255,255,0.88))',
+            'radial-gradient(circle at 18% 18%, rgba(52,211,153,0.14), transparent 38%), radial-gradient(circle at 86% 22%, rgba(56,189,248,0.12), transparent 34%), linear-gradient(180deg, rgba(248,251,255,0.96), rgba(255,255,255,0.88))',
         }}
       />
 
       <div className='relative mx-auto max-w-7xl'>
         <div className='mx-auto max-w-3xl text-center'>
-          <p className='text-primary text-xs font-semibold tracking-[0.28em] uppercase'>
-            Codex 套餐
-          </p>
-          <h2 className='mt-4 text-[clamp(2rem,4.4vw,3.4rem)] font-semibold tracking-tight text-slate-950'>
-            月卡适合稳定使用，日卡适合临时冲量
+          <div className='inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white/85 px-3 py-1 text-xs font-semibold text-emerald-700 shadow-sm'>
+            <Crown className='h-3.5 w-3.5' />
+            套餐中心
+          </div>
+          <h2 className='mt-4 text-[clamp(2rem,4.4vw,3.4rem)] font-semibold tracking-tight text-slate-950 dark:text-white'>
+            月卡适合稳定开发，日卡适合短时冲量
           </h2>
           <p className='text-muted-foreground mt-4 text-base leading-7 md:text-lg'>
-            套餐价格以人民币支付，额度按美元信用额发放。可根据长期或短期使用需求选择月卡或日卡。
+            套餐价格按人民币支付，额度按美元信用值发放。可以根据长期主力使用或短时补量需求自由选择。
           </p>
         </div>
 
@@ -258,8 +239,8 @@ export function Packages({
                 <p className='text-slate-500 text-xs font-semibold tracking-[0.24em] uppercase'>
                   月卡套餐
                 </p>
-                <h3 className='mt-2 text-2xl font-semibold text-slate-950'>
-                  适合长期 Codex 使用，额度每周刷新
+                <h3 className='mt-2 text-2xl font-semibold text-slate-950 dark:text-white'>
+                  适合长期 Code Go 使用，额度按周期刷新
                 </h3>
               </div>
               <div className='grid gap-5 lg:grid-cols-2'>
@@ -274,8 +255,8 @@ export function Packages({
                 <p className='text-slate-500 text-xs font-semibold tracking-[0.24em] uppercase'>
                   日卡套餐
                 </p>
-                <h3 className='mt-2 text-2xl font-semibold text-slate-950'>
-                  适合短时冲量使用，按天生效
+                <h3 className='mt-2 text-2xl font-semibold text-slate-950 dark:text-white'>
+                  适合短时爆发使用，按天生效
                 </h3>
               </div>
               <div className='grid gap-5'>

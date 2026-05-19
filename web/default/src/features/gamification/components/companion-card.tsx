@@ -1,99 +1,181 @@
-import { Sparkles, Trophy } from 'lucide-react'
+import { Sparkles, Swords, Trophy, Zap } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
+import { formatQuota, formatTimestampToDate } from '@/lib/format'
 import type { AchievementStats, CompanionSummary } from '../types'
-import { resolveWorkshopIcon } from './icon-resolver'
+import { PixelPetSprite, getPetProfile } from '../pet-catalog'
 
 interface CompanionCardProps {
   companion: CompanionSummary
   stats: AchievementStats
+  onUpgrade?: (achievementKey: string) => void
+  upgrading?: boolean
+}
+
+function RuleChip(props: { icon: React.ComponentType<{ className?: string }>; text: string }) {
+  const Icon = props.icon
+  return (
+    <div className='rounded-2xl border bg-background/80 p-3'>
+      <div className='flex items-start gap-3'>
+        <div className='mt-0.5 flex size-9 items-center justify-center rounded-xl bg-primary/10 text-primary'>
+          <Icon className='size-4' />
+        </div>
+        <div className='text-xs leading-6 text-muted-foreground'>{props.text}</div>
+      </div>
+    </div>
+  )
 }
 
 export function CompanionCard(props: CompanionCardProps) {
-  const progressValue =
-    props.companion.progress_target > 0
-      ? Math.min(
+  const equippedPet = props.companion.equipped_pet
+  const equippedProfile = equippedPet
+    ? getPetProfile(equippedPet.achievement_key)
+    : null
+
+  const progressValue = equippedPet
+    ? equippedPet.is_max_level
+      ? 100
+      : Math.min(
           100,
-          (props.companion.progress_current / props.companion.progress_target) *
+          ((equippedPet.experience - equippedPet.current_level_exp) /
+            Math.max(1, equippedPet.next_level_exp - equippedPet.current_level_exp)) *
             100
         )
-      : 100
-  const LatestIcon = props.stats.latest
-    ? resolveWorkshopIcon(props.stats.latest.icon)
-    : Sparkles
+    : props.companion.progress_target > 0
+      ? Math.min(
+          100,
+          (props.companion.progress_current / props.companion.progress_target) * 100
+        )
+      : 0
 
   return (
-    <div className='overflow-hidden rounded-2xl border bg-[linear-gradient(135deg,rgba(255,245,229,0.96),rgba(255,255,255,0.98))] shadow-xs dark:bg-[linear-gradient(135deg,rgba(45,24,20,0.92),rgba(19,23,41,0.96))]'>
+    <div className='overflow-hidden rounded-2xl border bg-[linear-gradient(135deg,rgba(255,248,237,0.98),rgba(255,255,255,0.99))] shadow-xs dark:bg-[linear-gradient(135deg,rgba(42,26,18,0.94),rgba(17,24,39,0.96))]'>
       <div className='flex h-full flex-col gap-4 p-4 sm:p-5'>
-        <div className='flex items-start justify-between gap-3'>
+        <div className='flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between'>
           <div className='flex items-center gap-3'>
-            <div className='flex size-14 items-center justify-center rounded-2xl bg-[linear-gradient(135deg,#ff8a57,#f7c75c)] text-white shadow-sm'>
-              <Sparkles className='size-6' />
+            <div className='flex size-24 items-center justify-center rounded-[24px] bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(255,243,226,0.92))] p-2 shadow-[0_16px_34px_rgba(15,23,42,0.08)] dark:bg-slate-950/45'>
+              {equippedProfile ? (
+                <PixelPetSprite
+                  id={equippedProfile.id}
+                  label={equippedProfile.species}
+                />
+              ) : (
+                <div className='text-center text-xs leading-5 text-muted-foreground'>
+                  解锁后
+                  <br />
+                  选择一只出战
+                </div>
+              )}
             </div>
+
             <div className='space-y-1'>
               <div className='text-sm font-medium text-muted-foreground'>
-                当前伙伴
+                当前出战宠物
               </div>
               <div className='text-xl font-semibold tracking-tight'>
-                {props.companion.name}
+                {equippedProfile?.species || '暂未装备'}
               </div>
               <div className='text-sm text-muted-foreground'>
-                {props.companion.title}
+                {equippedPet
+                  ? `${props.companion.title} · 满级 ${props.companion.max_level} 级`
+                  : '先在图鉴中解锁并装备一只宠物'}
               </div>
             </div>
           </div>
-          <Badge variant='outline'>Lv.{props.companion.level}</Badge>
+
+          <div className='flex flex-wrap items-center gap-2'>
+            <Badge variant='outline'>
+              已解锁 {props.companion.unlocked_count}/{props.companion.total_count}
+            </Badge>
+            {equippedPet ? <Badge>Lv.{equippedPet.level}</Badge> : null}
+          </div>
         </div>
 
-        <p className='text-sm leading-6 text-muted-foreground'>
-          {props.companion.flavor}
-        </p>
-
-        <div className='rounded-2xl border bg-background/70 p-3'>
-          <div className='mb-2 flex items-center justify-between gap-3'>
-            <div className='text-sm font-medium'>图鉴进度</div>
-            <div className='text-xs text-muted-foreground'>
-              {props.companion.unlocked_count}/{props.companion.total_count}
+        <div className='rounded-2xl border bg-background/70 p-4'>
+          <div className='mb-2 flex flex-wrap items-center justify-between gap-3'>
+            <div>
+              <div className='text-sm font-medium'>成长进度</div>
+              <div className='text-xs text-muted-foreground'>
+                {equippedPet
+                  ? equippedPet.is_max_level
+                    ? '当前宠物已满级，增益已达到上限。'
+                    : `经验 ${equippedPet.experience}/${equippedPet.next_level_exp}，满足条件后可手动升级。`
+                  : `图鉴已点亮 ${props.companion.progress_current}/${props.companion.progress_target}，先解锁宠物再开始养成。`}
+              </div>
             </div>
+            {equippedPet && !equippedPet.is_max_level ? (
+              <Button
+                size='sm'
+                onClick={() => props.onUpgrade?.(equippedPet.achievement_key)}
+                disabled={props.upgrading || !equippedPet.can_upgrade}
+              >
+                {props.upgrading
+                  ? '升级中...'
+                  : equippedPet.can_upgrade
+                    ? `升级消耗 ${equippedPet.upgrade_cost_usd.toFixed(2)} 美元`
+                    : '经验不足'}
+              </Button>
+            ) : null}
           </div>
+
           <Progress value={progressValue} />
-          <div className='mt-3 text-xs text-muted-foreground'>
-            下一阶段目标：累计点亮 {props.companion.progress_target} 枚成就
-          </div>
-        </div>
 
-        <div className='grid gap-3 sm:grid-cols-2'>
-          <div className='rounded-2xl border bg-background/70 p-3'>
-            <div className='text-xs text-muted-foreground'>已解锁成就</div>
-            <div className='mt-1 text-2xl font-semibold'>
-              {props.stats.unlocked_count}
+          <div className='mt-3 grid gap-3 sm:grid-cols-3'>
+            <div className='rounded-2xl border bg-background/70 p-3'>
+              <div className='text-xs text-muted-foreground'>当前增益</div>
+              <div className='mt-1 text-sm font-semibold'>
+                {props.companion.active_buff
+                  ? `${props.companion.active_buff.name} ${props.companion.active_buff.value_text}`
+                  : '未生效'}
+              </div>
+              <div className='mt-1 text-xs leading-5 text-muted-foreground'>
+                {props.companion.active_buff?.description || '装备宠物后即可获得增益。'}
+              </div>
             </div>
-          </div>
-          <div className='rounded-2xl border bg-background/70 p-3'>
-            <div className='text-xs text-muted-foreground'>最近点亮</div>
-            {props.stats.latest ? (
-              <div className='mt-2 flex items-center gap-2'>
-                <div className='flex size-8 items-center justify-center rounded-xl bg-primary/10 text-primary'>
-                  <LatestIcon className='size-4' />
-                </div>
-                <div className='min-w-0'>
-                  <div className='truncate text-sm font-medium'>
+
+            <div className='rounded-2xl border bg-background/70 p-3'>
+              <div className='text-xs text-muted-foreground'>下次升级消耗</div>
+              <div className='mt-1 text-sm font-semibold'>
+                {equippedPet
+                  ? equippedPet.is_max_level
+                    ? '已满级'
+                    : formatQuota(equippedPet.upgrade_cost_quota)
+                  : '-'}
+              </div>
+              <div className='mt-1 text-xs leading-5 text-muted-foreground'>
+                前期较低，后期显著提高，避免过快满级。
+              </div>
+            </div>
+
+            <div className='rounded-2xl border bg-background/70 p-3'>
+              <div className='text-xs text-muted-foreground'>最近点亮</div>
+              {props.stats.latest ? (
+                <>
+                  <div className='mt-1 text-sm font-semibold'>
                     {props.stats.latest.name}
                   </div>
-                  <div className='truncate text-xs text-muted-foreground'>
-                    {props.stats.latest.description}
+                  <div className='mt-1 text-xs leading-5 text-muted-foreground'>
+                    {props.stats.latest.unlocked_at
+                      ? formatTimestampToDate(props.stats.latest.unlocked_at)
+                      : '刚刚加入图鉴'}
                   </div>
-                </div>
-              </div>
-            ) : (
-              <div className='mt-2 flex items-center gap-2 text-sm text-muted-foreground'>
-                <Trophy className='size-4' />
-                等待第一枚成就点亮
-              </div>
-            )}
+                </>
+              ) : (
+                <div className='mt-1 text-sm text-muted-foreground'>等待第一只宠物</div>
+              )}
+            </div>
           </div>
+        </div>
+
+        <div className='grid gap-3 sm:grid-cols-2 xl:grid-cols-4'>
+          <RuleChip icon={Swords} text={props.companion.only_one_equip_rule} />
+          <RuleChip icon={Zap} text={props.companion.daily_mission_rule} />
+          <RuleChip icon={Sparkles} text={props.companion.upgrade_rule} />
+          <RuleChip icon={Trophy} text={props.companion.buff_rule} />
         </div>
       </div>
     </div>
   )
 }
+

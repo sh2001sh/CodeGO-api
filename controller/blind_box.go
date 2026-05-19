@@ -175,7 +175,7 @@ func BlindBoxRequestPay(c *gin.Context) {
 		return
 	}
 	callBackAddress := service.GetCallbackAddress()
-	returnUrl, err := url.Parse(paymentReturnPath("/console/topup?pay=pending#wallet-blind-box"))
+	returnUrl, err := url.Parse(paymentReturnPath("/blind-box?pay=pending"))
 	if err != nil {
 		common.ApiErrorMsg(c, "payment callback address is invalid")
 		return
@@ -345,7 +345,7 @@ func BlindBoxEpayReturn(c *gin.Context) {
 	var params map[string]string
 	if c.Request.Method == "POST" {
 		if err := c.Request.ParseForm(); err != nil {
-			c.Redirect(http.StatusFound, paymentReturnPath("/console/topup?pay=fail#wallet-blind-box"))
+			c.Redirect(http.StatusFound, paymentReturnPath("/blind-box?pay=fail"))
 			return
 		}
 		params = lo.Reduce(lo.Keys(c.Request.PostForm), func(r map[string]string, t string, i int) map[string]string {
@@ -360,25 +360,25 @@ func BlindBoxEpayReturn(c *gin.Context) {
 	}
 	client := GetEpayClient()
 	if client == nil {
-		c.Redirect(http.StatusFound, paymentReturnPath("/console/topup?pay=fail#wallet-blind-box"))
+		c.Redirect(http.StatusFound, paymentReturnPath("/blind-box?pay=fail"))
 		return
 	}
 	verifyInfo, err := client.Verify(params)
 	if err != nil || !verifyInfo.VerifyStatus {
-		c.Redirect(http.StatusFound, paymentReturnPath("/console/topup?pay=fail#wallet-blind-box"))
+		c.Redirect(http.StatusFound, paymentReturnPath("/blind-box?pay=fail"))
 		return
 	}
 	if verifyInfo.TradeStatus == epay.StatusTradeSuccess {
 		LockOrder(verifyInfo.ServiceTradeNo)
 		defer UnlockOrder(verifyInfo.ServiceTradeNo)
 		if err := model.CompleteBlindBoxOrder(verifyInfo.ServiceTradeNo, common.GetJsonString(verifyInfo), model.PaymentProviderEpay, verifyInfo.Type); err != nil {
-			c.Redirect(http.StatusFound, paymentReturnPath("/console/topup?pay=fail#wallet-blind-box"))
+			c.Redirect(http.StatusFound, paymentReturnPath("/blind-box?pay=fail"))
 			return
 		}
-		c.Redirect(http.StatusFound, paymentReturnPath("/console/topup?pay=success#wallet-blind-box"))
+		c.Redirect(http.StatusFound, paymentReturnPath("/blind-box?pay=success"))
 		return
 	}
-	c.Redirect(http.StatusFound, paymentReturnPath("/console/topup?pay=pending#wallet-blind-box"))
+	c.Redirect(http.StatusFound, paymentReturnPath("/blind-box?pay=pending"))
 }
 
 func BlindBoxXunhuNotify(c *gin.Context) {
@@ -416,8 +416,8 @@ func BlindBoxXunhuReturn(c *gin.Context) {
 	tradeNo := c.Query("trade_no")
 	order := model.GetBlindBoxOrderByTradeNo(tradeNo)
 	if order != nil && order.Status == common.TopUpStatusSuccess {
-		c.Redirect(http.StatusFound, paymentReturnPath("/console/topup?pay=success#wallet-blind-box"))
+		c.Redirect(http.StatusFound, paymentReturnPath("/blind-box?pay=success"))
 		return
 	}
-	c.Redirect(http.StatusFound, paymentReturnPath("/console/topup?pay=pending#wallet-blind-box"))
+	c.Redirect(http.StatusFound, paymentReturnPath("/blind-box?pay=pending"))
 }

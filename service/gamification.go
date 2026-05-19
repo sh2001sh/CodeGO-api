@@ -23,14 +23,21 @@ type GamificationDashboard struct {
 
 // CompanionSummary describes the current workshop companion progression.
 type CompanionSummary struct {
-	Name            string `json:"name"`
-	Title           string `json:"title"`
-	Flavor          string `json:"flavor"`
-	Level           int    `json:"level"`
-	UnlockedCount   int    `json:"unlocked_count"`
-	TotalCount      int    `json:"total_count"`
-	ProgressCurrent int    `json:"progress_current"`
-	ProgressTarget  int    `json:"progress_target"`
+	Name              string             `json:"name"`
+	Title             string             `json:"title"`
+	Flavor            string             `json:"flavor"`
+	Level             int                `json:"level"`
+	UnlockedCount     int                `json:"unlocked_count"`
+	TotalCount        int                `json:"total_count"`
+	ProgressCurrent   int                `json:"progress_current"`
+	ProgressTarget    int                `json:"progress_target"`
+	MaxLevel          int                `json:"max_level"`
+	OnlyOneEquipRule  string             `json:"only_one_equip_rule"`
+	UpgradeRule       string             `json:"upgrade_rule"`
+	DailyMissionRule  string             `json:"daily_mission_rule"`
+	BuffRule          string             `json:"buff_rule"`
+	EquippedPet       *CompanionPetView  `json:"equipped_pet,omitempty"`
+	ActiveBuff        *CompanionBuffView `json:"active_buff,omitempty"`
 }
 
 // AchievementStats summarizes unlocked achievements.
@@ -42,29 +49,59 @@ type AchievementStats struct {
 
 // AchievementItem is the frontend-friendly achievement view.
 type AchievementItem struct {
-	Key         string `json:"key"`
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Hint        string `json:"hint"`
-	Icon        string `json:"icon"`
-	Tier        string `json:"tier"`
-	Unlocked    bool   `json:"unlocked"`
-	UnlockedAt  int64  `json:"unlocked_at,omitempty"`
+	Key               string  `json:"key"`
+	Name              string  `json:"name"`
+	Description       string  `json:"description"`
+	Hint              string  `json:"hint"`
+	Icon              string  `json:"icon"`
+	Tier              string  `json:"tier"`
+	Unlocked          bool    `json:"unlocked"`
+	UnlockedAt        int64   `json:"unlocked_at,omitempty"`
+	RewardUSD         float64 `json:"reward_usd"`
+	RewardQuota       int64   `json:"reward_quota"`
+	RewardTitle       string  `json:"reward_title"`
+	RewardDescription string  `json:"reward_description"`
+	RewardClaimed     bool    `json:"reward_claimed"`
+	RewardClaimedAt   int64   `json:"reward_claimed_at,omitempty"`
+	Pet               *CompanionPetView `json:"pet,omitempty"`
 }
 
 // DailyMissionItem is the frontend-friendly mission view.
 type DailyMissionItem struct {
-	Key         string  `json:"key"`
-	Name        string  `json:"name"`
-	Description string  `json:"description"`
-	Icon        string  `json:"icon"`
-	RewardUSD   float64 `json:"reward_usd"`
-	RewardQuota int64   `json:"reward_quota"`
-	Current     int64   `json:"current"`
-	Target      int64   `json:"target"`
-	Completed   bool    `json:"completed"`
-	Claimed     bool    `json:"claimed"`
-	CompletedAt int64   `json:"completed_at,omitempty"`
+	Key          string  `json:"key"`
+	Name         string  `json:"name"`
+	Description  string  `json:"description"`
+	Icon         string  `json:"icon"`
+	RewardUSD    float64 `json:"reward_usd"`
+	RewardQuota  int64   `json:"reward_quota"`
+	PetExpReward int64   `json:"pet_exp_reward"`
+	Current      int64   `json:"current"`
+	Target       int64   `json:"target"`
+	Completed    bool    `json:"completed"`
+	Claimed      bool    `json:"claimed"`
+	CompletedAt  int64   `json:"completed_at,omitempty"`
+}
+
+type CompanionBuffView struct {
+	Type        string `json:"type"`
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	ValueText   string `json:"value_text"`
+}
+
+type CompanionPetView struct {
+	AchievementKey      string             `json:"achievement_key"`
+	Level               int                `json:"level"`
+	MaxLevel            int                `json:"max_level"`
+	Experience          int64              `json:"experience"`
+	CurrentLevelExp     int64              `json:"current_level_exp"`
+	NextLevelExp        int64              `json:"next_level_exp"`
+	CanUpgrade          bool               `json:"can_upgrade"`
+	IsMaxLevel          bool               `json:"is_max_level"`
+	Equipped            bool               `json:"equipped"`
+	UpgradeCostQuota    int64              `json:"upgrade_cost_quota"`
+	UpgradeCostUSD      float64            `json:"upgrade_cost_usd"`
+	Buff                CompanionBuffView  `json:"buff"`
 }
 
 // HallOfFameResponse is the full leaderboard response.
@@ -103,8 +140,14 @@ type gamificationContext struct {
 	maxCheckinStreak   int
 	consumeTodayCount  int64
 	blindBoxTodayCount int64
+	totalBlindBoxOpens int64
 	hasSubscription    bool
+	subscriptionCount  int64
 	hasBlindBoxJackpot bool
+	companionPets      []model.UserCompanionPet
+	companionPetMap    map[string]model.UserCompanionPet
+	equippedPet        *model.UserCompanionPet
+	activeBonus        *model.CompanionAppliedBonus
 }
 
 type leaderboardScoreRow struct {
@@ -123,7 +166,13 @@ func GetGamificationDashboard(userId int) (*GamificationDashboard, error) {
 	if err := ensureAchievementUnlocks(ctx); err != nil {
 		return nil, err
 	}
+	if err := ensureCompanionPets(ctx); err != nil {
+		return nil, err
+	}
 	if err := ensureDailyMissionRewards(ctx); err != nil {
+		return nil, err
+	}
+	if err := refreshCompanionState(ctx); err != nil {
 		return nil, err
 	}
 
@@ -153,6 +202,12 @@ func GetAchievements(userId int) ([]AchievementItem, error) {
 	if err := ensureAchievementUnlocks(ctx); err != nil {
 		return nil, err
 	}
+	if err := ensureCompanionPets(ctx); err != nil {
+		return nil, err
+	}
+	if err := refreshCompanionState(ctx); err != nil {
+		return nil, err
+	}
 	return buildAchievementItems(ctx), nil
 }
 
@@ -165,13 +220,28 @@ func GetHallOfFame() (*HallOfFameResponse, error) {
 func ClaimShareLinkMission(userId int) (bool, error) {
 	mission, ok := findMissionDefinition("daily-share-link")
 	if !ok {
-		return false, fmt.Errorf("未找到分享任务配置")
+		return false, fmt.Errorf("daily mission not found")
 	}
 	today := time.Now().In(time.Local).Format("2006-01-02")
-	rewardQuota := quotaUnitsFromUSD(mission.RewardUSD)
 	completedAt := common.GetTimestamp()
 	granted := false
-	err := model.DB.Transaction(func(tx *gorm.DB) error {
+	ctx, err := buildGamificationContext(userId)
+	if err != nil {
+		return false, err
+	}
+	if err := ensureAchievementUnlocks(ctx); err != nil {
+		return false, err
+	}
+	if err := ensureCompanionPets(ctx); err != nil {
+		return false, err
+	}
+	rewardQuota := missionRewardQuotaWithBonus(ctx, mission.RewardUSD)
+	petExperienceAwarded := mission.PetExpReward
+	petAchievementKey := ""
+	if ctx.equippedPet != nil {
+		petAchievementKey = ctx.equippedPet.AchievementKey
+	}
+	err = model.DB.Transaction(func(tx *gorm.DB) error {
 		var txErr error
 		granted, txErr = model.AwardDailyMissionRewardTx(
 			tx,
@@ -180,6 +250,8 @@ func ClaimShareLinkMission(userId int) (bool, error) {
 			today,
 			rewardQuota,
 			completedAt,
+			petExperienceAwarded,
+			petAchievementKey,
 		)
 		return txErr
 	})
@@ -190,7 +262,7 @@ func ClaimShareLinkMission(userId int) (bool, error) {
 		model.RecordLog(
 			userId,
 			model.LogTypeSystem,
-			fmt.Sprintf("今日工坊任务奖励：%s（%.1f 美元额度）", mission.Name, mission.RewardUSD),
+			fmt.Sprintf("daily mission reward granted: %s -> %.1f USD quota", mission.Name, mission.RewardUSD),
 		)
 	}
 	return granted, nil
@@ -241,7 +313,15 @@ func buildGamificationContext(userId int) (*gamificationContext, error) {
 	if err != nil {
 		return nil, err
 	}
+	totalBlindBoxOpens, err := model.CountBlindBoxOpenRecordsByUser(userId)
+	if err != nil {
+		return nil, err
+	}
 	hasSubscription, err := model.HasSubscriptionHistory(userId)
+	if err != nil {
+		return nil, err
+	}
+	subscriptionCount, err := model.CountUserSubscriptions(userId)
 	if err != nil {
 		return nil, err
 	}
@@ -262,32 +342,49 @@ func buildGamificationContext(userId int) (*gamificationContext, error) {
 		maxCheckinStreak:   maxCheckinStreak,
 		consumeTodayCount:  consumeTodayCount,
 		blindBoxTodayCount: blindBoxTodayCount,
+		totalBlindBoxOpens: totalBlindBoxOpens,
 		hasSubscription:    hasSubscription,
+		subscriptionCount:  subscriptionCount,
 		hasBlindBoxJackpot: hasBlindBoxJackpot,
 	}, nil
 }
 
 func ensureAchievementUnlocks(ctx *gamificationContext) error {
 	for _, achievement := range achievementCatalog {
-		if _, ok := ctx.unlockMap[achievement.Key]; ok {
-			continue
-		}
 		unlocked := false
 		switch achievement.Key {
 		case "first-call":
 			unlocked = ctx.user.RequestCount > 0
+		case "ten-calls":
+			unlocked = ctx.user.RequestCount >= 10
 		case "hundred-calls":
 			unlocked = ctx.user.RequestCount >= 100
+		case "thousand-calls":
+			unlocked = ctx.user.RequestCount >= 1000
+		case "quota-scout":
+			unlocked = int64(ctx.user.UsedQuota) >= quotaUnitsFromUSD(50)
+		case "quota-smith":
+			unlocked = int64(ctx.user.UsedQuota) >= quotaUnitsFromUSD(300)
 		case "thousand-forge":
 			unlocked = int64(ctx.user.UsedQuota) >= quotaUnitsFromUSD(1000)
 		case "contract-power":
 			unlocked = ctx.hasSubscription
+		case "plan-collector":
+			unlocked = ctx.subscriptionCount >= 3
+		case "blind-box-rookie":
+			unlocked = ctx.totalBlindBoxOpens >= 1
+		case "blind-box-regular":
+			unlocked = ctx.totalBlindBoxOpens >= 10
 		case "lucky-star":
 			unlocked = ctx.hasBlindBoxJackpot
 		case "social-crafter":
 			unlocked = ctx.user.AffCount >= 3
+		case "community-core":
+			unlocked = ctx.user.AffCount >= 10
 		case "seven-day-streak":
 			unlocked = ctx.maxCheckinStreak >= 7
+		case "month-streak":
+			unlocked = ctx.maxCheckinStreak >= 30
 		}
 		if !unlocked {
 			continue
@@ -305,8 +402,48 @@ func ensureAchievementUnlocks(ctx *gamificationContext) error {
 			return result.Error
 		}
 		if result.RowsAffected > 0 {
-			model.RecordLog(ctx.user.Id, model.LogTypeSystem, fmt.Sprintf("解锁成就：%s", achievement.Name))
+			model.RecordLog(
+				ctx.user.Id,
+				model.LogTypeSystem,
+				fmt.Sprintf("achievement unlocked: %s", achievement.Name),
+			)
 		}
+
+		if achievement.RewardUSD > 0 &&
+			unlock.RewardClaimedAt <= 0 &&
+			unlock.RewardQuotaAwarded <= 0 {
+			rewardQuota := quotaUnitsFromUSD(achievement.RewardUSD)
+			granted := false
+			err := model.DB.Transaction(func(tx *gorm.DB) error {
+				var txErr error
+				granted, txErr = model.GrantAchievementRewardTx(
+					tx,
+					ctx.user.Id,
+					achievement.Key,
+					rewardQuota,
+					unlock.UnlockedAt,
+				)
+				return txErr
+			})
+			if err != nil {
+				return err
+			}
+			if granted {
+				unlock.RewardQuotaAwarded = rewardQuota
+				unlock.RewardClaimedAt = unlock.UnlockedAt
+				model.RecordLog(
+					ctx.user.Id,
+					model.LogTypeSystem,
+					fmt.Sprintf("achievement reward granted: %s -> %.1f USD quota", achievement.Name, achievement.RewardUSD),
+				)
+			} else {
+				refreshed, err := model.GetAchievementUnlockByUserAndKey(ctx.user.Id, achievement.Key)
+				if err == nil && refreshed != nil {
+					unlock = *refreshed
+				}
+			}
+		}
+
 		ctx.unlockMap[achievement.Key] = unlock
 		if ctx.latestUnlock == nil || unlock.UnlockedAt >= ctx.latestUnlock.UnlockedAt {
 			copyUnlock := unlock
@@ -326,10 +463,14 @@ func ensureDailyMissionRewards(ctx *gamificationContext) error {
 			continue
 		}
 
-		rewardQuota := quotaUnitsFromUSD(mission.RewardUSD)
+		rewardQuota := missionRewardQuotaWithBonus(ctx, mission.RewardUSD)
 		granted := false
 		err := model.DB.Transaction(func(tx *gorm.DB) error {
 			var txErr error
+			petAchievementKey := ""
+			if ctx.equippedPet != nil {
+				petAchievementKey = ctx.equippedPet.AchievementKey
+			}
 			granted, txErr = model.AwardDailyMissionRewardTx(
 				tx,
 				ctx.user.Id,
@@ -337,6 +478,8 @@ func ensureDailyMissionRewards(ctx *gamificationContext) error {
 				ctx.today,
 				rewardQuota,
 				completedAt,
+				mission.PetExpReward,
+				petAchievementKey,
 			)
 			return txErr
 		})
@@ -344,44 +487,27 @@ func ensureDailyMissionRewards(ctx *gamificationContext) error {
 			return err
 		}
 		if granted {
-			model.RecordLog(ctx.user.Id, model.LogTypeSystem, fmt.Sprintf("今日工坊任务奖励：%s（%.1f 美元额度）", mission.Name, mission.RewardUSD))
+			model.RecordLog(
+				ctx.user.Id,
+				model.LogTypeSystem,
+				fmt.Sprintf("daily mission reward granted: %s -> %.1f USD quota", mission.Name, mission.RewardUSD),
+			)
 		}
 
 		reward := model.DailyMissionReward{
-			UserId:       ctx.user.Id,
-			MissionKey:   mission.Key,
-			RewardDate:   ctx.today,
-			QuotaAwarded: rewardQuota,
-			CompletedAt:  completedAt,
+			UserId:               ctx.user.Id,
+			MissionKey:           mission.Key,
+			RewardDate:           ctx.today,
+			QuotaAwarded:         rewardQuota,
+			PetExperienceAwarded: mission.PetExpReward,
+			CompletedAt:          completedAt,
+		}
+		if ctx.equippedPet != nil {
+			reward.PetAchievementKey = ctx.equippedPet.AchievementKey
 		}
 		ctx.todayRewardMap[mission.Key] = reward
 	}
 	return nil
-}
-
-func buildCompanionSummary(ctx *gamificationContext) CompanionSummary {
-	unlockedCount := len(ctx.unlockMap)
-	stageIndex := 0
-	for index := range companionStages {
-		if unlockedCount >= companionStages[index].MinUnlocks {
-			stageIndex = index
-		}
-	}
-	stage := companionStages[stageIndex]
-	progressTarget := stage.NextUnlocksGoal
-	if progressTarget < unlockedCount {
-		progressTarget = unlockedCount
-	}
-	return CompanionSummary{
-		Name:            "齿轮灵",
-		Title:           stage.Title,
-		Flavor:          stage.Flavor,
-		Level:           stageIndex + 1,
-		UnlockedCount:   unlockedCount,
-		TotalCount:      len(achievementCatalog),
-		ProgressCurrent: unlockedCount,
-		ProgressTarget:  progressTarget,
-	}
 }
 
 func buildAchievementStats(ctx *gamificationContext, achievements []AchievementItem) AchievementStats {
@@ -402,45 +528,6 @@ func buildAchievementStats(ctx *gamificationContext, achievements []AchievementI
 	return stats
 }
 
-func buildAchievementItems(ctx *gamificationContext) []AchievementItem {
-	items := make([]AchievementItem, 0, len(achievementCatalog))
-	for _, achievement := range achievementCatalog {
-		unlock, unlocked := ctx.unlockMap[achievement.Key]
-		items = append(items, AchievementItem{
-			Key:         achievement.Key,
-			Name:        achievement.Name,
-			Description: achievement.Description,
-			Hint:        achievement.Hint,
-			Icon:        achievement.Icon,
-			Tier:        achievement.Tier,
-			Unlocked:    unlocked,
-			UnlockedAt:  unlock.UnlockedAt,
-		})
-	}
-	return items
-}
-
-func buildMissionItems(ctx *gamificationContext) []DailyMissionItem {
-	items := make([]DailyMissionItem, 0, len(missionCatalog))
-	for _, mission := range missionCatalog {
-		current, completedAt := missionProgress(ctx, mission)
-		claimedReward, claimed := ctx.todayRewardMap[mission.Key]
-		items = append(items, DailyMissionItem{
-			Key:         mission.Key,
-			Name:        mission.Name,
-			Description: mission.Description,
-			Icon:        mission.Icon,
-			RewardUSD:   mission.RewardUSD,
-			RewardQuota: quotaUnitsFromUSD(mission.RewardUSD),
-			Current:     minInt64(current, mission.Target),
-			Target:      mission.Target,
-			Completed:   current >= mission.Target,
-			Claimed:     claimed,
-			CompletedAt: maxInt64(completedAt, claimedReward.CompletedAt),
-		})
-	}
-	return items
-}
 
 func missionProgress(ctx *gamificationContext, mission missionDefinition) (int64, int64) {
 	switch mission.Key {
@@ -505,10 +592,10 @@ func buildHallOfFame(limit int) (*HallOfFameResponse, error) {
 			},
 			{
 				Key:     "achievement-collectors",
-				Title:   "成就收藏榜",
-				Metric:  "成就数量",
+				Title:   "图鉴收集榜",
+				Metric:  "点亮数量",
 				Window:  "总榜",
-				Entries: buildHallOfFameEntries(achievementRows, "已点亮图鉴"),
+				Entries: buildHallOfFameEntries(achievementRows, "已点亮伙伴"),
 			},
 		},
 		GeneratedAt: common.GetTimestamp(),
@@ -647,7 +734,7 @@ func maskedDisplayName(displayName string, username string) string {
 		name = strings.TrimSpace(username)
 	}
 	if name == "" {
-		return "匿名工匠"
+		return "匿名训练师"
 	}
 	runes := []rune(name)
 	switch len(runes) {

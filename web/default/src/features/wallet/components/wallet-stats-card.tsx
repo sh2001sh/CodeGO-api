@@ -1,21 +1,3 @@
-/*
-Copyright (C) 2023-2026 QuantumNous
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as
-published by the Free Software Foundation, either version 3 of the
-License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU Affero General Public License for more details.
-
-You should have received a copy of the GNU Affero General Public License
-along with this program. If not, see <https://www.gnu.org/licenses/>.
-
-For commercial licensing, please contact support@quantumnous.com
-*/
 import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import {
   Activity,
@@ -377,7 +359,7 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
               </div>
             ) : !hasActiveSubscriptions ? (
               <div className='rounded-2xl border border-dashed border-slate-300 px-3 py-4 text-xs text-slate-600 dark:border-slate-700 dark:text-slate-300'>
-                当前没有可排序的有效订阅。
+                当前没有可排序的生效订阅。
               </div>
             ) : (
               <div className='space-y-2'>
@@ -392,8 +374,7 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
                       <div className='flex items-start justify-between gap-3'>
                         <div className='min-w-0'>
                           <div className='truncate text-sm font-semibold text-foreground'>
-                            {index + 1}.{' '}
-                            {meta?.title || `订阅 #${subscription.id}`}
+                            {index + 1}. {meta?.title || `订阅 #${subscription.id}`}
                           </div>
                           <div className='text-muted-foreground mt-1 text-xs'>
                             {meta?.subtitle || '订阅'} · 剩余{' '}

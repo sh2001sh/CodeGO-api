@@ -86,6 +86,36 @@ export function AffiliateRewardsPage() {
         </SectionPageLayout.Description>
         <SectionPageLayout.Content>
           <div className='mx-auto flex w-full max-w-6xl flex-col gap-4 sm:gap-5'>
+            <div className='grid gap-3 md:grid-cols-3'>
+              <div className='rounded-2xl border bg-card p-4'>
+                <div className='text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground'>
+                  Step 1
+                </div>
+                <div className='mt-2 text-sm font-semibold'>复制邀请链接</div>
+                <div className='mt-2 text-sm leading-6 text-muted-foreground'>
+                  从邀请奖励页复制专属链接，发给需要接入 Code Go 的新用户。
+                </div>
+              </div>
+              <div className='rounded-2xl border bg-card p-4'>
+                <div className='text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground'>
+                  Step 2
+                </div>
+                <div className='mt-2 text-sm font-semibold'>等待邀请生效</div>
+                <div className='mt-2 text-sm leading-6 text-muted-foreground'>
+                  新用户通过链接注册并完成有效使用后，邀请奖励会累计到当前账号。
+                </div>
+              </div>
+              <div className='rounded-2xl border bg-card p-4'>
+                <div className='text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground'>
+                  Step 3
+                </div>
+                <div className='mt-2 text-sm font-semibold'>转入主余额</div>
+                <div className='mt-2 text-sm leading-6 text-muted-foreground'>
+                  奖励额度会先记录在邀请余额里，确认后可以一键转入主余额继续使用。
+                </div>
+              </div>
+            </div>
+
             <WalletStatsCard
               user={user}
               loading={userLoading}

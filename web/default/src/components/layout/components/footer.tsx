@@ -81,9 +81,9 @@ function ProjectAttribution(props: { currentYear: number }) {
           rel='noopener noreferrer'
           className='text-foreground/70 hover:text-foreground font-medium transition-colors'
         >
-          codexforall
+          Code Go
         </a>
-        . Built and maintained for codexforall.
+        . Built and maintained for Code Go.
       </span>
     </div>
   )
@@ -98,8 +98,8 @@ export function Footer(props: FooterProps) {
     demoSiteEnabled,
   } = useSystemConfig()
 
-  const displayLogo = systemLogo || props.logo || '/codexforall-logo.svg'
-  const displayName = systemName || props.name || 'codexforall'
+  const displayLogo = systemLogo || props.logo || '/code-go-logo.svg'
+  const displayName = systemName || props.name || 'Code Go'
   const isDemoSiteMode = Boolean(demoSiteEnabled)
   const currentYear = new Date().getFullYear()
 
@@ -119,6 +119,10 @@ export function Footer(props: FooterProps) {
           {
             text: t('Model Square'),
             href: '/pricing',
+          },
+          {
+            text: t('Usage guide'),
+            href: '/guide',
           },
         ],
       },

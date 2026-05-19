@@ -19,6 +19,21 @@ For commercial licensing, please contact support@quantumnous.com
 import { DEFAULT_LOGO } from '@/lib/constants'
 
 const INVALID_LOGO_VALUES = new Set(['', 'null', 'undefined', 'false', '0'])
+const LEGACY_LOGO_VALUES = new Set([
+  '/codexforall-logo.svg',
+  'codexforall-logo.svg',
+])
+const LEGACY_SYSTEM_NAMES = new Set(['codexforall', 'new api', 'newapi'])
+
+export function normalizeSystemName(value?: unknown): string {
+  if (typeof value !== 'string') return 'Code Go'
+
+  const trimmed = value.trim()
+  if (!trimmed) return 'Code Go'
+  if (LEGACY_SYSTEM_NAMES.has(trimmed.toLowerCase())) return 'Code Go'
+
+  return trimmed
+}
 
 export function normalizeLogoUrl(value?: unknown): string {
   if (typeof value !== 'string') return DEFAULT_LOGO
@@ -26,6 +41,7 @@ export function normalizeLogoUrl(value?: unknown): string {
   const trimmed = value.trim()
   if (!trimmed) return DEFAULT_LOGO
   if (INVALID_LOGO_VALUES.has(trimmed.toLowerCase())) return DEFAULT_LOGO
+  if (LEGACY_LOGO_VALUES.has(trimmed)) return DEFAULT_LOGO
 
   return trimmed
 }

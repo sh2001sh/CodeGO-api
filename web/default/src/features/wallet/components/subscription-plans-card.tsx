@@ -1,21 +1,3 @@
-/*
-Copyright (C) 2023-2026 QuantumNous
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as
-published by the Free Software Foundation, either version 3 of the
-License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU Affero General Public License for more details.
-
-You should have received a copy of the GNU Affero General Public License
-along with this program. If not, see <https://www.gnu.org/licenses/>.
-
-For commercial licensing, please contact support@quantumnous.com
-*/
 import {
   type ReactNode,
   useCallback,
@@ -39,8 +21,8 @@ import {
   formatSubscriptionQuotaAmount,
   getSubscriptionPlanActionLabel,
   getSubscriptionPlanDescription,
-  getSubscriptionPlanDiscountText,
   getSubscriptionPlanDetailText,
+  getSubscriptionPlanDiscountText,
   getSubscriptionPlanSubtitle,
   isDayPassPlan,
   normalizeSubscriptionText,
@@ -79,18 +61,18 @@ function getPlanPresentation(plan: PlanRecord['plan']): PlanPresentation {
     return title.includes('100')
       ? {
           badge: '高峰补量',
-          summary: '适合当天高频调用、模型压力测试或临时加量场景。',
+          summary: '适合当天高频开发、模型压力测试和临时加量场景。',
         }
       : {
           badge: '临时补充',
-          summary: '适合单日使用、临时救急和短时任务冲量。',
+          summary: '适合单日使用、应急续航和短时专项任务。',
         }
   }
 
   if (title.includes('ultra')) {
     return {
       badge: '旗舰月卡',
-      summary: '面向高频 Codex 开发、长链路代理调用和团队协作场景。',
+      summary: '面向高频 Code Go 开发、长链路代理调用和团队协作场景。',
     }
   }
   if (title.includes('pro')) {
@@ -108,12 +90,12 @@ function getPlanPresentation(plan: PlanRecord['plan']): PlanPresentation {
   if (title.includes('lite')) {
     return {
       badge: '入门月卡',
-      summary: '适合第一次购买套餐，先建立稳定的 Codex 使用节奏。',
+      summary: '适合第一次购买套餐，先建立稳定的开发节奏。',
     }
   }
   return {
     badge: isDayPassPlan(plan) ? '日卡' : '月卡',
-    summary: '适合需要明确额度边界和固定预算的使用场景。',
+    summary: '适合希望额度边界明确、预算稳定的使用场景。',
   }
 }
 
@@ -268,7 +250,7 @@ export function SubscriptionPlansCard({
     const discountText = getSubscriptionPlanDiscountText(plan)
     const blockedReason =
       normalizeSubscriptionText(record.disabled_reason) ||
-      '当前已有生效中的更高等级套餐，暂不支持降级订阅。'
+      '当前已有更高等级的生效套餐，暂不支持降级订阅。'
 
     return (
       <Card
@@ -415,7 +397,7 @@ export function SubscriptionPlansCard({
         >
           <PlanSection
             title='月卡套餐'
-            description='适合长期使用 Codex。月卡有效期 1 个月，周额度每 7 天刷新一次，总额度限制整个月的上限。'
+            description='适合长期使用 Code Go。月卡有效期 1 个月，周额度每 7 天刷新一次，并受整月总额度约束。'
             loading={loadingPlans}
             emptyText='当前没有可购买的月卡套餐。'
           >
@@ -442,7 +424,7 @@ export function SubscriptionPlansCard({
                   已购套餐使用情况
                 </div>
                 <p className='text-muted-foreground mt-1 text-sm'>
-                  在这里查看每个订阅的剩余天数、周额度与总额度消耗。
+                  在这里查看每一份订阅的剩余天数、周额度与总额度消耗。
                 </p>
               </div>
 
@@ -454,7 +436,7 @@ export function SubscriptionPlansCard({
                 </div>
               ) : allSubscriptions.length === 0 ? (
                 <div className='rounded-2xl border border-dashed border-slate-300 px-4 py-6 text-sm text-slate-600 dark:border-slate-700 dark:text-slate-300'>
-                  当前还没有任何订阅记录。购买套餐后，这里会显示每张套餐的额度使用进度。
+                  当前还没有任何订阅记录。购买套餐后，这里会显示每一份套餐的额度使用进度。
                 </div>
               ) : (
                 <div className='grid gap-3 xl:grid-cols-2'>

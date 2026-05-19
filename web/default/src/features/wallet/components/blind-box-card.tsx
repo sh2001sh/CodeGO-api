@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
 import { formatQuota } from '@/lib/format'
 import {
@@ -32,10 +33,12 @@ function summarizeOpenResult(records: BlindBoxRecord[]): string {
   const quotaHits = records
     .filter((record) => record.reward_type === 'quota')
     .reduce((sum, record) => sum + (record.reward_usd || 0), 0)
+
   if (subscriptionHits > 0) {
-    return `叮！本次开启 ${records.length} 个盲盒，带来了 ${subscriptionHits} 份套餐奖励和 ${quotaHits.toFixed(2)} 美元额度`
+    return `本次开启 ${records.length} 个盲盒，抽中 ${subscriptionHits} 份套餐奖励，并获得 ${quotaHits.toFixed(2)} 美元临时额度。`
   }
-  return `叮！本次开启 ${records.length} 个盲盒，带来了 ${quotaHits.toFixed(2)} 美元临时额度`
+
+  return `本次开启 ${records.length} 个盲盒，获得 ${quotaHits.toFixed(2)} 美元临时额度。`
 }
 
 export function BlindBoxCard(props: BlindBoxCardProps) {
@@ -55,10 +58,7 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
       const response = await getBlindBoxSelf()
       if (isApiSuccess(response) && response.data) {
         setData(response.data)
-        setSelectedQuantity((current) => {
-          if (response.data?.count_options?.includes(current)) return current
-          return response.data?.count_options?.[0] || 1
-        })
+        setSelectedQuantity((current) => Math.max(1, current || 1))
         setSelectedPaymentMethod((current) => {
           if (
             current &&
@@ -83,7 +83,7 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
   }, [fetchSelf])
 
   useEffect(() => {
-    if (!selectedQuantity) return
+    if (!selectedQuantity || selectedQuantity <= 0) return
     void (async () => {
       const response = await calculateBlindBoxAmount({
         quantity: selectedQuantity,
@@ -98,16 +98,28 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
 
   const availableBoxes = data?.overview?.available_boxes || 0
   const openBatchCount = useMemo(() => {
-    if (!data?.count_options?.length) return 1
-    const candidate = [...data.count_options]
-      .filter((value) => value <= availableBoxes)
-      .sort((left, right) => right - left)[0]
-    return candidate || 1
-  }, [availableBoxes, data?.count_options])
+    if (availableBoxes <= 0) return 1
+    return Math.min(availableBoxes, 10)
+  }, [availableBoxes])
+
+  const pitySummary = useMemo(() => {
+    const threshold =
+      data?.overview?.effective_pity_threshold || data?.pity_threshold || 5
+    const lowReward = data?.low_reward_threshold_usd || 5
+    const guarantee = data?.pity_guarantee_usd || 10
+    const progress = data?.overview?.pity_progress || 0
+    const remaining = Math.max(0, threshold - progress)
+
+    if (remaining === 0) {
+      return `已经进入保底状态。只要下次不是套餐大奖，就必定获得 ${guarantee} 美元额度。`
+    }
+
+    return `如果连续 ${threshold} 次都抽到低于 ${lowReward} 美元的额度，就会触发保底；当前还差 ${remaining} 次，触发后下次必定获得 ${guarantee} 美元额度。`
+  }, [data])
 
   const handlePay = async () => {
     if (!selectedPaymentMethod) {
-      toast.error(t('Please select a payment method'))
+      toast.error('请选择支付方式')
       return
     }
     try {
@@ -146,7 +158,7 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
       setOpeningCount(count)
       const response = await openBlindBoxes({ count })
       if (!isApiSuccess(response) || !response.data) {
-        toast.error(response.message || t('Open blind box failed'))
+        toast.error(response.message || '开启盲盒失败')
         return
       }
       toast.success(summarizeOpenResult(response.data.records || []))
@@ -156,7 +168,7 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
         props.onUserRefresh(),
       ])
     } catch (_error) {
-      toast.error(t('Open blind box failed'))
+      toast.error('开启盲盒失败')
     } finally {
       setOpeningCount(null)
     }
@@ -167,208 +179,238 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
       <div className='space-y-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40'>
         <div className='flex flex-row items-start justify-between gap-4'>
           <div className='space-y-2'>
-            <h3 className='text-base font-semibold'>
-              {t('Blind box event')}
-            </h3>
+            <h3 className='text-base font-semibold'>盲盒活动</h3>
             <p className='text-sm text-muted-foreground'>
-              {t(
-                'Blind box quota is consumed before subscription and wallet balance.'
-              )}
+              盲盒临时额度会优先于订阅额度和钱包余额消耗，适合短期冲量和爆发奖励。
             </p>
           </div>
           <Badge variant={data?.enabled ? 'default' : 'secondary'}>
-            {data?.enabled ? t('Enabled') : t('Disabled')}
+            {data?.enabled ? '进行中' : '未开启'}
           </Badge>
         </div>
-        <div className='space-y-4'>
-          <div className='grid gap-3 sm:grid-cols-2 xl:grid-cols-4'>
-            <div className='rounded-xl border border-slate-200 p-3 dark:border-slate-800'>
-              <div className='text-xs text-muted-foreground'>
-                {t('Available boxes')}
-              </div>
-              <div className='mt-1 text-2xl font-semibold'>{availableBoxes}</div>
+
+        <div className='grid gap-3 sm:grid-cols-2 xl:grid-cols-4'>
+          <div className='rounded-xl border border-slate-200 p-3 dark:border-slate-800'>
+            <div className='text-xs text-muted-foreground'>可开启盲盒</div>
+            <div className='mt-1 text-2xl font-semibold'>{availableBoxes}</div>
+          </div>
+          <div className='rounded-xl border border-slate-200 p-3 dark:border-slate-800'>
+            <div className='text-xs text-muted-foreground'>盲盒临时额度</div>
+            <div className='mt-1 text-lg font-semibold'>
+              {formatQuota(data?.overview?.remaining_quota || 0)}
             </div>
-            <div className='rounded-xl border border-slate-200 p-3 dark:border-slate-800'>
-              <div className='text-xs text-muted-foreground'>
-                {t('Short-term quota')}
+          </div>
+          <div className='rounded-xl border border-slate-200 p-3 dark:border-slate-800'>
+            <div className='text-xs text-muted-foreground'>最近到期时间</div>
+            <div className='mt-1 text-sm font-medium'>
+              {formatTime(data?.overview?.next_expire_at)}
+            </div>
+          </div>
+          <div className='rounded-xl border border-slate-200 p-3 dark:border-slate-800'>
+            <div className='text-xs text-muted-foreground'>保底进度</div>
+            <div className='mt-1 text-lg font-semibold'>
+              {(data?.overview?.pity_progress || 0)}/
+              {data?.overview?.effective_pity_threshold || data?.pity_threshold || 0}
+            </div>
+          </div>
+        </div>
+
+        <div className='grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]'>
+          <div className='space-y-4'>
+            <div className='rounded-xl border border-slate-200 p-4 dark:border-slate-800'>
+              <div className='mb-3 flex items-center justify-between gap-3'>
+                <h3 className='text-sm font-semibold'>购买盲盒</h3>
+                <span className='text-sm text-muted-foreground'>
+                  单个盲盒价格 {data?.unit_price?.toFixed(1) || '0.0'} 元
+                </span>
               </div>
-              <div className='mt-1 text-lg font-semibold'>
-                {formatQuota(data?.overview?.remaining_quota || 0)}
+
+              <div className='grid gap-4 lg:grid-cols-[minmax(0,180px)_minmax(0,1fr)]'>
+                <div className='space-y-2'>
+                  <div className='text-xs text-muted-foreground'>购买数量</div>
+                  <div className='flex items-center gap-2'>
+                    <Button
+                      type='button'
+                      variant='outline'
+                      size='sm'
+                      onClick={() =>
+                        setSelectedQuantity((current) => Math.max(1, current - 1))
+                      }
+                      disabled={!data?.enabled || loading || selectedQuantity <= 1}
+                    >
+                      -1
+                    </Button>
+                    <Input
+                      type='number'
+                      min={1}
+                      value={selectedQuantity}
+                      onChange={(event) => {
+                        const value = Number(event.target.value)
+                        setSelectedQuantity(
+                          Number.isFinite(value) && value > 0 ? value : 1
+                        )
+                      }}
+                      className='h-9 text-center'
+                      disabled={!data?.enabled || loading}
+                    />
+                    <Button
+                      type='button'
+                      variant='outline'
+                      size='sm'
+                      onClick={() => setSelectedQuantity((current) => current + 1)}
+                      disabled={!data?.enabled || loading}
+                    >
+                      +1
+                    </Button>
+                  </div>
+                  <div className='text-xs text-muted-foreground'>
+                    今日已购 {data?.overview?.purchased_today || 0}/
+                    {data?.daily_limit || 0}，本月已购{' '}
+                    {data?.overview?.purchased_this_month || 0}/
+                    {data?.monthly_limit || 0}
+                  </div>
+                </div>
+
+                <div className='space-y-2'>
+                  <div className='text-xs text-muted-foreground'>支付方式</div>
+                  <div className='flex flex-wrap gap-2'>
+                    {(data?.pay_methods || []).map((method) => (
+                      <Button
+                        key={method.type}
+                        type='button'
+                        variant={
+                          selectedPaymentMethod?.type === method.type
+                            ? 'default'
+                            : 'outline'
+                        }
+                        size='sm'
+                        onClick={() => setSelectedPaymentMethod(method)}
+                        disabled={!data?.enabled || loading}
+                      >
+                        {method.name}
+                      </Button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className='mt-4 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-900/70 sm:flex-row sm:items-center sm:justify-between'>
+                <div>
+                  <div className='text-xs text-muted-foreground'>应付金额</div>
+                  <div className='mt-1 text-lg font-semibold'>
+                    {amountDue.toFixed(2)} 元
+                  </div>
+                </div>
+                <Button
+                  onClick={handlePay}
+                  disabled={!data?.enabled || paying}
+                  className='sm:min-w-32'
+                >
+                  {paying ? t('Processing...') : '立即支付'}
+                </Button>
               </div>
             </div>
-            <div className='rounded-xl border border-slate-200 p-3 dark:border-slate-800'>
-              <div className='text-xs text-muted-foreground'>
-                {t('Next expiry')}
+
+            <div className='rounded-xl border border-slate-200 p-4 dark:border-slate-800'>
+              <div className='mb-3 flex items-center justify-between'>
+                <h3 className='text-sm font-semibold'>开启盲盒</h3>
+                <span className='text-sm text-muted-foreground'>
+                  当前可开 {availableBoxes} 个
+                </span>
               </div>
-              <div className='mt-1 text-sm font-medium'>
-                {formatTime(data?.overview?.next_expire_at)}
+              <div className='flex flex-wrap gap-2'>
+                <Button
+                  type='button'
+                  onClick={() => void handleOpen(1)}
+                  disabled={availableBoxes < 1 || openingCount !== null}
+                >
+                  {openingCount === 1 ? '开启中...' : '开 1 个'}
+                </Button>
+                <Button
+                  type='button'
+                  variant='outline'
+                  onClick={() => void handleOpen(openBatchCount)}
+                  disabled={availableBoxes < openBatchCount || openingCount !== null}
+                >
+                  {openingCount === openBatchCount
+                    ? '开启中...'
+                    : `开 ${openBatchCount} 个`}
+                </Button>
               </div>
             </div>
-            <div className='rounded-xl border border-slate-200 p-3 dark:border-slate-800'>
-              <div className='text-xs text-muted-foreground'>{t('Pity')}</div>
-              <div className='mt-1 text-lg font-semibold'>
-                {(data?.overview?.pity_progress || 0)}/{data?.pity_threshold || 0}
+
+            <div className='rounded-xl border border-slate-200 p-4 dark:border-slate-800'>
+              <h3 className='mb-3 text-sm font-semibold'>最近开启记录</h3>
+              <div className='space-y-3'>
+                {(data?.overview?.recent_records || []).slice(0, 8).map((record) => (
+                  <div
+                    key={record.id}
+                    className='flex items-center justify-between gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-800'
+                  >
+                    <div className='space-y-1'>
+                      <div className='font-medium'>{record.reward_title}</div>
+                      <div className='text-xs text-muted-foreground'>
+                        {formatTime(record.create_time)}
+                      </div>
+                    </div>
+                    <div className='flex items-center gap-2'>
+                      {record.is_pity ? (
+                        <Badge variant='outline'>保底触发</Badge>
+                      ) : null}
+                      <Badge
+                        variant={
+                          record.reward_type === 'subscription'
+                            ? 'default'
+                            : 'secondary'
+                        }
+                      >
+                        {record.reward_type === 'subscription'
+                          ? '套餐大奖'
+                          : `${record.reward_usd?.toFixed(2) || '0.00'} 美元额度`}
+                      </Badge>
+                    </div>
+                  </div>
+                ))}
+                {data?.overview?.recent_records?.length === 0 ? (
+                  <div className='rounded-lg border border-dashed border-slate-200 px-3 py-6 text-center text-sm text-muted-foreground dark:border-slate-800'>
+                    暂无盲盒记录
+                  </div>
+                ) : null}
               </div>
             </div>
           </div>
 
-          <div className='grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]'>
-            <div className='space-y-4'>
-              <div className='rounded-xl border border-slate-200 p-4 dark:border-slate-800'>
-                <div className='mb-3 flex items-center justify-between'>
-                  <h3 className='text-sm font-semibold'>{t('Buy blind box')}</h3>
-                  <span className='text-sm text-muted-foreground'>
-                    {t('Unit price')}: {data?.unit_price?.toFixed(2) || '0.00'}
-                  </span>
-                </div>
-                <div className='flex flex-wrap gap-2'>
-                  {(data?.count_options || []).map((option) => (
-                    <Button
-                      key={option}
-                      type='button'
-                      variant={selectedQuantity === option ? 'default' : 'outline'}
-                      size='sm'
-                      onClick={() => setSelectedQuantity(option)}
-                      disabled={!data?.enabled || loading}
-                    >
-                      {option}
-                    </Button>
-                  ))}
-                </div>
-                <div className='mt-4 flex flex-wrap gap-2'>
-                  {(data?.pay_methods || []).map((method) => (
-                    <Button
-                      key={method.type}
-                      type='button'
-                      variant={
-                        selectedPaymentMethod?.type === method.type
-                          ? 'default'
-                          : 'outline'
-                      }
-                      size='sm'
-                      onClick={() => setSelectedPaymentMethod(method)}
-                      disabled={!data?.enabled || loading}
-                    >
-                      {method.name}
-                    </Button>
-                  ))}
-                </div>
-                <div className='mt-4 flex items-center justify-between'>
-                  <div className='text-sm text-muted-foreground'>
-                    {t('Amount due')}: {amountDue.toFixed(2)}
+          <div className='space-y-4'>
+            <div className='rounded-xl border border-slate-200 p-4 dark:border-slate-800'>
+              <h3 className='text-sm font-semibold'>奖励概率</h3>
+              <div className='mt-3 space-y-2 text-sm'>
+                {(data?.tiers || []).map((tier) => (
+                  <div
+                    key={tier.name}
+                    className='flex items-center justify-between gap-3'
+                  >
+                    <span className='text-muted-foreground'>
+                      {tier.min_usd} - {tier.max_usd} 美元额度
+                    </span>
+                    <span>{(tier.probability * 100).toFixed(1)}%</span>
                   </div>
-                  <Button onClick={handlePay} disabled={!data?.enabled || paying}>
-                    {paying ? t('Processing...') : t('Pay now')}
-                  </Button>
-                </div>
-              </div>
-
-              <div className='rounded-xl border border-slate-200 p-4 dark:border-slate-800'>
-                <div className='mb-3 flex items-center justify-between'>
-                  <h3 className='text-sm font-semibold'>{t('Open blind box')}</h3>
-                  <span className='text-sm text-muted-foreground'>
-                    {t('Today')}: {data?.overview?.purchased_today || 0}/
-                    {data?.daily_limit || 0}
+                ))}
+                <Separator className='my-2' />
+                <div className='flex items-center justify-between gap-3 font-medium'>
+                  <span>{data?.subscription_plan_title || '套餐大奖'}</span>
+                  <span>
+                    {((data?.subscription_prize_probability || 0) * 100).toFixed(1)}%
                   </span>
-                </div>
-                <div className='flex flex-wrap gap-2'>
-                  <Button
-                    type='button'
-                    onClick={() => void handleOpen(1)}
-                    disabled={availableBoxes < 1 || openingCount !== null}
-                  >
-                    {openingCount === 1 ? t('Opening...') : t('Open 1')}
-                  </Button>
-                  <Button
-                    type='button'
-                    variant='outline'
-                    onClick={() => void handleOpen(openBatchCount)}
-                    disabled={availableBoxes < openBatchCount || openingCount !== null}
-                  >
-                    {openingCount === openBatchCount
-                      ? t('Opening...')
-                      : `${t('Open')} ${openBatchCount}`}
-                  </Button>
-                </div>
-              </div>
-
-              <div className='rounded-xl border border-slate-200 p-4 dark:border-slate-800'>
-                <h3 className='mb-3 text-sm font-semibold'>{t('Recent opens')}</h3>
-                <div className='space-y-3'>
-                  {(data?.overview?.recent_records || []).slice(0, 8).map((record) => (
-                    <div
-                      key={record.id}
-                      className='flex items-center justify-between gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-800'
-                    >
-                      <div className='space-y-1'>
-                        <div className='font-medium'>{record.reward_title}</div>
-                        <div className='text-xs text-muted-foreground'>
-                          {formatTime(record.create_time)}
-                        </div>
-                      </div>
-                      <div className='flex items-center gap-2'>
-                        {record.is_pity ? (
-                          <Badge variant='outline'>{t('Pity')}</Badge>
-                        ) : null}
-                        <Badge
-                          variant={
-                            record.reward_type === 'subscription'
-                              ? 'default'
-                              : 'secondary'
-                          }
-                        >
-                          {record.reward_type === 'subscription'
-                            ? t('Subscription')
-                            : `${record.reward_usd?.toFixed(2) || '0.00'} 美元`}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                  {data?.overview?.recent_records?.length === 0 ? (
-                    <div className='rounded-lg border border-dashed border-slate-200 px-3 py-6 text-center text-sm text-muted-foreground dark:border-slate-800'>
-                      {t('No blind box records yet')}
-                    </div>
-                  ) : null}
                 </div>
               </div>
             </div>
 
-            <div className='space-y-4'>
-              <div className='rounded-xl border border-slate-200 p-4 dark:border-slate-800'>
-                <h3 className='text-sm font-semibold'>{t('Probability')}</h3>
-                <div className='mt-3 space-y-2 text-sm'>
-                  {(data?.tiers || []).map((tier) => (
-                    <div
-                      key={tier.name}
-                      className='flex items-center justify-between gap-3'
-                      >
-                      <span className='text-muted-foreground'>
-                        {tier.min_usd} - {tier.max_usd} 美元
-                      </span>
-                      <span>{(tier.probability * 100).toFixed(1)}%</span>
-                    </div>
-                  ))}
-                  <Separator className='my-2' />
-                  <div className='flex items-center justify-between gap-3 font-medium'>
-                    <span>{data?.subscription_plan_title || t('Subscription')}</span>
-                    <span>
-                      {((data?.subscription_prize_probability || 0) * 100).toFixed(1)}
-                      %
-                    </span>
-                  </div>
-                </div>
+            <div className='rounded-xl border border-slate-200 p-4 text-sm text-muted-foreground dark:border-slate-800'>
+              <div>盲盒临时额度会自动过期，请优先消耗。</div>
+              <div className='mt-2'>
+                消耗顺序：盲盒临时额度 {'>'} 订阅额度 {'>'} 钱包余额
               </div>
-
-              <div className='rounded-xl border border-slate-200 p-4 text-sm text-muted-foreground dark:border-slate-800'>
-                <div>{t('Short-term blind box quota expires automatically.')}</div>
-                <div className='mt-2'>
-                  {t('Consumption order')}: 盲盒临时额度 {'>'} 订阅 {'>'}{' '}
-                  {t('wallet balance')}
-                </div>
-                <div className='mt-2'>
-                  {t('Pity guarantee')}: {data?.pity_guarantee_usd || 0} 美元
-                </div>
-              </div>
+              <div className='mt-2'>{pitySummary}</div>
             </div>
           </div>
         </div>

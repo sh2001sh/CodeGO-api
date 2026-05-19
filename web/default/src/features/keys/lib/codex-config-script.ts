@@ -87,10 +87,10 @@ function buildWindowsScript(
   return `@echo off
 setlocal enabledelayedexpansion
 
-:: CodexForAll Windows setup script (ASCII only)
+:: Code Go Codex config script (ASCII only)
 echo.
-echo CodexForAll Windows Setup
-echo ======================
+echo Code Go Codex Config Script
+echo ===========================
 echo.
 
 set "CODEXFORALL_SERVER_URL=${serverAddress}"
@@ -156,26 +156,40 @@ if !errorlevel! neq 0 (
 
 attrib +h "!codexDir!\\auth.json" >nul 2>&1
 
-echo Completed. Files:
+echo.
+echo Codex configuration completed successfully.
+echo Double-click run is complete. Codex is now configured.
+echo.
+echo Files:
 echo   - config.toml: !codexDir!\\config.toml
 echo   - auth.json:  !codexDir!\\auth.json
-
+echo.
+echo Press any key to exit...
+pause >nul
 exit /b 0
 
 :error_no_key
 echo ERROR: API Key not set.
+echo Press any key to exit...
+pause >nul
 exit /b 1
 
 :error_mkdir
 echo ERROR: Cannot create directory !codexDir!
+echo Press any key to exit...
+pause >nul
 exit /b 1
 
 :error_write_config
 echo ERROR: Cannot write config.toml
+echo Press any key to exit...
+pause >nul
 exit /b 1
 
 :error_write_auth
 echo ERROR: Cannot write auth.json
+echo Press any key to exit...
+pause >nul
 exit /b 1
 `
 }
@@ -265,17 +279,9 @@ if ! grep -qxF "\${SOURCE_LINE}" "\${PROFILE_FILE}"; then
   printf '\\n%s\\n' "\${SOURCE_LINE}" >> "\${PROFILE_FILE}"
 fi
 
-printf 'Configured Codex CLI for codexforall.\\n'
-printf 'Environment file: %s\\n' "\${TARGET_FILE}"
-printf 'Codex config file: %s\\n' "\${CODEX_CONFIG_FILE}"
-printf 'Codex auth file: %s\\n' "\${CODEX_AUTH_FILE}"
-printf 'Shell profile: %s\\n' "\${PROFILE_FILE}"
-printf 'Run: source "%s"\\n' "\${PROFILE_FILE}"
-printf 'Then start Codex with: codex\\n'
-
-if ! command -v codex >/dev/null 2>&1; then
-  printf 'Codex CLI not found. Install it with: npm install -g @openai/codex\\n'
-fi
+printf 'Codex configuration completed successfully.\\n'
+printf 'Config file: %s\\n' "\${CODEX_CONFIG_FILE}"
+printf 'Auth file: %s\\n' "\${CODEX_AUTH_FILE}"
 `
 }
 

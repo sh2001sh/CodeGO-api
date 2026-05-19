@@ -145,8 +145,8 @@ func SubscriptionXunhuReturn(c *gin.Context) {
 	tradeNo := c.Query("trade_no")
 	order := model.GetSubscriptionOrderByTradeNo(tradeNo)
 	if order != nil && order.Status == common.TopUpStatusSuccess {
-		c.Redirect(http.StatusFound, paymentReturnPath("/console/topup?pay=success"))
+		c.Redirect(http.StatusFound, paymentReturnPath("/packages?pay=success"))
 		return
 	}
-	c.Redirect(http.StatusFound, paymentReturnPath("/console/topup?pay=pending"))
+	c.Redirect(http.StatusFound, paymentReturnPath("/packages?pay=pending"))
 }

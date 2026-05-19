@@ -1,26 +1,5 @@
-/*
-Copyright (C) 2023-2026 QuantumNous
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as
-published by the Free Software Foundation, either version 3 of the
-License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU Affero General Public License for more details.
-
-You should have received a copy of the GNU Affero General Public License
-along with this program. If not, see <https://www.gnu.org/licenses/>.
-
-For commercial licensing, please contact support@quantumnous.com
-*/
-import { Link } from '@tanstack/react-router'
-import { ArrowRight } from 'lucide-react'
-import { useTranslation } from 'react-i18next'
+import { ArrowRight, Gift, Sparkles } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { AnimateInView } from '@/components/animate-in-view'
 
 interface CTAProps {
   className?: string
@@ -28,56 +7,51 @@ interface CTAProps {
 }
 
 export function CTA(props: CTAProps) {
-  const { t } = useTranslation()
-
-  if (props.isAuthenticated) {
-    return null
-  }
-
   return (
-    <section className='relative z-10 overflow-hidden px-6 py-24 md:py-32'>
-      {/* Gradient mesh background */}
-      <div
-        aria-hidden
-        className='absolute inset-0 -z-10 opacity-20 dark:opacity-[0.08]'
-        style={{
-          background: [
-            'radial-gradient(ellipse 50% 50% at 30% 50%, oklch(0.7 0.15 250 / 70%) 0%, transparent 70%)',
-            'radial-gradient(ellipse 40% 40% at 70% 40%, oklch(0.65 0.12 200 / 50%) 0%, transparent 70%)',
-          ].join(', '),
-        }}
-      />
-
-      <AnimateInView
-        className='mx-auto max-w-2xl text-center'
-        animation='scale-in'
-      >
-        <h2 className='text-2xl leading-tight font-bold tracking-tight md:text-4xl'>
-          {t('Ready to simplify')}
-          <br />
-          <span className='bg-gradient-to-r from-blue-400 via-violet-400 to-purple-500 bg-clip-text text-transparent'>
-            {t('your AI integration?')}
-          </span>
-        </h2>
-        <p className='text-muted-foreground/80 mx-auto mt-5 max-w-md text-sm leading-relaxed md:text-base'>
-          {t(
-            'Deploy your own gateway and start routing requests through your configured upstream services.'
-          )}
-        </p>
-        <div className='mt-8 flex items-center justify-center gap-3'>
-          <Button className='group rounded-lg' render={<Link to='/sign-up' />}>
-            {t('Get Started')}
-            <ArrowRight className='ml-1 size-3.5 transition-transform duration-200 group-hover:translate-x-0.5' />
-          </Button>
-          <Button
-            variant='outline'
-            className='border-border/50 hover:border-border hover:bg-muted/50 rounded-lg'
-            render={<Link to='/pricing' />}
-          >
-            {t('View Pricing')}
-          </Button>
+    <section className='px-6 py-20 md:px-10 md:py-24'>
+      <div className='mx-auto max-w-6xl overflow-hidden rounded-[34px] border border-slate-200 bg-[linear-gradient(135deg,#0f172a,#1f3b6b_48%,#0f766e)] px-6 py-10 text-white shadow-[0_24px_70px_rgba(15,23,42,0.22)] md:px-10'>
+        <div className='max-w-3xl'>
+          <div className='inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold text-white/90'>
+            <Sparkles className='h-3.5 w-3.5' />
+            成就与奖励
+          </div>
+          <h2 className='mt-4 text-3xl font-semibold tracking-tight md:text-4xl'>
+            购买套餐、点亮成就、再去开盲盒
+          </h2>
+          <p className='mt-4 max-w-2xl text-sm leading-7 text-white/78 md:text-base'>
+            Code Go 的奖励系统现在是闭环的。图鉴点亮后会直接发放奖励，盲盒保底规则清晰，整个站点会更像一个可成长的编码基地。
+          </p>
         </div>
-      </AnimateInView>
+
+        <div className='mt-8 flex flex-wrap items-center gap-3'>
+          {props.isAuthenticated ? (
+            <>
+              <Button
+                className='group rounded-full bg-white text-slate-950 hover:bg-white/90'
+                render={<a href='/blind-box' />}
+              >
+                <Gift className='mr-2 h-4 w-4' />
+                去开盲盒
+              </Button>
+              <Button
+                variant='outline'
+                className='rounded-full border-white/30 bg-transparent text-white hover:bg-white/10'
+                render={<a href='/dashboard/achievements' />}
+              >
+                查看图鉴
+              </Button>
+            </>
+          ) : (
+            <Button
+              className='group rounded-full bg-white text-slate-950 hover:bg-white/90'
+              render={<a href='/sign-up' />}
+            >
+              创建账号
+              <ArrowRight className='ml-2 h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5' />
+            </Button>
+          )}
+        </div>
+      </div>
     </section>
   )
 }

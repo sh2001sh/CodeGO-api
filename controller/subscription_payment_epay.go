@@ -201,7 +201,7 @@ func SubscriptionEpayReturn(c *gin.Context) {
 
 	if c.Request.Method == "POST" {
 		if err := c.Request.ParseForm(); err != nil {
-			c.Redirect(http.StatusFound, paymentReturnPath("/console/topup?pay=fail"))
+			c.Redirect(http.StatusFound, paymentReturnPath("/packages?pay=fail"))
 			return
 		}
 		params = lo.Reduce(lo.Keys(c.Request.PostForm), func(r map[string]string, t string, i int) map[string]string {
@@ -216,29 +216,29 @@ func SubscriptionEpayReturn(c *gin.Context) {
 	}
 
 	if len(params) == 0 {
-		c.Redirect(http.StatusFound, paymentReturnPath("/console/topup?pay=fail"))
+		c.Redirect(http.StatusFound, paymentReturnPath("/packages?pay=fail"))
 		return
 	}
 
 	client := GetEpayClient()
 	if client == nil {
-		c.Redirect(http.StatusFound, paymentReturnPath("/console/topup?pay=fail"))
+		c.Redirect(http.StatusFound, paymentReturnPath("/packages?pay=fail"))
 		return
 	}
 	verifyInfo, err := client.Verify(params)
 	if err != nil || !verifyInfo.VerifyStatus {
-		c.Redirect(http.StatusFound, paymentReturnPath("/console/topup?pay=fail"))
+		c.Redirect(http.StatusFound, paymentReturnPath("/packages?pay=fail"))
 		return
 	}
 	if verifyInfo.TradeStatus == epay.StatusTradeSuccess {
 		LockOrder(verifyInfo.ServiceTradeNo)
 		defer UnlockOrder(verifyInfo.ServiceTradeNo)
 		if err := model.CompleteSubscriptionOrder(verifyInfo.ServiceTradeNo, common.GetJsonString(verifyInfo), model.PaymentProviderEpay, verifyInfo.Type); err != nil {
-			c.Redirect(http.StatusFound, paymentReturnPath("/console/topup?pay=fail"))
+			c.Redirect(http.StatusFound, paymentReturnPath("/packages?pay=fail"))
 			return
 		}
-		c.Redirect(http.StatusFound, paymentReturnPath("/console/topup?pay=success"))
+		c.Redirect(http.StatusFound, paymentReturnPath("/packages?pay=success"))
 		return
 	}
-	c.Redirect(http.StatusFound, paymentReturnPath("/console/topup?pay=pending"))
+	c.Redirect(http.StatusFound, paymentReturnPath("/packages?pay=pending"))
 }

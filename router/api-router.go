@@ -126,6 +126,8 @@ func SetApiRouter(router *gin.Engine) {
 					gamificationRoute.GET("/achievements", controller.GetGamificationAchievements)
 					gamificationRoute.GET("/hall-of-fame", controller.GetGamificationHallOfFame)
 					gamificationRoute.POST("/share-link", controller.ClaimGamificationShareLink)
+					gamificationRoute.POST("/equip", controller.EquipGamificationCompanionPet)
+					gamificationRoute.POST("/upgrade", controller.UpgradeGamificationCompanionPet)
 				}
 
 				// Custom OAuth bindings

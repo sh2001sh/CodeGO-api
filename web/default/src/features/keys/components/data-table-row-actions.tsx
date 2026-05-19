@@ -181,8 +181,8 @@ export function DataTableRowActions<TData>({
     toast.success(
       t(
         platform === 'windows'
-          ? 'Downloaded Codex Windows setup script'
-          : 'Downloaded Codex Linux setup script'
+          ? 'Downloaded Windows Codex config script'
+          : 'Downloaded Linux Codex config script'
       )
     )
   }
@@ -296,7 +296,7 @@ export function DataTableRowActions<TData>({
               <DropdownMenuItem
                 onClick={() => handleDownloadCodexScript('windows')}
               >
-                {t('Windows Script')}
+                {t('Windows Codex Script')}
                 <DropdownMenuShortcut>
                   <Download size={16} />
                 </DropdownMenuShortcut>
@@ -304,7 +304,7 @@ export function DataTableRowActions<TData>({
               <DropdownMenuItem
                 onClick={() => handleDownloadCodexScript('linux')}
               >
-                {t('Linux Script')}
+                {t('Linux Codex Script')}
                 <DropdownMenuShortcut>
                   <Download size={16} />
                 </DropdownMenuShortcut>

@@ -25,10 +25,10 @@ export function DailyMissionsCard(props: DailyMissionsCardProps) {
       <div className='border-b px-4 py-3 sm:px-5'>
         <div className='flex items-center gap-2'>
           <Gift className='size-4 text-primary' />
-          <div className='text-base font-semibold'>今日工坊小任务</div>
+          <div className='text-base font-semibold'>每日任务</div>
         </div>
         <div className='mt-1 text-sm text-muted-foreground'>
-          达成条件后自动发放额度奖励，当天内只结算一次。
+          每条任务都会发额度奖励，完成后还会给当前出战宠物追加经验。
         </div>
       </div>
 
@@ -60,11 +60,13 @@ export function DailyMissionsCard(props: DailyMissionsCardProps) {
                     </div>
                   </div>
                 </div>
+
                 <div className='text-right text-xs text-muted-foreground'>
                   <div>{mission.reward_usd.toFixed(1)} 美元额度</div>
                   <div className='mt-1 font-medium text-foreground'>
                     {formatQuota(mission.reward_quota)}
                   </div>
+                  <div className='mt-1 text-primary'>+{mission.pet_exp_reward} EXP</div>
                 </div>
               </div>
 
@@ -82,17 +84,17 @@ export function DailyMissionsCard(props: DailyMissionsCardProps) {
                 {mission.claimed ? (
                   <>
                     <CheckCircle2 className='size-3.5 text-success' />
-                    奖励已到账
+                    额度和宠物经验都已到账
                   </>
                 ) : mission.completed ? (
                   <>
                     <CheckCircle2 className='size-3.5 text-primary' />
-                    已满足条件，刷新时会自动校验发放
+                    已满足条件，刷新后会自动结算
                   </>
                 ) : (
                   <>
                     <LockKeyhole className='size-3.5' />
-                    完成后自动结算
+                    完成后自动结算并把经验发给当前出战宠物
                   </>
                 )}
               </div>
@@ -103,3 +105,4 @@ export function DailyMissionsCard(props: DailyMissionsCardProps) {
     </div>
   )
 }
+

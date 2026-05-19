@@ -29,7 +29,7 @@ import i18next from 'i18next'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
 import { getStatus } from '@/lib/api'
-import { normalizeLogoUrl } from '@/lib/branding'
+import { normalizeLogoUrl, normalizeSystemName } from '@/lib/branding'
 import '@/lib/dayjs'
 import { applyFaviconToDom } from '@/lib/dom-utils'
 import { handleServerError } from '@/lib/handle-server-error'
@@ -126,7 +126,7 @@ const rootElement = document.getElementById('root')!
       const saved = localStorage.getItem('status')
       if (saved) {
         const s = JSON.parse(saved)
-        if (s?.system_name) apply(s.system_name)
+        if (s?.system_name) apply(normalizeSystemName(s.system_name))
         applyFaviconToDom(normalizeLogoUrl(s?.logo))
       }
     } catch {
@@ -136,7 +136,7 @@ const rootElement = document.getElementById('root')!
     getStatus()
       .then((s) => {
         if (s?.system_name) {
-          apply(s.system_name as string)
+          apply(normalizeSystemName(s.system_name))
           try {
             localStorage.setItem('status', JSON.stringify(s))
           } catch {

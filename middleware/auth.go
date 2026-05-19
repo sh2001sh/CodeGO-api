@@ -39,7 +39,13 @@ func authHelper(c *gin.Context, minRole int) {
 	role := session.Get("role")
 	id := session.Get("id")
 	status := session.Get("status")
+	group := session.Get("group")
 	useAccessToken := false
+	currentUsername, _ := username.(string)
+	currentRole, _ := role.(int)
+	currentUserID, _ := id.(int)
+	currentStatus, _ := status.(int)
+	currentGroup, _ := group.(string)
 	if username == nil {
 		// Check access token
 		accessToken := c.Request.Header.Get("Authorization")
@@ -82,6 +88,12 @@ func authHelper(c *gin.Context, minRole int) {
 			role = user.Role
 			id = user.Id
 			status = user.Status
+			group = user.Group
+			currentUsername = user.Username
+			currentRole = user.Role
+			currentUserID = user.Id
+			currentStatus = user.Status
+			currentGroup = user.Group
 			useAccessToken = true
 		} else {
 			c.JSON(http.StatusOK, gin.H{
@@ -90,6 +102,54 @@ func authHelper(c *gin.Context, minRole int) {
 			})
 			c.Abort()
 			return
+		}
+	} else if model.DB != nil && currentUserID > 0 {
+		// Refresh session-backed user state so promote/demote/disable changes
+		// take effect immediately without requiring a new login.
+		user, err := model.GetUserById(currentUserID, false)
+		if err != nil {
+			if errors.Is(err, gorm.ErrRecordNotFound) {
+				c.JSON(http.StatusOK, gin.H{
+					"success": false,
+					"message": common.TranslateMessage(c, i18n.MsgAuthUserInfoInvalid),
+				})
+			} else {
+				common.SysLog("authHelper refresh user info database error: " + err.Error())
+				c.JSON(http.StatusInternalServerError, gin.H{
+					"success": false,
+					"message": common.TranslateMessage(c, i18n.MsgDatabaseError),
+				})
+			}
+			c.Abort()
+			return
+		}
+		if !validUserInfo(user.Username, user.Role) {
+			c.JSON(http.StatusOK, gin.H{
+				"success": false,
+				"message": common.TranslateMessage(c, i18n.MsgAuthUserInfoInvalid),
+			})
+			c.Abort()
+			return
+		}
+		username = user.Username
+		role = user.Role
+		status = user.Status
+		group = user.Group
+		currentUsername = user.Username
+		currentRole = user.Role
+		currentStatus = user.Status
+		currentGroup = user.Group
+		if session.Get("username") != user.Username ||
+			session.Get("role") != user.Role ||
+			session.Get("status") != user.Status ||
+			session.Get("group") != user.Group {
+			session.Set("username", user.Username)
+			session.Set("role", user.Role)
+			session.Set("status", user.Status)
+			session.Set("group", user.Group)
+			if err := session.Save(); err != nil {
+				common.SysLog("authHelper failed to sync session user state: " + err.Error())
+			}
 		}
 	}
 	// get header New-Api-User
@@ -112,7 +172,7 @@ func authHelper(c *gin.Context, minRole int) {
 		return
 
 	}
-	if id != apiUserId {
+	if currentUserID != apiUserId {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"success": false,
 			"message": common.TranslateMessage(c, i18n.MsgAuthUserIdMismatch),
@@ -120,7 +180,7 @@ func authHelper(c *gin.Context, minRole int) {
 		c.Abort()
 		return
 	}
-	if status.(int) == common.UserStatusDisabled {
+	if currentStatus == common.UserStatusDisabled {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
 			"message": common.TranslateMessage(c, i18n.MsgAuthUserBanned),
@@ -128,7 +188,7 @@ func authHelper(c *gin.Context, minRole int) {
 		c.Abort()
 		return
 	}
-	if role.(int) < minRole {
+	if currentRole < minRole {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
 			"message": common.TranslateMessage(c, i18n.MsgAuthInsufficientPrivilege),
@@ -136,7 +196,7 @@ func authHelper(c *gin.Context, minRole int) {
 		c.Abort()
 		return
 	}
-	if !validUserInfo(username.(string), role.(int)) {
+	if !validUserInfo(currentUsername, currentRole) {
 		c.JSON(http.StatusOK, gin.H{
 			"success": false,
 			"message": common.TranslateMessage(c, i18n.MsgAuthUserInfoInvalid),
@@ -146,11 +206,11 @@ func authHelper(c *gin.Context, minRole int) {
 	}
 	// 防止不同newapi版本冲突，导致数据不通用
 	c.Header("Auth-Version", "864b7076dbcd0a3c01b5520316720ebf")
-	c.Set("username", username)
-	c.Set("role", role)
-	c.Set("id", id)
-	c.Set("group", session.Get("group"))
-	c.Set("user_group", session.Get("group"))
+	c.Set("username", currentUsername)
+	c.Set("role", currentRole)
+	c.Set("id", currentUserID)
+	c.Set("group", currentGroup)
+	c.Set("user_group", currentGroup)
 	c.Set("use_access_token", useAccessToken)
 
 	c.Next()

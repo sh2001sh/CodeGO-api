@@ -86,7 +86,7 @@ export function BlindBoxOperationsPanel() {
             </Button>
             <Button
               size='sm'
-              onClick={() => window.location.assign('/wallet#wallet-blind-box')}
+              onClick={() => window.location.assign('/blind-box')}
             >
               <Wallet className='mr-1 h-4 w-4' />
               {t('Open wallet entry')}

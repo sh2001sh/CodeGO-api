@@ -24,7 +24,7 @@ import {
   type SystemConfig,
   DEFAULT_CURRENCY_CONFIG,
 } from '@/stores/system-config-store'
-import { normalizeLogoUrl } from '@/lib/branding'
+import { normalizeLogoUrl, normalizeSystemName } from '@/lib/branding'
 import { DEFAULT_SYSTEM_NAME, DEFAULT_LOGO } from '@/lib/constants'
 import { applyFaviconToDom } from '@/lib/dom-utils'
 
@@ -93,7 +93,7 @@ export function mapStatusDataToConfig(
   }
 
   return {
-    systemName: data.system_name || DEFAULT_SYSTEM_NAME,
+    systemName: normalizeSystemName(data.system_name || DEFAULT_SYSTEM_NAME),
     logo: normalizeLogoUrl(data.logo || DEFAULT_LOGO),
     footerHtml: data.footer_html,
     demoSiteEnabled: data.demo_site_enabled,
@@ -152,6 +152,7 @@ export function useSystemConfig(options: UseSystemConfigOptions = {}) {
     setLoading,
   } = useSystemConfigStore()
   const normalizedLogo = normalizeLogoUrl(config.logo)
+  const normalizedSystemName = normalizeSystemName(config.systemName)
 
   // Load config from backend
   const loadConfig = useCallback(async () => {
@@ -176,6 +177,12 @@ export function useSystemConfig(options: UseSystemConfigOptions = {}) {
       setConfig({ logo: normalizedLogo })
     }
   }, [config.logo, normalizedLogo, setConfig])
+
+  useEffect(() => {
+    if (config.systemName !== normalizedSystemName) {
+      setConfig({ systemName: normalizedSystemName })
+    }
+  }, [config.systemName, normalizedSystemName, setConfig])
 
   // Preload logo image when URL changes
   useEffect(() => {
@@ -206,6 +213,7 @@ export function useSystemConfig(options: UseSystemConfigOptions = {}) {
 
   return {
     ...config,
+    systemName: normalizedSystemName,
     logo: normalizedLogo,
     loading,
     logoLoaded: normalizedLogo === loadedLogoUrl && !!loadedLogoUrl,

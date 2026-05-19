@@ -22,7 +22,7 @@ import { cn } from '@/lib/utils'
 export function Logo({ className, ...props }: SVGProps<SVGSVGElement>) {
   return (
     <svg
-      id='codexforall-logo'
+      id='code-go-logo'
       viewBox='0 0 24 24'
       xmlns='http://www.w3.org/2000/svg'
       height='24'
@@ -31,7 +31,7 @@ export function Logo({ className, ...props }: SVGProps<SVGSVGElement>) {
       className={cn('size-6', className)}
       {...props}
     >
-      <title>codexforall</title>
+      <title>Code Go</title>
       <rect x='1' y='1' width='22' height='22' rx='6' fill='#f8fbff' />
       <rect
         x='1'
@@ -44,11 +44,11 @@ export function Logo({ className, ...props }: SVGProps<SVGSVGElement>) {
       />
       <path
         d='M8.1 5.5 3.7 12l4.4 6.5 1.6-1.05L6.1 12l3.6-5.45Z'
-        fill='url(#codexforall-core)'
+        fill='url(#code-go-core)'
       />
       <path
         d='m15.9 5.5-1.6 1.05 3.6 5.45-3.6 5.45 1.6 1.05 4.4-6.5Z'
-        fill='url(#codexforall-core)'
+        fill='url(#code-go-core)'
       />
       <path
         d='M13.1 4.9 10.1 19.1'
@@ -59,7 +59,7 @@ export function Logo({ className, ...props }: SVGProps<SVGSVGElement>) {
       <circle cx='12' cy='12' r='1.25' fill='#38bdf8' opacity='.16' />
       <defs>
         <linearGradient
-          id='codexforall-core'
+          id='code-go-core'
           x1='4'
           y1='3.5'
           x2='20'

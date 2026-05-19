@@ -6,6 +6,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+type companionPetActionRequest struct {
+	AchievementKey string `json:"achievement_key" binding:"required"`
+}
+
 // GetGamificationDashboard returns the workshop overview data for the current user.
 func GetGamificationDashboard(c *gin.Context) {
 	userId := c.GetInt("id")
@@ -62,4 +66,42 @@ func ClaimGamificationShareLink(c *gin.Context) {
 		"claimed":    granted,
 		"reward_usd": 0.2,
 	})
+}
+
+func EquipGamificationCompanionPet(c *gin.Context) {
+	userId := c.GetInt("id")
+	if userId <= 0 {
+		common.ApiErrorMsg(c, "invalid user id")
+		return
+	}
+	var req companionPetActionRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	data, err := service.EquipCompanionPet(userId, req.AchievementKey)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	common.ApiSuccess(c, data)
+}
+
+func UpgradeGamificationCompanionPet(c *gin.Context) {
+	userId := c.GetInt("id")
+	if userId <= 0 {
+		common.ApiErrorMsg(c, "invalid user id")
+		return
+	}
+	var req companionPetActionRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	data, err := service.UpgradeCompanionPet(userId, req.AchievementKey)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	common.ApiSuccess(c, data)
 }

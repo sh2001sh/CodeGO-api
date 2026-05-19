@@ -72,6 +72,11 @@ func UserCheckin(userId int) (*Checkin, error) {
 	if setting.MaxQuota > setting.MinQuota {
 		quotaAwarded = setting.MinQuota + rand.Intn(setting.MaxQuota-setting.MinQuota+1)
 	}
+	if appliedBonus, err := GetUserCompanionAppliedBonus(userId); err == nil &&
+		appliedBonus != nil &&
+		appliedBonus.Buff.CheckinBonusQuota > 0 {
+		quotaAwarded += int(appliedBonus.Buff.CheckinBonusQuota)
+	}
 
 	today := time.Now().Format("2006-01-02")
 	checkin := &Checkin{

@@ -179,6 +179,7 @@ docker run --name new-api -d --restart always \
 | 📡 接口文档 | [API 文档](https://docs.newapi.pro/zh/docs/api) |
 | ❓ 常见问题 | [FAQ](https://docs.newapi.pro/zh/docs/support/faq) |
 | 💬 社区交流 | [交流渠道](https://docs.newapi.pro/zh/docs/support/community-interaction) |
+| 📙 Code Go 流程演示 | [用户操作说明](./docs/code-go-user-guide.zh-CN.md) |
 
 ---
 
@@ -436,6 +437,7 @@ docker run --name new-api -d --restart always \
 |------|------|
 | 📘 常见问题 | [FAQ](https://docs.newapi.pro/zh/docs/support/faq) |
 | 💬 社区交流 | [交流渠道](https://docs.newapi.pro/zh/docs/support/community-interaction) |
+| 📙 Code Go 流程演示 | [用户操作说明](./docs/code-go-user-guide.zh-CN.md) |
 | 🐛 反馈问题 | [问题反馈](https://docs.newapi.pro/zh/docs/support/feedback-issues) |
 | 📚 完整文档 | [官方文档](https://docs.newapi.pro/zh/docs) |
 
