@@ -105,6 +105,42 @@ func TestSeedDefaultSubscriptionPlans_FixesLegacyPresetUsageUnits(t *testing.T) 
 	assert.Zero(t, selectedID)
 }
 
+func TestSeedDefaultSubscriptionPlans_RepairsCollapsedMonthlyQuotaSnapshot(t *testing.T) {
+	truncateTables(t)
+	ensureSubscriptionUsageTestSchema(t)
+
+	now := time.Now().Unix()
+	monthPlan := defaultSubscriptionPlans()[0]
+	monthPlan.Id = 9501
+	require.NoError(t, DB.Create(&monthPlan).Error)
+
+	insertSubscriptionUsageTestUser(t, 9501, []int{9601})
+	collapsedSub := &UserSubscription{
+		Id:            9601,
+		UserId:        9501,
+		PlanId:        monthPlan.Id,
+		AmountTotal:   quotaUnitsFromUSD(50),
+		AmountUsed:    quotaUnitsFromUSD(20),
+		PeriodAmount:  quotaUnitsFromUSD(50),
+		PeriodUsed:    quotaUnitsFromUSD(20),
+		StartTime:     now - 3600,
+		EndTime:       now + 30*86400,
+		Status:        "active",
+		LastResetTime: now - 3600,
+		NextResetTime: now + 6*86400,
+	}
+	require.NoError(t, DB.Create(collapsedSub).Error)
+
+	require.NoError(t, SeedDefaultSubscriptionPlans())
+
+	var reloadedSub UserSubscription
+	require.NoError(t, DB.Where("id = ?", collapsedSub.Id).First(&reloadedSub).Error)
+	assert.Equal(t, monthPlan.TotalAmount, reloadedSub.AmountTotal)
+	assert.Equal(t, quotaUnitsFromUSD(20), reloadedSub.AmountUsed)
+	assert.Equal(t, monthPlan.PeriodAmount, reloadedSub.PeriodAmount)
+	assert.Equal(t, quotaUnitsFromUSD(20), reloadedSub.PeriodUsed)
+}
+
 func TestPreConsumeUserSubscription_KeepsExhaustedDayPassVisibleButSkipsBilling(t *testing.T) {
 	truncateTables(t)
 	ensureSubscriptionUsageTestSchema(t)

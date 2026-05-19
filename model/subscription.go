@@ -2156,16 +2156,60 @@ func getLegacyPresetPlanQuota(title string) (totalAmount int64, periodAmount int
 	}
 }
 
+func getLegacyPresetPlanQuotaUSD(title string) (totalAmount float64, periodAmount float64, ok bool) {
+	switch strings.TrimSpace(title) {
+	case "Lite月卡":
+		return 300, 75, true
+	case "Standard月卡":
+		return 600, 150, true
+	case "Pro月卡":
+		return 1500, 375, true
+	case "Ultra月卡":
+		return 4000, 1000, true
+	case "50刀日卡":
+		return 50, 0, true
+	case "100刀日卡":
+		return 100, 0, true
+	default:
+		return 0, 0, false
+	}
+}
+
+func isLegacyPresetPlainUSDValue(value int64, usd float64) bool {
+	if value <= 0 || usd <= 0 {
+		return false
+	}
+	return value == int64(math.Round(usd))
+}
+
+func isCollapsedPresetPeriodicQuota(plan *SubscriptionPlan, sub UserSubscription) bool {
+	if plan == nil {
+		return false
+	}
+	if NormalizeResetPeriod(plan.QuotaResetPeriod) == SubscriptionResetNever {
+		return false
+	}
+	if plan.TotalAmount <= 0 || plan.PeriodAmount <= 0 || plan.TotalAmount <= plan.PeriodAmount {
+		return false
+	}
+	if sub.AmountTotal <= 0 || sub.PeriodAmount <= 0 {
+		return false
+	}
+	if sub.AmountTotal != sub.PeriodAmount {
+		return false
+	}
+	return sub.AmountTotal <= plan.PeriodAmount
+}
+
 func migratePresetUserSubscriptions(plan *SubscriptionPlan) error {
 	if plan == nil || plan.Id <= 0 {
 		return nil
 	}
-	legacyTotal, legacyPeriod, ok := getLegacyPresetPlanQuota(plan.Title)
+	_, _, ok := getLegacyPresetPlanQuota(plan.Title)
 	if !ok {
 		return nil
 	}
-
-	suspiciousThreshold := int64(common.QuotaPerUnit)
+	legacyTotalUSD, legacyPeriodUSD, _ := getLegacyPresetPlanQuotaUSD(plan.Title)
 
 	err := DB.Transaction(func(tx *gorm.DB) error {
 		var subs []UserSubscription
@@ -2177,29 +2221,32 @@ func migratePresetUserSubscriptions(plan *SubscriptionPlan) error {
 
 			shouldFixTotal := false
 			switch {
-			case legacyTotal > 0 && sub.AmountTotal == legacyTotal:
+			case legacyTotalUSD > 0 && isLegacyPresetPlainUSDValue(sub.AmountTotal, legacyTotalUSD):
 				shouldFixTotal = true
-			case plan.TotalAmount > 0 && sub.AmountTotal > 0 && sub.AmountTotal < suspiciousThreshold:
+			case isCollapsedPresetPeriodicQuota(plan, sub):
 				shouldFixTotal = true
 			}
 			if shouldFixTotal && sub.AmountTotal != plan.TotalAmount {
 				updateMap["amount_total"] = plan.TotalAmount
 			}
 			if shouldFixTotal && plan.TotalAmount > 0 && sub.AmountUsed > 0 {
-				scaledUsed := quotaUnitsFromUSD(float64(sub.AmountUsed))
-				if scaledUsed > plan.TotalAmount {
-					scaledUsed = plan.TotalAmount
+				targetUsed := sub.AmountUsed
+				if legacyTotalUSD > 0 && isLegacyPresetPlainUSDValue(sub.AmountTotal, legacyTotalUSD) {
+					targetUsed = quotaUnitsFromUSD(float64(sub.AmountUsed))
 				}
-				if scaledUsed != sub.AmountUsed {
-					updateMap["amount_used"] = scaledUsed
+				if targetUsed > plan.TotalAmount {
+					targetUsed = plan.TotalAmount
+				}
+				if targetUsed != sub.AmountUsed {
+					updateMap["amount_used"] = targetUsed
 				}
 			}
 
 			shouldFixPeriod := false
 			switch {
-			case legacyPeriod > 0 && sub.PeriodAmount == legacyPeriod:
+			case legacyPeriodUSD > 0 && isLegacyPresetPlainUSDValue(sub.PeriodAmount, legacyPeriodUSD):
 				shouldFixPeriod = true
-			case plan.PeriodAmount > 0 && sub.PeriodAmount > 0 && sub.PeriodAmount < suspiciousThreshold:
+			case isCollapsedPresetPeriodicQuota(plan, sub):
 				shouldFixPeriod = true
 			case plan.PeriodAmount == 0 && sub.PeriodAmount > 0:
 				shouldFixPeriod = true
@@ -2208,12 +2255,15 @@ func migratePresetUserSubscriptions(plan *SubscriptionPlan) error {
 				updateMap["period_amount"] = plan.PeriodAmount
 			}
 			if shouldFixPeriod && plan.PeriodAmount > 0 && sub.PeriodUsed > 0 {
-				scaledPeriodUsed := quotaUnitsFromUSD(float64(sub.PeriodUsed))
-				if scaledPeriodUsed > plan.PeriodAmount {
-					scaledPeriodUsed = plan.PeriodAmount
+				targetPeriodUsed := sub.PeriodUsed
+				if legacyPeriodUSD > 0 && isLegacyPresetPlainUSDValue(sub.PeriodAmount, legacyPeriodUSD) {
+					targetPeriodUsed = quotaUnitsFromUSD(float64(sub.PeriodUsed))
 				}
-				if scaledPeriodUsed != sub.PeriodUsed {
-					updateMap["period_used"] = scaledPeriodUsed
+				if targetPeriodUsed > plan.PeriodAmount {
+					targetPeriodUsed = plan.PeriodAmount
+				}
+				if targetPeriodUsed != sub.PeriodUsed {
+					updateMap["period_used"] = targetPeriodUsed
 				}
 			}
 			if NormalizeResetPeriod(plan.QuotaResetPeriod) == SubscriptionResetNever || plan.PeriodAmount == 0 {
