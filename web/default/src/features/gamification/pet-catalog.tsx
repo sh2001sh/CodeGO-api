@@ -24,7 +24,7 @@ export type PetProfile = {
   species: string
   accent: string
   splash: string
-  lane: 'starter' | 'usage' | 'subscription' | 'blind-box' | 'social' | 'checkin' | 'legend'
+  lane: 'starter' | 'usage' | 'subscription' | 'blind-box' | 'social' | 'legend'
   note: string
   spotlight: 'home' | 'blind-box' | 'achievement'
 }
@@ -176,8 +176,8 @@ const PET_COLLECTION: PetProfile[] = [
     species: '云团兔',
     accent: 'from-indigo-400 via-violet-300 to-pink-300',
     splash: 'bg-violet-50 text-violet-700 dark:bg-violet-500/15 dark:text-violet-200',
-    lane: 'checkin',
-    note: '连续签到一周就会靠过来值班。',
+    lane: 'usage',
+    note: '单日高频调用冲到 30 次后，就会靠过来陪你冲刺。 ',
     spotlight: 'home',
   },
   {
@@ -187,7 +187,7 @@ const PET_COLLECTION: PetProfile[] = [
     accent: 'from-blue-400 via-sky-300 to-indigo-300',
     splash: 'bg-blue-50 text-blue-700 dark:bg-blue-500/15 dark:text-blue-200',
     lane: 'legend',
-    note: '连续签到一个月后的最终守护者。',
+    note: '累计消耗 2000 美元额度后解锁的消费终阶守护者。',
     spotlight: 'achievement',
   },
 ]
@@ -230,7 +230,12 @@ export function getHomePetHighlights() {
 export function getBlindBoxPetHighlights() {
   return PET_COLLECTION.filter(
     (pet) =>
-      pet.lane === 'blind-box' || pet.achievementKey === 'plan-collector'
+      pet.lane === 'blind-box' ||
+      pet.achievementKey === 'plan-collector' ||
+      pet.achievementKey === 'social-crafter' ||
+      pet.achievementKey === 'community-core' ||
+      pet.achievementKey === 'seven-day-streak' ||
+      pet.achievementKey === 'month-streak'
   )
 }
 

@@ -23,21 +23,22 @@ type GamificationDashboard struct {
 
 // CompanionSummary describes the current workshop companion progression.
 type CompanionSummary struct {
-	Name              string             `json:"name"`
-	Title             string             `json:"title"`
-	Flavor            string             `json:"flavor"`
-	Level             int                `json:"level"`
-	UnlockedCount     int                `json:"unlocked_count"`
-	TotalCount        int                `json:"total_count"`
-	ProgressCurrent   int                `json:"progress_current"`
-	ProgressTarget    int                `json:"progress_target"`
-	MaxLevel          int                `json:"max_level"`
-	OnlyOneEquipRule  string             `json:"only_one_equip_rule"`
-	UpgradeRule       string             `json:"upgrade_rule"`
-	DailyMissionRule  string             `json:"daily_mission_rule"`
-	BuffRule          string             `json:"buff_rule"`
-	EquippedPet       *CompanionPetView  `json:"equipped_pet,omitempty"`
-	ActiveBuff        *CompanionBuffView `json:"active_buff,omitempty"`
+	Name             string             `json:"name"`
+	Title            string             `json:"title"`
+	Flavor           string             `json:"flavor"`
+	Level            int                `json:"level"`
+	UnlockedCount    int                `json:"unlocked_count"`
+	TotalCount       int                `json:"total_count"`
+	ProgressCurrent  int                `json:"progress_current"`
+	ProgressTarget   int                `json:"progress_target"`
+	MaxLevel         int                `json:"max_level"`
+	OnlyOneEquipRule string             `json:"only_one_equip_rule"`
+	FeedingRule      string             `json:"feeding_rule"`
+	UpgradeRule      string             `json:"upgrade_rule"`
+	DailyMissionRule string             `json:"daily_mission_rule"`
+	BuffRule         string             `json:"buff_rule"`
+	EquippedPet      *CompanionPetView  `json:"equipped_pet,omitempty"`
+	ActiveBuff       *CompanionBuffView `json:"active_buff,omitempty"`
 }
 
 // AchievementStats summarizes unlocked achievements.
@@ -49,21 +50,23 @@ type AchievementStats struct {
 
 // AchievementItem is the frontend-friendly achievement view.
 type AchievementItem struct {
-	Key               string  `json:"key"`
-	Name              string  `json:"name"`
-	Description       string  `json:"description"`
-	Hint              string  `json:"hint"`
-	Icon              string  `json:"icon"`
-	Tier              string  `json:"tier"`
-	Unlocked          bool    `json:"unlocked"`
-	UnlockedAt        int64   `json:"unlocked_at,omitempty"`
-	RewardUSD         float64 `json:"reward_usd"`
-	RewardQuota       int64   `json:"reward_quota"`
-	RewardTitle       string  `json:"reward_title"`
-	RewardDescription string  `json:"reward_description"`
-	RewardClaimed     bool    `json:"reward_claimed"`
-	RewardClaimedAt   int64   `json:"reward_claimed_at,omitempty"`
+	Key               string            `json:"key"`
+	Name              string            `json:"name"`
+	Description       string            `json:"description"`
+	Hint              string            `json:"hint"`
+	Icon              string            `json:"icon"`
+	Tier              string            `json:"tier"`
+	Unlocked          bool              `json:"unlocked"`
+	UnlockedAt        int64             `json:"unlocked_at,omitempty"`
+	RewardUSD         float64           `json:"reward_usd"`
+	RewardQuota       int64             `json:"reward_quota"`
+	RewardTitle       string            `json:"reward_title"`
+	RewardDescription string            `json:"reward_description"`
+	RewardClaimed     bool              `json:"reward_claimed"`
+	RewardClaimedAt   int64             `json:"reward_claimed_at,omitempty"`
 	Pet               *CompanionPetView `json:"pet,omitempty"`
+	PreviewBuff       CompanionBuffView `json:"preview_buff"`
+	MaxBuff           CompanionBuffView `json:"max_buff"`
 }
 
 // DailyMissionItem is the frontend-friendly mission view.
@@ -90,18 +93,27 @@ type CompanionBuffView struct {
 }
 
 type CompanionPetView struct {
-	AchievementKey      string             `json:"achievement_key"`
-	Level               int                `json:"level"`
-	MaxLevel            int                `json:"max_level"`
-	Experience          int64              `json:"experience"`
-	CurrentLevelExp     int64              `json:"current_level_exp"`
-	NextLevelExp        int64              `json:"next_level_exp"`
-	CanUpgrade          bool               `json:"can_upgrade"`
-	IsMaxLevel          bool               `json:"is_max_level"`
-	Equipped            bool               `json:"equipped"`
-	UpgradeCostQuota    int64              `json:"upgrade_cost_quota"`
-	UpgradeCostUSD      float64            `json:"upgrade_cost_usd"`
-	Buff                CompanionBuffView  `json:"buff"`
+	AchievementKey   string            `json:"achievement_key"`
+	Level            int               `json:"level"`
+	MaxLevel         int               `json:"max_level"`
+	Experience       int64             `json:"experience"`
+	CurrentLevelExp  int64             `json:"current_level_exp"`
+	NextLevelExp     int64             `json:"next_level_exp"`
+	CanUpgrade       bool              `json:"can_upgrade"`
+	IsMaxLevel       bool              `json:"is_max_level"`
+	Equipped         bool              `json:"equipped"`
+	UpgradeCostQuota int64             `json:"upgrade_cost_quota"`
+	UpgradeCostUSD   float64           `json:"upgrade_cost_usd"`
+	FeedExpPerUSD    int64             `json:"feed_exp_per_usd"`
+	Buff             CompanionBuffView `json:"buff"`
+}
+
+type CompanionFeedResult struct {
+	Pet           *CompanionPetView `json:"pet"`
+	ConsumedQuota int64             `json:"consumed_quota"`
+	ConsumedUSD   float64           `json:"consumed_usd"`
+	GainedExp     int64             `json:"gained_exp"`
+	FundingSource string            `json:"funding_source"`
 }
 
 // HallOfFameResponse is the full leaderboard response.
@@ -137,7 +149,6 @@ type gamificationContext struct {
 	unlockMap          map[string]model.AchievementUnlock
 	todayRewardMap     map[string]model.DailyMissionReward
 	latestUnlock       *model.AchievementUnlock
-	maxCheckinStreak   int
 	consumeTodayCount  int64
 	blindBoxTodayCount int64
 	totalBlindBoxOpens int64
@@ -236,7 +247,7 @@ func ClaimShareLinkMission(userId int) (bool, error) {
 		return false, err
 	}
 	rewardQuota := missionRewardQuotaWithBonus(ctx, mission.RewardUSD)
-	petExperienceAwarded := mission.PetExpReward
+	petExperienceAwarded := missionPetExperienceWithBonus(ctx, mission.PetExpReward)
 	petAchievementKey := ""
 	if ctx.equippedPet != nil {
 		petAchievementKey = ctx.equippedPet.AchievementKey
@@ -301,10 +312,6 @@ func buildGamificationContext(userId int) (*gamificationContext, error) {
 		todayRewardMap[reward.MissionKey] = reward
 	}
 
-	maxCheckinStreak, err := model.MaxCheckinStreak(userId)
-	if err != nil {
-		return nil, err
-	}
 	consumeTodayCount, err := model.CountConsumeLogsByUser(userId, startOfDay, endOfDay)
 	if err != nil {
 		return nil, err
@@ -329,6 +336,14 @@ func buildGamificationContext(userId int) (*gamificationContext, error) {
 	if err != nil {
 		return nil, err
 	}
+	activeBonus, err := model.GetUserCompanionAppliedBonus(userId)
+	if err != nil {
+		return nil, err
+	}
+	var equippedPet *model.UserCompanionPet
+	if activeBonus != nil && activeBonus.Pet != nil {
+		equippedPet = activeBonus.Pet
+	}
 
 	return &gamificationContext{
 		user:               user,
@@ -339,13 +354,14 @@ func buildGamificationContext(userId int) (*gamificationContext, error) {
 		unlockMap:          unlockMap,
 		todayRewardMap:     todayRewardMap,
 		latestUnlock:       latestUnlock,
-		maxCheckinStreak:   maxCheckinStreak,
 		consumeTodayCount:  consumeTodayCount,
 		blindBoxTodayCount: blindBoxTodayCount,
 		totalBlindBoxOpens: totalBlindBoxOpens,
 		hasSubscription:    hasSubscription,
 		subscriptionCount:  subscriptionCount,
 		hasBlindBoxJackpot: hasBlindBoxJackpot,
+		equippedPet:        equippedPet,
+		activeBonus:        activeBonus,
 	}, nil
 }
 
@@ -382,9 +398,9 @@ func ensureAchievementUnlocks(ctx *gamificationContext) error {
 		case "community-core":
 			unlocked = ctx.user.AffCount >= 10
 		case "seven-day-streak":
-			unlocked = ctx.maxCheckinStreak >= 7
+			unlocked = ctx.consumeTodayCount >= 30
 		case "month-streak":
-			unlocked = ctx.maxCheckinStreak >= 30
+			unlocked = int64(ctx.user.UsedQuota) >= quotaUnitsFromUSD(2000)
 		}
 		if !unlocked {
 			continue
@@ -412,7 +428,7 @@ func ensureAchievementUnlocks(ctx *gamificationContext) error {
 		if achievement.RewardUSD > 0 &&
 			unlock.RewardClaimedAt <= 0 &&
 			unlock.RewardQuotaAwarded <= 0 {
-			rewardQuota := quotaUnitsFromUSD(achievement.RewardUSD)
+			rewardQuota := achievementRewardQuotaWithBonus(ctx, achievement.RewardUSD)
 			granted := false
 			err := model.DB.Transaction(func(tx *gorm.DB) error {
 				var txErr error
@@ -464,6 +480,7 @@ func ensureDailyMissionRewards(ctx *gamificationContext) error {
 		}
 
 		rewardQuota := missionRewardQuotaWithBonus(ctx, mission.RewardUSD)
+		petExpReward := missionPetExperienceWithBonus(ctx, mission.PetExpReward)
 		granted := false
 		err := model.DB.Transaction(func(tx *gorm.DB) error {
 			var txErr error
@@ -478,7 +495,7 @@ func ensureDailyMissionRewards(ctx *gamificationContext) error {
 				ctx.today,
 				rewardQuota,
 				completedAt,
-				mission.PetExpReward,
+				petExpReward,
 				petAchievementKey,
 			)
 			return txErr
@@ -499,7 +516,7 @@ func ensureDailyMissionRewards(ctx *gamificationContext) error {
 			MissionKey:           mission.Key,
 			RewardDate:           ctx.today,
 			QuotaAwarded:         rewardQuota,
-			PetExperienceAwarded: mission.PetExpReward,
+			PetExperienceAwarded: missionPetExperienceWithBonus(ctx, mission.PetExpReward),
 			CompletedAt:          completedAt,
 		}
 		if ctx.equippedPet != nil {
@@ -527,7 +544,6 @@ func buildAchievementStats(ctx *gamificationContext, achievements []AchievementI
 	}
 	return stats
 }
-
 
 func missionProgress(ctx *gamificationContext, mission missionDefinition) (int64, int64) {
 	switch mission.Key {

@@ -3,8 +3,8 @@ package service
 import (
 	"errors"
 	"fmt"
-	"math"
 
+	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/model"
 	"gorm.io/gorm"
 )
@@ -16,18 +16,6 @@ func findAchievementDefinition(key string) (achievementDefinition, bool) {
 		}
 	}
 	return achievementDefinition{}, false
-}
-
-func missionRewardQuotaWithBonus(ctx *gamificationContext, rewardUSD float64) int64 {
-	baseQuota := quotaUnitsFromUSD(rewardUSD)
-	if baseQuota <= 0 || ctx == nil || ctx.activeBonus == nil {
-		return baseQuota
-	}
-	bonusRate := ctx.activeBonus.Buff.DailyMissionBonusRate
-	if bonusRate <= 0 {
-		return baseQuota
-	}
-	return int64(math.Round(float64(baseQuota) * (1 + bonusRate)))
 }
 
 func ensureCompanionPets(ctx *gamificationContext) error {
@@ -90,8 +78,10 @@ func buildCompanionBuffView(buff model.CompanionPetBuff) CompanionBuffView {
 
 func buildCompanionPetView(ctx *gamificationContext, pet model.UserCompanionPet) *CompanionPetView {
 	discountRate := 0.0
+	feedExpPerUSD := model.CompanionPetFeedExperience(int64(common.QuotaPerUnit), 0)
 	if ctx.activeBonus != nil {
 		discountRate = ctx.activeBonus.Buff.UpgradeDiscountRate
+		feedExpPerUSD = model.CompanionPetFeedExperience(int64(common.QuotaPerUnit), ctx.activeBonus.Buff.FeedExpBonusRate)
 	}
 	return &CompanionPetView{
 		AchievementKey:   pet.AchievementKey,
@@ -105,6 +95,7 @@ func buildCompanionPetView(ctx *gamificationContext, pet model.UserCompanionPet)
 		Equipped:         pet.Equipped,
 		UpgradeCostQuota: model.CompanionPetUpgradeCostQuota(pet.Level, discountRate),
 		UpgradeCostUSD:   model.CompanionPetUpgradeCostUSDValue(pet.Level, discountRate),
+		FeedExpPerUSD:    feedExpPerUSD,
 		Buff:             buildCompanionBuffView(model.BuildCompanionPetBuff(pet.AchievementKey, pet.Level)),
 	}
 }
@@ -133,16 +124,17 @@ func buildCompanionSummary(ctx *gamificationContext) CompanionSummary {
 		ProgressCurrent:  unlockedCount,
 		ProgressTarget:   progressTarget,
 		MaxLevel:         model.CompanionPetMaxLevel,
-		OnlyOneEquipRule: "同一时间只能装备一只宠物，当前出战宠物的增益立即生效。",
-		UpgradeRule:      "升级需要消耗额度，前期便宜，后期明显提高，满级为 5 级。",
-		DailyMissionRule: "完成每日任务会自动给当前出战宠物发放经验。",
-		BuffRule:         "不同宠物提供不同增益，升级后增益会同步增强。",
+		OnlyOneEquipRule: "同一时间只能装备一只宠物，切换出战后，新宠物的增益会立刻接管全站玩法。",
+		FeedingRule:      "输入要投喂的美元额度后，系统会按你的扣费顺序优先消耗套餐或余额；额度不够就会直接失败，不允许欠款。1 美元额度基础可换 20 EXP，若当前出战宠物带有投喂加成，拿到的经验会更多。",
+		UpgradeRule:      "宠物满级为 5 级。先靠任务和投喂攒经验，经验到线后再点击升级；升级消耗也会按你的套餐/余额顺序扣除，前期便宜，后期更贵。",
+		DailyMissionRule: "完成每日任务会同时给当前出战宠物发放经验；如果当前出战宠物带有任务奖励或任务经验加成，这两部分会一起变多。",
+		BuffRule:         "所有宠物都会提前展示解锁方式、Lv.1 效果和 Lv.5 效果。越难解锁的宠物，效果越直接，像永久 0.95 倍或 0.90 倍扣费这类强增益只会出现在后期主宠上。",
 	}
 	if ctx.equippedPet != nil {
 		if achievement, ok := findAchievementDefinition(ctx.equippedPet.AchievementKey); ok {
 			summary.Name = achievement.Name
 			summary.Title = "当前出战宠物"
-			summary.Flavor = "当前宠物的增益已经接入任务、签到或盲盒链路，可以通过日常任务和额度升级继续强化。"
+			summary.Flavor = "当前宠物的增益已经接入任务、成就、盲盒、升级和真实扣费链路。投喂、做任务和继续消费都会把它养得更强。"
 		}
 		summary.Level = ctx.equippedPet.Level
 		summary.EquippedPet = buildCompanionPetView(ctx, *ctx.equippedPet)
@@ -173,6 +165,8 @@ func buildAchievementItems(ctx *gamificationContext) []AchievementItem {
 			RewardDescription: achievement.RewardDescription,
 			RewardClaimed:     unlock.RewardClaimedAt > 0 || unlock.RewardQuotaAwarded > 0,
 			RewardClaimedAt:   unlock.RewardClaimedAt,
+			PreviewBuff:       buildCompanionBuffView(model.BuildCompanionPetBuff(achievement.Key, 1)),
+			MaxBuff:           buildCompanionBuffView(model.BuildCompanionPetBuff(achievement.Key, model.CompanionPetMaxLevel)),
 		}
 		if pet, ok := ctx.companionPetMap[achievement.Key]; ok {
 			item.Pet = buildCompanionPetView(ctx, pet)
@@ -194,7 +188,7 @@ func buildMissionItems(ctx *gamificationContext) []DailyMissionItem {
 			Icon:         mission.Icon,
 			RewardUSD:    mission.RewardUSD,
 			RewardQuota:  missionRewardQuotaWithBonus(ctx, mission.RewardUSD),
-			PetExpReward: mission.PetExpReward,
+			PetExpReward: missionPetExperienceWithBonus(ctx, mission.PetExpReward),
 			Current:      minInt64(current, mission.Target),
 			Target:       mission.Target,
 			Completed:    current >= mission.Target,
@@ -252,35 +246,43 @@ func UpgradeCompanionPet(userId int, achievementKey string) (*CompanionPetView, 
 		discountRate = ctx.activeBonus.Buff.UpgradeDiscountRate
 	}
 
+	var spend *companionQuotaSpend
+
 	err = model.DB.Transaction(func(tx *gorm.DB) error {
-		pet, txErr := model.GetUserCompanionPetByUserAndKey(userId, achievementKey)
-		if txErr != nil {
+		var pet model.UserCompanionPet
+		if txErr := tx.Set("gorm:query_option", "FOR UPDATE").
+			Where("user_id = ? AND achievement_key = ?", userId, achievementKey).
+			First(&pet).Error; txErr != nil {
 			return txErr
 		}
 		if pet.Level >= model.CompanionPetMaxLevel {
 			return errors.New("companion pet already max level")
 		}
 		if !model.CompanionPetCanLevelUp(pet.Level, pet.Experience) {
-			return fmt.Errorf(
-				"not enough pet experience: need %d",
-				model.CompanionPetNextLevelThreshold(pet.Level),
-			)
+			return fmt.Errorf("not enough pet experience: need %d", model.CompanionPetNextLevelThreshold(pet.Level))
 		}
 
 		costQuota := model.CompanionPetUpgradeCostQuota(pet.Level, discountRate)
 		if costQuota > 0 {
-			if txErr := model.DecreaseUserQuotaTx(tx, userId, costQuota); txErr != nil {
-				return txErr
+			var spendErr error
+			spend, spendErr = spendCompanionQuota(userId, costQuota)
+			if spendErr != nil {
+				return spendErr
 			}
 		}
 
-		pet.Level++
 		return tx.Model(&model.UserCompanionPet{}).
 			Where("id = ?", pet.Id).
-			Update("level", pet.Level).Error
+			Update("level", pet.Level+1).Error
 	})
 	if err != nil {
+		if spend != nil {
+			_ = refundCompanionQuotaSpend(spend)
+		}
 		return nil, err
+	}
+	if spend != nil {
+		model.RecordLog(userId, model.LogTypeSystem, fmt.Sprintf("companion pet upgraded: %s, cost %.2f USD via %s", achievementKey, float64(spend.Quota)/common.QuotaPerUnit, spend.Source))
 	}
 
 	if err := refreshCompanionState(ctx); err != nil {
@@ -291,4 +293,76 @@ func UpgradeCompanionPet(userId int, achievementKey string) (*CompanionPetView, 
 		return nil, errors.New("companion pet not found after upgrade")
 	}
 	return buildCompanionPetView(ctx, updatedPet), nil
+}
+
+func FeedCompanionPet(userId int, achievementKey string, feedQuota int64) (*CompanionFeedResult, error) {
+	if userId <= 0 || achievementKey == "" || feedQuota <= 0 {
+		return nil, errors.New("invalid companion feed request")
+	}
+
+	ctx, err := buildGamificationContext(userId)
+	if err != nil {
+		return nil, err
+	}
+	if err := ensureAchievementUnlocks(ctx); err != nil {
+		return nil, err
+	}
+	if err := ensureCompanionPets(ctx); err != nil {
+		return nil, err
+	}
+
+	if _, ok := ctx.companionPetMap[achievementKey]; !ok {
+		return nil, errors.New("companion pet is locked")
+	}
+
+	gainedExp := companionFeedExperienceWithBonus(ctx.activeBonus, feedQuota)
+	if gainedExp <= 0 {
+		return nil, errors.New("feed quota is too low")
+	}
+
+	spend, err := spendCompanionQuota(userId, feedQuota)
+	if err != nil {
+		return nil, err
+	}
+	success := false
+	defer func() {
+		if !success {
+			_ = refundCompanionQuotaSpend(spend)
+		}
+	}()
+
+	err = model.DB.Transaction(func(tx *gorm.DB) error {
+		var pet model.UserCompanionPet
+		if txErr := tx.Set("gorm:query_option", "FOR UPDATE").
+			Where("user_id = ? AND achievement_key = ?", userId, achievementKey).
+			First(&pet).Error; txErr != nil {
+			return txErr
+		}
+		return model.AddCompanionPetExperienceTx(tx, userId, achievementKey, gainedExp)
+	})
+	if err != nil {
+		return nil, err
+	}
+	success = true
+
+	model.RecordLog(
+		userId,
+		model.LogTypeSystem,
+		fmt.Sprintf("companion pet fed: %s, spent %.2f USD via %s, gained %d exp", achievementKey, float64(feedQuota)/common.QuotaPerUnit, spend.Source, gainedExp),
+	)
+
+	if err := refreshCompanionState(ctx); err != nil {
+		return nil, err
+	}
+	updatedPet, ok := ctx.companionPetMap[achievementKey]
+	if !ok {
+		return nil, errors.New("companion pet not found after feed")
+	}
+	return &CompanionFeedResult{
+		Pet:           buildCompanionPetView(ctx, updatedPet),
+		ConsumedQuota: feedQuota,
+		ConsumedUSD:   float64(feedQuota) / common.QuotaPerUnit,
+		GainedExp:     gainedExp,
+		FundingSource: spend.Source,
+	}, nil
 }

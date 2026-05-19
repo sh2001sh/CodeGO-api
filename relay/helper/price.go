@@ -17,6 +17,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func applyCompanionPreconsumeDiscount(userId int, quota int) int {
+	if userId <= 0 || quota <= 0 {
+		return quota
+	}
+	appliedBonus, err := model.GetUserCompanionAppliedBonus(userId)
+	if err != nil || appliedBonus == nil {
+		return quota
+	}
+	return model.CompanionDiscountedQuota(quota, appliedBonus.Buff.ConsumptionDiscountRate)
+}
+
 func modelPriceNotConfiguredError(modelName string, userId int) error {
 	if model.IsAdmin(userId) {
 		return fmt.Errorf(
@@ -138,6 +149,7 @@ func ModelPriceHelper(c *gin.Context, info *relaycommon.RelayInfo, promptTokens 
 			}
 		}
 	}
+	preConsumedQuota = applyCompanionPreconsumeDiscount(info.UserId, preConsumedQuota)
 
 	priceData := types.PriceData{
 		FreeModel:            freeModel,
@@ -212,6 +224,7 @@ func ModelPriceHelperPerCall(c *gin.Context, info *relaycommon.RelayInfo) (types
 			}
 		}
 	}
+	quota = applyCompanionPreconsumeDiscount(info.UserId, quota)
 
 	priceData := types.PriceData{
 		FreeModel:      freeModel,
@@ -274,6 +287,7 @@ func modelPriceHelperTiered(c *gin.Context, info *relaycommon.RelayInfo, promptT
 			freeModel = true
 		}
 	}
+	preConsumedQuota = applyCompanionPreconsumeDiscount(info.UserId, preConsumedQuota)
 
 	exprHash := billingexpr.ExprHashString(exprStr)
 	snapshot := &billingexpr.BillingSnapshot{

@@ -1,25 +1,35 @@
-import { ArrowRight, PawPrint, Sparkles, Swords, Zap } from 'lucide-react'
+import { ArrowRight, Coins, PawPrint, Sparkles, Swords, Zap } from 'lucide-react'
 
 const PLAYBOOK_STEPS = [
   {
     icon: PawPrint,
     title: '点亮图鉴',
-    description: '调用、签到、套餐、盲盒和邀请行为都会解锁对应宠物。',
+    description:
+      '调用、消费、盲盒、邀请和套餐行为都会解锁不同宠物，先把图鉴点亮，后面的养成才真正开始。',
   },
   {
     icon: Swords,
     title: '选择出战',
-    description: '同一时间只能装备一只宠物，切换后新宠物增益立即生效。',
+    description:
+      '同一时间只能装备一只宠物。切换出战后，新的增益会立刻作用到任务、盲盒、升级和真实扣费。',
+  },
+  {
+    icon: Coins,
+    title: '投喂拿经验',
+    description:
+      '输入要投喂的美元额度后，系统会按套餐或余额顺序扣费；额度不够就会失败。1 美元额度基础可换 20 EXP。',
   },
   {
     icon: Zap,
-    title: '做日常任务',
-    description: '每日任务会同时发额度奖励和宠物经验，经验只给当前出战宠物。',
+    title: '做任务加速',
+    description:
+      '每日任务会同时发额度奖励和宠物经验。若当前出战宠物带有任务类加成，这两部分都会一起变多。',
   },
   {
     icon: Sparkles,
-    title: '消耗额度升级',
-    description: '满足经验条件后手动升级，前期便宜，后期更贵，最高 5 级。',
+    title: '满经验再升级',
+    description:
+      '宠物满级为 5 级。经验够了以后再点击升级，升级会继续扣套餐或余额。后期宠物会提供永久 0.95 倍、0.90 倍扣费这类强效果。',
   },
 ]
 
@@ -29,11 +39,11 @@ export function CompanionPlaybook() {
       <div className='border-b px-4 py-3 sm:px-5'>
         <div className='text-base font-semibold'>宠物玩法示意</div>
         <div className='mt-1 text-sm text-muted-foreground'>
-          用一条直观链路说明解锁、装备、升级和增益生效的关系。
+          用一条直观链路把解锁、出战、投喂、升级和增益生效的关系讲清楚。
         </div>
       </div>
 
-      <div className='grid gap-3 p-4 md:grid-cols-4 md:p-5'>
+      <div className='grid gap-3 p-4 md:grid-cols-5 md:p-5'>
         {PLAYBOOK_STEPS.map((step, index) => {
           const Icon = step.icon
           return (
@@ -66,4 +76,3 @@ export function CompanionPlaybook() {
     </div>
   )
 }
-

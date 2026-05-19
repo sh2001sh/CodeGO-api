@@ -9,6 +9,7 @@ export interface CompanionSummary {
   progress_target: number
   max_level: number
   only_one_equip_rule: string
+  feeding_rule: string
   upgrade_rule: string
   daily_mission_rule: string
   buff_rule: string
@@ -35,7 +36,16 @@ export interface CompanionPetView {
   equipped: boolean
   upgrade_cost_quota: number
   upgrade_cost_usd: number
+  feed_exp_per_usd: number
   buff: CompanionBuffView
+}
+
+export interface CompanionFeedResult {
+  pet?: CompanionPetView
+  consumed_quota: number
+  consumed_usd: number
+  gained_exp: number
+  funding_source: string
 }
 
 export interface AchievementItem {
@@ -54,6 +64,8 @@ export interface AchievementItem {
   reward_claimed?: boolean
   reward_claimed_at?: number
   pet?: CompanionPetView
+  preview_buff: CompanionBuffView
+  max_buff: CompanionBuffView
 }
 
 export interface AchievementStats {

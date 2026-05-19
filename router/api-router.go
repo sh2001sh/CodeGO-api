@@ -128,6 +128,7 @@ func SetApiRouter(router *gin.Engine) {
 					gamificationRoute.POST("/share-link", controller.ClaimGamificationShareLink)
 					gamificationRoute.POST("/equip", controller.EquipGamificationCompanionPet)
 					gamificationRoute.POST("/upgrade", controller.UpgradeGamificationCompanionPet)
+					gamificationRoute.POST("/feed", controller.FeedGamificationCompanionPet)
 				}
 
 				// Custom OAuth bindings

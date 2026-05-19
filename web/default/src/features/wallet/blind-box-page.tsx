@@ -41,7 +41,7 @@ export function BlindBoxPage() {
                 购买、开盒、保底和宠物增益都集中在这里
               </div>
               <div className='text-sm text-muted-foreground'>
-                盲盒临时额度优先于订阅和钱包余额消耗；若当前出战宠物带有盲盒增益，会直接影响保底触发速度。
+                盲盒临时额度优先于订阅和钱包余额消耗；若当前出战宠物带有盲盒增益，会直接影响保底触发速度或每次开盒返还。
               </div>
             </div>
           </div>
@@ -94,7 +94,7 @@ export function BlindBoxPage() {
                 </div>
                 <div className='rounded-2xl border bg-background/70 p-3 text-xs leading-6 text-muted-foreground'>
                   <div className='font-medium text-foreground'>03 宠物增益</div>
-                  若当前出战宠物带有盲盒增益，会减少保底所需的低奖励次数。
+                  若当前出战宠物带有盲盒增益，它会减少保底所需的低奖励次数，或在每次开盒时额外返还额度。
                 </div>
               </div>
             </div>
@@ -160,4 +160,3 @@ export function BlindBoxPage() {
     />
   )
 }
-

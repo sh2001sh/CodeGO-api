@@ -3,22 +3,35 @@ package model
 import (
 	"fmt"
 	"math"
+	"strings"
 
 	"github.com/QuantumNous/new-api/common"
 	"gorm.io/gorm"
 )
 
-const CompanionPetMaxLevel = 5
+const (
+	CompanionPetMaxLevel              = 5
+	CompanionFeedBaseExperiencePerUSD = 20.0
+	companionBasePityThreshold        = 5
+	companionMaxDiscountRate          = 0.8
+)
 
 type CompanionPetBuff struct {
-	Type                 string  `json:"type"`
-	Name                 string  `json:"name"`
-	Description          string  `json:"description"`
-	ValueText            string  `json:"value_text"`
-	DailyMissionBonusRate float64 `json:"daily_mission_bonus_rate"`
-	CheckinBonusQuota    int64   `json:"checkin_bonus_quota"`
-	BlindBoxPityReduction int    `json:"blind_box_pity_reduction"`
-	UpgradeDiscountRate  float64 `json:"upgrade_discount_rate"`
+	Type                       string  `json:"type"`
+	Name                       string  `json:"name"`
+	Description                string  `json:"description"`
+	ValueText                  string  `json:"value_text"`
+	DailyMissionBonusRate      float64 `json:"daily_mission_bonus_rate"`
+	DailyMissionExpBonusRate   float64 `json:"daily_mission_exp_bonus_rate"`
+	AchievementRewardBonusRate float64 `json:"achievement_reward_bonus_rate"`
+	FeedExpBonusRate           float64 `json:"feed_exp_bonus_rate"`
+	CheckinBonusQuota          int64   `json:"checkin_bonus_quota"`
+	BlindBoxBonusQuota         int64   `json:"blind_box_bonus_quota"`
+	BlindBoxRewardRate         float64 `json:"blind_box_reward_rate"`
+	BlindBoxPityReduction      int     `json:"blind_box_pity_reduction"`
+	BlindBoxPityGuaranteeUSD   float64 `json:"blind_box_pity_guarantee_usd"`
+	UpgradeDiscountRate        float64 `json:"upgrade_discount_rate"`
+	ConsumptionDiscountRate    float64 `json:"consumption_discount_rate"`
 }
 
 type CompanionAppliedBonus struct {
@@ -27,28 +40,110 @@ type CompanionAppliedBonus struct {
 	EffectiveLevel int
 }
 
-type companionPetArchetype struct {
-	BuffType string
-	BuffName string
+type companionBuffBlueprint struct {
+	BuffType                    string
+	BuffName                    string
+	DailyMissionBonusRates      []float64
+	DailyMissionExpBonusRates   []float64
+	AchievementRewardBonusRates []float64
+	FeedExpBonusRates           []float64
+	CheckinBonusUSD             []float64
+	BlindBoxBonusUSD            []float64
+	BlindBoxRewardRates         []float64
+	BlindBoxPityReductions      []int
+	BlindBoxPityGuaranteeUSD    []float64
+	UpgradeDiscountRates        []float64
+	ConsumptionDiscountRates    []float64
 }
 
-var companionPetArchetypes = map[string]companionPetArchetype{
-	"first-call":        {BuffType: "daily_bonus_rate", BuffName: "日常补给加成"},
-	"ten-calls":         {BuffType: "daily_bonus_rate", BuffName: "任务推进加成"},
-	"hundred-calls":     {BuffType: "daily_bonus_rate", BuffName: "调用回响加成"},
-	"thousand-calls":    {BuffType: "upgrade_discount_rate", BuffName: "进化折扣"},
-	"quota-scout":       {BuffType: "upgrade_discount_rate", BuffName: "轻量进化折扣"},
-	"quota-smith":       {BuffType: "upgrade_discount_rate", BuffName: "锻造折扣"},
-	"thousand-forge":    {BuffType: "upgrade_discount_rate", BuffName: "重铸折扣"},
-	"contract-power":    {BuffType: "daily_bonus_rate", BuffName: "契约补给加成"},
-	"plan-collector":    {BuffType: "daily_bonus_rate", BuffName: "套餐任务加成"},
-	"blind-box-rookie":  {BuffType: "blind_box_pity_reduction", BuffName: "盲盒保底推进"},
-	"blind-box-regular": {BuffType: "blind_box_pity_reduction", BuffName: "盲盒保底推进"},
-	"lucky-star":        {BuffType: "blind_box_pity_reduction", BuffName: "幸运保底推进"},
-	"social-crafter":    {BuffType: "checkin_bonus_quota", BuffName: "签到补给"},
-	"community-core":    {BuffType: "checkin_bonus_quota", BuffName: "社群签到补给"},
-	"seven-day-streak":  {BuffType: "checkin_bonus_quota", BuffName: "连续签到补给"},
-	"month-streak":      {BuffType: "checkin_bonus_quota", BuffName: "满月签到补给"},
+var companionBuffBlueprints = map[string]companionBuffBlueprint{
+	"first-call": {
+		BuffType:               "daily_bonus_rate",
+		BuffName:               "每日任务额度加成",
+		DailyMissionBonusRates: []float64{0, 0.05, 0.07, 0.09, 0.12, 0.15},
+	},
+	"ten-calls": {
+		BuffType:          "feed_exp_bonus_rate",
+		BuffName:          "投喂经验加成",
+		FeedExpBonusRates: []float64{0, 0.12, 0.18, 0.25, 0.33, 0.42},
+	},
+	"hundred-calls": {
+		BuffType:                  "daily_mission_exp_bonus_rate",
+		BuffName:                  "每日任务经验加成",
+		DailyMissionExpBonusRates: []float64{0, 0.10, 0.15, 0.20, 0.26, 0.32},
+	},
+	"thousand-calls": {
+		BuffType:             "upgrade_discount_rate",
+		BuffName:             "升级费用折扣",
+		UpgradeDiscountRates: []float64{0, 0.08, 0.12, 0.16, 0.21, 0.27},
+	},
+	"quota-scout": {
+		BuffType:                    "achievement_reward_bonus_rate",
+		BuffName:                    "成就奖励加成",
+		AchievementRewardBonusRates: []float64{0, 0.12, 0.18, 0.24, 0.30, 0.36},
+	},
+	"quota-smith": {
+		BuffType:         "blind_box_bonus_quota",
+		BuffName:         "盲盒返还额度",
+		BlindBoxBonusUSD: []float64{0, 0.10, 0.15, 0.20, 0.26, 0.32},
+	},
+	"thousand-forge": {
+		BuffType:                 "consumption_discount_rate",
+		BuffName:                 "永久扣费折扣",
+		ConsumptionDiscountRates: []float64{0, 0.01, 0.015, 0.025, 0.035, 0.05},
+	},
+	"contract-power": {
+		BuffType:                  "daily_bonus_rate",
+		BuffName:                  "任务双成长",
+		DailyMissionBonusRates:    []float64{0, 0.08, 0.10, 0.12, 0.15, 0.18},
+		DailyMissionExpBonusRates: []float64{0, 0.10, 0.14, 0.18, 0.22, 0.28},
+	},
+	"plan-collector": {
+		BuffType:                    "achievement_reward_bonus_rate",
+		BuffName:                    "成就成长礼包",
+		AchievementRewardBonusRates: []float64{0, 0.10, 0.16, 0.22, 0.28, 0.35},
+		UpgradeDiscountRates:        []float64{0, 0.06, 0.09, 0.12, 0.15, 0.18},
+	},
+	"blind-box-rookie": {
+		BuffType:               "blind_box_pity_reduction",
+		BuffName:               "盲盒保底推进",
+		BlindBoxPityReductions: []int{0, 1, 1, 2, 2, 3},
+	},
+	"blind-box-regular": {
+		BuffType:            "blind_box_reward_rate",
+		BuffName:            "盲盒奖励增幅",
+		BlindBoxRewardRates: []float64{0, 0.06, 0.09, 0.12, 0.16, 0.20},
+	},
+	"lucky-star": {
+		BuffType:                 "blind_box_pity_guarantee_usd",
+		BuffName:                 "保底额度抬升",
+		BlindBoxPityGuaranteeUSD: []float64{0, 1.0, 1.5, 2.0, 3.0, 5.0},
+	},
+	"social-crafter": {
+		BuffType:               "blind_box_bonus_quota",
+		BuffName:               "邀请活跃返礼",
+		BlindBoxBonusUSD:       []float64{0, 0.12, 0.18, 0.24, 0.30, 0.38},
+		BlindBoxPityReductions: []int{0, 0, 1, 1, 2, 2},
+	},
+	"community-core": {
+		BuffType:                    "feed_exp_bonus_rate",
+		BuffName:                    "社群培育加速",
+		FeedExpBonusRates:           []float64{0, 0.18, 0.26, 0.35, 0.45, 0.60},
+		AchievementRewardBonusRates: []float64{0, 0.15, 0.22, 0.30, 0.38, 0.48},
+	},
+	"seven-day-streak": {
+		BuffType:                 "consumption_discount_rate",
+		BuffName:                 "高频调用回馈",
+		DailyMissionBonusRates:   []float64{0, 0.10, 0.13, 0.16, 0.20, 0.25},
+		ConsumptionDiscountRates: []float64{0, 0.02, 0.03, 0.04, 0.05, 0.06},
+	},
+	"month-streak": {
+		BuffType:                 "consumption_discount_rate",
+		BuffName:                 "终阶主宠光环",
+		ConsumptionDiscountRates: []float64{0, 0.03, 0.05, 0.07, 0.08, 0.10},
+		BlindBoxRewardRates:      []float64{0, 0.08, 0.12, 0.16, 0.22, 0.30},
+		UpgradeDiscountRates:     []float64{0, 0.08, 0.12, 0.16, 0.20, 0.25},
+	},
 }
 
 var companionPetLevelThresholds = map[int]int64{
@@ -74,6 +169,16 @@ func clampCompanionPetLevel(level int) int {
 		return CompanionPetMaxLevel
 	}
 	return level
+}
+
+func clampCompanionRate(rate float64, max float64) float64 {
+	if rate < 0 {
+		return 0
+	}
+	if rate > max {
+		return max
+	}
+	return rate
 }
 
 func CompanionPetCurrentLevelThreshold(level int) int64 {
@@ -102,13 +207,7 @@ func CompanionPetUpgradeCostQuota(level int, discountRate float64) int64 {
 	if !ok || baseUSD <= 0 {
 		return 0
 	}
-	if discountRate < 0 {
-		discountRate = 0
-	}
-	if discountRate > 0.8 {
-		discountRate = 0.8
-	}
-	finalUSD := baseUSD * (1 - discountRate)
+	finalUSD := baseUSD * (1 - clampCompanionRate(discountRate, companionMaxDiscountRate))
 	return int64(math.Round(finalUSD * common.QuotaPerUnit))
 }
 
@@ -116,55 +215,155 @@ func CompanionPetUpgradeCostUSDValue(level int, discountRate float64) float64 {
 	return float64(CompanionPetUpgradeCostQuota(level, discountRate)) / common.QuotaPerUnit
 }
 
+func CompanionDiscountedQuota(quota int, discountRate float64) int {
+	if quota <= 0 {
+		return quota
+	}
+	finalQuota := int(math.Round(float64(quota) * (1 - clampCompanionRate(discountRate, 0.5))))
+	if finalQuota <= 0 {
+		return 1
+	}
+	return finalQuota
+}
+
+func CompanionPetFeedExperience(quota int64, bonusRate float64) int64 {
+	if quota <= 0 {
+		return 0
+	}
+	baseExp := (float64(quota) / common.QuotaPerUnit) * CompanionFeedBaseExperiencePerUSD
+	exp := baseExp * (1 + clampCompanionRate(bonusRate, 3))
+	return int64(math.Round(exp))
+}
+
+func buildDefaultCompanionBlueprint() companionBuffBlueprint {
+	return companionBuffBlueprint{
+		BuffType:               "daily_bonus_rate",
+		BuffName:               "每日任务额度加成",
+		DailyMissionBonusRates: []float64{0, 0.05, 0.07, 0.09, 0.12, 0.15},
+	}
+}
+
+func companionFloatAt(values []float64, level int) float64 {
+	if len(values) == 0 {
+		return 0
+	}
+	if level < 0 {
+		level = 0
+	}
+	if level >= len(values) {
+		return values[len(values)-1]
+	}
+	return values[level]
+}
+
+func companionIntAt(values []int, level int) int {
+	if len(values) == 0 {
+		return 0
+	}
+	if level < 0 {
+		level = 0
+	}
+	if level >= len(values) {
+		return values[len(values)-1]
+	}
+	return values[level]
+}
+
+func percentText(rate float64) string {
+	return fmt.Sprintf("%d%%", int(math.Round(rate*100)))
+}
+
+func usdTextFromQuota(quota int64) string {
+	return fmt.Sprintf("%.2f 美元", float64(quota)/common.QuotaPerUnit)
+}
+
+func buildCompanionBuffTexts(buff CompanionPetBuff) (string, string) {
+	shortParts := make([]string, 0, 3)
+	descParts := make([]string, 0, 6)
+
+	if buff.DailyMissionBonusRate > 0 {
+		shortParts = append(shortParts, "任务奖励 +"+percentText(buff.DailyMissionBonusRate))
+		descParts = append(descParts, "完成每日任务时，奖励额度增加 "+percentText(buff.DailyMissionBonusRate))
+	}
+	if buff.DailyMissionExpBonusRate > 0 {
+		shortParts = append(shortParts, "任务经验 +"+percentText(buff.DailyMissionExpBonusRate))
+		descParts = append(descParts, "完成每日任务时，当前出战宠物获得的经验增加 "+percentText(buff.DailyMissionExpBonusRate))
+	}
+	if buff.AchievementRewardBonusRate > 0 {
+		shortParts = append(shortParts, "成就奖励 +"+percentText(buff.AchievementRewardBonusRate))
+		descParts = append(descParts, "点亮新成就时，发放的额度奖励增加 "+percentText(buff.AchievementRewardBonusRate))
+	}
+	if buff.FeedExpBonusRate > 0 {
+		shortParts = append(shortParts, "投喂经验 +"+percentText(buff.FeedExpBonusRate))
+		descParts = append(descParts, "投喂同样额度时，这只宠物获得的经验增加 "+percentText(buff.FeedExpBonusRate))
+	}
+	if buff.BlindBoxBonusQuota > 0 {
+		shortParts = append(shortParts, "每盒返 "+usdTextFromQuota(buff.BlindBoxBonusQuota))
+		descParts = append(descParts, "每开 1 个盲盒，额外返还 "+usdTextFromQuota(buff.BlindBoxBonusQuota)+" 额度")
+	}
+	if buff.BlindBoxRewardRate > 0 {
+		shortParts = append(shortParts, "盲盒奖励 +"+percentText(buff.BlindBoxRewardRate))
+		descParts = append(descParts, "每次开盲盒得到的额度奖励再增加 "+percentText(buff.BlindBoxRewardRate))
+	}
+	if buff.BlindBoxPityReduction > 0 {
+		effectiveThreshold := companionBasePityThreshold - buff.BlindBoxPityReduction
+		if effectiveThreshold < 1 {
+			effectiveThreshold = 1
+		}
+		shortParts = append(shortParts, fmt.Sprintf("低奖 %d 次保底", effectiveThreshold))
+		descParts = append(descParts, fmt.Sprintf("若连续 %d 次都开到低于 5 美元的小奖，则下一次直接触发 10 美元保底", effectiveThreshold))
+	}
+	if buff.BlindBoxPityGuaranteeUSD > 0 {
+		shortParts = append(shortParts, "保底 +"+fmt.Sprintf("%.2f 美元", buff.BlindBoxPityGuaranteeUSD))
+		descParts = append(descParts, "触发盲盒保底时，保底额度再增加 "+fmt.Sprintf("%.2f 美元", buff.BlindBoxPityGuaranteeUSD))
+	}
+	if buff.UpgradeDiscountRate > 0 {
+		shortParts = append(shortParts, "升级 -"+percentText(buff.UpgradeDiscountRate))
+		descParts = append(descParts, "宠物满足升级条件后，点击升级时消耗额度减少 "+percentText(buff.UpgradeDiscountRate))
+	}
+	if buff.ConsumptionDiscountRate > 0 {
+		shortParts = append(shortParts, fmt.Sprintf("扣费 %.2f 倍", 1-buff.ConsumptionDiscountRate))
+		descParts = append(descParts, fmt.Sprintf("按量调用时，实际扣费按 %.2f 倍计算", 1-buff.ConsumptionDiscountRate))
+	}
+	if buff.CheckinBonusQuota > 0 {
+		shortParts = append(shortParts, "签到多领 "+usdTextFromQuota(buff.CheckinBonusQuota))
+		descParts = append(descParts, "签到时额外获得 "+usdTextFromQuota(buff.CheckinBonusQuota)+" 额度")
+	}
+
+	valueText := strings.Join(shortParts, " + ")
+	description := strings.Join(descParts, "；")
+	if valueText == "" {
+		valueText = "暂无额外增益"
+	}
+	if description == "" {
+		description = "装备这只宠物后，会按照当前等级生效对应增益。"
+	}
+	return valueText, description
+}
+
 func BuildCompanionPetBuff(achievementKey string, level int) CompanionPetBuff {
 	level = clampCompanionPetLevel(level)
-	archetype, ok := companionPetArchetypes[achievementKey]
+	blueprint, ok := companionBuffBlueprints[achievementKey]
 	if !ok {
-		archetype = companionPetArchetype{
-			BuffType: "daily_bonus_rate",
-			BuffName: "日常补给加成",
-		}
+		blueprint = buildDefaultCompanionBlueprint()
 	}
 
 	buff := CompanionPetBuff{
-		Type: archetype.BuffType,
-		Name: archetype.BuffName,
+		Type:                       blueprint.BuffType,
+		Name:                       blueprint.BuffName,
+		DailyMissionBonusRate:      companionFloatAt(blueprint.DailyMissionBonusRates, level),
+		DailyMissionExpBonusRate:   companionFloatAt(blueprint.DailyMissionExpBonusRates, level),
+		AchievementRewardBonusRate: companionFloatAt(blueprint.AchievementRewardBonusRates, level),
+		FeedExpBonusRate:           companionFloatAt(blueprint.FeedExpBonusRates, level),
+		CheckinBonusQuota:          int64(math.Round(companionFloatAt(blueprint.CheckinBonusUSD, level) * common.QuotaPerUnit)),
+		BlindBoxBonusQuota:         int64(math.Round(companionFloatAt(blueprint.BlindBoxBonusUSD, level) * common.QuotaPerUnit)),
+		BlindBoxRewardRate:         companionFloatAt(blueprint.BlindBoxRewardRates, level),
+		BlindBoxPityReduction:      companionIntAt(blueprint.BlindBoxPityReductions, level),
+		BlindBoxPityGuaranteeUSD:   companionFloatAt(blueprint.BlindBoxPityGuaranteeUSD, level),
+		UpgradeDiscountRate:        companionFloatAt(blueprint.UpgradeDiscountRates, level),
+		ConsumptionDiscountRate:    companionFloatAt(blueprint.ConsumptionDiscountRates, level),
 	}
-
-	switch archetype.BuffType {
-	case "daily_bonus_rate":
-		rates := []float64{0, 0.03, 0.05, 0.08, 0.12, 0.18}
-		buff.DailyMissionBonusRate = rates[level]
-		buff.ValueText = fmt.Sprintf("+%d%%", int(math.Round(buff.DailyMissionBonusRate*100)))
-		buff.Description = "完成每日任务时，额外获得同倍率的额度奖励。"
-	case "checkin_bonus_quota":
-		bonusUSD := []float64{0, 0.05, 0.10, 0.15, 0.22, 0.30}
-		quota := int64(math.Round(bonusUSD[level] * common.QuotaPerUnit))
-		buff.CheckinBonusQuota = quota
-		buff.ValueText = fmt.Sprintf("+%.2f 美元", bonusUSD[level])
-		buff.Description = "每日签到时，额外获得一份固定补给额度。"
-	case "blind_box_pity_reduction":
-		reductions := []int{0, 0, 1, 1, 2, 2}
-		buff.BlindBoxPityReduction = reductions[level]
-		if buff.BlindBoxPityReduction <= 0 {
-			buff.ValueText = "已准备"
-		} else {
-			buff.ValueText = fmt.Sprintf("保底-%d 次", buff.BlindBoxPityReduction)
-		}
-		buff.Description = "降低盲盒保底所需的连续低奖励次数。"
-	case "upgrade_discount_rate":
-		rates := []float64{0, 0.02, 0.04, 0.07, 0.10, 0.15}
-		buff.UpgradeDiscountRate = rates[level]
-		buff.ValueText = fmt.Sprintf("-%d%%", int(math.Round(buff.UpgradeDiscountRate*100)))
-		buff.Description = "手动升级宠物时，减少本次进化消耗的额度。"
-	default:
-		buff.Type = "daily_bonus_rate"
-		buff.Name = "日常补给加成"
-		buff.DailyMissionBonusRate = 0.03
-		buff.ValueText = "+3%"
-		buff.Description = "完成每日任务时，额外获得少量额度奖励。"
-	}
-
+	buff.ValueText, buff.Description = buildCompanionBuffTexts(buff)
 	return buff
 }
 

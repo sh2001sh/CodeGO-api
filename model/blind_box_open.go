@@ -131,12 +131,25 @@ func OpenBlindBoxes(userId int, count int) ([]BlindBoxOpenRecord, error) {
 			return err
 		}
 		effectivePityThreshold := setting.PityThreshold
+		blindBoxBonusQuota := int64(0)
+		blindBoxRewardRate := 0.0
+		blindBoxPityGuaranteeUSD := 0.0
 		if appliedBonus, bonusErr := GetUserCompanionAppliedBonus(userId); bonusErr == nil &&
-			appliedBonus != nil &&
-			appliedBonus.Buff.BlindBoxPityReduction > 0 {
-			effectivePityThreshold -= appliedBonus.Buff.BlindBoxPityReduction
-			if effectivePityThreshold < 1 {
-				effectivePityThreshold = 1
+			appliedBonus != nil {
+			if appliedBonus.Buff.BlindBoxPityReduction > 0 {
+				effectivePityThreshold -= appliedBonus.Buff.BlindBoxPityReduction
+				if effectivePityThreshold < 1 {
+					effectivePityThreshold = 1
+				}
+			}
+			if appliedBonus.Buff.BlindBoxBonusQuota > 0 {
+				blindBoxBonusQuota = appliedBonus.Buff.BlindBoxBonusQuota
+			}
+			if appliedBonus.Buff.BlindBoxRewardRate > 0 {
+				blindBoxRewardRate = appliedBonus.Buff.BlindBoxRewardRate
+			}
+			if appliedBonus.Buff.BlindBoxPityGuaranteeUSD > 0 {
+				blindBoxPityGuaranteeUSD = appliedBonus.Buff.BlindBoxPityGuaranteeUSD
 			}
 		}
 		subscriptionPlan, err := getBlindBoxSubscriptionPlanTx(tx)
@@ -180,22 +193,27 @@ func OpenBlindBoxes(userId int, count int) ([]BlindBoxOpenRecord, error) {
 				rewardUSD := 0.0
 				tierName := "pity"
 				if pityTriggered {
-					rewardUSD = setting.PityGuaranteeUSD
+					rewardUSD = setting.PityGuaranteeUSD + blindBoxPityGuaranteeUSD
 				} else {
 					tier := pickBlindBoxTier(setting.Tiers)
 					tierName = tier.Name
 					rewardUSD = randomTierRewardUSD(tier)
 				}
-				creditAmount := quotaUnitsFromBlindBoxUSD(rewardUSD)
+				if blindBoxRewardRate > 0 {
+					rewardUSD = math.Round(rewardUSD*(1+blindBoxRewardRate)*100) / 100
+				}
+				baseCreditAmount := quotaUnitsFromBlindBoxUSD(rewardUSD)
+				creditAmount := baseCreditAmount + blindBoxBonusQuota
 				if creditAmount <= 0 {
 					return fmt.Errorf("invalid blind box reward amount: %.2f", rewardUSD)
 				}
+				totalRewardUSD := rewardUSD + float64(blindBoxBonusQuota)/common.QuotaPerUnit
 				record.RewardType = BlindBoxRewardTypeQuota
-				record.RewardUSD = rewardUSD
+				record.RewardUSD = totalRewardUSD
 				record.CreditAmount = creditAmount
 				record.RewardTier = tierName
 				record.IsPity = pityTriggered
-				record.RewardTitle = fmt.Sprintf("%.2f USD short-term quota", rewardUSD)
+				record.RewardTitle = fmt.Sprintf("%.2f USD short-term quota", totalRewardUSD)
 				if err := tx.Create(&record).Error; err != nil {
 					return err
 				}
@@ -204,7 +222,7 @@ func OpenBlindBoxes(userId int, count int) ([]BlindBoxOpenRecord, error) {
 					OpenRecordId:    record.Id,
 					OriginalAmount:  creditAmount,
 					RemainingAmount: creditAmount,
-					RewardUSD:       rewardUSD,
+					RewardUSD:       totalRewardUSD,
 					ExpiresAt:       now + int64(setting.ExpireDays)*24*3600,
 					Status:          BlindBoxCreditStatusActive,
 				}

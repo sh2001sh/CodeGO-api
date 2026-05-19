@@ -138,6 +138,7 @@ func PreWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usag
 	}
 
 	quota := calculateAudioQuota(quotaInfo)
+	quota = applyCompanionConsumptionDiscount(relayInfo.UserId, quota)
 
 	if userQuota < quota {
 		return fmt.Errorf("user quota is not enough, user quota: %s, need quota: %s", logger.FormatQuota(userQuota), logger.FormatQuota(quota))
@@ -204,6 +205,7 @@ func PostWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, mod
 	if tieredOk {
 		quota = tieredQuota
 	}
+	quota = applyCompanionConsumptionDiscount(relayInfo.UserId, quota)
 
 	totalTokens := usage.TotalTokens
 	var logContent string
@@ -325,6 +327,7 @@ func PostAudioConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, u
 	if tieredOk {
 		quota = tieredQuota
 	}
+	quota = applyCompanionConsumptionDiscount(relayInfo.UserId, quota)
 
 	totalTokens := usage.TotalTokens
 	var logContent string

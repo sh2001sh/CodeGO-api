@@ -1,6 +1,8 @@
-import { Lock, Sparkles } from 'lucide-react'
+import { useState } from 'react'
+import { Coins, Lock, Sparkles } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
 import { Progress } from '@/components/ui/progress'
 import {
   Tooltip,
@@ -16,8 +18,10 @@ import { PixelPetSprite, getPetProfile } from '../pet-catalog'
 interface AchievementGridProps {
   achievements: AchievementItem[]
   onEquip: (achievementKey: string) => void
+  onFeed: (achievementKey: string, feedUSD: number) => void
   onUpgrade: (achievementKey: string) => void
   equippingKey?: string | null
+  feedingKey?: string | null
   upgradingKey?: string | null
 }
 
@@ -53,7 +57,22 @@ function formatReward(item: AchievementItem) {
   return '点亮后自动发放'
 }
 
+function getTierLabel(tier: string) {
+  switch (tier) {
+    case 'legendary':
+      return '传说'
+    case 'epic':
+      return '史诗'
+    case 'rare':
+      return '稀有'
+    default:
+      return '普通'
+  }
+}
+
 export function AchievementGrid(props: AchievementGridProps) {
+  const [feedAmounts, setFeedAmounts] = useState<Record<string, string>>({})
+
   return (
     <TooltipProvider delay={100}>
       <div className='rounded-2xl border bg-card shadow-xs'>
@@ -66,7 +85,7 @@ export function AchievementGrid(props: AchievementGridProps) {
             <Badge variant='outline'>{props.achievements.length} 只宠物</Badge>
           </div>
           <div className='mt-1 text-sm text-muted-foreground'>
-            已解锁的宠物可以装备、升级并提供增益；未解锁的宠物会明确显示解锁方式。
+            每张卡都会直接展示解锁方式、Lv.1 效果、Lv.5 效果和当前养成进度。难度越高的宠物，增益越直接。
           </div>
         </div>
 
@@ -75,6 +94,7 @@ export function AchievementGrid(props: AchievementGridProps) {
             const profile = getPetProfile(achievement.key)
             const pet = achievement.pet
             const progressValue = getPetProgress(achievement)
+            const feedValue = feedAmounts[achievement.key] ?? '1'
 
             return (
               <Tooltip key={achievement.key}>
@@ -101,12 +121,11 @@ export function AchievementGrid(props: AchievementGridProps) {
                     </div>
 
                     <div className='flex flex-col items-end gap-2'>
-                      <Badge
-                        variant={achievement.unlocked ? 'secondary' : 'outline'}
-                      >
+                      <Badge variant={achievement.unlocked ? 'secondary' : 'outline'}>
                         {achievement.unlocked ? '已解锁' : '未解锁'}
                       </Badge>
-                      {pet?.equipped ? <Badge>出战中</Badge> : null}
+                      <Badge variant='outline'>{getTierLabel(achievement.tier)}</Badge>
+                      {pet?.equipped ? <Badge>当前出战</Badge> : null}
                     </div>
                   </div>
 
@@ -152,8 +171,29 @@ export function AchievementGrid(props: AchievementGridProps) {
                             </span>
                           </div>
                           <Progress value={progressValue} />
-                          <div className='mt-2 text-muted-foreground'>
-                            增益：{pet.buff.name} {pet.buff.value_text}
+                          <div className='mt-2 font-medium text-foreground'>
+                            当前效果：{pet.buff.name}，{pet.buff.value_text}
+                          </div>
+                          <div className='mt-1 text-muted-foreground'>
+                            {pet.buff.description}
+                          </div>
+                        </div>
+
+                        <div className='rounded-xl border bg-background/80 p-2.5'>
+                          <div className='font-medium text-foreground'>
+                            满级效果：{achievement.max_buff.name}，{achievement.max_buff.value_text}
+                          </div>
+                          <div className='mt-1 text-muted-foreground'>
+                            {achievement.max_buff.description}
+                          </div>
+                        </div>
+
+                        <div className='rounded-xl border bg-background/80 p-2.5'>
+                          <div className='font-medium text-foreground'>
+                            投喂规则
+                          </div>
+                          <div className='mt-1 text-muted-foreground'>
+                            输入美元额度后立即投喂，系统会按套餐/余额顺序扣费；1 美元额度当前约等于 {pet.feed_exp_per_usd} EXP。
                           </div>
                         </div>
 
@@ -175,6 +215,44 @@ export function AchievementGrid(props: AchievementGridProps) {
                                 : '装备这只宠物'}
                           </Button>
 
+                          {!pet.is_max_level ? (
+                            <div className='flex items-center gap-2'>
+                              <div className='flex min-w-0 flex-1 items-center gap-2 rounded-xl border bg-background/80 px-3 py-2'>
+                                <Coins className='size-4 shrink-0 text-primary' />
+                                <Input
+                                  type='number'
+                                  min='0.1'
+                                  step='0.1'
+                                  value={feedValue}
+                                  onChange={(event) =>
+                                    setFeedAmounts((current) => ({
+                                      ...current,
+                                      [achievement.key]: event.target.value,
+                                    }))
+                                  }
+                                  className='h-8 border-0 bg-transparent px-0 shadow-none focus-visible:ring-0'
+                                />
+                                <span className='shrink-0 text-xs text-muted-foreground'>
+                                  美元
+                                </span>
+                              </div>
+                              <Button
+                                size='sm'
+                                variant='outline'
+                                onClick={(event) => {
+                                  event.preventDefault()
+                                  event.stopPropagation()
+                                  const amount = Number(feedValue)
+                                  if (!Number.isFinite(amount) || amount <= 0) return
+                                  props.onFeed(achievement.key, amount)
+                                }}
+                                disabled={props.feedingKey === achievement.key}
+                              >
+                                {props.feedingKey === achievement.key ? '投喂中...' : '投喂'}
+                              </Button>
+                            </div>
+                          ) : null}
+
                           <Button
                             size='sm'
                             onClick={(event) => {
@@ -193,16 +271,36 @@ export function AchievementGrid(props: AchievementGridProps) {
                               : pet.is_max_level
                                 ? '已满级'
                                 : pet.can_upgrade
-                                  ? `升级消耗 ${pet.upgrade_cost_usd.toFixed(2)} 美元`
+                                  ? `点击升级 - ${pet.upgrade_cost_usd.toFixed(2)} 美元`
                                   : '经验不足'}
                           </Button>
                         </div>
                       </>
                     ) : (
-                      <div className='flex items-center gap-1 text-muted-foreground'>
-                        <Lock className='size-3.5' />
-                        解锁后才可装备与升级
-                      </div>
+                      <>
+                        <div className='rounded-xl border bg-background/80 p-2.5'>
+                          <div className='font-medium text-foreground'>
+                            解锁后 Lv.1：{achievement.preview_buff.name}，{achievement.preview_buff.value_text}
+                          </div>
+                          <div className='mt-1 text-muted-foreground'>
+                            {achievement.preview_buff.description}
+                          </div>
+                        </div>
+
+                        <div className='rounded-xl border bg-background/80 p-2.5'>
+                          <div className='font-medium text-foreground'>
+                            满级 Lv.5：{achievement.max_buff.name}，{achievement.max_buff.value_text}
+                          </div>
+                          <div className='mt-1 text-muted-foreground'>
+                            {achievement.max_buff.description}
+                          </div>
+                        </div>
+
+                        <div className='flex items-center gap-1 text-muted-foreground'>
+                          <Lock className='size-3.5' />
+                          解锁后才可以装备、投喂、升级并激活这条增益。
+                        </div>
+                      </>
                     )}
 
                     {achievement.unlocked && achievement.reward_claimed_at ? (
@@ -223,4 +321,3 @@ export function AchievementGrid(props: AchievementGridProps) {
     </TooltipProvider>
   )
 }
-
