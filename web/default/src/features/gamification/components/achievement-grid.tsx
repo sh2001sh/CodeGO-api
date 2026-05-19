@@ -51,7 +51,6 @@ function getPetProgress(item: AchievementItem) {
 }
 
 function formatReward(item: AchievementItem) {
-  if (item.reward_title) return item.reward_title
   if ((item.reward_usd || 0) > 0) return `${item.reward_usd?.toFixed(2)} 美元额度`
   if ((item.reward_quota || 0) > 0) return formatQuota(item.reward_quota || 0)
   return '点亮后自动发放'
