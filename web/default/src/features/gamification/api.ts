@@ -1,0 +1,35 @@
+import { api } from '@/lib/api'
+import type {
+  AchievementItem,
+  GamificationDashboard,
+  HallOfFameResponse,
+} from './types'
+
+export async function getGamificationDashboard() {
+  const res = await api.get<{ success: boolean; data: GamificationDashboard }>(
+    '/api/user/gamification/dashboard'
+  )
+  return res.data
+}
+
+export async function getGamificationAchievements() {
+  const res = await api.get<{ success: boolean; data: AchievementItem[] }>(
+    '/api/user/gamification/achievements'
+  )
+  return res.data
+}
+
+export async function getGamificationHallOfFame() {
+  const res = await api.get<{ success: boolean; data: HallOfFameResponse }>(
+    '/api/user/gamification/hall-of-fame'
+  )
+  return res.data
+}
+
+export async function reportGamificationShareLink() {
+  const res = await api.post<{
+    success: boolean
+    data: { claimed: boolean; reward_usd: number }
+  }>('/api/user/gamification/share-link')
+  return res.data
+}

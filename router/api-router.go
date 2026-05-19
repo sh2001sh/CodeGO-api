@@ -120,6 +120,14 @@ func SetApiRouter(router *gin.Engine) {
 				selfRoute.GET("/checkin", controller.GetCheckinStatus)
 				selfRoute.POST("/checkin", middleware.TurnstileCheck(), controller.DoCheckin)
 
+				gamificationRoute := selfRoute.Group("/gamification")
+				{
+					gamificationRoute.GET("/dashboard", controller.GetGamificationDashboard)
+					gamificationRoute.GET("/achievements", controller.GetGamificationAchievements)
+					gamificationRoute.GET("/hall-of-fame", controller.GetGamificationHallOfFame)
+					gamificationRoute.POST("/share-link", controller.ClaimGamificationShareLink)
+				}
+
 				// Custom OAuth bindings
 				selfRoute.GET("/oauth/bindings", controller.GetUserOAuthBindings)
 				selfRoute.DELETE("/oauth/bindings/:provider_id", controller.UnbindCustomOAuth)

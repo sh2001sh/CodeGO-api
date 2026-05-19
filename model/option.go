@@ -207,20 +207,22 @@ func loadOptionsFromDatabase() {
 
 func syncDefaultBrandingOptions() {
 	legacySystemNames := map[string]struct{}{
-		"":        {},
-		"New API": {},
-		"NewAPI":  {},
+		"":            {},
+		"New API":     {},
+		"NewAPI":      {},
+		"codexforall": {},
 	}
 	legacyLogos := map[string]struct{}{
-		"":          {},
-		"/logo.png": {},
+		"":                      {},
+		"/logo.png":             {},
+		"/codexforall-logo.svg": {},
 	}
 
 	if _, ok := legacySystemNames[strings.TrimSpace(common.SystemName)]; ok {
-		_ = UpdateOption("SystemName", "codexforall")
+		_ = UpdateOption("SystemName", "精灵工坊")
 	}
 	if _, ok := legacyLogos[strings.TrimSpace(common.Logo)]; ok {
-		_ = UpdateOption("Logo", "/codexforall-logo.svg")
+		_ = UpdateOption("Logo", "/spirit-workshop-logo.svg")
 	}
 }
 

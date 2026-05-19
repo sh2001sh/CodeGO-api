@@ -16,14 +16,17 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
+import { useEffect } from 'react'
 import { useNotifications } from '@/hooks/use-notifications'
 import { useTopNavLinks } from '@/hooks/use-top-nav-links'
+import { useAuthStore } from '@/stores/auth-store'
 import { ConfigDrawer } from '@/components/config-drawer'
 import { LanguageSwitcher } from '@/components/language-switcher'
 import { NotificationButton } from '@/components/notification-button'
 import { NotificationDialog } from '@/components/notification-dialog'
 import { ProfileDropdown } from '@/components/profile-dropdown'
 import { Search } from '@/components/search'
+import { toast } from 'sonner'
 import { defaultTopNavLinks } from '../config/top-nav.config'
 import { type TopNavLink } from '../types'
 import { Header } from './header'
@@ -106,9 +109,20 @@ export function AppHeader({
   // Prioritize dynamically generated links from backend
   const dynamicLinks = useTopNavLinks()
   const links = dynamicLinks.length > 0 ? dynamicLinks : navLinks
+  const userId = useAuthStore((state) => state.auth.user?.id)
 
   // Notifications hook
   const notifications = useNotifications()
+
+  useEffect(() => {
+    if (!userId) return
+    const now = new Date()
+    const token = `${now.getFullYear()}-${`${now.getMonth() + 1}`.padStart(2, '0')}-${`${now.getDate()}`.padStart(2, '0')}`
+    const key = `workshop:welcome:${userId}:${token}`
+    if (window.localStorage.getItem(key) === '1') return
+    window.localStorage.setItem(key, '1')
+    toast.success('早安工匠，今天也是充满活力的一天')
+  }, [userId])
 
   return (
     <>

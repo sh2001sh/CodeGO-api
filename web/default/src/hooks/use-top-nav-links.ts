@@ -87,5 +87,10 @@ export function useTopNavLinks(): TopNavLink[] {
     links.push({ title: t('About'), href: '/about' })
   }
 
+  if (isAuthed) {
+    links.push({ title: '精灵图鉴', href: '/dashboard/achievements' })
+    links.push({ title: '工坊荣誉榜', href: '/dashboard/hall-of-fame' })
+  }
+
   return links
 }

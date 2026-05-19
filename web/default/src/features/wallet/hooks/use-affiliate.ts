@@ -17,10 +17,12 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useState, useEffect, useCallback } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import i18next from 'i18next'
 import { toast } from 'sonner'
 import { getSelf } from '@/lib/api'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
+import { reportGamificationShareLink } from '@/features/gamification/api'
 import { getAffiliateCode, transferAffiliateQuota } from '../api'
 import { generateAffiliateLink } from '../lib'
 
@@ -29,6 +31,7 @@ import { generateAffiliateLink } from '../lib'
 // ============================================================================
 
 export function useAffiliate() {
+  const queryClient = useQueryClient()
   const [affiliateCode, setAffiliateCode] = useState<string>('')
   const [affiliateLink, setAffiliateLink] = useState<string>('')
   const [loading, setLoading] = useState(true)
@@ -55,9 +58,21 @@ export function useAffiliate() {
   }, [])
 
   // Copy affiliate link
-  const copyAffiliateLink = useCallback(() => {
-    copyToClipboard(affiliateLink)
-  }, [affiliateLink, copyToClipboard])
+  const copyAffiliateLink = useCallback(async () => {
+    const copied = await copyToClipboard(affiliateLink)
+    if (!copied) return
+    try {
+      const response = await reportGamificationShareLink()
+      if (response.success && response.data?.claimed) {
+        toast.success('分享任务已完成，工坊补给已到账')
+        await queryClient.invalidateQueries({
+          queryKey: ['gamification', 'dashboard'],
+        })
+      }
+    } catch {
+      // 分享本身已经完成，这里不额外打断用户
+    }
+  }, [affiliateLink, copyToClipboard, queryClient])
 
   // Transfer affiliate quota to balance
   const transferQuota = useCallback(async (quota: number): Promise<boolean> => {

@@ -370,7 +370,7 @@ export function Wallet(props: WalletProps) {
                       value='blind-box'
                       className='rounded-xl text-sm font-medium'
                     >
-                      Blind Box
+                      盲盒
                     </TabsTrigger>
                     <TabsTrigger
                       value='topup'

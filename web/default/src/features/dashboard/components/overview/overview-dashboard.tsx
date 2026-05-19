@@ -50,6 +50,7 @@ import {
   CardStaggerContainer,
   CardStaggerItem,
 } from '@/components/page-transition'
+import { WorkshopOverviewPanel } from '@/features/gamification'
 import { fetchTokenKey, getApiKeys } from '@/features/keys/api'
 import type { ApiKey } from '@/features/keys/types'
 import { useApiInfo } from '../../hooks/use-status-data'
@@ -715,6 +716,12 @@ export function OverviewDashboard() {
       )}
 
       <SummaryCards />
+
+      <CardStaggerContainer>
+        <CardStaggerItem>
+          <WorkshopOverviewPanel />
+        </CardStaggerItem>
+      </CardStaggerContainer>
 
       <CardStaggerContainer>
         <CardStaggerItem>

@@ -27,6 +27,11 @@ import {
   processStreamingContent,
   finalizeMessage,
 } from '../lib'
+import {
+  maybeShowNightWorkshopToast,
+  recordWorkshopCallFailure,
+  recordWorkshopCallSuccess,
+} from '../lib/workshop-feedback'
 import type { Message, PlaygroundConfig, ParameterEnabled } from '../types'
 import { useStreamRequest } from './use-stream-request'
 
@@ -79,6 +84,7 @@ export function useChatHandler({
 
   // Handle stream complete
   const handleStreamComplete = useCallback(() => {
+    recordWorkshopCallSuccess()
     onMessageUpdate((prev) =>
       updateLastAssistantMessage(prev, (message) =>
         message.status === MESSAGE_STATUS.COMPLETE ||
@@ -92,6 +98,7 @@ export function useChatHandler({
   // Handle stream error
   const handleStreamError = useCallback(
     (error: string, errorCode?: string) => {
+      recordWorkshopCallFailure()
       toast.error(error)
       onMessageUpdate((prev) =>
         updateAssistantMessageWithError(prev, error, errorCode)
@@ -138,6 +145,7 @@ export function useChatHandler({
         const response = await sendChatCompletion(payload)
         const choice = response.choices?.[0]
         if (!choice) return
+        recordWorkshopCallSuccess()
 
         onMessageUpdate((prev) =>
           updateLastAssistantMessage(prev, (message) => ({
@@ -177,6 +185,7 @@ export function useChatHandler({
   // Send chat request (stream or non-stream based on config)
   const sendChat = useCallback(
     (messages: Message[]) => {
+      maybeShowNightWorkshopToast()
       if (config.stream) {
         sendStreamingChat(messages)
       } else {

@@ -42,6 +42,18 @@ const DASHBOARD_SECTIONS = [
     adminOnly: true,
     build: () => null,
   },
+  {
+    id: 'achievements',
+    titleKey: '精灵图鉴',
+    descriptionKey: '查看你的成就、伙伴与今日工坊任务',
+    build: () => null,
+  },
+  {
+    id: 'hall-of-fame',
+    titleKey: '工坊荣誉榜',
+    descriptionKey: '查看本周消耗、邀请与成就收藏排行',
+    build: () => null,
+  },
 ] as const
 
 export type DashboardSectionId = (typeof DASHBOARD_SECTIONS)[number]['id']

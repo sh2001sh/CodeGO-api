@@ -17,12 +17,12 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import {
-  LayoutDashboard,
   Activity,
-  Key,
+  Award,
+  BookMarked,
+  BadgeCheck,
   FileText,
-  Wallet,
-  Gift,
+  Gem,
   Box,
   Users,
   Ticket,
@@ -31,9 +31,12 @@ import {
   Radio,
   FlaskConical,
   MessageSquare,
-  CreditCard,
   ListTodo,
   Settings,
+  Footprints,
+  Egg,
+  ScrollText,
+  Share2,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { WORKSPACE_IDS } from '@/components/layout/lib/workspace-registry'
@@ -80,12 +83,22 @@ export function useSidebarData(): SidebarData {
           {
             title: t('Dashboard'),
             url: '/dashboard/models',
-            icon: LayoutDashboard,
+            icon: Footprints,
+          },
+          {
+            title: '精灵图鉴',
+            url: '/dashboard/achievements',
+            icon: BookMarked,
+          },
+          {
+            title: '工坊荣誉榜',
+            url: '/dashboard/hall-of-fame',
+            icon: Award,
           },
           {
             title: t('API Keys'),
             url: '/keys',
-            icon: Key,
+            icon: BadgeCheck,
           },
           {
             title: t('Usage Logs'),
@@ -108,12 +121,12 @@ export function useSidebarData(): SidebarData {
           {
             title: t('Wallet'),
             url: '/wallet',
-            icon: Wallet,
+            icon: Gem,
           },
           {
             title: t('Invite Rewards'),
             url: '/invite-rewards',
-            icon: Gift,
+            icon: Share2,
           },
           {
             title: t('Profile'),
@@ -149,14 +162,14 @@ export function useSidebarData(): SidebarData {
           {
             title: t('Package Management'),
             url: '/subscriptions',
-            icon: CreditCard,
+            icon: ScrollText,
           },
           {
             title: t('Blind Box Operations'),
             url: '/subscriptions#blind-box-admin',
             activeUrls: ['/subscriptions'],
             configUrls: ['/blind-box-admin'],
-            icon: Gift,
+            icon: Egg,
           },
           {
             title: t('System Settings'),

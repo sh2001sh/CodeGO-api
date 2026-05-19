@@ -26,8 +26,8 @@ import {
 const defaultSiteSettings: SiteSettings = {
   'theme.frontend': 'default',
   Notice: '',
-  SystemName: 'codexforall',
-  Logo: '/codexforall-logo.svg',
+  SystemName: '精灵工坊',
+  Logo: '/spirit-workshop-logo.svg',
   Footer: '',
   About: '',
   HomePageContent: '',

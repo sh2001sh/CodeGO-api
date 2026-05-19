@@ -33,9 +33,9 @@ function summarizeOpenResult(records: BlindBoxRecord[]): string {
     .filter((record) => record.reward_type === 'quota')
     .reduce((sum, record) => sum + (record.reward_usd || 0), 0)
   if (subscriptionHits > 0) {
-    return `Opened ${records.length} boxes, ${subscriptionHits} subscription reward(s), ${quotaHits.toFixed(2)} USD quota`
+    return `叮！本次开启 ${records.length} 个盲盒，带来了 ${subscriptionHits} 份套餐奖励和 ${quotaHits.toFixed(2)} 美元额度`
   }
-  return `Opened ${records.length} boxes, ${quotaHits.toFixed(2)} USD short-term quota`
+  return `叮！本次开启 ${records.length} 个盲盒，带来了 ${quotaHits.toFixed(2)} 美元临时额度`
 }
 
 export function BlindBoxCard(props: BlindBoxCardProps) {
@@ -319,7 +319,7 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
                         >
                           {record.reward_type === 'subscription'
                             ? t('Subscription')
-                            : `${record.reward_usd?.toFixed(2) || '0.00'} USD`}
+                            : `${record.reward_usd?.toFixed(2) || '0.00'} 美元`}
                         </Badge>
                       </div>
                     </div>
@@ -341,9 +341,9 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
                     <div
                       key={tier.name}
                       className='flex items-center justify-between gap-3'
-                    >
+                      >
                       <span className='text-muted-foreground'>
-                        {tier.min_usd} - {tier.max_usd} USD
+                        {tier.min_usd} - {tier.max_usd} 美元
                       </span>
                       <span>{(tier.probability * 100).toFixed(1)}%</span>
                     </div>
@@ -362,11 +362,11 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
               <div className='rounded-xl border border-slate-200 p-4 text-sm text-muted-foreground dark:border-slate-800'>
                 <div>{t('Short-term blind box quota expires automatically.')}</div>
                 <div className='mt-2'>
-                  {t('Consumption order')}: blind box quota {'>'} subscription {'>'}{' '}
+                  {t('Consumption order')}: 盲盒临时额度 {'>'} 订阅 {'>'}{' '}
                   {t('wallet balance')}
                 </div>
                 <div className='mt-2'>
-                  {t('Pity guarantee')}: {data?.pity_guarantee_usd || 0} USD
+                  {t('Pity guarantee')}: {data?.pity_guarantee_usd || 0} 美元
                 </div>
               </div>
             </div>
