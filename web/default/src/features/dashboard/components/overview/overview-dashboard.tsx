@@ -717,15 +717,12 @@ export function OverviewDashboard() {
 
       <SummaryCards />
 
-      <CardStaggerContainer>
-        <CardStaggerItem>
-          <WorkshopOverviewPanel />
-        </CardStaggerItem>
-      </CardStaggerContainer>
-
-      <CardStaggerContainer>
+      <CardStaggerContainer className='grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_24rem]'>
         <CardStaggerItem>
           <SubscriptionUsagePanel />
+        </CardStaggerItem>
+        <CardStaggerItem>
+          <WorkshopOverviewPanel compact />
         </CardStaggerItem>
       </CardStaggerContainer>
 

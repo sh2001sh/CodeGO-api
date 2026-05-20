@@ -207,7 +207,7 @@ export function useUsersColumns(): ColumnDef<User>[] {
         const used = user.used_quota
         const remaining = user.quota
         const total = used + remaining
-        const percentage = total > 0 ? (remaining / total) * 100 : 0
+        const remainingPercentage = total > 0 ? (remaining / total) * 100 : 0
 
         if (total === 0) {
           return (
@@ -233,8 +233,11 @@ export function useUsersColumns(): ColumnDef<User>[] {
                 </span>
               </div>
               <Progress
-                value={percentage}
-                className={cn('h-1.5', getQuotaProgressColor(percentage))}
+                value={remainingPercentage}
+                className={cn(
+                  'h-1.5',
+                  getQuotaProgressColor(remainingPercentage)
+                )}
               />
             </TooltipTrigger>
             <TooltipContent>
@@ -243,14 +246,10 @@ export function useUsersColumns(): ColumnDef<User>[] {
                   {t('Used:')} {formatQuota(used)}
                 </div>
                 <div>
-                  {t('Remaining:')} {formatQuota(remaining)}
+                  {t('Remaining:')} {formatQuota(remaining)} (
+                  {remainingPercentage.toFixed(1)}%)
                 </div>
-                <div>
-                  {t('Total:')} {formatQuota(total)}
-                </div>
-                <div>
-                  {t('Percentage:')} {percentage.toFixed(1)}%
-                </div>
+                <div>{t('Total:')} {formatQuota(total)}</div>
               </div>
             </TooltipContent>
           </Tooltip>

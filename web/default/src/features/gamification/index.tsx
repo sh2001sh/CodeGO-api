@@ -1,5 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Link } from '@tanstack/react-router'
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Progress } from '@/components/ui/progress'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   equipGamificationPet,
@@ -12,6 +17,8 @@ import { CompanionCard } from './components/companion-card'
 import { CompanionPlaybook } from './components/companion-playbook'
 import { DailyMissionsCard } from './components/daily-missions-card'
 import { HallOfFamePanels } from './components/hall-of-fame-panels'
+import { PixelPetSprite, getPetProfile } from './pet-catalog'
+import type { CompanionSummary } from './types'
 
 function WorkshopLoadingCard() {
   return <Skeleton className='h-[280px] w-full rounded-2xl' />
@@ -66,7 +73,129 @@ function useCompanionActions() {
   }
 }
 
-export function WorkshopOverviewPanel() {
+function getCompanionProgressValue(companion: CompanionSummary): number {
+  const equippedPet = companion.equipped_pet
+  if (equippedPet) {
+    if (equippedPet.is_max_level) return 100
+    return Math.min(
+      100,
+      ((equippedPet.experience - equippedPet.current_level_exp) /
+        Math.max(
+          1,
+          equippedPet.next_level_exp - equippedPet.current_level_exp
+        )) *
+        100
+    )
+  }
+
+  if (companion.progress_target <= 0) return 0
+  return Math.min(
+    100,
+    (companion.progress_current / companion.progress_target) * 100
+  )
+}
+
+function CompactCompanionOverview(props: { companion: CompanionSummary }) {
+  const { t } = useTranslation()
+  const equippedPet = props.companion.equipped_pet
+  const equippedProfile = equippedPet
+    ? getPetProfile(equippedPet.achievement_key)
+    : null
+  const progressValue = getCompanionProgressValue(props.companion)
+  const progressText = equippedPet
+    ? equippedPet.is_max_level
+      ? t('Max level')
+      : `${equippedPet.experience}/${equippedPet.next_level_exp} EXP`
+    : `${props.companion.progress_current}/${props.companion.progress_target}`
+
+  return (
+    <div className='rounded-2xl border bg-[linear-gradient(180deg,rgba(255,248,237,0.96),rgba(255,255,255,0.98))] shadow-xs dark:bg-[linear-gradient(180deg,rgba(42,26,18,0.9),rgba(17,24,39,0.96))]'>
+      <div className='flex h-full flex-col gap-4 p-4 sm:p-5'>
+        <div className='flex items-start justify-between gap-3'>
+          <div>
+            <div className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>
+              {t('Companion dex')}
+            </div>
+            <div className='mt-1 text-lg font-semibold'>
+              {equippedProfile?.species || t('No pet equipped')}
+            </div>
+            <div className='text-muted-foreground mt-1 text-sm'>
+              {equippedPet
+                ? `${props.companion.title} · Lv.${equippedPet.level}/${equippedPet.max_level}`
+                : t('Unlock and equip a pet from the dex first')}
+            </div>
+          </div>
+          <Badge variant='outline'>
+            {`${props.companion.unlocked_count}/${props.companion.total_count}`}
+          </Badge>
+        </div>
+
+        <div className='grid grid-cols-[88px_minmax(0,1fr)] gap-4'>
+          <div className='flex h-[88px] w-[88px] items-center justify-center rounded-[22px] bg-white/85 p-2 shadow-[0_10px_24px_rgba(15,23,42,0.08)] dark:bg-slate-950/50'>
+            {equippedProfile ? (
+              <PixelPetSprite
+                id={equippedProfile.id}
+                label={equippedProfile.species}
+              />
+            ) : (
+              <div className='text-muted-foreground text-center text-[11px] leading-5'>
+                {t('No pet equipped')}
+              </div>
+            )}
+          </div>
+
+          <div className='flex min-w-0 flex-col gap-3'>
+            <div className='space-y-1.5'>
+              <div className='flex items-center justify-between gap-2 text-xs'>
+                <span className='text-muted-foreground'>
+                  {equippedPet ? t('EXP progress') : t('Dex progress')}
+                </span>
+                <span className='font-medium'>{progressText}</span>
+              </div>
+              <Progress value={progressValue} />
+            </div>
+
+            <div className='grid gap-2 sm:grid-cols-2'>
+              <div className='bg-background/70 rounded-xl border px-3 py-2.5'>
+                <div className='text-muted-foreground text-[11px] font-medium'>
+                  {t('Current buff')}
+                </div>
+                <div className='mt-1 text-sm font-semibold'>
+                  {props.companion.active_buff
+                    ? `${props.companion.active_buff.name} ${props.companion.active_buff.value_text}`
+                    : t('No Active')}
+                </div>
+              </div>
+              <div className='bg-background/70 rounded-xl border px-3 py-2.5'>
+                <div className='text-muted-foreground text-[11px] font-medium'>
+                  {t('Dex progress')}
+                </div>
+                <div className='mt-1 text-sm font-semibold'>
+                  {`${props.companion.progress_current}/${props.companion.progress_target}`}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <Button
+          variant='outline'
+          className='justify-between'
+          render={
+            <Link
+              to='/dashboard/$section'
+              params={{ section: 'achievements' }}
+            />
+          }
+        >
+          <span>{t('Open Dex')}</span>
+        </Button>
+      </div>
+    </div>
+  )
+}
+
+export function WorkshopOverviewPanel(props: { compact?: boolean }) {
   const dashboardQuery = useQuery({
     queryKey: ['gamification', 'dashboard'],
     queryFn: getGamificationDashboard,
@@ -75,6 +204,9 @@ export function WorkshopOverviewPanel() {
   const { feedMutation } = useCompanionActions()
 
   if (dashboardQuery.isLoading) {
+    if (props.compact) {
+      return <Skeleton className='h-[260px] w-full rounded-2xl' />
+    }
     return (
       <div className='grid gap-4 xl:grid-cols-[minmax(0,1fr)_420px]'>
         <WorkshopLoadingCard />
@@ -85,6 +217,10 @@ export function WorkshopOverviewPanel() {
 
   const data = dashboardQuery.data?.data
   if (!data) return null
+
+  if (props.compact) {
+    return <CompactCompanionOverview companion={data.companion} />
+  }
 
   return (
     <div className='space-y-4'>

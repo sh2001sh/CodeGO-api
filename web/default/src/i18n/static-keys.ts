@@ -455,6 +455,14 @@ export const STATIC_I18N_KEYS = [
   'Collapse',
   'No models available in this category',
   'Copied: {{model}}',
+  'Companion dex',
+  'Current buff',
+  'Dex progress',
+  'EXP progress',
+  'Max level',
+  'No pet equipped',
+  'Open Dex',
+  'Unlock and equip a pet from the dex first',
 
   // Grok settings
   'Grok Settings',
