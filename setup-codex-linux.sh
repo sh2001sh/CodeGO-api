@@ -58,6 +58,18 @@ requires_openai_auth = true
 existing = config_path.read_text(encoding="utf-8") if config_path.exists() else ""
 existing = existing.lstrip("\ufeff")
 cleaned = existing
+managed_marker = "# BEGIN CODEXFORALL MANAGED PROVIDER"
+marker_index = cleaned.find(managed_marker)
+if marker_index > 0:
+    prefix = cleaned[:marker_index]
+    suffix = cleaned[marker_index:]
+    prefix_lines = [
+        line.strip()
+        for line in prefix.splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+    ]
+    if prefix_lines and all(line in suffix for line in prefix_lines):
+        cleaned = suffix.lstrip()
 patterns = [
     r"(?ms)^# BEGIN CODEXFORALL MANAGED PROVIDER.*?^# END CODEXFORALL MANAGED PROVIDER\s*",
     r"(?ms)^\[model_providers\.codexforall\]\r?\n.*?(?=^\[|\Z)",
@@ -74,7 +86,7 @@ elif cleaned:
 else:
     cleaned = model_provider_line
 
-parts = [provider_block, cleaned.strip()]
+parts = [cleaned.strip(), provider_block]
 output = "\n\n".join(part for part in parts if part.strip()) + "\n"
 config_path.write_text(output, encoding="utf-8")
 PY

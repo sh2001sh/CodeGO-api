@@ -119,7 +119,7 @@ if exist "!codexDir!" (
     )
 )
 
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$configPath = Join-Path $env:USERPROFILE '.codex\\config.toml'; $dq = [char]34; $providerBlock = @('# BEGIN CODEXFORALL MANAGED PROVIDER','[model_providers.${CODEX_PROVIDER}]',[string]::Concat('name = ', $dq, '${CODEX_PROVIDER}', $dq),[string]::Concat('base_url = ', $dq, '${apiBase}', $dq),[string]::Concat('wire_api = ', $dq, 'responses', $dq),'requires_openai_auth = true',[string]::Concat('web_search = ', $dq, 'live', $dq),'# END CODEXFORALL MANAGED PROVIDER') -join [Environment]::NewLine; $existing = ''; if (Test-Path $configPath) { $existing = Get-Content -Raw -Encoding UTF8 $configPath }; $cleaned = $existing.TrimStart([char]0xFEFF); $patterns = @('(?ms)^# BEGIN CODEXFORALL MANAGED PROVIDER.*?^# END CODEXFORALL MANAGED PROVIDER\\s*','(?ms)^\\[model_providers\\.${CODEX_PROVIDER}\\]\\r?\\n.*?(?=^\\[|\\z)'); foreach ($pattern in $patterns) { $cleaned = [regex]::Replace($cleaned, $pattern, '') }; $cleaned = $cleaned.Trim(); $modelProviderLine = [string]::Concat('model_provider = ', $dq, '${CODEX_PROVIDER}', $dq); if ([regex]::IsMatch($cleaned, '(?m)^model_provider\\s*=.*$')) { $cleaned = [regex]::Replace($cleaned, '(?m)^model_provider\\s*=.*$', [System.Text.RegularExpressions.MatchEvaluator]{ param($m) $modelProviderLine }) } elseif ($cleaned.Length -gt 0) { $cleaned = $modelProviderLine + [Environment]::NewLine + [Environment]::NewLine + $cleaned } else { $cleaned = $modelProviderLine }; $output = @($providerBlock.Trim(), $cleaned.Trim()) -join ([Environment]::NewLine + [Environment]::NewLine); $encoding = New-Object System.Text.UTF8Encoding($false); [System.IO.File]::WriteAllText($configPath, $output + [Environment]::NewLine, $encoding)"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$configPath = Join-Path $env:USERPROFILE '.codex\\config.toml'; $dq = [char]34; $providerBlock = @('# BEGIN CODEXFORALL MANAGED PROVIDER','[model_providers.${CODEX_PROVIDER}]',[string]::Concat('name = ', $dq, '${CODEX_PROVIDER}', $dq),[string]::Concat('base_url = ', $dq, '${apiBase}', $dq),[string]::Concat('wire_api = ', $dq, 'responses', $dq),'requires_openai_auth = true',[string]::Concat('web_search = ', $dq, 'live', $dq),'# END CODEXFORALL MANAGED PROVIDER') -join [Environment]::NewLine; $existing = ''; if (Test-Path $configPath) { $existing = Get-Content -Raw -Encoding UTF8 $configPath }; $cleaned = $existing.TrimStart([char]0xFEFF); $managedMarker = '# BEGIN CODEXFORALL MANAGED PROVIDER'; $markerIndex = $cleaned.IndexOf($managedMarker, [System.StringComparison]::Ordinal); if ($markerIndex -gt 0) { $prefix = $cleaned.Substring(0, $markerIndex); $suffix = $cleaned.Substring($markerIndex); $prefixLines = @($prefix -split '\\r?\\n' | Where-Object { $_.Trim() -and -not $_.TrimStart().StartsWith('#') }); if ($prefixLines.Count -gt 0) { $allRepeated = $true; foreach ($line in $prefixLines) { if ($suffix.IndexOf($line, [System.StringComparison]::Ordinal) -lt 0) { $allRepeated = $false; break } }; if ($allRepeated) { $cleaned = $suffix.TrimStart() } } }; $patterns = @('(?ms)^# BEGIN CODEXFORALL MANAGED PROVIDER.*?^# END CODEXFORALL MANAGED PROVIDER\\s*','(?ms)^\\[model_providers\\.${CODEX_PROVIDER}\\]\\r?\\n.*?(?=^\\[|\\z)'); foreach ($pattern in $patterns) { $cleaned = [regex]::Replace($cleaned, $pattern, '') }; $cleaned = $cleaned.Trim(); $modelProviderLine = [string]::Concat('model_provider = ', $dq, '${CODEX_PROVIDER}', $dq); if ([regex]::IsMatch($cleaned, '(?m)^model_provider\\s*=.*$')) { $cleaned = [regex]::Replace($cleaned, '(?m)^model_provider\\s*=.*$', [System.Text.RegularExpressions.MatchEvaluator]{ param($m) $modelProviderLine }) } elseif ($cleaned.Length -gt 0) { $cleaned = $modelProviderLine + [Environment]::NewLine + [Environment]::NewLine + $cleaned } else { $cleaned = $modelProviderLine }; $parts = @($cleaned.Trim(), $providerBlock.Trim()) | Where-Object { $_ }; $output = $parts -join ([Environment]::NewLine + [Environment]::NewLine); $encoding = New-Object System.Text.UTF8Encoding($false); [System.IO.File]::WriteAllText($configPath, $output + [Environment]::NewLine, $encoding)"
 
 if !errorlevel! neq 0 (
     goto :error_write_config
@@ -235,6 +235,18 @@ ${codexProviderBlock}
 existing = config_path.read_text(encoding="utf-8") if config_path.exists() else ""
 existing = existing.lstrip("\ufeff")
 cleaned = existing
+managed_marker = "# BEGIN CODEXFORALL MANAGED PROVIDER"
+marker_index = cleaned.find(managed_marker)
+if marker_index > 0:
+    prefix = cleaned[:marker_index]
+    suffix = cleaned[marker_index:]
+    prefix_lines = [
+        line.strip()
+        for line in prefix.splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+    ]
+    if prefix_lines and all(line in suffix for line in prefix_lines):
+        cleaned = suffix.lstrip()
 patterns = [
     r"(?ms)^# BEGIN CODEXFORALL MANAGED PROVIDER.*?^# END CODEXFORALL MANAGED PROVIDER\\s*",
     r"(?ms)^\\[model_providers\\.${CODEX_PROVIDER}\\]\\r?\\n.*?(?=^\\[|\\Z)",
@@ -251,7 +263,7 @@ elif cleaned:
 else:
     cleaned = model_provider_line
 
-parts = [provider_block, cleaned.strip()]
+parts = [cleaned.strip(), provider_block]
 output = "\\n\\n".join(part for part in parts if part.strip()) + "\\n"
 config_path.write_text(output, encoding="utf-8")
 PY
