@@ -40,19 +40,7 @@ if exist "!codexDir!" (
     )
 )
 
-(
-echo model_provider = "codexforall"
-echo model = "gpt-5.2"
-echo model_reasoning_effort = "high"
-echo disable_response_storage = false
-echo.
-echo [model_providers.codexforall]
-echo name = "codexforall"
-echo base_url = "!CODEXFORALL_SERVER_URL!/v1"
-echo wire_api = "responses"
-echo requires_openai_auth = true
-echo web_search = "live"
-) > "!codexDir!\config.toml" 2>nul
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$configPath = Join-Path $env:USERPROFILE '.codex\config.toml'; $dq = [char]34; $providerBlock = @('# BEGIN CODEXFORALL MANAGED PROVIDER','[model_providers.codexforall]',[string]::Concat('name = ', $dq, 'codexforall', $dq),[string]::Concat('base_url = ', $dq, '!CODEXFORALL_SERVER_URL!/v1', $dq),[string]::Concat('wire_api = ', $dq, 'responses', $dq),'requires_openai_auth = true',[string]::Concat('web_search = ', $dq, 'live', $dq),'# END CODEXFORALL MANAGED PROVIDER') -join [Environment]::NewLine; $existing = ''; if (Test-Path $configPath) { $existing = Get-Content -Raw -Encoding UTF8 $configPath }; $cleaned = $existing.TrimStart([char]0xFEFF); $patterns = @('(?ms)^# BEGIN CODEXFORALL MANAGED PROVIDER.*?^# END CODEXFORALL MANAGED PROVIDER\s*','(?ms)^\[model_providers\.codexforall\]\r?\n.*?(?=^\[|\z)'); foreach ($pattern in $patterns) { $cleaned = [regex]::Replace($cleaned, $pattern, '') }; $cleaned = $cleaned.Trim(); $modelProviderLine = [string]::Concat('model_provider = ', $dq, 'codexforall', $dq); if ([regex]::IsMatch($cleaned, '(?m)^model_provider\s*=.*$')) { $cleaned = [regex]::Replace($cleaned, '(?m)^model_provider\s*=.*$', [System.Text.RegularExpressions.MatchEvaluator]{ param($m) $modelProviderLine }) } elseif ($cleaned.Length -gt 0) { $cleaned = $modelProviderLine + [Environment]::NewLine + [Environment]::NewLine + $cleaned } else { $cleaned = $modelProviderLine }; $output = @($providerBlock.Trim(), $cleaned.Trim()) -join ([Environment]::NewLine + [Environment]::NewLine); $encoding = New-Object System.Text.UTF8Encoding($false); [System.IO.File]::WriteAllText($configPath, $output + [Environment]::NewLine, $encoding)"
 
 if !errorlevel! neq 0 (
     goto :error_write_config

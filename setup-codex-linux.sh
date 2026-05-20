@@ -11,7 +11,6 @@ TARGET_FILE="${TARGET_DIR}/codex-env.sh"
 CODEX_DIR="${HOME}/.codex"
 CODEX_CONFIG_FILE="${CODEX_DIR}/config.toml"
 CODEX_AUTH_FILE="${CODEX_DIR}/auth.json"
-TMP_CONFIG_FILE="${CODEX_DIR}/config.toml.tmp"
 PROFILE_FILE="${HOME}/.bashrc"
 SOURCE_LINE='[ -f "$HOME/.config/codexforall/codex-env.sh" ] && source "$HOME/.config/codexforall/codex-env.sh"'
 
@@ -22,6 +21,16 @@ fi
 mkdir -p "${TARGET_DIR}"
 mkdir -p "${CODEX_DIR}"
 
+PYTHON_BIN="python3"
+if ! command -v "${PYTHON_BIN}" >/dev/null 2>&1; then
+  PYTHON_BIN="python"
+fi
+
+if ! command -v "${PYTHON_BIN}" >/dev/null 2>&1; then
+  printf 'python3/python is required to update %s\n' "${CODEX_CONFIG_FILE}" >&2
+  exit 1
+fi
+
 cat > "${TARGET_FILE}" <<EOF
 export OPENAI_BASE_URL="${API_BASE}"
 export OPENAI_API_BASE="${API_BASE}"
@@ -29,56 +38,46 @@ export OPENAI_API_KEY="${API_KEY}"
 export OPENAI_MODEL="${MODEL}"
 EOF
 
-if [[ -f "${CODEX_CONFIG_FILE}" ]]; then
-  awk '
-    BEGIN { in_managed = 0; in_provider = 0 }
-    /^# BEGIN CODEXFORALL MANAGED/ { in_managed = 1; next }
-    in_managed && /^# END CODEXFORALL MANAGED/ { in_managed = 0; next }
-    in_managed { next }
-    $0 ~ /^model[[:space:]]*=/ { next }
-    $0 ~ /^model_provider[[:space:]]*=/ { next }
-    $0 ~ /^\[model_providers\.codexforall\]$/ { in_provider = 1; next }
-    in_provider {
-      if ($0 ~ /^\[/) {
-        in_provider = 0
-        print $0
-      }
-      next
-    }
-    { print }
-  ' "${CODEX_CONFIG_FILE}" > "${TMP_CONFIG_FILE}"
-else
-  : > "${TMP_CONFIG_FILE}"
-fi
+"${PYTHON_BIN}" - "${CODEX_CONFIG_FILE}" <<'PY'
+from pathlib import Path
+import re
+import sys
 
-mv "${TMP_CONFIG_FILE}" "${CODEX_CONFIG_FILE}"
-cleaned_content="$(cat "${CODEX_CONFIG_FILE}")"
-
-cat > "${TMP_CONFIG_FILE}" <<'EOF'
-# BEGIN CODEXFORALL MANAGED ROOT
-model = "gpt-5.2"
-model_provider = "codexforall"
-# END CODEXFORALL MANAGED ROOT
-EOF
-
-if [[ -n "${cleaned_content}" ]]; then
-  printf '\n%s\n' "${cleaned_content}" >> "${TMP_CONFIG_FILE}"
-fi
-
-printf '\n' >> "${TMP_CONFIG_FILE}"
-
-cat >> "${TMP_CONFIG_FILE}" <<'EOF'
+config_path = Path(sys.argv[1])
+provider_name = "codexforall"
+provider_block = """
 # BEGIN CODEXFORALL MANAGED PROVIDER
-
 [model_providers.codexforall]
 name = "codexforall"
 base_url = "https://your-codexforall.example.com/v1"
 wire_api = "responses"
 requires_openai_auth = true
 # END CODEXFORALL MANAGED PROVIDER
-EOF
+""".strip()
 
-mv "${TMP_CONFIG_FILE}" "${CODEX_CONFIG_FILE}"
+existing = config_path.read_text(encoding="utf-8") if config_path.exists() else ""
+existing = existing.lstrip("\ufeff")
+cleaned = existing
+patterns = [
+    r"(?ms)^# BEGIN CODEXFORALL MANAGED PROVIDER.*?^# END CODEXFORALL MANAGED PROVIDER\s*",
+    r"(?ms)^\[model_providers\.codexforall\]\r?\n.*?(?=^\[|\Z)",
+]
+for pattern in patterns:
+    cleaned = re.sub(pattern, "", cleaned)
+
+cleaned = cleaned.strip()
+model_provider_line = f'model_provider = "{provider_name}"'
+if re.search(r"(?m)^model_provider\s*=.*$", cleaned):
+    cleaned = re.sub(r"(?m)^model_provider\s*=.*$", model_provider_line, cleaned)
+elif cleaned:
+    cleaned = model_provider_line + "\n\n" + cleaned
+else:
+    cleaned = model_provider_line
+
+parts = [provider_block, cleaned.strip()]
+output = "\n\n".join(part for part in parts if part.strip()) + "\n"
+config_path.write_text(output, encoding="utf-8")
+PY
 
 chmod 600 "${TARGET_FILE}"
 chmod 600 "${CODEX_CONFIG_FILE}"

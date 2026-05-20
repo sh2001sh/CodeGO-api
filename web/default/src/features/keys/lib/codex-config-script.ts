@@ -61,13 +61,6 @@ function sanitizeLabel(value?: string): string {
   return normalized || 'template'
 }
 
-function buildCodexRootBlock(model: string): string {
-  return `# BEGIN CODEXFORALL MANAGED ROOT
-model = "${model}"
-model_provider = "${CODEX_PROVIDER}"
-# END CODEXFORALL MANAGED ROOT`
-}
-
 function buildCodexProviderBlock(serverAddress: string): string {
   return `# BEGIN CODEXFORALL MANAGED PROVIDER
 [model_providers.${CODEX_PROVIDER}]
@@ -126,19 +119,7 @@ if exist "!codexDir!" (
     )
 )
 
-(
-echo model_provider = "${CODEX_PROVIDER}"
-echo model = "${model}"
-echo model_reasoning_effort = "high"
-echo disable_response_storage = false
-echo.
-echo [model_providers.${CODEX_PROVIDER}]
-echo name = "${CODEX_PROVIDER}"
-echo base_url = "${apiBase}"
-echo wire_api = "responses"
-echo requires_openai_auth = true
-echo web_search = "live"
-) > "!codexDir!\\config.toml" 2>nul
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$configPath = Join-Path $env:USERPROFILE '.codex\\config.toml'; $dq = [char]34; $providerBlock = @('# BEGIN CODEXFORALL MANAGED PROVIDER','[model_providers.${CODEX_PROVIDER}]',[string]::Concat('name = ', $dq, '${CODEX_PROVIDER}', $dq),[string]::Concat('base_url = ', $dq, '${apiBase}', $dq),[string]::Concat('wire_api = ', $dq, 'responses', $dq),'requires_openai_auth = true',[string]::Concat('web_search = ', $dq, 'live', $dq),'# END CODEXFORALL MANAGED PROVIDER') -join [Environment]::NewLine; $existing = ''; if (Test-Path $configPath) { $existing = Get-Content -Raw -Encoding UTF8 $configPath }; $cleaned = $existing.TrimStart([char]0xFEFF); $patterns = @('(?ms)^# BEGIN CODEXFORALL MANAGED PROVIDER.*?^# END CODEXFORALL MANAGED PROVIDER\\s*','(?ms)^\\[model_providers\\.${CODEX_PROVIDER}\\]\\r?\\n.*?(?=^\\[|\\z)'); foreach ($pattern in $patterns) { $cleaned = [regex]::Replace($cleaned, $pattern, '') }; $cleaned = $cleaned.Trim(); $modelProviderLine = [string]::Concat('model_provider = ', $dq, '${CODEX_PROVIDER}', $dq); if ([regex]::IsMatch($cleaned, '(?m)^model_provider\\s*=.*$')) { $cleaned = [regex]::Replace($cleaned, '(?m)^model_provider\\s*=.*$', [System.Text.RegularExpressions.MatchEvaluator]{ param($m) $modelProviderLine }) } elseif ($cleaned.Length -gt 0) { $cleaned = $modelProviderLine + [Environment]::NewLine + [Environment]::NewLine + $cleaned } else { $cleaned = $modelProviderLine }; $output = @($providerBlock.Trim(), $cleaned.Trim()) -join ([Environment]::NewLine + [Environment]::NewLine); $encoding = New-Object System.Text.UTF8Encoding($false); [System.IO.File]::WriteAllText($configPath, $output + [Environment]::NewLine, $encoding)"
 
 if !errorlevel! neq 0 (
     goto :error_write_config
@@ -194,8 +175,11 @@ exit /b 1
 `
 }
 
-function buildLinuxScript(serverAddress: string, apiKey: string, model: string) {
-  const codexRootBlock = buildCodexRootBlock(model)
+function buildLinuxScript(
+  serverAddress: string,
+  apiKey: string,
+  model: string
+) {
   const codexProviderBlock = buildCodexProviderBlock(serverAddress)
   return `#!/usr/bin/env bash
 set -euo pipefail
@@ -210,7 +194,6 @@ TARGET_FILE="\${TARGET_DIR}/codex-env.sh"
 CODEX_DIR="\${HOME}/.codex"
 CODEX_CONFIG_FILE="\${CODEX_DIR}/config.toml"
 CODEX_AUTH_FILE="\${CODEX_DIR}/auth.json"
-TMP_CONFIG_FILE="\${CODEX_DIR}/config.toml.tmp"
 PROFILE_FILE="\${HOME}/.bashrc"
 SOURCE_LINE='[ -f "$HOME/.config/codexforall/codex-env.sh" ] && source "$HOME/.config/codexforall/codex-env.sh"'
 
@@ -221,6 +204,16 @@ fi
 mkdir -p "\${TARGET_DIR}"
 mkdir -p "\${CODEX_DIR}"
 
+PYTHON_BIN="python3"
+if ! command -v "\${PYTHON_BIN}" >/dev/null 2>&1; then
+  PYTHON_BIN="python"
+fi
+
+if ! command -v "\${PYTHON_BIN}" >/dev/null 2>&1; then
+  printf 'python3/python is required to update %s\\n' "\${CODEX_CONFIG_FILE}" >&2
+  exit 1
+fi
+
 cat > "\${TARGET_FILE}" <<EOF
 export OPENAI_BASE_URL="\${API_BASE}"
 export OPENAI_API_BASE="\${API_BASE}"
@@ -228,46 +221,40 @@ export OPENAI_API_KEY="\${API_KEY}"
 export OPENAI_MODEL="\${MODEL}"
 EOF
 
-if [[ -f "\${CODEX_CONFIG_FILE}" ]]; then
-  awk '
-    BEGIN { in_managed = 0; in_provider = 0 }
-    /^# BEGIN CODEXFORALL MANAGED/ { in_managed = 1; next }
-    in_managed && /^# END CODEXFORALL MANAGED/ { in_managed = 0; next }
-    in_managed { next }
-    /^model[[:space:]]*=/ { next }
-    /^model_provider[[:space:]]*=/ { next }
-    /^\\[model_providers\\.${CODEX_PROVIDER}\\]$/ { in_provider = 1; next }
-    in_provider {
-      if (/^\\[/) {
-        in_provider = 0
-        print \$0
-      }
-      next
-    }
-    { print }
-  ' "\${CODEX_CONFIG_FILE}" > "\${TMP_CONFIG_FILE}"
-else
-  : > "\${TMP_CONFIG_FILE}"
-fi
+"\${PYTHON_BIN}" - "\${CODEX_CONFIG_FILE}" <<'PY'
+from pathlib import Path
+import re
+import sys
 
-mv "\${TMP_CONFIG_FILE}" "\${CODEX_CONFIG_FILE}"
-cleaned_content="$(cat "\${CODEX_CONFIG_FILE}")"
-
-cat > "\${TMP_CONFIG_FILE}" <<'EOF'
-${codexRootBlock}
-EOF
-
-if [[ -n "\${cleaned_content}" ]]; then
-  printf '\\n%s\\n' "\${cleaned_content}" >> "\${TMP_CONFIG_FILE}"
-fi
-
-printf '\\n' >> "\${TMP_CONFIG_FILE}"
-
-cat >> "\${TMP_CONFIG_FILE}" <<'EOF'
+config_path = Path(sys.argv[1])
+provider_name = "${CODEX_PROVIDER}"
+provider_block = """
 ${codexProviderBlock}
-EOF
+""".strip()
 
-mv "\${TMP_CONFIG_FILE}" "\${CODEX_CONFIG_FILE}"
+existing = config_path.read_text(encoding="utf-8") if config_path.exists() else ""
+existing = existing.lstrip("\ufeff")
+cleaned = existing
+patterns = [
+    r"(?ms)^# BEGIN CODEXFORALL MANAGED PROVIDER.*?^# END CODEXFORALL MANAGED PROVIDER\\s*",
+    r"(?ms)^\\[model_providers\\.${CODEX_PROVIDER}\\]\\r?\\n.*?(?=^\\[|\\Z)",
+]
+for pattern in patterns:
+    cleaned = re.sub(pattern, "", cleaned)
+
+cleaned = cleaned.strip()
+model_provider_line = f'model_provider = "{provider_name}"'
+if re.search(r"(?m)^model_provider\\s*=.*$", cleaned):
+    cleaned = re.sub(r"(?m)^model_provider\\s*=.*$", model_provider_line, cleaned)
+elif cleaned:
+    cleaned = model_provider_line + "\\n\\n" + cleaned
+else:
+    cleaned = model_provider_line
+
+parts = [provider_block, cleaned.strip()]
+output = "\\n\\n".join(part for part in parts if part.strip()) + "\\n"
+config_path.write_text(output, encoding="utf-8")
+PY
 
 chmod 600 "\${TARGET_FILE}"
 chmod 600 "\${CODEX_CONFIG_FILE}"
@@ -302,7 +289,9 @@ export function downloadCodexSetupScript(
   options: DownloadCodexScriptOptions = {}
 ) {
   if (!options.apiKey) {
-    throw new Error('A real API key is required to generate a Codex setup script.')
+    throw new Error(
+      'A real API key is required to generate a Codex setup script.'
+    )
   }
   const serverAddress = normalizeServerAddress(options.serverAddress)
   const apiKey = normalizeApiKey(options.apiKey)
