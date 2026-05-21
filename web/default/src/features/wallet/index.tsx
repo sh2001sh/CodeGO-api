@@ -1,10 +1,10 @@
 import { useEffect } from 'react'
 import { WalletCards } from 'lucide-react'
-import { RechargeFormCard } from './components/recharge-form-card'
-import { WalletStatsCard } from './components/wallet-stats-card'
 import { BillingHistoryDialog } from './components/dialogs/billing-history-dialog'
 import { CreemConfirmDialog } from './components/dialogs/creem-confirm-dialog'
 import { PaymentConfirmDialog } from './components/dialogs/payment-confirm-dialog'
+import { RechargeFormCard } from './components/recharge-form-card'
+import { WalletStatsCard } from './components/wallet-stats-card'
 import { WalletWorkspaceShell } from './components/wallet-workspace-shell'
 import { useWalletWorkspace } from './hooks/use-wallet-workspace'
 
@@ -28,7 +28,7 @@ export function Wallet(props: WalletProps) {
     <>
       <WalletWorkspaceShell
         title='钱包'
-        description='钱包页现在只保留充值、兑换和余额相关设置。套餐购买与盲盒活动已拆分到左侧独立入口。'
+        description='在这里充值余额、查看账单，并调整盲盒额度、订阅额度和钱包余额的扣费顺序。'
         main={
           <div className='space-y-4'>
             <div className='flex items-center gap-3 rounded-[22px] border border-emerald-100 bg-[linear-gradient(135deg,rgba(235,255,244,0.96),rgba(255,255,255,0.98))] px-4 py-4 dark:border-slate-800 dark:bg-[linear-gradient(135deg,rgba(11,31,24,0.92),rgba(2,6,23,0.88))]'>
@@ -36,11 +36,11 @@ export function Wallet(props: WalletProps) {
                 <WalletCards className='size-5' />
               </div>
               <div className='space-y-1'>
-                <div className='text-sm font-semibold text-foreground'>
-                  这里负责余额充值、账单查询和扣费策略
+                <div className='text-foreground text-sm font-semibold'>
+                  余额充值和账单查询都在这里处理
                 </div>
-                <div className='text-sm text-muted-foreground'>
-                  右侧栏继续保留余额、兑换码和订阅扣费顺序设置，方便单独管理钱包能力。
+                <div className='text-muted-foreground text-sm'>
+                  页面内可以直接调整盲盒额度、订阅额度和钱包余额的扣费顺序。
                 </div>
               </div>
             </div>

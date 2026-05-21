@@ -94,15 +94,15 @@ export function getBillingPreferenceFromFundingSourceOrder(
 
 export function getFundingSourceLabel(
   source: FundingSource,
-  t: Translate
+  _t: Translate
 ): string {
   switch (source) {
     case 'blind_box':
-      return t('Blind box quota')
+      return '盲盒额度'
     case 'subscription':
-      return t('Subscription quota')
+      return '订阅额度'
     case 'wallet':
-      return t('Wallet balance')
+      return '钱包余额'
     default:
       return source
   }
@@ -110,17 +110,15 @@ export function getFundingSourceLabel(
 
 export function getFundingSourceDescription(
   source: FundingSource,
-  t: Translate
+  _t: Translate
 ): string {
   switch (source) {
     case 'blind_box':
-      return t('Temporary quota earned from blind boxes')
+      return '开盲盒获得的临时额度'
     case 'subscription':
-      return t(
-        'Quota deducted from your active subscriptions in their own order'
-      )
+      return '按订阅顺序逐个消耗的套餐额度'
     case 'wallet':
-      return t('Regular wallet quota balance')
+      return '账户当前可用的钱包余额'
     default:
       return ''
   }

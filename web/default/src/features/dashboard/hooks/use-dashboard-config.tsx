@@ -89,32 +89,30 @@ export function useSummaryCardsConfig(totals: {
   currencyLabel: string
   currencyEnabled: boolean
 }) {
-  const { t } = useTranslation()
-
   return [
     {
       key: 'todayUsage',
-      title: t('Last 24h usage'),
+      title: '近 24 小时消耗',
       value: totals.todayUsageDisplay,
       description: totals.currencyEnabled
-        ? `${t('Consumed in the last 24 hours')} (${totals.currencyLabel})`
-        : t('Consumed in the last 24 hours'),
+        ? `最近 24 小时累计消耗（${totals.currencyLabel}）`
+        : '最近 24 小时累计消耗',
       icon: Flame,
     },
     {
       key: 'usage',
-      title: t('Historical Usage'),
+      title: '累计消耗',
       value: totals.usedDisplay,
       description: totals.currencyEnabled
-        ? `${t('Total consumed')} (${totals.currencyLabel})`
-        : t('Total consumed quota'),
+        ? `账号历史累计消耗（${totals.currencyLabel}）`
+        : '账号历史累计消耗',
       icon: TrendingUp,
     },
     {
       key: 'requests',
-      title: t('Request Count'),
+      title: '请求次数',
       value: totals.requestCountDisplay,
-      description: t('Total requests made'),
+      description: '账号累计发起的请求数',
       icon: Activity,
     },
   ]

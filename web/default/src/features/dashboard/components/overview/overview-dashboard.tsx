@@ -596,15 +596,13 @@ export function OverviewDashboard() {
                     <div className='flex max-w-2xl flex-col gap-1'>
                       <div className='text-muted-foreground flex items-center gap-2 text-xs font-medium tracking-wider uppercase'>
                         <ListChecks className='size-3.5' aria-hidden='true' />
-                        {t('Get started')}
+                        快速开始
                       </div>
                       <h3 className='text-xl font-semibold tracking-tight sm:text-2xl'>
-                        {t('Build on your API gateway in minutes')}
+                        三步完成接入，先把请求跑通
                       </h3>
                       <p className='text-muted-foreground max-w-xl text-sm leading-relaxed'>
-                        {t(
-                          'A focused home for keys, balance, routing, and service health.'
-                        )}
+                        把密钥、余额、模型和服务状态集中在同一个起点，减少首次接入的判断成本。
                       </p>
                     </div>
                     <div className='flex flex-wrap items-center gap-2'>
@@ -614,11 +612,11 @@ export function OverviewDashboard() {
                         onClick={handleSetupGuideToggle}
                       >
                         <ChevronUp data-icon='inline-start' />
-                        {t('Hide setup guide')}
+                        收起引导
                       </Button>
                       <Button size='sm' render={<Link to='/keys' />}>
                         <KeyRound data-icon='inline-start' />
-                        {t('Create API Key')}
+                        创建 API 密钥
                       </Button>
                     </div>
                   </div>
@@ -647,10 +645,10 @@ export function OverviewDashboard() {
             <div className='flex h-full flex-col gap-4'>
               <div className='flex flex-col gap-1'>
                 <div className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>
-                  {t('Recommended actions')}
+                  常用入口
                 </div>
                 <h3 className='text-lg font-semibold tracking-tight'>
-                  {t('Keep the platform ready')}
+                  快速处理常见操作
                 </h3>
               </div>
               <div className='grid gap-2'>
@@ -679,18 +677,13 @@ export function OverviewDashboard() {
                           : t('Setup guide')}
                       </h3>
                       <span className='text-muted-foreground bg-background/60 rounded-md border px-2 py-0.5 text-xs'>
-                        {t('Setup progress: {{completed}}/{{total}}', {
-                          completed: completedStepCount,
-                          total: startSteps.length,
-                        })}
+                        已完成 {completedStepCount}/{startSteps.length}
                       </span>
                     </div>
                     <p className='text-muted-foreground line-clamp-1 text-xs'>
                       {setupComplete
-                        ? t(
-                            'Your setup guide is collapsed so usage stays in focus.'
-                          )
-                        : t('Setup guide is collapsed. Expand it anytime.')}
+                        ? '引导已收起，概览区会优先展示用量与扣费信息。'
+                        : '引导已收起，需要时可以随时展开。'}
                     </p>
                   </div>
                 </div>
@@ -706,7 +699,7 @@ export function OverviewDashboard() {
                     onClick={handleSetupGuideToggle}
                   >
                     <ChevronDown data-icon='inline-start' />
-                    {t('Show setup guide')}
+                    展开引导
                   </Button>
                 </div>
               </div>

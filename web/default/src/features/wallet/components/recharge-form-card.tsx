@@ -191,8 +191,8 @@ export function RechargeFormCard({
 
   return (
     <TitledCard
-      title={t('Add Funds')}
-      description={t('Choose an amount and payment method')}
+      title='余额充值'
+      description='选择金额并完成支付'
       icon={<WalletCards className='h-4 w-4' />}
       action={
         onOpenBilling ? (
@@ -203,7 +203,7 @@ export function RechargeFormCard({
             className='w-full gap-2 sm:w-auto'
           >
             <Receipt className='h-4 w-4' />
-            {t('Order History')}
+            账单记录
           </Button>
         ) : null
       }
@@ -259,11 +259,11 @@ export function RechargeFormCard({
                             )}
                           </div>
                           <div className='text-muted-foreground mt-1.5 w-full text-xs sm:mt-2'>
-                            Pay {formatCurrency(actualPrice)}
+                            实付 {formatCurrency(actualPrice)}
                             {hasDiscount && savedAmount > 0 && (
                               <span className='text-green-600'>
                                 {' '}
-                                • Save {formatCurrency(savedAmount)}
+                                省 {formatCurrency(savedAmount)}
                               </span>
                             )}
                           </div>
@@ -288,12 +288,12 @@ export function RechargeFormCard({
                     value={localAmount}
                     onChange={(e) => handleAmountChange(e.target.value)}
                     min={minTopup}
-                    placeholder={`Minimum ${minTopup}`}
+                    placeholder={`最低 ${minTopup}`}
                     className='h-9 text-base sm:h-10 sm:text-lg'
                   />
                   <div className='bg-muted/30 flex min-h-9 items-center justify-between gap-2 rounded-md border px-3 lg:min-w-52'>
                     <span className='text-muted-foreground truncate text-xs'>
-                      {t('Amount to pay:')}
+                      应付金额
                     </span>
                     {calculating ? (
                       <Skeleton className='h-5 w-16' />

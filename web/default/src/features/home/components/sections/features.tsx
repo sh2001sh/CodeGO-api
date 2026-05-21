@@ -11,23 +11,23 @@ interface FeaturesProps {
 const featureCards = [
   {
     icon: <Binary className='size-4 text-sky-600' />,
-    title: '开发入口集中',
-    description: '模型调用、套餐购买、余额充值和盲盒活动拆分清楚，不再混在钱包页。',
+    title: '入口更清晰',
+    description: '模型调用、套餐、钱包和盲盒分开管理，不再堆在同一页里。',
   },
   {
     icon: <Crown className='size-4 text-amber-600' />,
-    title: '套餐结构明确',
-    description: '月卡适合主力开发，日卡适合短时补量，已购套餐状态单独可查。',
+    title: '套餐信息明白',
+    description: '每份套餐的状态、额度和到期时间都能单独查看。',
   },
   {
     icon: <Gift className='size-4 text-rose-600' />,
     title: '盲盒规则透明',
-    description: '支持自定义购买数量，连续 5 次低于 5 美元额度后，下次必定 10 美元。',
+    description: '支持自定义购买数量，保底和奖励规则直接写清楚。',
   },
   {
     icon: <Wallet className='size-4 text-emerald-600' />,
-    title: '扣费顺序可控',
-    description: '订阅优先、余额优先或仅单一来源扣费，都能在钱包右侧单独配置。',
+    title: '扣费顺序可调',
+    description: '盲盒额度、订阅额度和钱包余额共用一套顺序，随时可改。',
   },
 ]
 
@@ -35,12 +35,7 @@ const dexPets = getHomePetHighlights().map((pet, index) => ({
   id: pet.id,
   name: pet.species,
   note: pet.note,
-  status:
-    index < 2
-      ? '已解锁'
-      : pet.lane === 'legend'
-        ? '终阶伙伴'
-        : '解锁中',
+  status: index < 2 ? '已解锁' : pet.lane === 'legend' ? '终阶伙伴' : '待解锁',
 }))
 
 export function Features(_props: FeaturesProps) {
@@ -54,10 +49,10 @@ export function Features(_props: FeaturesProps) {
               网站特点
             </div>
             <h2 className='mt-4 text-3xl font-semibold tracking-tight text-slate-950'>
-              用宠物养成把开发行为变成持续反馈
+              把充值、订阅和盲盒做成更容易理解的使用路径
             </h2>
             <p className='mt-3 text-base leading-7 text-slate-600'>
-              Code Go 的首页不再只是功能堆叠，而是把充值、套餐、盲盒、成就和图鉴串成一条清晰的使用路径。
+              首页不再只是信息堆叠，而是把充值、套餐、盲盒和宠物成长串成一条更顺手的路径。
             </p>
           </div>
 
@@ -85,7 +80,7 @@ export function Features(_props: FeaturesProps) {
             图鉴预览
           </div>
           <p className='mt-2 text-sm leading-6 text-slate-600'>
-            首页直接展示宠物形象、解锁状态和成长目标，图鉴不会再只有一串文字。
+            直接展示宠物形象、解锁状态和成长方向，避免只剩下密集说明文字。
           </p>
 
           <div className='mt-5 grid grid-cols-2 gap-3'>
@@ -99,8 +94,12 @@ export function Features(_props: FeaturesProps) {
                 </div>
                 <div className='mt-3 flex items-start justify-between gap-2'>
                   <div>
-                    <div className='text-sm font-semibold text-slate-900'>{pet.name}</div>
-                    <div className='mt-1 text-[11px] leading-5 text-slate-500'>{pet.note}</div>
+                    <div className='text-sm font-semibold text-slate-900'>
+                      {pet.name}
+                    </div>
+                    <div className='mt-1 text-[11px] leading-5 text-slate-500'>
+                      {pet.note}
+                    </div>
                   </div>
                   <span className='rounded-full bg-slate-900 px-2 py-1 text-[11px] text-white'>
                     {pet.status}

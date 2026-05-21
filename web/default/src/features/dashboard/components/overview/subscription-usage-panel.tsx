@@ -28,7 +28,6 @@ import {
   RotateCw,
   Save,
 } from 'lucide-react'
-import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -111,7 +110,7 @@ function getSubscriptionUsageStatus(record: UserSubscriptionRecord): {
     Number(subscription.end_time || 0) > Date.now() / 1000
   if (!active) {
     return {
-      label: subscription.status === 'cancelled' ? 'Cancelled' : 'Expired',
+      label: subscription.status === 'cancelled' ? '已取消' : '已过期',
       note: null,
     }
   }
@@ -127,21 +126,20 @@ function getSubscriptionUsageStatus(record: UserSubscriptionRecord): {
 
   if (totalAmount > 0 && totalRemain <= 0) {
     return {
-      label: 'Quota exhausted',
-      note: 'Billing skips this subscription automatically when its total quota is empty.',
+      label: '已耗尽',
+      note: '总额度用完后，系统会自动跳过这份订阅。',
     }
   }
   if (periodAmount > 0 && periodRemain <= 0) {
     return {
-      label: 'Waiting for reset',
-      note: 'This period quota is empty and will become available again after the next reset.',
+      label: '待重置',
+      note: '本期额度已用完，重置后会继续参与扣费。',
     }
   }
-  return { label: 'Active', note: null }
+  return { label: '可用', note: null }
 }
 
 export function SubscriptionUsagePanel() {
-  const { t } = useTranslation()
   const [draftFundingSourceOrder, setDraftFundingSourceOrder] = useState<
     FundingSource[]
   >(['blind_box', 'subscription', 'wallet'])
@@ -245,7 +243,7 @@ export function SubscriptionUsagePanel() {
           (item) => item === 'subscription' || item === 'wallet'
         )
         if (!hasPrimarySource) {
-          toast.error(t('Keep at least one primary billing source enabled'))
+          toast.error('至少保留一种主要扣费来源')
           return current
         }
         return next
@@ -288,13 +286,13 @@ export function SubscriptionUsagePanel() {
         subscriptionOrderIds: hasActiveSubscriptions ? draftOrderIds : [],
       })
       if (!response.success) {
-        toast.error(response.message || t('Failed to save billing settings'))
+        toast.error(response.message || '保存扣费顺序失败')
         return
       }
-      toast.success(t('Billing settings updated'))
+      toast.success('扣费顺序已更新')
       await subscriptionsQuery.refetch()
     } catch {
-      toast.error(t('Failed to save billing settings'))
+      toast.error('保存扣费顺序失败')
     } finally {
       setSaving(false)
     }
@@ -308,13 +306,9 @@ export function SubscriptionUsagePanel() {
             <Crown className='size-4' aria-hidden='true' />
           </span>
           <div className='min-w-0'>
-            <h3 className='text-base font-semibold'>
-              {t('Subscriptions and Billing')}
-            </h3>
+            <h3 className='text-base font-semibold'>套餐与扣费</h3>
             <p className='text-muted-foreground text-sm'>
-              {t(
-                'Manage billing priority and inspect subscription quota usage.'
-              )}
+              调整扣费顺序，并查看每份套餐的额度进度。
             </p>
           </div>
         </div>
@@ -334,7 +328,7 @@ export function SubscriptionUsagePanel() {
                 'animate-spin'
             )}
           />
-          {t('Refresh')}
+          刷新
         </Button>
       </div>
 
@@ -344,12 +338,10 @@ export function SubscriptionUsagePanel() {
             <div className='space-y-2'>
               <div className='flex items-center gap-2 text-sm font-semibold text-slate-950'>
                 <ListOrdered className='h-4 w-4 text-sky-600' />
-                {t('Billing order settings')}
+                扣费顺序
               </div>
               <p className='text-muted-foreground text-sm leading-6'>
-                {t(
-                  'Blind box quota, subscription quota, and wallet balance now share one unified deduction order.'
-                )}
+                盲盒额度、订阅额度和钱包余额现在共用一套扣费顺序。
               </p>
             </div>
 
@@ -359,18 +351,18 @@ export function SubscriptionUsagePanel() {
                 onClick={resetFundingSourceOrder}
                 disabled={saving}
               >
-                {t('Reset source order')}
+                重置来源顺序
               </Button>
               <Button
                 variant='outline'
                 onClick={resetSubscriptionOrder}
                 disabled={!hasActiveSubscriptions || saving}
               >
-                {t('Reset subscription order')}
+                重置订阅顺序
               </Button>
               <Button onClick={() => void handleSave()} disabled={saving}>
                 <Save className='mr-1 h-4 w-4' />
-                {t('Save settings')}
+                保存设置
               </Button>
             </div>
           </div>
@@ -378,7 +370,7 @@ export function SubscriptionUsagePanel() {
           <div className='mt-4 grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)]'>
             <div className='space-y-3'>
               <div className='text-sm font-medium text-slate-900'>
-                {t('Funding source order')}
+                扣费来源顺序
               </div>
               <div className='space-y-2'>
                 {draftFundingSourceOrder.map((source, index) => (
@@ -388,16 +380,21 @@ export function SubscriptionUsagePanel() {
                   >
                     <div className='min-w-0'>
                       <div className='text-sm font-semibold text-slate-950'>
-                        {index + 1}. {getFundingSourceLabel(source, t)}
+                        {index + 1}.{' '}
+                        {getFundingSourceLabel(source, (value) =>
+                          String(value)
+                        )}
                       </div>
                       <p className='text-muted-foreground mt-1 text-xs'>
-                        {getFundingSourceDescription(source, t)}
+                        {getFundingSourceDescription(source, (value) =>
+                          String(value)
+                        )}
                       </p>
                     </div>
                     <div className='flex items-center gap-2'>
                       {source === 'blind_box' ? (
                         <span className='rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] text-slate-600'>
-                          {t('Always enabled')}
+                          固定启用
                         </span>
                       ) : (
                         <Button
@@ -406,7 +403,7 @@ export function SubscriptionUsagePanel() {
                           onClick={() => toggleFundingSource(source)}
                           disabled={saving}
                         >
-                          {t('Disable')}
+                          停用
                         </Button>
                       )}
                       <Button
@@ -436,7 +433,7 @@ export function SubscriptionUsagePanel() {
               {disabledFundingSources.length > 0 ? (
                 <div className='rounded-2xl border border-dashed px-4 py-3'>
                   <div className='text-sm font-medium text-slate-900'>
-                    {t('Disabled sources')}
+                    已停用来源
                   </div>
                   <div className='mt-3 flex flex-wrap gap-2'>
                     {disabledFundingSources.map((source) => (
@@ -447,7 +444,10 @@ export function SubscriptionUsagePanel() {
                         onClick={() => toggleFundingSource(source)}
                         disabled={saving}
                       >
-                        {t('Enable')} {getFundingSourceLabel(source, t)}
+                        启用{' '}
+                        {getFundingSourceLabel(source, (value) =>
+                          String(value)
+                        )}
                       </Button>
                     ))}
                   </div>
@@ -457,19 +457,15 @@ export function SubscriptionUsagePanel() {
 
             <div className='space-y-3'>
               <div className='text-sm font-medium text-slate-900'>
-                {t('Subscription order')}
+                订阅扣费顺序
               </div>
               {!subscriptionModeEnabled ? (
                 <div className='text-muted-foreground rounded-2xl border border-dashed px-4 py-5 text-sm'>
-                  {t(
-                    'Subscription deduction is disabled, so active subscriptions are skipped during billing.'
-                  )}
+                  你已停用订阅扣费，结算时会跳过所有订阅。
                 </div>
               ) : !hasActiveSubscriptions ? (
                 <div className='text-muted-foreground rounded-2xl border border-dashed px-4 py-5 text-sm'>
-                  {t(
-                    'There are no active subscriptions to reorder yet. Buy a plan first, then sort them here.'
-                  )}
+                  还没有可排序的生效订阅，先购买套餐后再回来调整。
                 </div>
               ) : (
                 <div className='space-y-2'>
@@ -487,18 +483,15 @@ export function SubscriptionUsagePanel() {
                           <div className='flex flex-wrap items-center gap-2'>
                             <span className='text-sm font-semibold text-slate-950'>
                               {index + 1}.{' '}
-                              {meta?.title ||
-                                `Subscription #${subscription.id}`}
+                              {meta?.title || `套餐 #${subscription.id}`}
                             </span>
                             <span className='rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-[11px] text-sky-700'>
-                              {meta?.subtitle || t('Subscription')}
+                              {meta?.subtitle || '订阅'}
                             </span>
                           </div>
                           <p className='text-muted-foreground mt-1 text-xs'>
-                            {t('About {{days}} days left', {
-                              days: remainDays,
-                            })}{' '}
-                            · {formatDateTime(subscription.end_time)}
+                            约剩 {remainDays} 天 ·{' '}
+                            {formatDateTime(subscription.end_time)}
                           </p>
                           {usageStatus.note ? (
                             <p className='mt-1 text-xs text-amber-700'>
@@ -538,9 +531,7 @@ export function SubscriptionUsagePanel() {
                     )
                   })}
                   <p className='text-muted-foreground text-xs'>
-                    {t(
-                      'When billing reaches the subscription source, active plans are consumed in this sequence.'
-                    )}
+                    当扣费走到订阅来源时，会按这里的顺序逐个消耗。
                   </p>
                 </div>
               )}
@@ -549,9 +540,7 @@ export function SubscriptionUsagePanel() {
         </div>
 
         <div className='text-muted-foreground rounded-2xl border border-dashed px-4 py-3 text-sm'>
-          {t(
-            'The dashboard total used quota is the user-wide cumulative consumption. The used quota shown below is the usage tracked inside each subscription package.'
-          )}
+          总消耗显示的是账号累计用量；下面的卡片显示的是每份订阅自己的额度进度。
         </div>
 
         {isLoading ? (
@@ -569,15 +558,13 @@ export function SubscriptionUsagePanel() {
               <CalendarClock className='text-muted-foreground size-5' />
             </div>
             <div>
-              <div className='font-medium'>{t('No active subscription')}</div>
+              <div className='font-medium'>暂无生效订阅</div>
               <p className='text-muted-foreground mt-1 text-sm'>
-                {t(
-                  'After you buy a plan, this area will show each subscription quota and reset schedule.'
-                )}
+                购买套餐后，这里会显示每份订阅的额度和重置时间。
               </p>
             </div>
             <Button size='sm' render={<Link to='/wallet' />}>
-              {t('Go to wallet')}
+              前往钱包
             </Button>
           </div>
         ) : (
@@ -601,10 +588,8 @@ export function SubscriptionUsagePanel() {
                 <SubscriptionCard
                   key={subscription?.id}
                   record={record}
-                  planTitle={
-                    planMeta?.title || `Subscription #${subscription?.id}`
-                  }
-                  planSubtitle={planMeta?.subtitle || t('Subscription')}
+                  planTitle={planMeta?.title || `套餐 #${subscription?.id}`}
+                  planSubtitle={planMeta?.subtitle || '订阅'}
                   remainDays={remainDays}
                   totalAmount={totalAmount}
                   usedAmount={usedAmount}
@@ -652,7 +637,7 @@ function SubscriptionCard(props: {
             </span>
           </div>
           <div className='text-muted-foreground mt-1 text-xs'>
-            {props.remainDays} days left
+            约剩 {props.remainDays} 天
           </div>
         </div>
         <span className='rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700'>
@@ -666,7 +651,7 @@ function SubscriptionCard(props: {
       <div className='mt-4 space-y-3'>
         {props.periodAmount > 0 && (
           <QuotaProgressBlock
-            title='Current period quota'
+            title='本期额度'
             current={props.periodUsed}
             total={props.periodAmount}
             remain={props.periodRemain}
@@ -676,19 +661,19 @@ function SubscriptionCard(props: {
         )}
 
         <QuotaProgressBlock
-          title='Total quota'
+          title='总额度'
           current={props.usedAmount}
           total={props.totalAmount}
           remain={props.totalRemain}
           percent={props.totalPercent}
-          unlimitedLabel='Unlimited'
+          unlimitedLabel='无限额度'
           toneClass='[&_[data-slot=progress-indicator]]:bg-sky-500'
         />
       </div>
 
       <div className='mt-4 grid gap-2 text-xs sm:grid-cols-2'>
         <InfoItem
-          label='Next quota reset'
+          label='下次重置'
           value={
             (subscription?.next_reset_time ?? 0) > 0
               ? formatDateTime(subscription?.next_reset_time)
@@ -696,7 +681,7 @@ function SubscriptionCard(props: {
           }
         />
         <InfoItem
-          label='Expires at'
+          label='到期时间'
           value={formatDateTime(subscription?.end_time)}
         />
       </div>
@@ -721,7 +706,7 @@ function QuotaProgressBlock(props: {
         <span className='text-foreground font-medium'>{props.title}</span>
         <span className='text-muted-foreground'>
           {hasLimit
-            ? `${formatSubscriptionQuotaAmount(props.current)}/${formatSubscriptionQuotaAmount(props.total)} · used ${props.percent}% · remain ${formatSubscriptionQuotaAmount(props.remain)}`
+            ? `已用 ${formatSubscriptionQuotaAmount(props.current)}/${formatSubscriptionQuotaAmount(props.total)} · 剩余 ${formatSubscriptionQuotaAmount(props.remain)} · ${props.percent}%`
             : props.unlimitedLabel}
         </span>
       </div>

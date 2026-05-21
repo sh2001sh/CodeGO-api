@@ -136,15 +136,15 @@ const HEALTH_CONFIG: Record<
 > = {
   healthy: {
     dotClass: 'bg-success',
-    labelKey: 'Healthy',
+    labelKey: '状态正常',
   },
   caution: {
     dotClass: 'bg-warning',
-    labelKey: 'Low balance',
+    labelKey: '余额偏低',
   },
   critical: {
     dotClass: 'bg-destructive',
-    labelKey: 'Balance depleted',
+    labelKey: '余额不足',
   },
 }
 
@@ -381,33 +381,31 @@ export function SummaryCards() {
     return {
       title:
         primaryPlanMeta?.title ||
-        `${t('Plan')} #${subscription.plan_id || subscription.id}`,
-      subtitle: primaryPlanMeta?.subtitle || t('Subscription'),
+        `套餐 #${subscription.plan_id || subscription.id}`,
+      subtitle: primaryPlanMeta?.subtitle || '订阅',
       statusKey: getSubscriptionStatusKey(primarySubscription),
       statusLabel: t(getSubscriptionStatusKey(primarySubscription)),
       validityText:
         remainingDays > 999
-          ? t('More than 999 days left')
+          ? '剩余 999+ 天'
           : remainingDays < 1
-            ? t('Less than 1 day left')
-            : t('About {{days}} days left', { days: remainingDays }),
+            ? '不足 1 天'
+            : `约剩 ${remainingDays} 天`,
       totalQuotaText:
         totalAmount > 0
           ? formatSubscriptionQuotaAmount(totalAmount)
-          : t('Unlimited Quota'),
+          : '无限额度',
       remainingQuotaText:
         totalAmount > 0
           ? `${formatSubscriptionQuotaAmount(totalRemain)} / ${formatSubscriptionQuotaAmount(totalAmount)}`
-          : t('Unlimited Quota'),
-      periodQuotaTitle: plan ? formatResetPeriod(plan, t) : t('Quota Reset'),
+          : '无限额度',
+      periodQuotaTitle: plan ? formatResetPeriod(plan, t) : '额度重置',
       periodQuotaText:
         periodAmount > 0
           ? `${formatSubscriptionQuotaAmount(periodRemain)} / ${formatSubscriptionQuotaAmount(periodAmount)}`
-          : t('No Reset'),
+          : '无需重置',
       nextResetText:
-        Number(subscription.next_reset_time || 0) > 0
-          ? t('Next reset')
-          : t('No Reset'),
+        Number(subscription.next_reset_time || 0) > 0 ? '下次重置' : '无需重置',
     }
   }, [primaryPlanMeta, primarySubscription, t])
 
@@ -440,11 +438,9 @@ export function SummaryCards() {
         <div className='flex flex-col gap-3 p-4 sm:p-5'>
           <div className='flex flex-wrap items-start justify-between gap-3'>
             <div className='flex flex-col gap-1'>
-              <h3 className='text-base font-semibold'>
-                {t('Usage at a glance')}
-              </h3>
+              <h3 className='text-base font-semibold'>用量总览</h3>
               <p className='text-muted-foreground text-sm'>
-                {t('Monitor balance, usage, and request volume')}
+                快速查看余额、消耗和请求量
               </p>
             </div>
           </div>
@@ -473,7 +469,7 @@ export function SummaryCards() {
           <div className='flex flex-col gap-3'>
             <div className='flex items-center justify-between'>
               <span className='text-muted-foreground text-xs font-medium'>
-                {t('Credit remaining')}
+                可用额度
               </span>
               <span className='flex items-center gap-1.5'>
                 <span
@@ -497,7 +493,7 @@ export function SummaryCards() {
                 <div className='flex items-start justify-between gap-2'>
                   <div className='min-w-0'>
                     <div className='text-muted-foreground text-[11px] font-medium'>
-                      {t('Plan')}
+                      主套餐
                     </div>
                     <div className='mt-1 truncate text-sm font-semibold'>
                       {primarySubscriptionSummary.title}
@@ -524,11 +520,11 @@ export function SummaryCards() {
 
                 <div className='mt-3 grid gap-2 sm:grid-cols-2 xl:grid-cols-1 2xl:grid-cols-2'>
                   <SummaryMetricTile
-                    title={t('Total Quota')}
+                    title='总额度'
                     value={primarySubscriptionSummary.totalQuotaText}
                   />
                   <SummaryMetricTile
-                    title={t('Remaining quota')}
+                    title='剩余额度'
                     value={primarySubscriptionSummary.remainingQuotaText}
                   />
                   <SummaryMetricTile
@@ -537,34 +533,34 @@ export function SummaryCards() {
                     hint={primarySubscriptionSummary.nextResetText}
                   />
                   <SummaryMetricTile
-                    title={t('Runway')}
+                    title='按近 24 小时可用'
                     value={
                       runwayDays !== null
                         ? runwayDays < 1
-                          ? t('Less than 1 day left')
+                          ? '不足 1 天'
                           : runwayDays > 999
-                            ? `999+ ${t('days')}`
-                            : `~${formatNumber(Math.floor(runwayDays))} ${t('days')}`
+                            ? '999+ 天'
+                            : `约 ${formatNumber(Math.floor(runwayDays))} 天`
                         : remainQuota <= 0
-                          ? t('Balance depleted')
-                          : t('No recent usage')
+                          ? '余额不足'
+                          : '最近 24 小时暂无消耗'
                     }
-                    hint={`${t('Last 24h usage')}: ${formatQuota(recentUsage)}`}
+                    hint={`近 24 小时消耗：${formatQuota(recentUsage)}`}
                   />
                 </div>
               </div>
             ) : (
               <div className='bg-background/60 rounded-xl border border-dashed p-3'>
-                <div className='text-sm font-semibold'>{t('No Active')}</div>
+                <div className='text-sm font-semibold'>暂无生效套餐</div>
                 <div className='text-muted-foreground mt-1 text-xs leading-5'>
-                  {t('Subscribe to a plan for model access')}
+                  购买套餐后，这里会显示主套餐额度摘要。
                 </div>
               </div>
             )}
           </div>
 
           <Button className='justify-between' render={<Link to='/wallet' />}>
-            <span>{t('Wallet')}</span>
+            <span>钱包</span>
             <ArrowRight data-icon='inline-end' />
           </Button>
         </div>

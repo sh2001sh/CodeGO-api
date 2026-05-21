@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { formatQuota } from '@/lib/format'
 import { Badge } from '@/components/ui/badge'
@@ -35,14 +34,13 @@ function summarizeOpenResult(records: BlindBoxRecord[]): string {
     .reduce((sum, record) => sum + (record.reward_usd || 0), 0)
 
   if (subscriptionHits > 0) {
-    return `本次开启 ${records.length} 个盲盒，抽中 ${subscriptionHits} 份套餐奖励，并获得 ${quotaHits.toFixed(2)} 美元临时额度。`
+    return `本次开出 ${records.length} 个盲盒，抽中 ${subscriptionHits} 份套餐大奖，并获得 ${quotaHits.toFixed(2)} 美元临时额度。`
   }
 
-  return `本次开启 ${records.length} 个盲盒，获得 ${quotaHits.toFixed(2)} 美元临时额度。`
+  return `本次开出 ${records.length} 个盲盒，获得 ${quotaHits.toFixed(2)} 美元临时额度。`
 }
 
 export function BlindBoxCard(props: BlindBoxCardProps) {
-  const { t } = useTranslation()
   const [data, setData] = useState<BlindBoxSelfData | null>(null)
   const [loading, setLoading] = useState(true)
   const [selectedQuantity, setSelectedQuantity] = useState(1)
@@ -71,12 +69,12 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
           return response.data?.pay_methods?.[0] || null
         })
       }
-    } catch (_error) {
-      toast.error(t('Failed to load blind box data'))
+    } catch {
+      toast.error('加载盲盒数据失败')
     } finally {
       setLoading(false)
     }
-  }, [t])
+  }, [])
 
   useEffect(() => {
     void fetchSelf()
@@ -97,10 +95,12 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
   }, [selectedQuantity])
 
   const availableBoxes = data?.overview?.available_boxes || 0
-  const openBatchCount = useMemo(() => {
-    if (availableBoxes <= 0) return 1
-    return Math.min(availableBoxes, 10)
-  }, [availableBoxes])
+  const openBatchCount = useMemo(
+    () => Math.min(availableBoxes, 10),
+    [availableBoxes]
+  )
+  const canBatchOpen = openBatchCount > 1
+  const batchOpenLabel = canBatchOpen ? `开 ${openBatchCount} 个` : '批量开启'
 
   const pitySummary = useMemo(() => {
     const threshold =
@@ -111,10 +111,10 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
     const remaining = Math.max(0, threshold - progress)
 
     if (remaining === 0) {
-      return `已经进入保底状态。只要下次不是套餐大奖，就必定获得 ${guarantee} 美元额度。`
+      return `已进入保底状态。下一次只要不是套餐大奖，就必得 ${guarantee} 美元额度。`
     }
 
-    return `如果连续 ${threshold} 次都抽到低于 ${lowReward} 美元的额度，就会触发保底；当前还差 ${remaining} 次，触发后下次必定获得 ${guarantee} 美元额度。`
+    return `连续 ${threshold} 次低于 ${lowReward} 美元奖励会触发保底；当前还差 ${remaining} 次，触发后下一次必得 ${guarantee} 美元额度。`
   }, [data])
 
   const handlePay = async () => {
@@ -122,6 +122,7 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
       toast.error('请选择支付方式')
       return
     }
+
     try {
       setPaying(true)
       const response = await requestBlindBoxPayment({
@@ -129,9 +130,10 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
         payment_method: selectedPaymentMethod.type,
       })
       if (!isApiSuccess(response)) {
-        toast.error(response.message || t('Payment request failed'))
+        toast.error(response.message || '发起支付失败')
         return
       }
+
       const directUrl =
         (response.data as { pay_url?: string; qrcode_url?: string })?.pay_url ||
         (response.data as { pay_url?: string; qrcode_url?: string })?.qrcode_url
@@ -139,14 +141,16 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
         window.open(directUrl, '_blank')
         return
       }
+
       const form = (response.data as { form?: Record<string, unknown> })?.form
       if (response.url && form) {
         submitPaymentForm(response.url, form)
         return
       }
-      toast.error(t('Payment request failed'))
-    } catch (_error) {
-      toast.error(t('Payment request failed'))
+
+      toast.error('发起支付失败')
+    } catch {
+      toast.error('发起支付失败')
     } finally {
       setPaying(false)
     }
@@ -160,13 +164,14 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
         toast.error(response.message || '开启盲盒失败')
         return
       }
+
       toast.success(summarizeOpenResult(response.data.records || []))
       await Promise.all([
         fetchSelf(),
         props.onSubscriptionRefresh(),
         props.onUserRefresh(),
       ])
-    } catch (_error) {
+    } catch {
       toast.error('开启盲盒失败')
     } finally {
       setOpeningCount(null)
@@ -180,7 +185,7 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
           <div className='space-y-2'>
             <h3 className='text-base font-semibold'>盲盒活动</h3>
             <p className='text-muted-foreground text-sm'>
-              盲盒临时额度会按照你的扣费优先级参与消耗，适合短期冲量和爆发奖励。
+              盲盒临时额度会按照你的扣费顺序参与消耗，适合短期补量和冲峰值。
             </p>
           </div>
           <Badge variant={data?.enabled ? 'default' : 'secondary'}>
@@ -190,11 +195,11 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
 
         <div className='grid gap-3 sm:grid-cols-2 xl:grid-cols-4'>
           <div className='rounded-xl border border-slate-200 p-3 dark:border-slate-800'>
-            <div className='text-muted-foreground text-xs'>可开启盲盒</div>
+            <div className='text-muted-foreground text-xs'>可开盲盒</div>
             <div className='mt-1 text-2xl font-semibold'>{availableBoxes}</div>
           </div>
           <div className='rounded-xl border border-slate-200 p-3 dark:border-slate-800'>
-            <div className='text-muted-foreground text-xs'>盲盒临时额度</div>
+            <div className='text-muted-foreground text-xs'>临时额度</div>
             <div className='mt-1 text-lg font-semibold'>
               {formatQuota(data?.overview?.remaining_quota || 0)}
             </div>
@@ -222,7 +227,7 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
               <div className='mb-3 flex items-center justify-between gap-3'>
                 <h3 className='text-sm font-semibold'>购买盲盒</h3>
                 <span className='text-muted-foreground text-sm'>
-                  单个盲盒价格 {data?.unit_price?.toFixed(1) || '0.0'} 元
+                  单价 {data?.unit_price?.toFixed(1) || '0.0'} 元
                 </span>
               </div>
 
@@ -313,7 +318,7 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
                   disabled={!data?.enabled || paying}
                   className='sm:min-w-32'
                 >
-                  {paying ? t('Processing...') : '立即支付'}
+                  {paying ? '支付处理中...' : '立即支付'}
                 </Button>
               </div>
             </div>
@@ -337,19 +342,17 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
                   type='button'
                   variant='outline'
                   onClick={() => void handleOpen(openBatchCount)}
-                  disabled={
-                    availableBoxes < openBatchCount || openingCount !== null
-                  }
+                  disabled={!canBatchOpen || openingCount !== null}
                 >
                   {openingCount === openBatchCount
                     ? '开启中...'
-                    : `开 ${openBatchCount} 个`}
+                    : batchOpenLabel}
                 </Button>
               </div>
             </div>
 
             <div className='rounded-xl border border-slate-200 p-4 dark:border-slate-800'>
-              <h3 className='mb-3 text-sm font-semibold'>最近开启记录</h3>
+              <h3 className='mb-3 text-sm font-semibold'>最近开盒记录</h3>
               <div className='space-y-3'>
                 {(data?.overview?.recent_records || [])
                   .slice(0, 8)
@@ -421,7 +424,7 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
 
             <div className='text-muted-foreground rounded-xl border border-slate-200 p-4 text-sm dark:border-slate-800'>
               <div>盲盒临时额度会自动过期，建议尽快消耗。</div>
-              <div className='mt-2'>消耗顺序以你在扣费优先级中的设置为准。</div>
+              <div className='mt-2'>扣费时会遵循你在优先级里设定的顺序。</div>
               <div className='mt-2'>{pitySummary}</div>
             </div>
           </div>
