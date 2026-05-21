@@ -149,10 +149,13 @@ export interface UpdateUserSubscriptionRequest {
 
 export interface SelfSubscriptionData {
   billing_preference: string
+  funding_source_order: FundingSource[]
   subscription_order_ids: number[]
   subscriptions: UserSubscriptionRecord[]
   all_subscriptions: UserSubscriptionRecord[]
 }
+
+export type FundingSource = 'blind_box' | 'subscription' | 'wallet'
 
 // ============================================================================
 // Dialog Types

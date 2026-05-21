@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import { formatQuota } from '@/lib/format'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Separator } from '@/components/ui/separator'
-import { formatQuota } from '@/lib/format'
 import {
   calculateBlindBoxAmount,
   getBlindBoxSelf,
@@ -134,8 +134,7 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
       }
       const directUrl =
         (response.data as { pay_url?: string; qrcode_url?: string })?.pay_url ||
-        (response.data as { pay_url?: string; qrcode_url?: string })
-          ?.qrcode_url
+        (response.data as { pay_url?: string; qrcode_url?: string })?.qrcode_url
       if (directUrl) {
         window.open(directUrl, '_blank')
         return
@@ -180,8 +179,8 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
         <div className='flex flex-row items-start justify-between gap-4'>
           <div className='space-y-2'>
             <h3 className='text-base font-semibold'>盲盒活动</h3>
-            <p className='text-sm text-muted-foreground'>
-              盲盒临时额度会优先于订阅额度和钱包余额消耗，适合短期冲量和爆发奖励。
+            <p className='text-muted-foreground text-sm'>
+              盲盒临时额度会按照你的扣费优先级参与消耗，适合短期冲量和爆发奖励。
             </p>
           </div>
           <Badge variant={data?.enabled ? 'default' : 'secondary'}>
@@ -191,26 +190,28 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
 
         <div className='grid gap-3 sm:grid-cols-2 xl:grid-cols-4'>
           <div className='rounded-xl border border-slate-200 p-3 dark:border-slate-800'>
-            <div className='text-xs text-muted-foreground'>可开启盲盒</div>
+            <div className='text-muted-foreground text-xs'>可开启盲盒</div>
             <div className='mt-1 text-2xl font-semibold'>{availableBoxes}</div>
           </div>
           <div className='rounded-xl border border-slate-200 p-3 dark:border-slate-800'>
-            <div className='text-xs text-muted-foreground'>盲盒临时额度</div>
+            <div className='text-muted-foreground text-xs'>盲盒临时额度</div>
             <div className='mt-1 text-lg font-semibold'>
               {formatQuota(data?.overview?.remaining_quota || 0)}
             </div>
           </div>
           <div className='rounded-xl border border-slate-200 p-3 dark:border-slate-800'>
-            <div className='text-xs text-muted-foreground'>最近到期时间</div>
+            <div className='text-muted-foreground text-xs'>最近到期时间</div>
             <div className='mt-1 text-sm font-medium'>
               {formatTime(data?.overview?.next_expire_at)}
             </div>
           </div>
           <div className='rounded-xl border border-slate-200 p-3 dark:border-slate-800'>
-            <div className='text-xs text-muted-foreground'>保底进度</div>
+            <div className='text-muted-foreground text-xs'>保底进度</div>
             <div className='mt-1 text-lg font-semibold'>
-              {(data?.overview?.pity_progress || 0)}/
-              {data?.overview?.effective_pity_threshold || data?.pity_threshold || 0}
+              {data?.overview?.pity_progress || 0}/
+              {data?.overview?.effective_pity_threshold ||
+                data?.pity_threshold ||
+                0}
             </div>
           </div>
         </div>
@@ -220,23 +221,27 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
             <div className='rounded-xl border border-slate-200 p-4 dark:border-slate-800'>
               <div className='mb-3 flex items-center justify-between gap-3'>
                 <h3 className='text-sm font-semibold'>购买盲盒</h3>
-                <span className='text-sm text-muted-foreground'>
+                <span className='text-muted-foreground text-sm'>
                   单个盲盒价格 {data?.unit_price?.toFixed(1) || '0.0'} 元
                 </span>
               </div>
 
               <div className='grid gap-4 lg:grid-cols-[minmax(0,180px)_minmax(0,1fr)]'>
                 <div className='space-y-2'>
-                  <div className='text-xs text-muted-foreground'>购买数量</div>
+                  <div className='text-muted-foreground text-xs'>购买数量</div>
                   <div className='flex items-center gap-2'>
                     <Button
                       type='button'
                       variant='outline'
                       size='sm'
                       onClick={() =>
-                        setSelectedQuantity((current) => Math.max(1, current - 1))
+                        setSelectedQuantity((current) =>
+                          Math.max(1, current - 1)
+                        )
                       }
-                      disabled={!data?.enabled || loading || selectedQuantity <= 1}
+                      disabled={
+                        !data?.enabled || loading || selectedQuantity <= 1
+                      }
                     >
                       -1
                     </Button>
@@ -257,13 +262,15 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
                       type='button'
                       variant='outline'
                       size='sm'
-                      onClick={() => setSelectedQuantity((current) => current + 1)}
+                      onClick={() =>
+                        setSelectedQuantity((current) => current + 1)
+                      }
                       disabled={!data?.enabled || loading}
                     >
                       +1
                     </Button>
                   </div>
-                  <div className='text-xs text-muted-foreground'>
+                  <div className='text-muted-foreground text-xs'>
                     今日已购 {data?.overview?.purchased_today || 0}/
                     {data?.daily_limit || 0}，本月已购{' '}
                     {data?.overview?.purchased_this_month || 0}/
@@ -272,7 +279,7 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
                 </div>
 
                 <div className='space-y-2'>
-                  <div className='text-xs text-muted-foreground'>支付方式</div>
+                  <div className='text-muted-foreground text-xs'>支付方式</div>
                   <div className='flex flex-wrap gap-2'>
                     {(data?.pay_methods || []).map((method) => (
                       <Button
@@ -294,9 +301,9 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
                 </div>
               </div>
 
-              <div className='mt-4 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-900/70 sm:flex-row sm:items-center sm:justify-between'>
+              <div className='mt-4 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:bg-slate-900/70'>
                 <div>
-                  <div className='text-xs text-muted-foreground'>应付金额</div>
+                  <div className='text-muted-foreground text-xs'>应付金额</div>
                   <div className='mt-1 text-lg font-semibold'>
                     {amountDue.toFixed(2)} 元
                   </div>
@@ -314,7 +321,7 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
             <div className='rounded-xl border border-slate-200 p-4 dark:border-slate-800'>
               <div className='mb-3 flex items-center justify-between'>
                 <h3 className='text-sm font-semibold'>开启盲盒</h3>
-                <span className='text-sm text-muted-foreground'>
+                <span className='text-muted-foreground text-sm'>
                   当前可开 {availableBoxes} 个
                 </span>
               </div>
@@ -330,7 +337,9 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
                   type='button'
                   variant='outline'
                   onClick={() => void handleOpen(openBatchCount)}
-                  disabled={availableBoxes < openBatchCount || openingCount !== null}
+                  disabled={
+                    availableBoxes < openBatchCount || openingCount !== null
+                  }
                 >
                   {openingCount === openBatchCount
                     ? '开启中...'
@@ -342,37 +351,39 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
             <div className='rounded-xl border border-slate-200 p-4 dark:border-slate-800'>
               <h3 className='mb-3 text-sm font-semibold'>最近开启记录</h3>
               <div className='space-y-3'>
-                {(data?.overview?.recent_records || []).slice(0, 8).map((record) => (
-                  <div
-                    key={record.id}
-                    className='flex items-center justify-between gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-800'
-                  >
-                    <div className='space-y-1'>
-                      <div className='font-medium'>{record.reward_title}</div>
-                      <div className='text-xs text-muted-foreground'>
-                        {formatTime(record.create_time)}
+                {(data?.overview?.recent_records || [])
+                  .slice(0, 8)
+                  .map((record) => (
+                    <div
+                      key={record.id}
+                      className='flex items-center justify-between gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-800'
+                    >
+                      <div className='space-y-1'>
+                        <div className='font-medium'>{record.reward_title}</div>
+                        <div className='text-muted-foreground text-xs'>
+                          {formatTime(record.create_time)}
+                        </div>
+                      </div>
+                      <div className='flex items-center gap-2'>
+                        {record.is_pity ? (
+                          <Badge variant='outline'>保底触发</Badge>
+                        ) : null}
+                        <Badge
+                          variant={
+                            record.reward_type === 'subscription'
+                              ? 'default'
+                              : 'secondary'
+                          }
+                        >
+                          {record.reward_type === 'subscription'
+                            ? '套餐大奖'
+                            : `${record.reward_usd?.toFixed(2) || '0.00'} 美元额度`}
+                        </Badge>
                       </div>
                     </div>
-                    <div className='flex items-center gap-2'>
-                      {record.is_pity ? (
-                        <Badge variant='outline'>保底触发</Badge>
-                      ) : null}
-                      <Badge
-                        variant={
-                          record.reward_type === 'subscription'
-                            ? 'default'
-                            : 'secondary'
-                        }
-                      >
-                        {record.reward_type === 'subscription'
-                          ? '套餐大奖'
-                          : `${record.reward_usd?.toFixed(2) || '0.00'} 美元额度`}
-                      </Badge>
-                    </div>
-                  </div>
-                ))}
+                  ))}
                 {data?.overview?.recent_records?.length === 0 ? (
-                  <div className='rounded-lg border border-dashed border-slate-200 px-3 py-6 text-center text-sm text-muted-foreground dark:border-slate-800'>
+                  <div className='text-muted-foreground rounded-lg border border-dashed border-slate-200 px-3 py-6 text-center text-sm dark:border-slate-800'>
                     暂无盲盒记录
                   </div>
                 ) : null}
@@ -399,17 +410,18 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
                 <div className='flex items-center justify-between gap-3 font-medium'>
                   <span>{data?.subscription_plan_title || '套餐大奖'}</span>
                   <span>
-                    {((data?.subscription_prize_probability || 0) * 100).toFixed(1)}%
+                    {(
+                      (data?.subscription_prize_probability || 0) * 100
+                    ).toFixed(1)}
+                    %
                   </span>
                 </div>
               </div>
             </div>
 
-            <div className='rounded-xl border border-slate-200 p-4 text-sm text-muted-foreground dark:border-slate-800'>
-              <div>盲盒临时额度会自动过期，请优先消耗。</div>
-              <div className='mt-2'>
-                消耗顺序：盲盒临时额度 {'>'} 订阅额度 {'>'} 钱包余额
-              </div>
+            <div className='text-muted-foreground rounded-xl border border-slate-200 p-4 text-sm dark:border-slate-800'>
+              <div>盲盒临时额度会自动过期，建议尽快消耗。</div>
+              <div className='mt-2'>消耗顺序以你在扣费优先级中的设置为准。</div>
               <div className='mt-2'>{pitySummary}</div>
             </div>
           </div>

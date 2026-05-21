@@ -19,6 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 import { api } from '@/lib/api'
 import type {
   ApiResponse,
+  FundingSource,
   PlanRecord,
   PlanPayload,
   UserSubscriptionRecord,
@@ -106,7 +107,10 @@ export async function updateUserSubscription(
   subId: number,
   data: UpdateUserSubscriptionRequest
 ): Promise<ApiResponse<{ message?: string }>> {
-  const res = await api.put(`/api/subscription/admin/user_subscriptions/${subId}`, data)
+  const res = await api.put(
+    `/api/subscription/admin/user_subscriptions/${subId}`,
+    data
+  )
   return res.data
 }
 
@@ -184,18 +188,21 @@ export async function getPublicPlans(): Promise<ApiResponse<PlanRecord[]>> {
   return res.data
 }
 
-export async function updateBillingPreference(
-  preference: string,
+export async function updateBillingPreference(payload: {
+  billingPreference?: string
+  fundingSourceOrder?: FundingSource[]
   subscriptionOrderIds?: number[]
-): Promise<
+}): Promise<
   ApiResponse<{
     billing_preference?: string
+    funding_source_order?: FundingSource[]
     subscription_order_ids?: number[]
   }>
 > {
   const res = await api.put('/api/subscription/self/preference', {
-    billing_preference: preference,
-    subscription_order_ids: subscriptionOrderIds,
+    billing_preference: payload.billingPreference,
+    funding_source_order: payload.fundingSourceOrder,
+    subscription_order_ids: payload.subscriptionOrderIds,
   })
   return res.data
 }

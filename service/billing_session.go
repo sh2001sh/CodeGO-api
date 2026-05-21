@@ -405,6 +405,10 @@ func NewBillingSession(c *gin.Context, relayInfo *relaycommon.RelayInfo, preCons
 	}
 
 	pref := common.NormalizeBillingPreference(relayInfo.UserSetting.BillingPreference)
+	fundingSourceOrder := common.NormalizeFundingSourceOrder(
+		relayInfo.UserSetting.FundingSourceOrder,
+		pref,
+	)
 
 	tryWallet := func() (*BillingSession, *types.NewAPIError) {
 		userQuota, err := model.GetUserQuota(relayInfo.UserId, false)
@@ -487,59 +491,44 @@ func NewBillingSession(c *gin.Context, relayInfo *relaycommon.RelayInfo, preCons
 		return session, nil
 	}
 
-	switch pref {
-	case "subscription_only":
-		if session, apiErr := tryBlindBox(); apiErr != nil {
-			return nil, apiErr
-		} else if session != nil {
-			return session, nil
+	var lastInsufficientErr *types.NewAPIError
+	for _, source := range fundingSourceOrder {
+		var (
+			session *BillingSession
+			apiErr  *types.NewAPIError
+		)
+
+		switch source {
+		case BillingSourceBlindBox:
+			session, apiErr = tryBlindBox()
+		case BillingSourceSubscription:
+			session, apiErr = trySubscription()
+		case BillingSourceWallet:
+			session, apiErr = tryWallet()
+		default:
+			continue
 		}
-		return trySubscription()
-	case "wallet_only":
-		if session, apiErr := tryBlindBox(); apiErr != nil {
-			return nil, apiErr
-		} else if session != nil {
-			return session, nil
-		}
-		return tryWallet()
-	case "wallet_first":
-		if session, apiErr := tryBlindBox(); apiErr != nil {
-			return nil, apiErr
-		} else if session != nil {
-			return session, nil
-		}
-		session, apiErr := tryWallet()
+
 		if apiErr != nil {
 			if apiErr.GetErrorCode() == types.ErrorCodeInsufficientUserQuota {
-				return trySubscription()
+				lastInsufficientErr = apiErr
+				continue
 			}
 			return nil, apiErr
 		}
-		return session, nil
-	case "subscription_first":
-		fallthrough
-	default:
-		if session, apiErr := tryBlindBox(); apiErr != nil {
-			return nil, apiErr
-		} else if session != nil {
+		if session != nil {
 			return session, nil
 		}
-
-		hasSub, subCheckErr := model.HasActiveUserSubscription(relayInfo.UserId)
-		if subCheckErr != nil {
-			return nil, types.NewError(subCheckErr, types.ErrorCodeQueryDataError, types.ErrOptionWithSkipRetry())
-		}
-		if !hasSub {
-			return tryWallet()
-		}
-
-		session, apiErr := trySubscription()
-		if apiErr != nil {
-			if apiErr.GetErrorCode() == types.ErrorCodeInsufficientUserQuota {
-				return tryWallet()
-			}
-			return nil, apiErr
-		}
-		return session, nil
 	}
+
+	if lastInsufficientErr != nil {
+		return nil, lastInsufficientErr
+	}
+	return nil, types.NewErrorWithStatusCode(
+		fmt.Errorf("no available funding source"),
+		types.ErrorCodeInsufficientUserQuota,
+		http.StatusForbidden,
+		types.ErrOptionWithSkipRetry(),
+		types.ErrOptionWithNoRecordErrorLog(),
+	)
 }

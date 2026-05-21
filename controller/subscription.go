@@ -21,8 +21,9 @@ type SubscriptionPlanDTO struct {
 }
 
 type BillingPreferenceRequest struct {
-	BillingPreference    string `json:"billing_preference"`
-	SubscriptionOrderIds []int  `json:"subscription_order_ids"`
+	BillingPreference    string   `json:"billing_preference"`
+	FundingSourceOrder   []string `json:"funding_source_order"`
+	SubscriptionOrderIds []int    `json:"subscription_order_ids"`
 }
 
 type AdminUpsertSubscriptionPlanRequest struct {
@@ -190,6 +191,8 @@ func GetSubscriptionSelf(c *gin.Context) {
 	userId := c.GetInt("id")
 	settingMap, _ := model.GetUserSetting(userId, false)
 	pref := common.NormalizeBillingPreference(settingMap.BillingPreference)
+	fundingSourceOrder := common.NormalizeFundingSourceOrder(settingMap.FundingSourceOrder, pref)
+	pref = common.BillingPreferenceFromFundingSourceOrder(fundingSourceOrder)
 
 	allSubscriptions, err := model.GetAllUserSubscriptions(userId)
 	if err != nil {
@@ -225,6 +228,7 @@ func GetSubscriptionSelf(c *gin.Context) {
 
 	common.ApiSuccess(c, gin.H{
 		"billing_preference":     pref,
+		"funding_source_order":   fundingSourceOrder,
 		"subscription_order_ids": orderedIds,
 		"subscriptions":          activeSubscriptions,
 		"all_subscriptions":      allSubscriptions,
@@ -239,6 +243,8 @@ func UpdateSubscriptionPreference(c *gin.Context) {
 		return
 	}
 	pref := common.NormalizeBillingPreference(req.BillingPreference)
+	fundingSourceOrder := common.NormalizeFundingSourceOrder(req.FundingSourceOrder, pref)
+	pref = common.BillingPreferenceFromFundingSourceOrder(fundingSourceOrder)
 	orderIds := common.NormalizePositiveIntSlice(req.SubscriptionOrderIds)
 
 	user, err := model.GetUserById(userId, true)
@@ -248,6 +254,7 @@ func UpdateSubscriptionPreference(c *gin.Context) {
 	}
 	current := user.GetSetting()
 	current.BillingPreference = pref
+	current.FundingSourceOrder = fundingSourceOrder
 	if req.SubscriptionOrderIds != nil {
 		current.SubscriptionOrderIds = orderIds
 	}
@@ -258,6 +265,7 @@ func UpdateSubscriptionPreference(c *gin.Context) {
 	}
 	common.ApiSuccess(c, gin.H{
 		"billing_preference":     pref,
+		"funding_source_order":   current.FundingSourceOrder,
 		"subscription_order_ids": current.SubscriptionOrderIds,
 	})
 }

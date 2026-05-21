@@ -258,12 +258,14 @@ export function SummaryCards() {
       return result.success
         ? (result.data ?? {
             billing_preference: 'subscription_first',
+            funding_source_order: ['blind_box', 'subscription', 'wallet'],
             subscription_order_ids: [],
             subscriptions: [],
             all_subscriptions: [],
           })
         : ({
             billing_preference: 'subscription_first',
+            funding_source_order: ['blind_box', 'subscription', 'wallet'],
             subscription_order_ids: [],
             subscriptions: [],
             all_subscriptions: [],

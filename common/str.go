@@ -116,6 +116,95 @@ func NormalizeBillingPreference(pref string) string {
 	}
 }
 
+func DefaultFundingSourceOrderFromBillingPreference(pref string) []string {
+	switch NormalizeBillingPreference(pref) {
+	case "wallet_first":
+		return []string{"blind_box", "wallet", "subscription"}
+	case "subscription_only":
+		return []string{"blind_box", "subscription"}
+	case "wallet_only":
+		return []string{"blind_box", "wallet"}
+	case "subscription_first":
+		fallthrough
+	default:
+		return []string{"blind_box", "subscription", "wallet"}
+	}
+}
+
+func NormalizeFundingSourceOrder(order []string, pref string) []string {
+	fallback := DefaultFundingSourceOrderFromBillingPreference(pref)
+	if len(order) == 0 {
+		return append([]string(nil), fallback...)
+	}
+
+	validSources := map[string]struct{}{
+		"blind_box":    {},
+		"subscription": {},
+		"wallet":       {},
+	}
+	seen := make(map[string]struct{}, len(order))
+	result := make([]string, 0, len(order))
+	for _, source := range order {
+		normalized := strings.TrimSpace(source)
+		if _, ok := validSources[normalized]; !ok {
+			continue
+		}
+		if _, ok := seen[normalized]; ok {
+			continue
+		}
+		seen[normalized] = struct{}{}
+		result = append(result, normalized)
+	}
+	if len(result) == 0 {
+		return append([]string(nil), fallback...)
+	}
+
+	hasBlindBox := false
+	hasSpendableSource := false
+	for _, source := range result {
+		if source == "blind_box" {
+			hasBlindBox = true
+			continue
+		}
+		hasSpendableSource = true
+	}
+	if !hasBlindBox {
+		result = append([]string{"blind_box"}, result...)
+	}
+	if !hasSpendableSource {
+		return append([]string(nil), fallback...)
+	}
+	return result
+}
+
+func BillingPreferenceFromFundingSourceOrder(order []string) string {
+	normalized := NormalizeFundingSourceOrder(order, "subscription_first")
+	subscriptionIndex := -1
+	walletIndex := -1
+	for index, source := range normalized {
+		switch source {
+		case "subscription":
+			subscriptionIndex = index
+		case "wallet":
+			walletIndex = index
+		}
+	}
+
+	switch {
+	case subscriptionIndex >= 0 && walletIndex >= 0:
+		if subscriptionIndex < walletIndex {
+			return "subscription_first"
+		}
+		return "wallet_first"
+	case subscriptionIndex >= 0:
+		return "subscription_only"
+	case walletIndex >= 0:
+		return "wallet_only"
+	default:
+		return "subscription_first"
+	}
+}
+
 func NormalizePositiveIntSlice(values []int) []int {
 	if len(values) == 0 {
 		return []int{}

@@ -14,56 +14,30 @@ import { formatQuota } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
-import { getPublicPlans, updateBillingPreference } from '@/features/subscriptions/api'
+import {
+  getPublicPlans,
+  updateBillingPreference,
+} from '@/features/subscriptions/api'
+import {
+  getBillingPreferenceFromFundingSourceOrder,
+  getFundingSourceDescription,
+  getFundingSourceLabel,
+  normalizeFundingSourceOrder,
+} from '@/features/subscriptions/billing'
 import { getSubscriptionPlanSubtitle } from '@/features/subscriptions/lib'
 import type {
+  FundingSource,
   PlanRecord,
   SelfSubscriptionData,
   UserSubscriptionRecord,
 } from '@/features/subscriptions/types'
 import type { UserWalletData } from '../types'
 
-type BillingPreference =
-  | 'subscription_first'
-  | 'wallet_first'
-  | 'subscription_only'
-  | 'wallet_only'
-
-const BILLING_OPTIONS: Array<{
-  value: BillingPreference
-  label: string
-  requiresSubscription: boolean
-}> = [
-  {
-    value: 'subscription_first',
-    label: '订阅优先，余额兜底',
-    requiresSubscription: true,
-  },
-  {
-    value: 'wallet_first',
-    label: '余额优先，订阅兜底',
-    requiresSubscription: false,
-  },
-  {
-    value: 'subscription_only',
-    label: '仅从订阅扣费',
-    requiresSubscription: true,
-  },
-  {
-    value: 'wallet_only',
-    label: '仅从余额扣费',
-    requiresSubscription: false,
-  },
+const ALL_FUNDING_SOURCES: FundingSource[] = [
+  'blind_box',
+  'subscription',
+  'wallet',
 ]
 
 interface WalletStatsCardProps {
@@ -125,7 +99,7 @@ function getSubscriptionUsageStatus(record: UserSubscriptionRecord): {
     Number(subscription.end_time || 0) > Date.now() / 1000
   if (!active) {
     return {
-      label: subscription.status === 'cancelled' ? '已取消' : '已过期',
+      label: subscription.status === 'cancelled' ? 'Cancelled' : 'Expired',
       note: null,
     }
   }
@@ -140,21 +114,24 @@ function getSubscriptionUsageStatus(record: UserSubscriptionRecord): {
     periodAmount > 0 ? Math.max(0, periodAmount - periodUsed) : 0
 
   if (totalAmount > 0 && totalRemain <= 0) {
-    return { label: '额度已用完', note: '当前扣费会自动跳过这张套餐卡。' }
+    return {
+      label: 'Quota exhausted',
+      note: 'Billing skips this subscription automatically when its total quota is empty.',
+    }
   }
   if (periodAmount > 0 && periodRemain <= 0) {
-    return { label: '等待刷新', note: '本期额度已用完，等待下次刷新。' }
+    return {
+      label: 'Waiting for reset',
+      note: 'This period quota is empty and will recover after the next reset.',
+    }
   }
-  return { label: '生效中', note: null }
-}
-
-function getBillingLabel(value: BillingPreference): string {
-  return BILLING_OPTIONS.find((item) => item.value === value)?.label || value
+  return { label: 'Active', note: null }
 }
 
 export function WalletStatsCard(props: WalletStatsCardProps) {
-  const [draftPreference, setDraftPreference] =
-    useState<BillingPreference>('subscription_first')
+  const [draftFundingSourceOrder, setDraftFundingSourceOrder] = useState<
+    FundingSource[]
+  >(['blind_box', 'subscription', 'wallet'])
   const [draftOrderIds, setDraftOrderIds] = useState<number[]>([])
   const [saving, setSaving] = useState(false)
   const [planRecords, setPlanRecords] = useState<PlanRecord[]>([])
@@ -188,9 +165,11 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
 
   useEffect(() => {
     if (!props.subscriptionData) return
-    setDraftPreference(
-      (props.subscriptionData.billing_preference as BillingPreference) ||
-        'subscription_first'
+    setDraftFundingSourceOrder(
+      normalizeFundingSourceOrder(
+        props.subscriptionData.funding_source_order,
+        props.subscriptionData.billing_preference
+      )
     )
     const fallbackIds = activeSubscriptions.map((item) => item.subscription.id)
     setDraftOrderIds(
@@ -217,8 +196,43 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
     [activeSubscriptions, draftOrderIds]
   )
 
+  const disabledFundingSources = ALL_FUNDING_SOURCES.filter(
+    (source) => !draftFundingSourceOrder.includes(source)
+  )
+  const subscriptionModeEnabled =
+    draftFundingSourceOrder.includes('subscription')
   const isLoadingSidebar =
     props.loading || props.subscriptionLoading || loadingPlans
+
+  const moveFundingSource = (source: FundingSource, direction: -1 | 1) => {
+    setDraftFundingSourceOrder((current) => {
+      const next = [...current]
+      const index = next.indexOf(source)
+      if (index < 0) return current
+      const targetIndex = index + direction
+      if (targetIndex < 0 || targetIndex >= next.length) return current
+      ;[next[index], next[targetIndex]] = [next[targetIndex], next[index]]
+      return next
+    })
+  }
+
+  const toggleFundingSource = (source: FundingSource) => {
+    if (source === 'blind_box') return
+    setDraftFundingSourceOrder((current) => {
+      if (current.includes(source)) {
+        const next = current.filter((item) => item !== source)
+        const hasPrimarySource = next.some(
+          (item) => item === 'subscription' || item === 'wallet'
+        )
+        if (!hasPrimarySource) {
+          toast.error('Keep at least one primary billing source enabled')
+          return current
+        }
+        return next
+      }
+      return [...current, source]
+    })
+  }
 
   const moveSubscription = (id: number, direction: -1 | 1) => {
     setDraftOrderIds((current) => {
@@ -232,6 +246,10 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
     })
   }
 
+  const resetFundingSourceOrder = () => {
+    setDraftFundingSourceOrder(['blind_box', 'subscription', 'wallet'])
+  }
+
   const resetSubscriptionOrder = () => {
     setDraftOrderIds(activeSubscriptions.map((item) => item.subscription.id))
   }
@@ -239,18 +257,24 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
   const handleSave = async () => {
     setSaving(true)
     try {
-      const response = await updateBillingPreference(
-        draftPreference,
-        hasActiveSubscriptions ? draftOrderIds : []
+      const fundingSourceOrder = normalizeFundingSourceOrder(
+        draftFundingSourceOrder,
+        getBillingPreferenceFromFundingSourceOrder(draftFundingSourceOrder)
       )
+      const response = await updateBillingPreference({
+        billingPreference:
+          getBillingPreferenceFromFundingSourceOrder(fundingSourceOrder),
+        fundingSourceOrder,
+        subscriptionOrderIds: hasActiveSubscriptions ? draftOrderIds : [],
+      })
       if (!response.success) {
-        toast.error(response.message || '保存扣费策略失败')
+        toast.error(response.message || 'Failed to save billing settings')
         return
       }
-      toast.success('扣费策略已更新')
+      toast.success('Billing settings updated')
       await props.onSubscriptionRefresh?.()
     } catch {
-      toast.error('保存扣费策略失败')
+      toast.error('Failed to save billing settings')
     } finally {
       setSaving(false)
     }
@@ -276,15 +300,17 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
   return (
     <aside className='space-y-4 lg:sticky lg:top-4'>
       <div className='rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_16px_36px_rgba(15,23,42,0.06)] dark:border-slate-800 dark:bg-slate-950/70 dark:shadow-[0_16px_36px_rgba(2,6,23,0.4)]'>
-        <div className='flex items-center gap-2 text-sm font-semibold text-foreground'>
+        <div className='text-foreground flex items-center gap-2 text-sm font-semibold'>
           <Gift className='h-4 w-4 text-sky-600' />
-          兑换码兑换
+          Redeem code
         </div>
         <div className='mt-3 grid grid-cols-[minmax(0,1fr)_auto] gap-2'>
           <Input
             value={props.redemptionCode}
-            onChange={(event) => props.onRedemptionCodeChange(event.target.value)}
-            placeholder='输入兑换码'
+            onChange={(event) =>
+              props.onRedemptionCodeChange(event.target.value)
+            }
+            placeholder='Enter a redeem code'
             className='h-10'
           />
           <Button
@@ -292,7 +318,11 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
             disabled={props.redeeming}
             className='h-10 px-4'
           >
-            {props.redeeming ? <Loader2 className='h-4 w-4 animate-spin' /> : '兑换'}
+            {props.redeeming ? (
+              <Loader2 className='h-4 w-4 animate-spin' />
+            ) : (
+              'Redeem'
+            )}
           </Button>
         </div>
         {props.topupLink ? (
@@ -300,35 +330,45 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
             href={props.topupLink}
             target='_blank'
             rel='noopener noreferrer'
-            className='text-muted-foreground mt-3 inline-flex text-xs hover:text-foreground'
+            className='text-muted-foreground hover:text-foreground mt-3 inline-flex text-xs'
           >
-            去获取兑换码
+            Get a redeem code
           </a>
         ) : null}
       </div>
 
       <div className='rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_16px_36px_rgba(15,23,42,0.06)] dark:border-slate-800 dark:bg-slate-950/70 dark:shadow-[0_16px_36px_rgba(2,6,23,0.4)]'>
-        <div className='flex items-center gap-2 text-sm font-semibold text-foreground'>
+        <div className='text-foreground flex items-center gap-2 text-sm font-semibold'>
           <WalletCards className='h-4 w-4 text-sky-600' />
-          当前余额
+          Wallet balance
         </div>
-        <div className='mt-3 font-mono text-3xl font-bold tracking-tight text-foreground tabular-nums'>
+        <div className='text-foreground mt-3 font-mono text-3xl font-bold tracking-tight tabular-nums'>
           {formatQuota(props.user?.quota ?? 0)}
         </div>
         <div className='mt-4 grid gap-2'>
-          <StatItem label='总用量' value={formatQuota(props.user?.used_quota ?? 0)} />
           <StatItem
-            label='API 请求'
-            value={(props.user?.request_count ?? 0).toLocaleString()}
-            icon={<Activity className='h-4 w-4 text-slate-500 dark:text-slate-400' />}
+            label='Total used'
+            value={formatQuota(props.user?.used_quota ?? 0)}
           />
-          <StatItem label='生效订阅' value={`${activeSubscriptions.length}`} />
+          <StatItem
+            label='API requests'
+            value={(props.user?.request_count ?? 0).toLocaleString()}
+            icon={
+              <Activity className='h-4 w-4 text-slate-500 dark:text-slate-400' />
+            }
+          />
+          <StatItem
+            label='Active subscriptions'
+            value={`${activeSubscriptions.length}`}
+          />
         </div>
       </div>
 
       <div className='rounded-[22px] border border-slate-200 bg-white p-4 shadow-[0_16px_36px_rgba(15,23,42,0.06)] dark:border-slate-800 dark:bg-slate-950/70 dark:shadow-[0_16px_36px_rgba(2,6,23,0.4)]'>
         <div className='flex items-center justify-between gap-3'>
-          <div className='text-sm font-semibold text-foreground'>扣费优先顺序</div>
+          <div className='text-foreground text-sm font-semibold'>
+            Billing priority
+          </div>
           <Button
             variant='outline'
             size='icon'
@@ -347,52 +387,100 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
 
         <div className='mt-3 space-y-3'>
           <div className='space-y-2'>
-            <Label className='text-muted-foreground text-[11px] font-medium tracking-wide uppercase'>
-              扣费模式
-            </Label>
-            <Select
-              value={draftPreference}
-              onValueChange={(value) =>
-                value !== null && setDraftPreference(value as BillingPreference)
-              }
-            >
-              <SelectTrigger className='h-10'>
-                <SelectValue>{getBillingLabel(draftPreference)}</SelectValue>
-              </SelectTrigger>
-              <SelectContent alignItemWithTrigger={false}>
-                <SelectGroup>
-                  {BILLING_OPTIONS.map((option) => (
-                    <SelectItem
-                      key={option.value}
-                      value={option.value}
+            <div className='text-muted-foreground text-[11px] font-medium tracking-wide uppercase'>
+              Funding source order
+            </div>
+            {draftFundingSourceOrder.map((source, index) => (
+              <div
+                key={source}
+                className='rounded-2xl border border-slate-200 bg-slate-50/70 px-3 py-3 dark:border-slate-800 dark:bg-slate-900/70'
+              >
+                <div className='flex items-start justify-between gap-3'>
+                  <div className='min-w-0'>
+                    <div className='text-foreground truncate text-sm font-semibold'>
+                      {index + 1}.{' '}
+                      {getFundingSourceLabel(source, (value) => String(value))}
+                    </div>
+                    <div className='text-muted-foreground mt-1 text-xs'>
+                      {getFundingSourceDescription(source, (value) =>
+                        String(value)
+                      )}
+                    </div>
+                  </div>
+                  <div className='flex shrink-0 items-center gap-1'>
+                    {source === 'blind_box' ? null : (
+                      <Button
+                        variant='outline'
+                        size='sm'
+                        onClick={() => toggleFundingSource(source)}
+                        disabled={saving}
+                      >
+                        Disable
+                      </Button>
+                    )}
+                    <Button
+                      variant='outline'
+                      size='icon'
+                      className='h-8 w-8'
+                      onClick={() => moveFundingSource(source, -1)}
+                      disabled={index === 0 || saving}
+                    >
+                      <ArrowUp className='h-4 w-4' />
+                    </Button>
+                    <Button
+                      variant='outline'
+                      size='icon'
+                      className='h-8 w-8'
+                      onClick={() => moveFundingSource(source, 1)}
                       disabled={
-                        option.requiresSubscription && !hasActiveSubscriptions
+                        index === draftFundingSourceOrder.length - 1 || saving
                       }
                     >
-                      {option.label}
-                    </SelectItem>
+                      <ArrowDown className='h-4 w-4' />
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {disabledFundingSources.length > 0 ? (
+              <div className='rounded-2xl border border-dashed border-slate-300 px-3 py-4 text-xs text-slate-600 dark:border-slate-700 dark:text-slate-300'>
+                <div className='text-foreground font-medium'>
+                  Disabled sources
+                </div>
+                <div className='mt-2 flex flex-wrap gap-2'>
+                  {disabledFundingSources.map((source) => (
+                    <Button
+                      key={source}
+                      variant='outline'
+                      size='sm'
+                      onClick={() => toggleFundingSource(source)}
+                      disabled={saving}
+                    >
+                      Enable{' '}
+                      {getFundingSourceLabel(source, (value) => String(value))}
+                    </Button>
                   ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
+                </div>
+              </div>
+            ) : null}
           </div>
 
           <div className='space-y-2'>
             <div className='text-muted-foreground text-[11px] font-medium tracking-wide uppercase'>
-              订阅顺序
+              Subscription order
             </div>
             {isLoadingSidebar ? (
               <div className='space-y-2'>
                 <Skeleton className='h-14 rounded-2xl' />
                 <Skeleton className='h-14 rounded-2xl' />
               </div>
-            ) : draftPreference === 'wallet_only' ? (
+            ) : !subscriptionModeEnabled ? (
               <div className='rounded-2xl border border-dashed border-slate-300 px-3 py-4 text-xs text-slate-600 dark:border-slate-700 dark:text-slate-300'>
-                当前为仅从余额扣费，订阅不会参与扣费。
+                Subscription deduction is disabled right now.
               </div>
             ) : !hasActiveSubscriptions ? (
               <div className='rounded-2xl border border-dashed border-slate-300 px-3 py-4 text-xs text-slate-600 dark:border-slate-700 dark:text-slate-300'>
-                当前没有可排序的生效订阅。
+                No active subscriptions are available to reorder.
               </div>
             ) : (
               <div className='space-y-2'>
@@ -407,18 +495,19 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
                     >
                       <div className='flex items-start justify-between gap-3'>
                         <div className='min-w-0'>
-                          <div className='truncate text-sm font-semibold text-foreground'>
-                            {index + 1}. {meta?.title || `订阅 #${subscription.id}`}
+                          <div className='text-foreground truncate text-sm font-semibold'>
+                            {index + 1}.{' '}
+                            {meta?.title || `Subscription #${subscription.id}`}
                           </div>
                           <div className='text-muted-foreground mt-1 text-xs'>
-                            {meta?.subtitle || '订阅'} · 剩余{' '}
-                            {getRemainingDays(subscription.end_time)} 天
+                            {meta?.subtitle || 'Subscription'} ·{' '}
+                            {getRemainingDays(subscription.end_time)} days left
                           </div>
                           <div className='mt-1 text-xs text-amber-700'>
                             {usageStatus.note || usageStatus.label}
                           </div>
                           <div className='text-muted-foreground mt-1 text-xs'>
-                            到期：{formatDateTime(subscription.end_time)}
+                            Expires: {formatDateTime(subscription.end_time)}
                           </div>
                         </div>
                         <div className='flex shrink-0 items-center gap-1'>
@@ -426,7 +515,9 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
                             variant='outline'
                             size='icon'
                             className='h-8 w-8'
-                            onClick={() => moveSubscription(subscription.id, -1)}
+                            onClick={() =>
+                              moveSubscription(subscription.id, -1)
+                            }
                             disabled={index === 0 || saving}
                           >
                             <ArrowUp className='h-4 w-4' />
@@ -437,7 +528,8 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
                             className='h-8 w-8'
                             onClick={() => moveSubscription(subscription.id, 1)}
                             disabled={
-                              index === orderedSubscriptions.length - 1 || saving
+                              index === orderedSubscriptions.length - 1 ||
+                              saving
                             }
                           >
                             <ArrowDown className='h-4 w-4' />
@@ -451,38 +543,47 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
             )}
           </div>
 
-          <div className='flex gap-2'>
+          <div className='flex flex-wrap gap-2'>
+            <Button
+              variant='outline'
+              className='flex-1'
+              onClick={resetFundingSourceOrder}
+              disabled={saving}
+            >
+              Reset sources
+            </Button>
             <Button
               variant='outline'
               className='flex-1'
               onClick={resetSubscriptionOrder}
               disabled={!hasActiveSubscriptions || saving}
             >
-              恢复默认
-            </Button>
-            <Button className='flex-1' onClick={() => void handleSave()} disabled={saving}>
-              <Save className='mr-1 h-4 w-4' />
-              保存
+              Reset subscriptions
             </Button>
           </div>
+
+          <Button
+            className='w-full'
+            onClick={() => void handleSave()}
+            disabled={saving}
+          >
+            <Save className='mr-1 h-4 w-4' />
+            Save billing settings
+          </Button>
         </div>
       </div>
     </aside>
   )
 }
 
-function StatItem(props: {
-  label: string
-  value: string
-  icon?: ReactNode
-}) {
+function StatItem(props: { label: string; value: string; icon?: ReactNode }) {
   return (
     <div className='flex items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50/70 px-3 py-3 dark:border-slate-800 dark:bg-slate-900/70'>
       <div className='flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300'>
         {props.icon}
         <span>{props.label}</span>
       </div>
-      <div className='font-mono text-sm font-semibold text-foreground tabular-nums'>
+      <div className='text-foreground font-mono text-sm font-semibold tabular-nums'>
         {props.value}
       </div>
     </div>
