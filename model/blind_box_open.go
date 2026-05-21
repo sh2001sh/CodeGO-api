@@ -53,12 +53,14 @@ func getOrCreateBlindBoxPityStateTx(tx *gorm.DB, userId int) (*BlindBoxPityState
 	return &state, nil
 }
 
-func getOpenableBlindBoxOrdersTx(tx *gorm.DB, userId int) ([]BlindBoxOrder, int, error) {
+func getOpenableBlindBoxOrdersTx(tx *gorm.DB, userId int, orderId *int) ([]BlindBoxOrder, int, error) {
+	query := tx.Set("gorm:query_option", "FOR UPDATE").
+		Where("user_id = ? AND status = ? AND opened_count < quantity", userId, common.TopUpStatusSuccess)
+	if orderId != nil {
+		query = query.Where("id = ?", *orderId)
+	}
 	var orders []BlindBoxOrder
-	if err := tx.Set("gorm:query_option", "FOR UPDATE").
-		Where("user_id = ? AND status = ? AND opened_count < quantity", userId, common.TopUpStatusSuccess).
-		Order("id asc").
-		Find(&orders).Error; err != nil {
+	if err := query.Order("id asc").Find(&orders).Error; err != nil {
 		return nil, 0, err
 	}
 	total := 0
@@ -69,6 +71,161 @@ func getOpenableBlindBoxOrdersTx(tx *gorm.DB, userId int) ([]BlindBoxOrder, int,
 		}
 	}
 	return orders, total, nil
+}
+
+func openBlindBoxesTx(tx *gorm.DB, userId int, count int, orderId *int) ([]BlindBoxOpenRecord, error) {
+	now := common.GetTimestamp()
+	dayStart, dayEnd := getBlindBoxDayRange(now)
+	setting := operation_setting.GetBlindBoxSetting()
+	records := make([]BlindBoxOpenRecord, 0, count)
+
+	openCountToday, err := countBlindBoxOpensInRange(tx, dayStart, dayEnd)
+	if err != nil {
+		return nil, err
+	}
+	if int(openCountToday)+count > setting.DailyOpenLimit {
+		return nil, ErrBlindBoxSiteOpenLimitReached
+	}
+
+	orders, available, err := getOpenableBlindBoxOrdersTx(tx, userId, orderId)
+	if err != nil {
+		return nil, err
+	}
+	if available < count {
+		return nil, ErrBlindBoxInsufficientStock
+	}
+
+	pityState, err := getOrCreateBlindBoxPityStateTx(tx, userId)
+	if err != nil {
+		return nil, err
+	}
+	effectivePityThreshold := setting.PityThreshold
+	blindBoxBonusQuota := int64(0)
+	blindBoxRewardRate := 0.0
+	blindBoxPityGuaranteeUSD := 0.0
+	if appliedBonus, bonusErr := GetUserCompanionAppliedBonus(userId); bonusErr == nil &&
+		appliedBonus != nil {
+		if appliedBonus.Buff.BlindBoxPityReduction > 0 {
+			effectivePityThreshold -= appliedBonus.Buff.BlindBoxPityReduction
+			if effectivePityThreshold < 1 {
+				effectivePityThreshold = 1
+			}
+		}
+		if appliedBonus.Buff.BlindBoxBonusQuota > 0 {
+			blindBoxBonusQuota = appliedBonus.Buff.BlindBoxBonusQuota
+		}
+		if appliedBonus.Buff.BlindBoxRewardRate > 0 {
+			blindBoxRewardRate = appliedBonus.Buff.BlindBoxRewardRate
+		}
+		if appliedBonus.Buff.BlindBoxPityGuaranteeUSD > 0 {
+			blindBoxPityGuaranteeUSD = appliedBonus.Buff.BlindBoxPityGuaranteeUSD
+		}
+	}
+
+	subscriptionPlan, err := getBlindBoxSubscriptionPlanTx(tx)
+	if err != nil {
+		return nil, err
+	}
+
+	orderIndex := 0
+	currentOrderRemaining := orders[0].Quantity - orders[0].OpenedCount
+	for i := 0; i < count; i++ {
+		for currentOrderRemaining <= 0 && orderIndex < len(orders)-1 {
+			orderIndex++
+			currentOrderRemaining = orders[orderIndex].Quantity - orders[orderIndex].OpenedCount
+		}
+		if orderIndex >= len(orders) || currentOrderRemaining <= 0 {
+			return nil, ErrBlindBoxInsufficientStock
+		}
+
+		currentOrder := &orders[orderIndex]
+		currentOrder.OpenedCount++
+		currentOrderRemaining--
+
+		record := BlindBoxOpenRecord{
+			UserId:     userId,
+			OrderId:    currentOrder.Id,
+			CreateTime: common.GetTimestamp(),
+		}
+
+		subscriptionHit := rand.Float64() < setting.SubscriptionPrizeProbability
+		if subscriptionHit {
+			sub, _, err := ApplySubscriptionPurchaseTx(tx, userId, subscriptionPlan, "blind_box")
+			if err != nil {
+				return nil, err
+			}
+			record.RewardType = BlindBoxRewardTypeSubscription
+			record.RewardTitle = subscriptionPlan.Title
+			record.RewardTier = "subscription"
+			record.UserSubscriptionId = sub.Id
+			record.RewardUSD = 0
+			pityState.ConsecutiveLowRewards = 0
+		} else {
+			pityTriggered := pityState.ConsecutiveLowRewards >= effectivePityThreshold
+			rewardUSD := 0.0
+			tierName := "pity"
+			if pityTriggered {
+				rewardUSD = setting.PityGuaranteeUSD + blindBoxPityGuaranteeUSD
+			} else {
+				tier := pickBlindBoxTier(setting.Tiers)
+				tierName = tier.Name
+				rewardUSD = randomTierRewardUSD(tier)
+			}
+			if blindBoxRewardRate > 0 {
+				rewardUSD = math.Round(rewardUSD*(1+blindBoxRewardRate)*100) / 100
+			}
+			baseCreditAmount := quotaUnitsFromBlindBoxUSD(rewardUSD)
+			creditAmount := baseCreditAmount + blindBoxBonusQuota
+			if creditAmount <= 0 {
+				return nil, fmt.Errorf("invalid blind box reward amount: %.2f", rewardUSD)
+			}
+			totalRewardUSD := rewardUSD + float64(blindBoxBonusQuota)/common.QuotaPerUnit
+			record.RewardType = BlindBoxRewardTypeQuota
+			record.RewardUSD = totalRewardUSD
+			record.CreditAmount = creditAmount
+			record.RewardTier = tierName
+			record.IsPity = pityTriggered
+			record.RewardTitle = fmt.Sprintf("%.2f USD short-term quota", totalRewardUSD)
+			if err := tx.Create(&record).Error; err != nil {
+				return nil, err
+			}
+			credit := BlindBoxCredit{
+				UserId:          userId,
+				OpenRecordId:    record.Id,
+				OriginalAmount:  creditAmount,
+				RemainingAmount: creditAmount,
+				RewardUSD:       totalRewardUSD,
+				ExpiresAt:       now + int64(setting.ExpireDays)*24*3600,
+				Status:          BlindBoxCreditStatusActive,
+			}
+			if err := tx.Create(&credit).Error; err != nil {
+				return nil, err
+			}
+			if rewardUSD >= setting.LowRewardThresholdUSD {
+				pityState.ConsecutiveLowRewards = 0
+			} else {
+				pityState.ConsecutiveLowRewards++
+			}
+			records = append(records, record)
+			continue
+		}
+
+		if err := tx.Create(&record).Error; err != nil {
+			return nil, err
+		}
+		records = append(records, record)
+	}
+
+	for i := range orders {
+		if err := tx.Save(&orders[i]).Error; err != nil {
+			return nil, err
+		}
+	}
+	if err := tx.Save(pityState).Error; err != nil {
+		return nil, err
+	}
+
+	return records, nil
 }
 
 func pickBlindBoxTier(tiers []operation_setting.BlindBoxTierSetting) operation_setting.BlindBoxTierSetting {
@@ -108,147 +265,41 @@ func OpenBlindBoxes(userId int, count int) ([]BlindBoxOpenRecord, error) {
 	if !setting.Enabled {
 		return nil, ErrBlindBoxDisabled
 	}
-	now := common.GetTimestamp()
-	dayStart, dayEnd := getBlindBoxDayRange(now)
-	records := make([]BlindBoxOpenRecord, 0, count)
+	var records []BlindBoxOpenRecord
 	err := DB.Transaction(func(tx *gorm.DB) error {
-		openCountToday, err := countBlindBoxOpensInRange(tx, dayStart, dayEnd)
-		if err != nil {
-			return err
-		}
-		if int(openCountToday)+count > setting.DailyOpenLimit {
-			return ErrBlindBoxSiteOpenLimitReached
-		}
-		orders, available, err := getOpenableBlindBoxOrdersTx(tx, userId)
-		if err != nil {
-			return err
-		}
-		if available < count {
-			return ErrBlindBoxInsufficientStock
-		}
-		pityState, err := getOrCreateBlindBoxPityStateTx(tx, userId)
-		if err != nil {
-			return err
-		}
-		effectivePityThreshold := setting.PityThreshold
-		blindBoxBonusQuota := int64(0)
-		blindBoxRewardRate := 0.0
-		blindBoxPityGuaranteeUSD := 0.0
-		if appliedBonus, bonusErr := GetUserCompanionAppliedBonus(userId); bonusErr == nil &&
-			appliedBonus != nil {
-			if appliedBonus.Buff.BlindBoxPityReduction > 0 {
-				effectivePityThreshold -= appliedBonus.Buff.BlindBoxPityReduction
-				if effectivePityThreshold < 1 {
-					effectivePityThreshold = 1
-				}
-			}
-			if appliedBonus.Buff.BlindBoxBonusQuota > 0 {
-				blindBoxBonusQuota = appliedBonus.Buff.BlindBoxBonusQuota
-			}
-			if appliedBonus.Buff.BlindBoxRewardRate > 0 {
-				blindBoxRewardRate = appliedBonus.Buff.BlindBoxRewardRate
-			}
-			if appliedBonus.Buff.BlindBoxPityGuaranteeUSD > 0 {
-				blindBoxPityGuaranteeUSD = appliedBonus.Buff.BlindBoxPityGuaranteeUSD
-			}
-		}
-		subscriptionPlan, err := getBlindBoxSubscriptionPlanTx(tx)
-		if err != nil {
-			return err
-		}
-		orderIndex := 0
-		currentOrderRemaining := orders[0].Quantity - orders[0].OpenedCount
-		for i := 0; i < count; i++ {
-			for currentOrderRemaining <= 0 && orderIndex < len(orders)-1 {
-				orderIndex++
-				currentOrderRemaining = orders[orderIndex].Quantity - orders[orderIndex].OpenedCount
-			}
-			if orderIndex >= len(orders) || currentOrderRemaining <= 0 {
-				return ErrBlindBoxInsufficientStock
-			}
-			currentOrder := &orders[orderIndex]
-			currentOrder.OpenedCount++
-			currentOrderRemaining--
+		var err error
+		records, err = openBlindBoxesTx(tx, userId, count, nil)
+		return err
+	})
+	if err != nil {
+		return nil, err
+	}
+	return records, nil
+}
 
-			record := BlindBoxOpenRecord{
-				UserId:     userId,
-				OrderId:    currentOrder.Id,
-				CreateTime: common.GetTimestamp(),
-			}
-
-			subscriptionHit := rand.Float64() < setting.SubscriptionPrizeProbability
-			if subscriptionHit {
-				sub, _, err := ApplySubscriptionPurchaseTx(tx, userId, subscriptionPlan, "blind_box")
-				if err != nil {
-					return err
-				}
-				record.RewardType = BlindBoxRewardTypeSubscription
-				record.RewardTitle = subscriptionPlan.Title
-				record.RewardTier = "subscription"
-				record.UserSubscriptionId = sub.Id
-				record.RewardUSD = 0
-				pityState.ConsecutiveLowRewards = 0
-			} else {
-				pityTriggered := pityState.ConsecutiveLowRewards >= effectivePityThreshold
-				rewardUSD := 0.0
-				tierName := "pity"
-				if pityTriggered {
-					rewardUSD = setting.PityGuaranteeUSD + blindBoxPityGuaranteeUSD
-				} else {
-					tier := pickBlindBoxTier(setting.Tiers)
-					tierName = tier.Name
-					rewardUSD = randomTierRewardUSD(tier)
-				}
-				if blindBoxRewardRate > 0 {
-					rewardUSD = math.Round(rewardUSD*(1+blindBoxRewardRate)*100) / 100
-				}
-				baseCreditAmount := quotaUnitsFromBlindBoxUSD(rewardUSD)
-				creditAmount := baseCreditAmount + blindBoxBonusQuota
-				if creditAmount <= 0 {
-					return fmt.Errorf("invalid blind box reward amount: %.2f", rewardUSD)
-				}
-				totalRewardUSD := rewardUSD + float64(blindBoxBonusQuota)/common.QuotaPerUnit
-				record.RewardType = BlindBoxRewardTypeQuota
-				record.RewardUSD = totalRewardUSD
-				record.CreditAmount = creditAmount
-				record.RewardTier = tierName
-				record.IsPity = pityTriggered
-				record.RewardTitle = fmt.Sprintf("%.2f USD short-term quota", totalRewardUSD)
-				if err := tx.Create(&record).Error; err != nil {
-					return err
-				}
-				credit := BlindBoxCredit{
-					UserId:          userId,
-					OpenRecordId:    record.Id,
-					OriginalAmount:  creditAmount,
-					RemainingAmount: creditAmount,
-					RewardUSD:       totalRewardUSD,
-					ExpiresAt:       now + int64(setting.ExpireDays)*24*3600,
-					Status:          BlindBoxCreditStatusActive,
-				}
-				if err := tx.Create(&credit).Error; err != nil {
-					return err
-				}
-				if rewardUSD >= setting.LowRewardThresholdUSD {
-					pityState.ConsecutiveLowRewards = 0
-				} else {
-					pityState.ConsecutiveLowRewards++
-				}
-				records = append(records, record)
-				continue
-			}
-
-			if err := tx.Create(&record).Error; err != nil {
-				return err
-			}
-			records = append(records, record)
+func OpenBlindBoxOrderByTradeNo(tradeNo string) ([]BlindBoxOpenRecord, error) {
+	if strings.TrimSpace(tradeNo) == "" {
+		return nil, errors.New("tradeNo is empty")
+	}
+	var records []BlindBoxOpenRecord
+	err := DB.Transaction(func(tx *gorm.DB) error {
+		var order BlindBoxOrder
+		if err := tx.Set("gorm:query_option", "FOR UPDATE").
+			Where("trade_no = ?", tradeNo).
+			First(&order).Error; err != nil {
+			return ErrBlindBoxOrderNotFound
 		}
-		for i := range orders {
-			if err := tx.Save(&orders[i]).Error; err != nil {
-				return err
-			}
+		if order.Status != common.TopUpStatusSuccess {
+			return ErrBlindBoxOrderStatusInvalid
 		}
-		return tx.Save(pityState).Error
+		remaining := order.Quantity - order.OpenedCount
+		if remaining <= 0 {
+			records = []BlindBoxOpenRecord{}
+			return nil
+		}
+		var err error
+		records, err = openBlindBoxesTx(tx, order.UserId, remaining, &order.Id)
+		return err
 	})
 	if err != nil {
 		return nil, err

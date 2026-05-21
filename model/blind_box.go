@@ -102,18 +102,18 @@ type BlindBoxPreConsumeRecord struct {
 }
 
 type BlindBoxOverview struct {
-	AvailableBoxes     int                  `json:"available_boxes"`
-	PendingBoxes       int                  `json:"pending_boxes"`
-	ActiveCreditCount  int                  `json:"active_credit_count"`
-	RemainingQuota     int64                `json:"remaining_quota"`
-	NextExpireAt       int64                `json:"next_expire_at"`
-	PityProgress       int                  `json:"pity_progress"`
-	PityThreshold      int                  `json:"pity_threshold"`
-	EffectivePityThreshold int              `json:"effective_pity_threshold"`
-	PurchasedToday     int                  `json:"purchased_today"`
-	PurchasedThisMonth int                  `json:"purchased_this_month"`
-	RecentRecords      []BlindBoxOpenRecord `json:"recent_records"`
-	ActiveCredits      []BlindBoxCredit     `json:"active_credits"`
+	AvailableBoxes         int                  `json:"available_boxes"`
+	PendingBoxes           int                  `json:"pending_boxes"`
+	ActiveCreditCount      int                  `json:"active_credit_count"`
+	RemainingQuota         int64                `json:"remaining_quota"`
+	NextExpireAt           int64                `json:"next_expire_at"`
+	PityProgress           int                  `json:"pity_progress"`
+	PityThreshold          int                  `json:"pity_threshold"`
+	EffectivePityThreshold int                  `json:"effective_pity_threshold"`
+	PurchasedToday         int                  `json:"purchased_today"`
+	PurchasedThisMonth     int                  `json:"purchased_this_month"`
+	RecentRecords          []BlindBoxOpenRecord `json:"recent_records"`
+	ActiveCredits          []BlindBoxCredit     `json:"active_credits"`
 }
 
 func (c *BlindBoxCredit) BeforeCreate(tx *gorm.DB) error {
@@ -302,7 +302,8 @@ func CompleteBlindBoxOrder(tradeNo string, providerPayload string, expectedPayme
 	if common.UsingPostgreSQL {
 		refCol = `"trade_no"`
 	}
-	return DB.Transaction(func(tx *gorm.DB) error {
+	shouldAutoOpen := false
+	err := DB.Transaction(func(tx *gorm.DB) error {
 		var order BlindBoxOrder
 		if err := tx.Set("gorm:query_option", "FOR UPDATE").Where(refCol+" = ?", tradeNo).First(&order).Error; err != nil {
 			return ErrBlindBoxOrderNotFound
@@ -311,6 +312,7 @@ func CompleteBlindBoxOrder(tradeNo string, providerPayload string, expectedPayme
 			return ErrPaymentMethodMismatch
 		}
 		if order.Status == common.TopUpStatusSuccess {
+			shouldAutoOpen = true
 			return nil
 		}
 		if order.Status != common.TopUpStatusPending {
@@ -324,8 +326,18 @@ func CompleteBlindBoxOrder(tradeNo string, providerPayload string, expectedPayme
 		if actualPaymentMethod != "" && order.PaymentMethod != actualPaymentMethod {
 			order.PaymentMethod = actualPaymentMethod
 		}
+		shouldAutoOpen = true
 		return tx.Save(&order).Error
 	})
+	if err != nil {
+		return err
+	}
+	if shouldAutoOpen {
+		if _, autoOpenErr := OpenBlindBoxOrderByTradeNo(tradeNo); autoOpenErr != nil {
+			common.SysError(fmt.Sprintf("failed to auto open blind box order %s: %s", tradeNo, autoOpenErr.Error()))
+		}
+	}
+	return nil
 }
 
 func ExpireBlindBoxOrder(tradeNo string, expectedPaymentProvider string) error {

@@ -13,7 +13,11 @@ import { useWalletWorkspace } from './hooks/use-wallet-workspace'
 
 const blindBoxPets = getBlindBoxPetHighlights()
 
-export function BlindBoxPage() {
+interface BlindBoxPageProps {
+  initialPaymentStatus?: 'success' | 'pending' | 'fail'
+}
+
+export function BlindBoxPage(props: BlindBoxPageProps) {
   const workspace = useWalletWorkspace()
   const dashboardQuery = useQuery({
     queryKey: ['gamification', 'dashboard'],
@@ -29,7 +33,7 @@ export function BlindBoxPage() {
   return (
     <WalletWorkspaceShell
       title='盲盒活动'
-      description='在这里购买盲盒、查看开盒记录，并了解当前宠物带来的额外收益。'
+      description='在这里购买盲盒、查看开奖记录，并了解当前宠物带来的额外增益。'
       main={
         <div className='space-y-4'>
           <div className='flex items-center gap-3 rounded-[22px] border border-amber-100 bg-[linear-gradient(135deg,rgba(255,244,227,0.96),rgba(255,255,255,0.98))] px-4 py-4 dark:border-slate-800 dark:bg-[linear-gradient(135deg,rgba(45,24,20,0.9),rgba(15,23,42,0.88))]'>
@@ -41,7 +45,7 @@ export function BlindBoxPage() {
                 单个盲盒 2.5 元；连续 5 次低奖励后，下次保底 10 美元额度。
               </div>
               <div className='text-muted-foreground text-sm'>
-                盲盒奖励会按照你的扣费顺序参与结算，适合短期冲量或补充临时额度。
+                支付成功后系统会自动开奖，奖励会按照你的扣费顺序参与结算，适合短期冲量或补充临时额度。
               </div>
             </div>
           </div>
@@ -52,7 +56,7 @@ export function BlindBoxPage() {
                 购买方式
               </div>
               <div className='text-muted-foreground mt-2 text-sm leading-6'>
-                数量可自由调整，不再限制固定档位。
+                数量可自由调整；支付成功后会自动开奖，不需要再手动点一次开启。
               </div>
             </div>
             <div className='rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40'>
@@ -76,6 +80,7 @@ export function BlindBoxPage() {
           <BlindBoxCard
             onSubscriptionRefresh={workspace.fetchSubscriptionData}
             onUserRefresh={workspace.fetchUser}
+            paymentResult={props.initialPaymentStatus}
           />
 
           <div className='grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]'>

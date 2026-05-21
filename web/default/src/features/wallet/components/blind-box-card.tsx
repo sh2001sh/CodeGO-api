@@ -18,6 +18,7 @@ import type { BlindBoxRecord, BlindBoxSelfData, PaymentMethod } from '../types'
 interface BlindBoxCardProps {
   onSubscriptionRefresh: () => Promise<void>
   onUserRefresh: () => Promise<void>
+  paymentResult?: 'success' | 'pending' | 'fail'
 }
 
 function formatTime(timestamp?: number): string {
@@ -94,13 +95,38 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
     })()
   }, [selectedQuantity])
 
+  useEffect(() => {
+    if (!props.paymentResult) return
+
+    const syncPaymentResult = async () => {
+      if (props.paymentResult === 'success') {
+        toast.success('支付成功，系统已开始自动开奖。')
+      } else if (props.paymentResult === 'pending') {
+        toast.message('支付处理中，稍后会自动同步开奖结果。')
+      } else {
+        toast.error('支付未完成，请重新发起购买。')
+      }
+
+      await Promise.all([
+        fetchSelf(),
+        props.onSubscriptionRefresh(),
+        props.onUserRefresh(),
+      ])
+
+      if (typeof window !== 'undefined') {
+        window.history.replaceState({}, '', window.location.pathname)
+      }
+    }
+
+    void syncPaymentResult()
+  }, [
+    fetchSelf,
+    props.onSubscriptionRefresh,
+    props.onUserRefresh,
+    props.paymentResult,
+  ])
+
   const availableBoxes = data?.overview?.available_boxes || 0
-  const openBatchCount = useMemo(
-    () => Math.min(availableBoxes, 10),
-    [availableBoxes]
-  )
-  const canBatchOpen = openBatchCount > 1
-  const batchOpenLabel = canBatchOpen ? `开 ${openBatchCount} 个` : '批量开启'
 
   const pitySummary = useMemo(() => {
     const threshold =
@@ -134,6 +160,8 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
         return
       }
 
+      toast.message('支付完成后会自动开奖，最近记录会自动更新。')
+
       const directUrl =
         (response.data as { pay_url?: string; qrcode_url?: string })?.pay_url ||
         (response.data as { pay_url?: string; qrcode_url?: string })?.qrcode_url
@@ -161,7 +189,7 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
       setOpeningCount(count)
       const response = await openBlindBoxes({ count })
       if (!isApiSuccess(response) || !response.data) {
-        toast.error(response.message || '开启盲盒失败')
+        toast.error(response.message || '补开奖失败')
         return
       }
 
@@ -172,7 +200,7 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
         props.onUserRefresh(),
       ])
     } catch {
-      toast.error('开启盲盒失败')
+      toast.error('补开奖失败')
     } finally {
       setOpeningCount(null)
     }
@@ -185,7 +213,7 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
           <div className='space-y-2'>
             <h3 className='text-base font-semibold'>盲盒活动</h3>
             <p className='text-muted-foreground text-sm'>
-              盲盒临时额度会按照你的扣费顺序参与消耗，适合短期补量和冲峰值。
+              支付成功后会自动开奖，盲盒临时额度会按照你的扣费顺序参与消耗，适合短期补量和冲峰值。
             </p>
           </div>
           <Badge variant={data?.enabled ? 'default' : 'secondary'}>
@@ -195,7 +223,7 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
 
         <div className='grid gap-3 sm:grid-cols-2 xl:grid-cols-4'>
           <div className='rounded-xl border border-slate-200 p-3 dark:border-slate-800'>
-            <div className='text-muted-foreground text-xs'>可开盲盒</div>
+            <div className='text-muted-foreground text-xs'>待开启盲盒</div>
             <div className='mt-1 text-2xl font-semibold'>{availableBoxes}</div>
           </div>
           <div className='rounded-xl border border-slate-200 p-3 dark:border-slate-800'>
@@ -312,44 +340,44 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
                   <div className='mt-1 text-lg font-semibold'>
                     {amountDue.toFixed(2)} 元
                   </div>
+                  <div className='text-muted-foreground mt-1 text-xs'>
+                    支付成功后会自动开奖，并写入最近开盒记录。
+                  </div>
                 </div>
                 <Button
                   onClick={handlePay}
                   disabled={!data?.enabled || paying}
                   className='sm:min-w-32'
                 >
-                  {paying ? '支付处理中...' : '立即支付'}
+                  {paying ? '支付处理中...' : '立即支付并开奖'}
                 </Button>
               </div>
             </div>
 
-            <div className='rounded-xl border border-slate-200 p-4 dark:border-slate-800'>
-              <div className='mb-3 flex items-center justify-between'>
-                <h3 className='text-sm font-semibold'>开启盲盒</h3>
-                <span className='text-muted-foreground text-sm'>
-                  当前可开 {availableBoxes} 个
-                </span>
+            {availableBoxes > 0 ? (
+              <div className='rounded-xl border border-amber-200 bg-amber-50/60 p-4 dark:border-amber-900/60 dark:bg-amber-950/10'>
+                <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
+                  <div className='space-y-1'>
+                    <h3 className='text-sm font-semibold'>待处理盲盒</h3>
+                    <p className='text-muted-foreground text-sm'>
+                      系统通常会在支付成功后自动开奖。如果这里仍有{' '}
+                      {availableBoxes}{' '}
+                      个待处理盲盒，可能是历史订单或支付回调延迟，可一键补开。
+                    </p>
+                  </div>
+                  <Button
+                    type='button'
+                    variant='outline'
+                    onClick={() => void handleOpen(availableBoxes)}
+                    disabled={openingCount !== null}
+                  >
+                    {openingCount === availableBoxes
+                      ? '补开中...'
+                      : `立即补开 ${availableBoxes} 个`}
+                  </Button>
+                </div>
               </div>
-              <div className='flex flex-wrap gap-2'>
-                <Button
-                  type='button'
-                  onClick={() => void handleOpen(1)}
-                  disabled={availableBoxes < 1 || openingCount !== null}
-                >
-                  {openingCount === 1 ? '开启中...' : '开 1 个'}
-                </Button>
-                <Button
-                  type='button'
-                  variant='outline'
-                  onClick={() => void handleOpen(openBatchCount)}
-                  disabled={!canBatchOpen || openingCount !== null}
-                >
-                  {openingCount === openBatchCount
-                    ? '开启中...'
-                    : batchOpenLabel}
-                </Button>
-              </div>
-            </div>
+            ) : null}
 
             <div className='rounded-xl border border-slate-200 p-4 dark:border-slate-800'>
               <h3 className='mb-3 text-sm font-semibold'>最近开盒记录</h3>
