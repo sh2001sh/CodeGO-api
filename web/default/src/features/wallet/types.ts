@@ -341,6 +341,8 @@ export interface BlindBoxSelfData {
   daily_limit: number
   monthly_limit: number
   daily_open_limit: number
+  first_purchase_guarantee_usd: number
+  first_purchase_guarantee_eligible: boolean
   count_options: number[]
   tiers: BlindBoxTier[]
   subscription_prize_probability: number
@@ -352,12 +354,25 @@ export interface BlindBoxSelfData {
   overview: BlindBoxOverview
 }
 
+export interface BlindBoxOrderStatus {
+  trade_no: string
+  status: 'pending' | 'success' | 'expired' | string
+  quantity: number
+  opened_count: number
+  money: number
+  payment_method?: string
+  payment_provider?: string
+  create_time?: number
+  complete_time?: number
+}
+
 export type BlindBoxSelfResponse = ApiResponse<BlindBoxSelfData>
 export type BlindBoxOpenResponse = ApiResponse<{
   records: BlindBoxRecord[]
   overview: BlindBoxOverview
   open_count: number
 }>
+export type BlindBoxOrderStatusResponse = ApiResponse<BlindBoxOrderStatus>
 
 export interface BlindBoxAmountRequest {
   quantity: number

@@ -1,7 +1,6 @@
+import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { useForm, type Resolver } from 'react-hook-form'
-import { zodResolver } from '@hookform/resolvers/zod'
-import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import {
@@ -34,6 +33,7 @@ const schema = z.object({
   dailyLimit: z.coerce.number().int().min(1),
   monthlyLimit: z.coerce.number().int().min(1),
   dailyOpenLimit: z.coerce.number().int().min(1),
+  firstPurchaseGuaranteeUSD: z.coerce.number().min(0),
   pityThreshold: z.coerce.number().int().min(1),
   pityGuaranteeUSD: z.coerce.number().min(0),
   lowRewardThresholdUSD: z.coerce.number().min(0),
@@ -42,16 +42,19 @@ const schema = z.object({
   countOptions: z.string().superRefine((value, ctx) => {
     try {
       const parsed = JSON.parse(value)
-      if (!Array.isArray(parsed) || parsed.some((item) => !Number.isInteger(item) || item <= 0)) {
+      if (
+        !Array.isArray(parsed) ||
+        parsed.some((item) => !Number.isInteger(item) || item <= 0)
+      ) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: 'Provide a JSON array of positive integers',
+          message: '请输入正整数 JSON 数组',
         })
       }
     } catch {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'Provide valid JSON',
+        message: '请输入合法的 JSON',
       })
     }
   }),
@@ -61,7 +64,7 @@ const schema = z.object({
       if (!Array.isArray(parsed)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: 'Provide a JSON array',
+          message: '请输入 JSON 数组',
         })
         return
       }
@@ -69,13 +72,13 @@ const schema = z.object({
       if (!result.success) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          message: 'Each tier must include name, min_usd, max_usd, probability',
+          message: '每个档位都必须包含 name、min_usd、max_usd、probability',
         })
       }
     } catch {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
-        message: 'Provide valid JSON',
+        message: '请输入合法的 JSON',
       })
     }
   }),
@@ -86,7 +89,11 @@ type Values = z.infer<typeof schema>
 function normalizeCountOptions(value: string): string {
   const parsed = JSON.parse(value) as number[]
   const unique = Array.from(
-    new Set(parsed.map((item) => Number(item)).filter((item) => Number.isInteger(item) && item > 0))
+    new Set(
+      parsed
+        .map((item) => Number(item))
+        .filter((item) => Number.isInteger(item) && item > 0)
+    )
   ).sort((left, right) => left - right)
   return JSON.stringify(unique)
 }
@@ -110,6 +117,7 @@ export function BlindBoxSettingsSection({
     dailyLimit: number
     monthlyLimit: number
     dailyOpenLimit: number
+    firstPurchaseGuaranteeUSD: number
     pityThreshold: number
     pityGuaranteeUSD: number
     lowRewardThresholdUSD: number
@@ -119,7 +127,6 @@ export function BlindBoxSettingsSection({
     tiers: BlindBoxTierSetting[]
   }
 }) {
-  const { t } = useTranslation()
   const updateOption = useUpdateOption()
 
   const form = useForm<Values>({
@@ -131,6 +138,7 @@ export function BlindBoxSettingsSection({
       dailyLimit: defaultValues.dailyLimit,
       monthlyLimit: defaultValues.monthlyLimit,
       dailyOpenLimit: defaultValues.dailyOpenLimit,
+      firstPurchaseGuaranteeUSD: defaultValues.firstPurchaseGuaranteeUSD,
       pityThreshold: defaultValues.pityThreshold,
       pityGuaranteeUSD: defaultValues.pityGuaranteeUSD,
       lowRewardThresholdUSD: defaultValues.lowRewardThresholdUSD,
@@ -152,19 +160,52 @@ export function BlindBoxSettingsSection({
 
     const updates: Array<{ key: string; value: string }> = []
 
-    const pushIfChanged = (key: string, next: string | number | boolean, previous: string | number | boolean) => {
+    const pushIfChanged = (
+      key: string,
+      next: string | number | boolean,
+      previous: string | number | boolean
+    ) => {
       if (next !== previous) {
         updates.push({ key, value: String(next) })
       }
     }
 
     pushIfChanged('blind_box_setting.enabled', values.enabled, defaultValues.enabled)
-    pushIfChanged('blind_box_setting.unit_price', values.unitPrice, defaultValues.unitPrice)
-    pushIfChanged('blind_box_setting.expire_days', values.expireDays, defaultValues.expireDays)
-    pushIfChanged('blind_box_setting.daily_limit', values.dailyLimit, defaultValues.dailyLimit)
-    pushIfChanged('blind_box_setting.monthly_limit', values.monthlyLimit, defaultValues.monthlyLimit)
-    pushIfChanged('blind_box_setting.daily_open_limit', values.dailyOpenLimit, defaultValues.dailyOpenLimit)
-    pushIfChanged('blind_box_setting.pity_threshold', values.pityThreshold, defaultValues.pityThreshold)
+    pushIfChanged(
+      'blind_box_setting.unit_price',
+      values.unitPrice,
+      defaultValues.unitPrice
+    )
+    pushIfChanged(
+      'blind_box_setting.expire_days',
+      values.expireDays,
+      defaultValues.expireDays
+    )
+    pushIfChanged(
+      'blind_box_setting.daily_limit',
+      values.dailyLimit,
+      defaultValues.dailyLimit
+    )
+    pushIfChanged(
+      'blind_box_setting.monthly_limit',
+      values.monthlyLimit,
+      defaultValues.monthlyLimit
+    )
+    pushIfChanged(
+      'blind_box_setting.daily_open_limit',
+      values.dailyOpenLimit,
+      defaultValues.dailyOpenLimit
+    )
+    pushIfChanged(
+      'blind_box_setting.first_purchase_guarantee_usd',
+      values.firstPurchaseGuaranteeUSD,
+      defaultValues.firstPurchaseGuaranteeUSD
+    )
+    pushIfChanged(
+      'blind_box_setting.pity_threshold',
+      values.pityThreshold,
+      defaultValues.pityThreshold
+    )
     pushIfChanged(
       'blind_box_setting.pity_guarantee_usd',
       values.pityGuaranteeUSD,
@@ -200,7 +241,7 @@ export function BlindBoxSettingsSection({
     }
 
     if (updates.length === 0) {
-      toast.info(t('No changes to save'))
+      toast.info('没有需要保存的变更')
       return
     }
 
@@ -218,8 +259,8 @@ export function BlindBoxSettingsSection({
 
   return (
     <SettingsSection
-      title={t('Blind Box Event')}
-      description={t('Configure blind box sale rules, reward pool, and pity mechanism')}
+      title='盲盒活动'
+      description='配置盲盒售价、首购专属奖池、常规奖池概率和保底机制'
     >
       <Form {...form}>
         <form onSubmit={form.handleSubmit(onSubmit)} className='space-y-6'>
@@ -229,9 +270,9 @@ export function BlindBoxSettingsSection({
             render={({ field }) => (
               <FormItem className='flex flex-row items-center justify-between rounded-lg border p-4'>
                 <div className='space-y-0.5'>
-                  <FormLabel className='text-base'>{t('Enable blind box')}</FormLabel>
+                  <FormLabel className='text-base'>启用盲盒活动</FormLabel>
                   <FormDescription>
-                    {t('Expose blind box purchase and opening in the wallet page')}
+                    在钱包页展示盲盒购买、支付和开奖入口
                   </FormDescription>
                 </div>
                 <FormControl>
@@ -246,121 +287,212 @@ export function BlindBoxSettingsSection({
           />
 
           <div className='grid gap-6 md:grid-cols-2 xl:grid-cols-4'>
-            <FormField control={form.control} name='unitPrice' render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('Unit price (USD)')}</FormLabel>
-                <FormControl><Input type='number' step='0.01' min={0} {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-            <FormField control={form.control} name='expireDays' render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('Quota expiry days')}</FormLabel>
-                <FormControl><Input type='number' min={1} {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-            <FormField control={form.control} name='dailyLimit' render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('Daily purchase limit')}</FormLabel>
-                <FormControl><Input type='number' min={1} {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-            <FormField control={form.control} name='monthlyLimit' render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('Monthly purchase limit')}</FormLabel>
-                <FormControl><Input type='number' min={1} {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
+            <FormField
+              control={form.control}
+              name='unitPrice'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>单盒售价（USD）</FormLabel>
+                  <FormControl>
+                    <Input type='number' step='0.01' min={0} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name='expireDays'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>盲盒额度有效期（天）</FormLabel>
+                  <FormControl>
+                    <Input type='number' min={1} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name='dailyLimit'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>单用户每日购买上限</FormLabel>
+                  <FormControl>
+                    <Input type='number' min={1} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name='monthlyLimit'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>单用户每月购买上限</FormLabel>
+                  <FormControl>
+                    <Input type='number' min={1} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </div>
 
           <div className='grid gap-6 md:grid-cols-2 xl:grid-cols-4'>
-            <FormField control={form.control} name='dailyOpenLimit' render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('Daily open limit')}</FormLabel>
-                <FormControl><Input type='number' min={1} {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-            <FormField control={form.control} name='pityThreshold' render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('Pity threshold')}</FormLabel>
-                <FormControl><Input type='number' min={1} {...field} /></FormControl>
-                <FormDescription>
-                  {t('Guaranteed reward is triggered after this many low-value opens')}
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )} />
-            <FormField control={form.control} name='pityGuaranteeUSD' render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('Pity guarantee (USD)')}</FormLabel>
-                <FormControl><Input type='number' step='0.01' min={0} {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
-            <FormField control={form.control} name='lowRewardThresholdUSD' render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('Low reward threshold (USD)')}</FormLabel>
-                <FormControl><Input type='number' step='0.01' min={0} {...field} /></FormControl>
-                <FormMessage />
-              </FormItem>
-            )} />
+            <FormField
+              control={form.control}
+              name='dailyOpenLimit'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>全站每日开奖上限</FormLabel>
+                  <FormControl>
+                    <Input type='number' min={1} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name='firstPurchaseGuaranteeUSD'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>首购奖池起始金额（USD）</FormLabel>
+                  <FormControl>
+                    <Input type='number' step='0.01' min={0} {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    首购首盒若未命中月卡大奖，就进入专属首购奖池。该奖池保持月卡大奖概率不变，非月卡奖励区间从这里开始，并提升高档位概率。
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name='pityThreshold'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>保底触发次数</FormLabel>
+                  <FormControl>
+                    <Input type='number' min={1} {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    连续抽到低档奖励达到该次数后，下一次触发保底
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name='pityGuaranteeUSD'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>保底最低奖励（USD）</FormLabel>
+                  <FormControl>
+                    <Input type='number' step='0.01' min={0} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name='lowRewardThresholdUSD'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>低档奖励判定线（USD）</FormLabel>
+                  <FormControl>
+                    <Input type='number' step='0.01' min={0} {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </div>
 
           <div className='grid gap-6 md:grid-cols-2'>
-            <FormField control={form.control} name='subscriptionPrizeProbability' render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('Subscription prize probability')}</FormLabel>
-                <FormControl><Input type='number' step='0.0001' min={0} max={1} {...field} /></FormControl>
-                <FormDescription>
-                  {t('Use decimal probability. 0.003 means 0.3%.')}
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )} />
-            <FormField control={form.control} name='subscriptionPlanTitle' render={({ field }) => (
-              <FormItem>
-                <FormLabel>{t('Subscription reward title')}</FormLabel>
-                <FormControl><Input {...field} /></FormControl>
-                <FormDescription>
-                  {t('Displayed when the rare subscription reward is opened')}
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )} />
+            <FormField
+              control={form.control}
+              name='subscriptionPrizeProbability'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>月卡大奖概率</FormLabel>
+                  <FormControl>
+                    <Input type='number' step='0.0001' min={0} max={1} {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    使用小数概率，例如 0.003 代表 0.3%
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name='subscriptionPlanTitle'
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>月卡奖励标题</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormDescription>
+                    用户抽中稀有月卡大奖时展示该标题
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
           </div>
 
           {enabled ? (
             <>
-              <FormField control={form.control} name='countOptions' render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('Purchase quantity options')}</FormLabel>
-                  <FormControl><Textarea rows={4} {...field} /></FormControl>
-                  <FormDescription>
-                    {t('JSON array, for example [1, 5, 10, 20, 50]')}
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )} />
+              <FormField
+                control={form.control}
+                name='countOptions'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>购买数量选项</FormLabel>
+                    <FormControl>
+                      <Textarea rows={4} {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      JSON 数组，例如 [1, 5, 10, 20, 50]
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
-              <FormField control={form.control} name='tiers' render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('Reward tiers')}</FormLabel>
-                  <FormControl><Textarea rows={10} {...field} /></FormControl>
-                  <FormDescription>
-                    {t('JSON array with name, min_usd, max_usd, probability')}
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )} />
+              <FormField
+                control={form.control}
+                name='tiers'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>常规奖励档位</FormLabel>
+                    <FormControl>
+                      <Textarea rows={10} {...field} />
+                    </FormControl>
+                    <FormDescription>
+                      JSON 数组，包含 name、min_usd、max_usd、probability
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
             </>
           ) : null}
 
-          <Button type='submit' disabled={!isDirty || updateOption.isPending || isSubmitting}>
-            {updateOption.isPending || isSubmitting ? t('Saving...') : t('Save blind box settings')}
+          <Button
+            type='submit'
+            disabled={!isDirty || updateOption.isPending || isSubmitting}
+          >
+            {updateOption.isPending || isSubmitting ? '保存中...' : '保存盲盒配置'}
           </Button>
         </form>
       </Form>

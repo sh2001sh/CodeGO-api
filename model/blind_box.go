@@ -168,6 +168,15 @@ func quotaUnitsFromBlindBoxUSD(amount float64) int64 {
 	return quotaUnitsFromUSD(amount)
 }
 
+func normalizeBlindBoxOpenRecordDisplay(record *BlindBoxOpenRecord) {
+	if record == nil {
+		return
+	}
+	if record.RewardTier == "first_purchase" {
+		record.RewardTitle = formatFirstPurchaseBlindBoxRewardTitle(record.RewardUSD)
+	}
+}
+
 func GetBlindBoxOrderByTradeNo(tradeNo string) *BlindBoxOrder {
 	if strings.TrimSpace(tradeNo) == "" {
 		return nil
@@ -246,6 +255,9 @@ func GetUserBlindBoxOverview(userId int, recentLimit int) (*BlindBoxOverview, er
 		Limit(recentLimit).
 		Find(&overview.RecentRecords).Error; err != nil {
 		return nil, err
+	}
+	for index := range overview.RecentRecords {
+		normalizeBlindBoxOpenRecordDisplay(&overview.RecentRecords[index])
 	}
 	credits, err := GetActiveBlindBoxCredits(userId)
 	if err != nil {

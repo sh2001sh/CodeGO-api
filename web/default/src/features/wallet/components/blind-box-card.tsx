@@ -1,19 +1,29 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { formatQuota } from '@/lib/format'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Separator } from '@/components/ui/separator'
 import {
   calculateBlindBoxAmount,
+  getBlindBoxOrderStatus,
   getBlindBoxSelf,
   isApiSuccess,
   openBlindBoxes,
   requestBlindBoxPayment,
 } from '../api'
 import { submitPaymentForm } from '../lib'
-import type { BlindBoxRecord, BlindBoxSelfData, PaymentMethod } from '../types'
+import type {
+  BlindBoxOrderStatus,
+  BlindBoxSelfData,
+  PaymentMethod,
+} from '../types'
+import {
+  BlindBoxPaymentDialog,
+  BlindBoxPrizeDialog,
+  EMPTY_PAYMENT_STATE,
+  EMPTY_PRIZE_STATE,
+  getBlindBoxMethodLabel,
+  type BlindBoxPaymentState,
+  type PrizeDialogState,
+} from './blind-box-dialogs'
+import { BlindBoxCardView } from './blind-box-view'
 
 interface BlindBoxCardProps {
   onSubscriptionRefresh: () => Promise<void>
@@ -21,24 +31,8 @@ interface BlindBoxCardProps {
   paymentResult?: 'success' | 'pending' | 'fail'
 }
 
-function formatTime(timestamp?: number): string {
-  if (!timestamp) return '-'
-  return new Date(timestamp * 1000).toLocaleString()
-}
-
-function summarizeOpenResult(records: BlindBoxRecord[]): string {
-  const subscriptionHits = records.filter(
-    (record) => record.reward_type === 'subscription'
-  ).length
-  const quotaHits = records
-    .filter((record) => record.reward_type === 'quota')
-    .reduce((sum, record) => sum + (record.reward_usd || 0), 0)
-
-  if (subscriptionHits > 0) {
-    return `本次开出 ${records.length} 个盲盒，抽中 ${subscriptionHits} 份套餐大奖，并获得 ${quotaHits.toFixed(2)} 美元临时额度。`
-  }
-
-  return `本次开出 ${records.length} 个盲盒，获得 ${quotaHits.toFixed(2)} 美元临时额度。`
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value)
 }
 
 export function BlindBoxCard(props: BlindBoxCardProps) {
@@ -50,26 +44,27 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
   const [amountDue, setAmountDue] = useState(0)
   const [paying, setPaying] = useState(false)
   const [openingCount, setOpeningCount] = useState<number | null>(null)
+  const [paymentState, setPaymentState] =
+    useState<BlindBoxPaymentState>(EMPTY_PAYMENT_STATE)
+  const [prizeState, setPrizeState] = useState<PrizeDialogState>(EMPTY_PRIZE_STATE)
 
   const fetchSelf = useCallback(async () => {
     try {
       setLoading(true)
       const response = await getBlindBoxSelf()
-      if (isApiSuccess(response) && response.data) {
-        setData(response.data)
-        setSelectedQuantity((current) => Math.max(1, current || 1))
-        setSelectedPaymentMethod((current) => {
-          if (
-            current &&
-            response.data?.pay_methods?.some(
-              (method) => method.type === current.type
-            )
-          ) {
-            return current
-          }
-          return response.data?.pay_methods?.[0] || null
-        })
-      }
+      if (!isApiSuccess(response) || !response.data) return
+
+      setData(response.data)
+      setSelectedQuantity((current) => Math.max(1, current || 1))
+      setSelectedPaymentMethod((current) => {
+        if (
+          current &&
+          response.data?.pay_methods?.some((method) => method.type === current.type)
+        ) {
+          return current
+        }
+        return response.data?.pay_methods?.[0] || null
+      })
     } catch {
       toast.error('加载盲盒数据失败')
     } finally {
@@ -77,22 +72,31 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
     }
   }, [])
 
+  const refreshAll = useCallback(async () => {
+    await Promise.all([
+      fetchSelf(),
+      props.onSubscriptionRefresh(),
+      props.onUserRefresh(),
+    ])
+  }, [fetchSelf, props])
+
   useEffect(() => {
     void fetchSelf()
   }, [fetchSelf])
 
   useEffect(() => {
-    if (!selectedQuantity || selectedQuantity <= 0) return
-    void (async () => {
-      const response = await calculateBlindBoxAmount({
-        quantity: selectedQuantity,
-      })
+    if (selectedQuantity <= 0) return
+
+    const loadAmount = async () => {
+      const response = await calculateBlindBoxAmount({ quantity: selectedQuantity })
       if (isApiSuccess(response) && response.data) {
         setAmountDue(parseFloat(response.data))
       } else {
         setAmountDue(0)
       }
-    })()
+    }
+
+    void loadAmount()
   }, [selectedQuantity])
 
   useEffect(() => {
@@ -100,364 +104,235 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
 
     const syncPaymentResult = async () => {
       if (props.paymentResult === 'success') {
-        toast.success('支付成功，系统已开始自动开奖。')
+        toast.success('支付成功，系统正在同步盲盒结果。')
       } else if (props.paymentResult === 'pending') {
-        toast.message('支付处理中，稍后会自动同步开奖结果。')
+        toast.message('支付处理中，结果稍后会同步回来。')
       } else {
         toast.error('支付未完成，请重新发起购买。')
       }
 
-      await Promise.all([
-        fetchSelf(),
-        props.onSubscriptionRefresh(),
-        props.onUserRefresh(),
-      ])
-
+      await refreshAll()
       if (typeof window !== 'undefined') {
         window.history.replaceState({}, '', window.location.pathname)
       }
     }
 
     void syncPaymentResult()
-  }, [
-    fetchSelf,
-    props.onSubscriptionRefresh,
-    props.onUserRefresh,
-    props.paymentResult,
-  ])
+  }, [props.paymentResult, refreshAll])
 
-  const availableBoxes = data?.overview?.available_boxes || 0
-
-  const pitySummary = useMemo(() => {
-    const threshold =
-      data?.overview?.effective_pity_threshold || data?.pity_threshold || 5
-    const lowReward = data?.low_reward_threshold_usd || 5
-    const guarantee = data?.pity_guarantee_usd || 10
-    const progress = data?.overview?.pity_progress || 0
-    const remaining = Math.max(0, threshold - progress)
-
-    if (remaining === 0) {
-      return `已进入保底状态。下一次只要不是套餐大奖，就必得 ${guarantee} 美元额度。`
+  useEffect(() => {
+    if (
+      !paymentState.open ||
+      paymentState.stage !== 'pending' ||
+      !paymentState.orderId
+    ) {
+      return
     }
 
-    return `连续 ${threshold} 次低于 ${lowReward} 美元奖励会触发保底；当前还差 ${remaining} 次，触发后下一次必得 ${guarantee} 美元额度。`
-  }, [data])
+    let active = true
 
-  const handlePay = async () => {
+    const pollOrder = async () => {
+      try {
+        const response = await getBlindBoxOrderStatus(paymentState.orderId)
+        if (!active || !response.success || !response.data) return
+
+        const order = response.data as BlindBoxOrderStatus
+        if (order.status === 'success') {
+          const refreshed = await getBlindBoxSelf()
+          if (isApiSuccess(refreshed) && refreshed.data) {
+            setData(refreshed.data)
+            const openCount = Math.max(
+              1,
+              Number(order.opened_count || order.quantity || paymentState.quantity)
+            )
+            const resultRecords = (refreshed.data.overview?.recent_records || []).slice(
+              0,
+              openCount
+            )
+            setPrizeState({
+              open: resultRecords.length > 0,
+              records: resultRecords,
+              openCount,
+            })
+          }
+          await Promise.all([props.onSubscriptionRefresh(), props.onUserRefresh()])
+          setPaymentState(EMPTY_PAYMENT_STATE)
+          return
+        }
+
+        if (order.status === 'expired') {
+          setPaymentState((current) => ({
+            ...current,
+            stage: 'failed',
+            message: '订单已过期或支付未完成，请重新发起购买。',
+          }))
+        }
+      } catch {
+        // Keep polling until the state changes.
+      }
+    }
+
+    void pollOrder()
+    const timer = window.setInterval(() => {
+      void pollOrder()
+    }, 2000)
+
+    return () => {
+      active = false
+      window.clearInterval(timer)
+    }
+  }, [paymentState, props])
+
+  const availableBoxes = data?.overview?.available_boxes || 0
+  const effectivePityThreshold =
+    data?.overview?.effective_pity_threshold || data?.pity_threshold || 1
+  const pityProgress = data?.overview?.pity_progress || 0
+  const pityPercent = Math.min(100, (pityProgress / effectivePityThreshold) * 100)
+  const remainingPity = Math.max(0, effectivePityThreshold - pityProgress)
+
+  const activeCredits = useMemo(
+    () => data?.overview?.active_credits?.slice(0, 3) || [],
+    [data?.overview?.active_credits]
+  )
+
+  const startPendingPayment = useCallback(
+    (args: {
+      orderId: string
+      amountDue: number
+      quantity: number
+      methodLabel: string
+      payUrl?: string
+      qrCodeUrl?: string
+      formUrl?: string
+      formFields?: Record<string, unknown> | null
+    }) => {
+      setPaymentState({
+        open: true,
+        stage: 'pending',
+        orderId: args.orderId,
+        amountDue: args.amountDue,
+        methodLabel: args.methodLabel,
+        payUrl: args.payUrl || '',
+        qrCodeUrl: args.qrCodeUrl || '',
+        formUrl: args.formUrl || '',
+        formFields: args.formFields || null,
+        quantity: args.quantity,
+        message: '请在当前弹窗内扫码支付，付款完成后这里会自动出现开奖结果。',
+      })
+    },
+    []
+  )
+
+  const handlePay = useCallback(async () => {
     if (!selectedPaymentMethod) {
       toast.error('请选择支付方式')
       return
     }
 
+    setPaying(true)
     try {
-      setPaying(true)
       const response = await requestBlindBoxPayment({
         quantity: selectedQuantity,
         payment_method: selectedPaymentMethod.type,
       })
       if (!isApiSuccess(response)) {
-        toast.error(response.message || '发起支付失败')
-        return
+        throw new Error(response.message || '发起支付失败')
       }
 
-      toast.message('支付完成后会自动开奖，最近记录会自动更新。')
-
-      const directUrl =
-        (response.data as { pay_url?: string; qrcode_url?: string })?.pay_url ||
-        (response.data as { pay_url?: string; qrcode_url?: string })?.qrcode_url
-      if (directUrl) {
-        window.open(directUrl, '_blank')
-        return
-      }
-
-      const form = (response.data as { form?: Record<string, unknown> })?.form
-      if (response.url && form) {
-        submitPaymentForm(response.url, form)
-        return
-      }
-
-      toast.error('发起支付失败')
-    } catch {
-      toast.error('发起支付失败')
+      const payload = isRecord(response.data) ? response.data : {}
+      const formFields = isRecord(payload.form) ? payload.form : null
+      const orderId = String(payload.order_id || '')
+      startPendingPayment({
+        orderId,
+        amountDue: Number(payload.amount_due || amountDue),
+        quantity: Number(payload.quantity || selectedQuantity),
+        methodLabel: getBlindBoxMethodLabel(selectedPaymentMethod),
+        payUrl: String(payload.pay_url || response.url || ''),
+        qrCodeUrl: String(payload.qrcode_url || ''),
+        formUrl: formFields ? String(response.url || '') : '',
+        formFields,
+      })
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : '发起支付失败')
     } finally {
       setPaying(false)
     }
-  }
+  }, [amountDue, selectedPaymentMethod, selectedQuantity, startPendingPayment])
 
-  const handleOpen = async (count: number) => {
-    try {
+  const handleManualOpen = useCallback(
+    async (count: number) => {
       setOpeningCount(count)
-      const response = await openBlindBoxes({ count })
-      if (!isApiSuccess(response) || !response.data) {
-        toast.error(response.message || '补开奖失败')
-        return
-      }
+      try {
+        const response = await openBlindBoxes({ count })
+        if (!response.success || !response.data) {
+          throw new Error(response.message || '补开奖失败')
+        }
 
-      toast.success(summarizeOpenResult(response.data.records || []))
-      await Promise.all([
-        fetchSelf(),
-        props.onSubscriptionRefresh(),
-        props.onUserRefresh(),
-      ])
-    } catch {
-      toast.error('补开奖失败')
-    } finally {
-      setOpeningCount(null)
+        setPrizeState({
+          open: true,
+          records: response.data.records || [],
+          openCount: response.data.open_count || count,
+        })
+        await refreshAll()
+      } catch {
+        toast.error('补开奖失败')
+      } finally {
+        setOpeningCount(null)
+      }
+    },
+    [refreshAll]
+  )
+
+  const handleOpenExternal = useCallback(() => {
+    if (paymentState.formUrl && paymentState.formFields) {
+      submitPaymentForm(paymentState.formUrl, paymentState.formFields)
+      return
     }
-  }
+    if (paymentState.payUrl) {
+      window.open(paymentState.payUrl, '_blank', 'noopener,noreferrer')
+    }
+  }, [paymentState.formFields, paymentState.formUrl, paymentState.payUrl])
 
   return (
     <div className='space-y-4'>
-      <div className='space-y-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40'>
-        <div className='flex flex-row items-start justify-between gap-4'>
-          <div className='space-y-2'>
-            <h3 className='text-base font-semibold'>盲盒活动</h3>
-            <p className='text-muted-foreground text-sm'>
-              支付成功后会自动开奖，盲盒临时额度会按照你的扣费顺序参与消耗，适合短期补量和冲峰值。
-            </p>
-          </div>
-          <Badge variant={data?.enabled ? 'default' : 'secondary'}>
-            {data?.enabled ? '进行中' : '未开启'}
-          </Badge>
-        </div>
+      <BlindBoxCardView
+        data={data}
+        loading={loading}
+        selectedQuantity={selectedQuantity}
+        selectedPaymentMethod={selectedPaymentMethod}
+        amountDue={amountDue}
+        paying={paying}
+        openingCount={openingCount}
+        availableBoxes={availableBoxes}
+        effectivePityThreshold={effectivePityThreshold}
+        pityProgress={pityProgress}
+        pityPercent={pityPercent}
+        remainingPity={remainingPity}
+        activeCredits={activeCredits}
+        onQuantityChange={setSelectedQuantity}
+        onPaymentMethodChange={setSelectedPaymentMethod}
+        onPay={() => void handlePay()}
+        onManualOpen={(count) => void handleManualOpen(count)}
+      />
 
-        <div className='grid gap-3 sm:grid-cols-2 xl:grid-cols-4'>
-          <div className='rounded-xl border border-slate-200 p-3 dark:border-slate-800'>
-            <div className='text-muted-foreground text-xs'>待开启盲盒</div>
-            <div className='mt-1 text-2xl font-semibold'>{availableBoxes}</div>
-          </div>
-          <div className='rounded-xl border border-slate-200 p-3 dark:border-slate-800'>
-            <div className='text-muted-foreground text-xs'>临时额度</div>
-            <div className='mt-1 text-lg font-semibold'>
-              {formatQuota(data?.overview?.remaining_quota || 0)}
-            </div>
-          </div>
-          <div className='rounded-xl border border-slate-200 p-3 dark:border-slate-800'>
-            <div className='text-muted-foreground text-xs'>最近到期时间</div>
-            <div className='mt-1 text-sm font-medium'>
-              {formatTime(data?.overview?.next_expire_at)}
-            </div>
-          </div>
-          <div className='rounded-xl border border-slate-200 p-3 dark:border-slate-800'>
-            <div className='text-muted-foreground text-xs'>保底进度</div>
-            <div className='mt-1 text-lg font-semibold'>
-              {data?.overview?.pity_progress || 0}/
-              {data?.overview?.effective_pity_threshold ||
-                data?.pity_threshold ||
-                0}
-            </div>
-          </div>
-        </div>
+      <BlindBoxPaymentDialog
+        state={paymentState}
+        onOpenChange={(open) => {
+          if (!open && paymentState.stage === 'pending') return
+          setPaymentState(open ? { ...paymentState, open } : EMPTY_PAYMENT_STATE)
+        }}
+        onOpenExternal={handleOpenExternal}
+      />
 
-        <div className='grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]'>
-          <div className='space-y-4'>
-            <div className='rounded-xl border border-slate-200 p-4 dark:border-slate-800'>
-              <div className='mb-3 flex items-center justify-between gap-3'>
-                <h3 className='text-sm font-semibold'>购买盲盒</h3>
-                <span className='text-muted-foreground text-sm'>
-                  单价 {data?.unit_price?.toFixed(1) || '0.0'} 元
-                </span>
-              </div>
-
-              <div className='grid gap-4 lg:grid-cols-[minmax(0,180px)_minmax(0,1fr)]'>
-                <div className='space-y-2'>
-                  <div className='text-muted-foreground text-xs'>购买数量</div>
-                  <div className='flex items-center gap-2'>
-                    <Button
-                      type='button'
-                      variant='outline'
-                      size='sm'
-                      onClick={() =>
-                        setSelectedQuantity((current) =>
-                          Math.max(1, current - 1)
-                        )
-                      }
-                      disabled={
-                        !data?.enabled || loading || selectedQuantity <= 1
-                      }
-                    >
-                      -1
-                    </Button>
-                    <Input
-                      type='number'
-                      min={1}
-                      value={selectedQuantity}
-                      onChange={(event) => {
-                        const value = Number(event.target.value)
-                        setSelectedQuantity(
-                          Number.isFinite(value) && value > 0 ? value : 1
-                        )
-                      }}
-                      className='h-9 text-center'
-                      disabled={!data?.enabled || loading}
-                    />
-                    <Button
-                      type='button'
-                      variant='outline'
-                      size='sm'
-                      onClick={() =>
-                        setSelectedQuantity((current) => current + 1)
-                      }
-                      disabled={!data?.enabled || loading}
-                    >
-                      +1
-                    </Button>
-                  </div>
-                  <div className='text-muted-foreground text-xs'>
-                    今日已购 {data?.overview?.purchased_today || 0}/
-                    {data?.daily_limit || 0}，本月已购{' '}
-                    {data?.overview?.purchased_this_month || 0}/
-                    {data?.monthly_limit || 0}
-                  </div>
-                </div>
-
-                <div className='space-y-2'>
-                  <div className='text-muted-foreground text-xs'>支付方式</div>
-                  <div className='flex flex-wrap gap-2'>
-                    {(data?.pay_methods || []).map((method) => (
-                      <Button
-                        key={method.type}
-                        type='button'
-                        variant={
-                          selectedPaymentMethod?.type === method.type
-                            ? 'default'
-                            : 'outline'
-                        }
-                        size='sm'
-                        onClick={() => setSelectedPaymentMethod(method)}
-                        disabled={!data?.enabled || loading}
-                      >
-                        {method.name}
-                      </Button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-
-              <div className='mt-4 flex flex-col gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 sm:flex-row sm:items-center sm:justify-between dark:border-slate-800 dark:bg-slate-900/70'>
-                <div>
-                  <div className='text-muted-foreground text-xs'>应付金额</div>
-                  <div className='mt-1 text-lg font-semibold'>
-                    {amountDue.toFixed(2)} 元
-                  </div>
-                  <div className='text-muted-foreground mt-1 text-xs'>
-                    支付成功后会自动开奖，并写入最近开盒记录。
-                  </div>
-                </div>
-                <Button
-                  onClick={handlePay}
-                  disabled={!data?.enabled || paying}
-                  className='sm:min-w-32'
-                >
-                  {paying ? '支付处理中...' : '立即支付并开奖'}
-                </Button>
-              </div>
-            </div>
-
-            {availableBoxes > 0 ? (
-              <div className='rounded-xl border border-amber-200 bg-amber-50/60 p-4 dark:border-amber-900/60 dark:bg-amber-950/10'>
-                <div className='flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between'>
-                  <div className='space-y-1'>
-                    <h3 className='text-sm font-semibold'>待处理盲盒</h3>
-                    <p className='text-muted-foreground text-sm'>
-                      系统通常会在支付成功后自动开奖。如果这里仍有{' '}
-                      {availableBoxes}{' '}
-                      个待处理盲盒，可能是历史订单或支付回调延迟，可一键补开。
-                    </p>
-                  </div>
-                  <Button
-                    type='button'
-                    variant='outline'
-                    onClick={() => void handleOpen(availableBoxes)}
-                    disabled={openingCount !== null}
-                  >
-                    {openingCount === availableBoxes
-                      ? '补开中...'
-                      : `立即补开 ${availableBoxes} 个`}
-                  </Button>
-                </div>
-              </div>
-            ) : null}
-
-            <div className='rounded-xl border border-slate-200 p-4 dark:border-slate-800'>
-              <h3 className='mb-3 text-sm font-semibold'>最近开盒记录</h3>
-              <div className='space-y-3'>
-                {(data?.overview?.recent_records || [])
-                  .slice(0, 8)
-                  .map((record) => (
-                    <div
-                      key={record.id}
-                      className='flex items-center justify-between gap-3 rounded-lg border border-slate-200 px-3 py-2 text-sm dark:border-slate-800'
-                    >
-                      <div className='space-y-1'>
-                        <div className='font-medium'>{record.reward_title}</div>
-                        <div className='text-muted-foreground text-xs'>
-                          {formatTime(record.create_time)}
-                        </div>
-                      </div>
-                      <div className='flex items-center gap-2'>
-                        {record.is_pity ? (
-                          <Badge variant='outline'>保底触发</Badge>
-                        ) : null}
-                        <Badge
-                          variant={
-                            record.reward_type === 'subscription'
-                              ? 'default'
-                              : 'secondary'
-                          }
-                        >
-                          {record.reward_type === 'subscription'
-                            ? '套餐大奖'
-                            : `${record.reward_usd?.toFixed(2) || '0.00'} 美元额度`}
-                        </Badge>
-                      </div>
-                    </div>
-                  ))}
-                {data?.overview?.recent_records?.length === 0 ? (
-                  <div className='text-muted-foreground rounded-lg border border-dashed border-slate-200 px-3 py-6 text-center text-sm dark:border-slate-800'>
-                    暂无盲盒记录
-                  </div>
-                ) : null}
-              </div>
-            </div>
-          </div>
-
-          <div className='space-y-4'>
-            <div className='rounded-xl border border-slate-200 p-4 dark:border-slate-800'>
-              <h3 className='text-sm font-semibold'>奖励概率</h3>
-              <div className='mt-3 space-y-2 text-sm'>
-                {(data?.tiers || []).map((tier) => (
-                  <div
-                    key={tier.name}
-                    className='flex items-center justify-between gap-3'
-                  >
-                    <span className='text-muted-foreground'>
-                      {tier.min_usd} - {tier.max_usd} 美元额度
-                    </span>
-                    <span>{(tier.probability * 100).toFixed(1)}%</span>
-                  </div>
-                ))}
-                <Separator className='my-2' />
-                <div className='flex items-center justify-between gap-3 font-medium'>
-                  <span>{data?.subscription_plan_title || '套餐大奖'}</span>
-                  <span>
-                    {(
-                      (data?.subscription_prize_probability || 0) * 100
-                    ).toFixed(1)}
-                    %
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <div className='text-muted-foreground rounded-xl border border-slate-200 p-4 text-sm dark:border-slate-800'>
-              <div>盲盒临时额度会自动过期，建议尽快消耗。</div>
-              <div className='mt-2'>扣费时会遵循你在优先级里设定的顺序。</div>
-              <div className='mt-2'>{pitySummary}</div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <BlindBoxPrizeDialog
+        state={prizeState}
+        onOpenChange={(open) =>
+          setPrizeState((current) => ({
+            ...current,
+            open,
+          }))
+        }
+      />
     </div>
   )
 }

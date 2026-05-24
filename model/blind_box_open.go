@@ -18,12 +18,76 @@ func getBlindBoxSubscriptionPlanTx(tx *gorm.DB) (*SubscriptionPlan, error) {
 	if title == "" {
 		return nil, errors.New("blind box subscription plan title is empty")
 	}
+
 	var plan SubscriptionPlan
-	query := tx.Where("title = ?", title).First(&plan)
-	if query.Error != nil {
-		return nil, query.Error
+	if err := tx.Where("title = ?", title).First(&plan).Error; err != nil {
+		return nil, err
 	}
 	return &plan, nil
+}
+
+func formatFirstPurchaseBlindBoxRewardTitle(amount float64) string {
+	return fmt.Sprintf("首购专属奖励：%.2f 美元临时额度", amount)
+}
+
+func buildFirstPurchaseBlindBoxTiers(
+	tiers []operation_setting.BlindBoxTierSetting,
+	startUSD float64,
+) []operation_setting.BlindBoxTierSetting {
+	if len(tiers) == 0 || startUSD <= 0 {
+		return tiers
+	}
+
+	remapped := make([]operation_setting.BlindBoxTierSetting, 0, len(tiers))
+	currentMin := math.Round(startUSD*100) / 100
+	for index, tier := range tiers {
+		width := math.Round((tier.MaxUSD-tier.MinUSD)*100) / 100
+		if width < 0 {
+			width = 0
+		}
+		currentMax := math.Round((currentMin+width)*100) / 100
+		remapped = append(remapped, operation_setting.BlindBoxTierSetting{
+			Name:        tier.Name,
+			MinUSD:      currentMin,
+			MaxUSD:      currentMax,
+			Probability: tier.Probability,
+		})
+		if index < len(tiers)-1 {
+			currentMin = math.Round((currentMax+0.1)*100) / 100
+		}
+	}
+
+	applyFirstPurchaseTierProbabilityBoost(remapped)
+	return remapped
+}
+
+func applyFirstPurchaseTierProbabilityBoost(tiers []operation_setting.BlindBoxTierSetting) {
+	if len(tiers) == 0 {
+		return
+	}
+
+	weighted := make([]float64, len(tiers))
+	totalWeight := 0.0
+	lastIndex := len(tiers) - 1
+	for index, tier := range tiers {
+		if tier.Probability <= 0 {
+			continue
+		}
+		boost := 1.0
+		if lastIndex > 0 {
+			progress := float64(index) / float64(lastIndex)
+			boost = 0.45 + math.Pow(progress, 1.35)*2.55
+		}
+		weighted[index] = tier.Probability * boost
+		totalWeight += weighted[index]
+	}
+	if totalWeight <= 0 {
+		return
+	}
+
+	for index := range tiers {
+		tiers[index].Probability = weighted[index] / totalWeight
+	}
 }
 
 func countBlindBoxOpensInRange(tx *gorm.DB, start, end int64) (int64, error) {
@@ -103,6 +167,11 @@ func openBlindBoxesTx(tx *gorm.DB, userId int, count int, orderId *int) ([]Blind
 	blindBoxBonusQuota := int64(0)
 	blindBoxRewardRate := 0.0
 	blindBoxPityGuaranteeUSD := 0.0
+	firstPurchaseStartUSD := setting.FirstPurchaseGuaranteeUSD
+	firstPurchaseTiers := buildFirstPurchaseBlindBoxTiers(
+		setting.Tiers,
+		firstPurchaseStartUSD,
+	)
 	if appliedBonus, bonusErr := GetUserCompanionAppliedBonus(userId); bonusErr == nil &&
 		appliedBonus != nil {
 		if appliedBonus.Buff.BlindBoxPityReduction > 0 {
@@ -127,6 +196,17 @@ func openBlindBoxesTx(tx *gorm.DB, userId int, count int, orderId *int) ([]Blind
 		return nil, err
 	}
 
+	firstPurchaseOrderID := 0
+	if firstPurchaseStartUSD > 0 && len(orders) > 0 {
+		isFirstOrder, err := isFirstSuccessfulBlindBoxOrderTx(tx, userId, orders[0].Id)
+		if err != nil {
+			return nil, err
+		}
+		if isFirstOrder && orders[0].OpenedCount == 0 {
+			firstPurchaseOrderID = orders[0].Id
+		}
+	}
+
 	orderIndex := 0
 	currentOrderRemaining := orders[0].Quantity - orders[0].OpenedCount
 	for i := 0; i < count; i++ {
@@ -141,6 +221,7 @@ func openBlindBoxesTx(tx *gorm.DB, userId int, count int, orderId *int) ([]Blind
 		currentOrder := &orders[orderIndex]
 		currentOrder.OpenedCount++
 		currentOrderRemaining--
+		isFirstPurchaseOpen := currentOrder.Id == firstPurchaseOrderID && currentOrder.OpenedCount == 1
 
 		record := BlindBoxOpenRecord{
 			UserId:     userId,
@@ -167,8 +248,15 @@ func openBlindBoxesTx(tx *gorm.DB, userId int, count int, orderId *int) ([]Blind
 			if pityTriggered {
 				rewardUSD = setting.PityGuaranteeUSD + blindBoxPityGuaranteeUSD
 			} else {
-				tier := pickBlindBoxTier(setting.Tiers)
-				tierName = tier.Name
+				rewardTiers := setting.Tiers
+				if isFirstPurchaseOpen && len(firstPurchaseTiers) > 0 {
+					rewardTiers = firstPurchaseTiers
+					tierName = "first_purchase"
+				}
+				tier := pickBlindBoxTier(rewardTiers)
+				if tierName != "first_purchase" {
+					tierName = tier.Name
+				}
 				rewardUSD = randomTierRewardUSD(tier)
 			}
 			if blindBoxRewardRate > 0 {
@@ -185,7 +273,11 @@ func openBlindBoxesTx(tx *gorm.DB, userId int, count int, orderId *int) ([]Blind
 			record.CreditAmount = creditAmount
 			record.RewardTier = tierName
 			record.IsPity = pityTriggered
-			record.RewardTitle = fmt.Sprintf("%.2f USD short-term quota", totalRewardUSD)
+			if tierName == "first_purchase" {
+				record.RewardTitle = formatFirstPurchaseBlindBoxRewardTitle(totalRewardUSD)
+			} else {
+				record.RewardTitle = fmt.Sprintf("%.2f 美元临时额度", totalRewardUSD)
+			}
 			if err := tx.Create(&record).Error; err != nil {
 				return nil, err
 			}
@@ -230,7 +322,12 @@ func openBlindBoxesTx(tx *gorm.DB, userId int, count int, orderId *int) ([]Blind
 
 func pickBlindBoxTier(tiers []operation_setting.BlindBoxTierSetting) operation_setting.BlindBoxTierSetting {
 	if len(tiers) == 0 {
-		return operation_setting.BlindBoxTierSetting{Name: "fallback", MinUSD: 1, MaxUSD: 1, Probability: 1}
+		return operation_setting.BlindBoxTierSetting{
+			Name:        "fallback",
+			MinUSD:      1,
+			MaxUSD:      1,
+			Probability: 1,
+		}
 	}
 	roll := rand.Float64()
 	cumulative := 0.0

@@ -4,7 +4,6 @@ import { getGamificationDashboard } from '@/features/gamification/api'
 import {
   PixelPetSprite,
   getBlindBoxPetHighlights,
-  getPetProfile,
 } from '@/features/gamification/pet-catalog'
 import { BlindBoxCard } from './components/blind-box-card'
 import { WalletStatsCard } from './components/wallet-stats-card'
@@ -24,138 +23,70 @@ export function BlindBoxPage(props: BlindBoxPageProps) {
     queryFn: getGamificationDashboard,
     staleTime: 60 * 1000,
   })
-  const activePet = dashboardQuery.data?.data?.companion?.equipped_pet
-  const activeBuff = dashboardQuery.data?.data?.companion?.active_buff
-  const activeProfile = activePet
-    ? getPetProfile(activePet.achievement_key)
-    : null
 
   return (
     <WalletWorkspaceShell
       title='盲盒活动'
-      description='在这里购买盲盒、查看开奖记录，并了解当前宠物带来的额外增益。'
+      description='支付后直接在当前页开奖，常规奖池、保底进度和盲盒额度使用情况都集中在这里。'
       main={
         <div className='space-y-4'>
-          <div className='flex items-center gap-3 rounded-[22px] border border-amber-100 bg-[linear-gradient(135deg,rgba(255,244,227,0.96),rgba(255,255,255,0.98))] px-4 py-4 dark:border-slate-800 dark:bg-[linear-gradient(135deg,rgba(45,24,20,0.9),rgba(15,23,42,0.88))]'>
-            <div className='flex size-12 items-center justify-center rounded-2xl bg-amber-500 text-white shadow-sm'>
-              <Gift className='size-5' />
-            </div>
-            <div className='space-y-1'>
-              <div className='text-foreground text-sm font-semibold'>
-                单个盲盒 2.5 元；连续 5 次低奖励后，下次保底 10 美元额度。
-              </div>
-              <div className='text-muted-foreground text-sm'>
-                支付成功后系统会自动开奖，奖励会按照你的扣费顺序参与结算，适合短期冲量或补充临时额度。
-              </div>
-            </div>
-          </div>
-
-          <div className='grid gap-3 md:grid-cols-3'>
-            <div className='rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40'>
-              <div className='text-foreground text-sm font-semibold'>
-                购买方式
-              </div>
-              <div className='text-muted-foreground mt-2 text-sm leading-6'>
-                数量可自由调整；支付成功后会自动开奖，不需要再手动点一次开启。
-              </div>
-            </div>
-            <div className='rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40'>
-              <div className='text-foreground text-sm font-semibold'>
-                保底规则
-              </div>
-              <div className='text-muted-foreground mt-2 text-sm leading-6'>
-                连续低于 5 美元奖励达到门槛后，下次必得 10 美元额度。
-              </div>
-            </div>
-            <div className='rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40'>
-              <div className='text-foreground text-sm font-semibold'>
-                宠物加成
-              </div>
-              <div className='text-muted-foreground mt-2 text-sm leading-6'>
-                部分宠物会缩短保底触发次数，或在开盒时返还额外额度。
-              </div>
-            </div>
-          </div>
-
           <BlindBoxCard
             onSubscriptionRefresh={workspace.fetchSubscriptionData}
             onUserRefresh={workspace.fetchUser}
             paymentResult={props.initialPaymentStatus}
           />
 
-          <div className='grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]'>
-            <div className='rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40'>
-              <div className='flex items-center justify-between gap-3'>
-                <div className='text-foreground text-sm font-semibold'>
-                  盲盒宠物预览
+          <div className='rounded-[30px] border border-slate-200 bg-card p-4 shadow-xs dark:border-slate-800'>
+            <div className='flex items-center justify-between gap-3'>
+              <div>
+                <div className='flex items-center gap-2 text-sm font-semibold text-slate-950 dark:text-slate-50'>
+                  <Gift className='size-4 text-amber-500' />
+                  相关宠物预览
                 </div>
-                <div className='rounded-full bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700 dark:bg-amber-500/10 dark:text-amber-200'>
-                  相关宠物
+                <div className='mt-1 text-sm text-slate-500 dark:text-slate-400'>
+                  盲盒系与裂变系宠物会缩短保底触发次数，或在开盒时返还额外额度。
                 </div>
               </div>
-
-              <div className='mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4'>
-                {blindBoxPets.map((pet) => (
-                  <div
-                    key={pet.id}
-                    className='rounded-[22px] border border-slate-200 bg-[linear-gradient(180deg,#ffffff,#f8fbff)] p-3 dark:border-slate-800 dark:bg-slate-900/70'
-                  >
-                    <div className='aspect-square rounded-[20px] bg-[linear-gradient(180deg,#ffffff,#eefbf5)] p-2'>
-                      <PixelPetSprite id={pet.id} label={pet.species} />
-                    </div>
-                    <div className='mt-3 space-y-1'>
-                      <div className='text-foreground text-sm font-semibold'>
-                        {pet.species}
-                      </div>
-                      <div className='text-muted-foreground text-xs leading-5'>
-                        {pet.note}
-                      </div>
-                    </div>
-                  </div>
-                ))}
+              <div className='rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'>
+                图鉴联动
               </div>
             </div>
 
-            <div className='rounded-[24px] border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/40'>
-              <div className='text-foreground text-sm font-semibold'>
-                当前盲盒增益
-              </div>
-              {activePet && activeBuff ? (
-                <div className='mt-4 space-y-3'>
-                  <div className='flex items-center gap-3'>
-                    <div className='flex size-16 items-center justify-center rounded-[18px] bg-[linear-gradient(180deg,rgba(255,255,255,0.96),rgba(240,249,255,0.92))] p-2 shadow-xs dark:bg-slate-950/45'>
-                      <PixelPetSprite
-                        id={activeProfile?.id || 'gummy-shark'}
-                        label={activeProfile?.species || 'active pet'}
-                      />
-                    </div>
-                    <div>
-                      <div className='text-foreground text-sm font-semibold'>
-                        {activeProfile?.species || '当前宠物'}
-                      </div>
-                      <div className='text-muted-foreground text-xs'>
-                        Lv.{activePet.level}/{activePet.max_level}
-                      </div>
-                    </div>
+            <div className='mt-4 grid gap-3 md:grid-cols-2 xl:grid-cols-4'>
+              {blindBoxPets.map((pet) => (
+                <div
+                  key={pet.id}
+                  className='rounded-[24px] border border-slate-200 bg-[linear-gradient(180deg,#ffffff,#f8fafc)] p-3 dark:border-slate-800 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.88),rgba(2,6,23,0.88))]'
+                >
+                  <div className='aspect-square rounded-[20px] border border-slate-200 bg-[linear-gradient(180deg,#ffffff,#eefbf5)] p-2 dark:border-slate-800 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.82),rgba(2,6,23,0.88))]'>
+                    <PixelPetSprite id={pet.id} label={pet.species} />
                   </div>
-                  <div className='bg-background/70 rounded-2xl border p-3'>
-                    <div className='text-muted-foreground text-xs'>
-                      生效增益
+                  <div className='mt-3'>
+                    <div className='text-sm font-semibold text-slate-950 dark:text-slate-50'>
+                      {pet.species}
                     </div>
-                    <div className='text-foreground mt-1 text-sm font-semibold'>
-                      {activeBuff.name} {activeBuff.value_text}
-                    </div>
-                    <div className='text-muted-foreground mt-1 text-xs leading-6'>
-                      {activeBuff.description}
+                    <div className='mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400'>
+                      {pet.note}
                     </div>
                   </div>
                 </div>
-              ) : (
-                <div className='bg-background/60 text-muted-foreground mt-4 rounded-2xl border border-dashed p-4 text-sm leading-6'>
-                  先去图鉴装备一只宠物，这里就会显示当前盲盒增益。
-                </div>
-              )}
+              ))}
             </div>
+
+            {dashboardQuery.data?.data?.companion?.active_buff ? (
+              <div className='mt-4 rounded-[24px] border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-900/70'>
+                <div className='text-[11px] font-medium uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400'>
+                  当前生效中的盲盒增益
+                </div>
+                <div className='mt-1 text-sm font-semibold text-slate-950 dark:text-slate-50'>
+                  {dashboardQuery.data.data.companion.active_buff.name}{' '}
+                  {dashboardQuery.data.data.companion.active_buff.value_text}
+                </div>
+                <div className='mt-2 text-sm leading-6 text-slate-500 dark:text-slate-400'>
+                  {dashboardQuery.data.data.companion.active_buff.description}
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
       }

@@ -290,6 +290,7 @@ export type BillingSettings = {
   'blind_box_setting.daily_limit': number
   'blind_box_setting.monthly_limit': number
   'blind_box_setting.daily_open_limit': number
+  'blind_box_setting.first_purchase_guarantee_usd': number
   'blind_box_setting.pity_threshold': number
   'blind_box_setting.pity_guarantee_usd': number
   'blind_box_setting.low_reward_threshold_usd': number

@@ -20,6 +20,7 @@ type BlindBoxSetting struct {
 	DailyLimit                   int                   `json:"daily_limit"`
 	MonthlyLimit                 int                   `json:"monthly_limit"`
 	DailyOpenLimit               int                   `json:"daily_open_limit"`
+	FirstPurchaseGuaranteeUSD    float64               `json:"first_purchase_guarantee_usd"`
 	PityThreshold                int                   `json:"pity_threshold"`
 	PityGuaranteeUSD             float64               `json:"pity_guarantee_usd"`
 	LowRewardThresholdUSD        float64               `json:"low_reward_threshold_usd"`
@@ -36,6 +37,7 @@ var blindBoxSetting = BlindBoxSetting{
 	DailyLimit:                   50,
 	MonthlyLimit:                 500,
 	DailyOpenLimit:               5000,
+	FirstPurchaseGuaranteeUSD:    10,
 	PityThreshold:                5,
 	PityGuaranteeUSD:             10,
 	LowRewardThresholdUSD:        5,
@@ -102,6 +104,9 @@ func GetBlindBoxSetting() BlindBoxSetting {
 	}
 	if settingCopy.DailyOpenLimit <= 0 {
 		settingCopy.DailyOpenLimit = 5000
+	}
+	if settingCopy.FirstPurchaseGuaranteeUSD <= 0 {
+		settingCopy.FirstPurchaseGuaranteeUSD = 10
 	}
 	if settingCopy.PityThreshold <= 0 {
 		settingCopy.PityThreshold = 5

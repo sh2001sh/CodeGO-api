@@ -20,6 +20,7 @@ import { Route as PricingIndexRouteImport } from './routes/pricing/index'
 import { Route as GuideIndexRouteImport } from './routes/guide/index'
 import { Route as AboutIndexRouteImport } from './routes/about/index'
 import { Route as OauthProviderRouteImport } from './routes/oauth/$provider'
+import { Route as GeneMapTokenRouteImport } from './routes/gene-map/$token'
 import { Route as ConsoleTopupRouteImport } from './routes/console/topup'
 import { Route as ConsoleLogRouteImport } from './routes/console/log'
 import { Route as AuthenticatedChat2linkRouteImport } from './routes/_authenticated/chat2link'
@@ -123,6 +124,11 @@ const AboutIndexRoute = AboutIndexRouteImport.update({
 const OauthProviderRoute = OauthProviderRouteImport.update({
   id: '/oauth/$provider',
   path: '/oauth/$provider',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const GeneMapTokenRoute = GeneMapTokenRouteImport.update({
+  id: '/gene-map/$token',
+  path: '/gene-map/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ConsoleTopupRoute = ConsoleTopupRouteImport.update({
@@ -432,6 +438,7 @@ export interface FileRoutesByFullPath {
   '/chat2link': typeof AuthenticatedChat2linkRoute
   '/console/log': typeof ConsoleLogRoute
   '/console/topup': typeof ConsoleTopupRoute
+  '/gene-map/$token': typeof GeneMapTokenRoute
   '/oauth/$provider': typeof OauthProviderRoute
   '/about/': typeof AboutIndexRoute
   '/guide/': typeof GuideIndexRoute
@@ -493,6 +500,7 @@ export interface FileRoutesByTo {
   '/chat2link': typeof AuthenticatedChat2linkRoute
   '/console/log': typeof ConsoleLogRoute
   '/console/topup': typeof ConsoleTopupRoute
+  '/gene-map/$token': typeof GeneMapTokenRoute
   '/oauth/$provider': typeof OauthProviderRoute
   '/about': typeof AboutIndexRoute
   '/guide': typeof GuideIndexRoute
@@ -558,6 +566,7 @@ export interface FileRoutesById {
   '/_authenticated/chat2link': typeof AuthenticatedChat2linkRoute
   '/console/log': typeof ConsoleLogRoute
   '/console/topup': typeof ConsoleTopupRoute
+  '/gene-map/$token': typeof GeneMapTokenRoute
   '/oauth/$provider': typeof OauthProviderRoute
   '/about/': typeof AboutIndexRoute
   '/guide/': typeof GuideIndexRoute
@@ -622,6 +631,7 @@ export interface FileRouteTypes {
     | '/chat2link'
     | '/console/log'
     | '/console/topup'
+    | '/gene-map/$token'
     | '/oauth/$provider'
     | '/about/'
     | '/guide/'
@@ -683,6 +693,7 @@ export interface FileRouteTypes {
     | '/chat2link'
     | '/console/log'
     | '/console/topup'
+    | '/gene-map/$token'
     | '/oauth/$provider'
     | '/about'
     | '/guide'
@@ -747,6 +758,7 @@ export interface FileRouteTypes {
     | '/_authenticated/chat2link'
     | '/console/log'
     | '/console/topup'
+    | '/gene-map/$token'
     | '/oauth/$provider'
     | '/about/'
     | '/guide/'
@@ -804,6 +816,7 @@ export interface RootRouteChildren {
   errors503Route: typeof errors503Route
   ConsoleLogRoute: typeof ConsoleLogRoute
   ConsoleTopupRoute: typeof ConsoleTopupRoute
+  GeneMapTokenRoute: typeof GeneMapTokenRoute
   OauthProviderRoute: typeof OauthProviderRoute
   AboutIndexRoute: typeof AboutIndexRoute
   GuideIndexRoute: typeof GuideIndexRoute
@@ -890,6 +903,13 @@ declare module '@tanstack/react-router' {
       path: '/oauth/$provider'
       fullPath: '/oauth/$provider'
       preLoaderRoute: typeof OauthProviderRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/gene-map/$token': {
+      id: '/gene-map/$token'
+      path: '/gene-map/$token'
+      fullPath: '/gene-map/$token'
+      preLoaderRoute: typeof GeneMapTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/console/topup': {
@@ -1399,6 +1419,7 @@ const rootRouteChildren: RootRouteChildren = {
   errors503Route: errors503Route,
   ConsoleLogRoute: ConsoleLogRoute,
   ConsoleTopupRoute: ConsoleTopupRoute,
+  GeneMapTokenRoute: GeneMapTokenRoute,
   OauthProviderRoute: OauthProviderRoute,
   AboutIndexRoute: AboutIndexRoute,
   GuideIndexRoute: GuideIndexRoute,

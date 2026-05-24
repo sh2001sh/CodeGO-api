@@ -43,6 +43,7 @@ import type {
   BlindBoxPayRequest,
   BlindBoxOpenRequest,
   BlindBoxOpenResponse,
+  BlindBoxOrderStatusResponse,
 } from './types'
 
 // ============================================================================
@@ -263,6 +264,13 @@ export async function requestBlindBoxPayment(
     ...res.data,
     url: res.data.url || (res as unknown as { url?: string }).url,
   }
+}
+
+export async function getBlindBoxOrderStatus(
+  tradeNo: string
+): Promise<BlindBoxOrderStatusResponse> {
+  const res = await api.get(`/api/blind-box/orders/${tradeNo}`)
+  return res.data
 }
 
 export async function openBlindBoxes(

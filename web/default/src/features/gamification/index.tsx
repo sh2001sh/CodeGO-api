@@ -240,6 +240,33 @@ export function WorkshopOverviewPanel(props: { compact?: boolean }) {
   )
 }
 
+export function WorkshopOverviewSidebar() {
+  const dashboardQuery = useQuery({
+    queryKey: ['gamification', 'dashboard'],
+    queryFn: getGamificationDashboard,
+    staleTime: 60 * 1000,
+  })
+
+  if (dashboardQuery.isLoading) {
+    return (
+      <div className='space-y-4'>
+        <Skeleton className='h-[260px] w-full rounded-2xl' />
+        <Skeleton className='h-[320px] w-full rounded-2xl' />
+      </div>
+    )
+  }
+
+  const data = dashboardQuery.data?.data
+  if (!data) return null
+
+  return (
+    <div className='space-y-4'>
+      <CompactCompanionOverview companion={data.companion} />
+      <DailyMissionsCard missions={data.daily_missions} />
+    </div>
+  )
+}
+
 export function WorkshopDexSection() {
   const dashboardQuery = useQuery({
     queryKey: ['gamification', 'dashboard'],

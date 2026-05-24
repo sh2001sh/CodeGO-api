@@ -234,6 +234,8 @@ const BILLING_SECTIONS = [
           dailyLimit: settings['blind_box_setting.daily_limit'],
           monthlyLimit: settings['blind_box_setting.monthly_limit'],
           dailyOpenLimit: settings['blind_box_setting.daily_open_limit'],
+          firstPurchaseGuaranteeUSD:
+            settings['blind_box_setting.first_purchase_guarantee_usd'],
           pityThreshold: settings['blind_box_setting.pity_threshold'],
           pityGuaranteeUSD: settings['blind_box_setting.pity_guarantee_usd'],
           lowRewardThresholdUSD:

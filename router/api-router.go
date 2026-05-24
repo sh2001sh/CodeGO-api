@@ -32,6 +32,7 @@ func SetApiRouter(router *gin.Engine) {
 		apiRouter.GET("/home_page_content", controller.GetHomePageContent)
 		apiRouter.GET("/home_page_packages_content", controller.GetHomePagePackagesContent)
 		apiRouter.GET("/pricing", middleware.HeaderNavModuleAuth("pricing"), controller.GetPricing)
+		apiRouter.GET("/gene-map/share/:token", controller.GetGeneMapShare)
 		perfMetricsRoute := apiRouter.Group("/perf-metrics")
 		perfMetricsRoute.Use(middleware.HeaderNavModulePublicOrUserAuth("pricing"))
 		{
@@ -128,8 +129,15 @@ func SetApiRouter(router *gin.Engine) {
 					gamificationRoute.POST("/share-link", controller.ClaimGamificationShareLink)
 					gamificationRoute.POST("/equip", controller.EquipGamificationCompanionPet)
 					gamificationRoute.POST("/upgrade", controller.UpgradeGamificationCompanionPet)
-					gamificationRoute.POST("/feed", controller.FeedGamificationCompanionPet)
-				}
+				gamificationRoute.POST("/feed", controller.FeedGamificationCompanionPet)
+			}
+
+			geneMapRoute := selfRoute.Group("/gene-map")
+			{
+				geneMapRoute.GET("/generate", controller.GenerateGeneMap)
+				geneMapRoute.POST("/share", middleware.CriticalRateLimit(), controller.ShareGeneMap)
+				geneMapRoute.GET("/compare/:token", controller.CompareGeneMapShare)
+			}
 
 				// Custom OAuth bindings
 				selfRoute.GET("/oauth/bindings", controller.GetUserOAuthBindings)

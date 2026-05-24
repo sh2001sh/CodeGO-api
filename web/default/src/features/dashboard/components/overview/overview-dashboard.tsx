@@ -38,7 +38,6 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { motion, useReducedMotion } from 'motion/react'
-import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '@/stores/auth-store'
 import { getUserModels } from '@/lib/api'
 import { MOTION_TRANSITION } from '@/lib/motion'
@@ -50,7 +49,7 @@ import {
   CardStaggerContainer,
   CardStaggerItem,
 } from '@/components/page-transition'
-import { WorkshopOverviewPanel } from '@/features/gamification'
+import { WorkshopOverviewSidebar } from '@/features/gamification'
 import { fetchTokenKey, getApiKeys } from '@/features/keys/api'
 import type { ApiKey } from '@/features/keys/types'
 import { useApiInfo } from '../../hooks/use-status-data'
@@ -58,6 +57,7 @@ import { AnnouncementsPanel } from './announcements-panel'
 import { ApiInfoPanel } from './api-info-panel'
 import { FAQPanel } from './faq-panel'
 import { PerformanceHealthPanel } from './performance-health-panel'
+import { PrimaryActionCard } from './primary-action-card'
 import { SubscriptionUsagePanel } from './subscription-usage-panel'
 import { SummaryCards } from './summary-cards'
 import { UptimePanel } from './uptime-panel'
@@ -273,7 +273,6 @@ function RequestPreview(props: {
   example: RequestExample
   signals: HeroSignal[]
 }) {
-  const { t } = useTranslation()
   const shouldReduceMotion = useReducedMotion()
   const previewLines = props.example.curl.split('\n').map((line) => {
     if (line.includes('Authorization: Bearer')) {
@@ -304,13 +303,11 @@ function RequestPreview(props: {
             <TerminalSquare className='size-4' aria-hidden='true' />
           </span>
           <div className='min-w-0'>
-            <div className='truncate text-sm font-medium'>
-              {t('First API request')}
-            </div>
+            <div className='truncate text-sm font-medium'>第一条 API 请求</div>
             <div className='text-muted-foreground truncate text-xs'>
               {props.example.ready
                 ? props.example.keyName
-                : t('Create an API key to unlock the real request')}
+                : '先创建 API Key 才能拿到真实请求示例'}
             </div>
           </div>
         </div>
@@ -320,15 +317,15 @@ function RequestPreview(props: {
             variant='outline'
             size='sm'
             className='h-7 gap-1.5 px-2 text-xs'
-            tooltip={t('Copy ready-to-run curl')}
-            successTooltip={t('Copied!')}
-            aria-label={t('Copy ready-to-run curl')}
+            tooltip='复制可直接运行的 curl'
+            successTooltip='已复制'
+            aria-label='复制可直接运行的 curl'
           >
-            {t('Copy')}
+            复制
           </CopyButton>
         ) : (
           <Button size='sm' variant='outline' render={<Link to='/keys' />}>
-            {t('Create API Key')}
+            创建 API Key
           </Button>
         )}
       </div>
@@ -405,24 +402,54 @@ function QuickActionItem(props: { action: QuickAction }) {
   )
 }
 
-function CompactQuickAction(props: { action: QuickAction }) {
-  const Icon = props.action.icon
+function CompactSetupStrip(props: {
+  completedStepCount: number
+  totalStepCount: number
+  nextStep: StartStep
+  onExpand: () => void
+}) {
+  const Icon = props.nextStep.icon
 
   return (
-    <Button
-      variant='outline'
-      size='sm'
-      className='bg-background/70 h-8 min-w-24 gap-1.5 px-2.5'
-      render={<Link to={props.action.to} />}
-    >
-      <Icon data-icon='inline-start' />
-      <span>{props.action.title}</span>
-    </Button>
+    <CardStaggerContainer>
+      <CardStaggerItem className='bg-card overflow-hidden rounded-2xl border shadow-xs'>
+        <div className='flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5'>
+          <div className='flex min-w-0 items-center gap-3'>
+            <span className='bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-xl'>
+              <ListChecks className='size-4' aria-hidden='true' />
+            </span>
+            <div className='min-w-0'>
+              <div className='flex flex-wrap items-center gap-2'>
+                <div className='text-sm font-semibold text-slate-950 dark:text-slate-50'>
+                  快速接入进度
+                </div>
+                <span className='rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'>
+                  已完成 {props.completedStepCount}/{props.totalStepCount}
+                </span>
+              </div>
+              <div className='mt-1 text-sm text-slate-600 dark:text-slate-300'>
+                下一步：{props.nextStep.title}。{props.nextStep.description}
+              </div>
+            </div>
+          </div>
+
+          <div className='flex flex-wrap items-center gap-2'>
+            <Button size='sm' render={<Link to={props.nextStep.to} />}>
+              <Icon data-icon='inline-start' />
+              {props.nextStep.title}
+            </Button>
+            <Button variant='outline' size='sm' onClick={props.onExpand}>
+              <ChevronDown data-icon='inline-start' />
+              展开接入引导
+            </Button>
+          </div>
+        </div>
+      </CardStaggerItem>
+    </CardStaggerContainer>
   )
 }
 
 export function OverviewDashboard() {
-  const { t } = useTranslation()
   const user = useAuthStore((state) => state.auth.user)
   const { items: apiInfoItems } = useApiInfo()
   const [manualSetupGuideExpanded, setManualSetupGuideExpanded] = useState<
@@ -471,59 +498,59 @@ export function OverviewDashboard() {
   const startSteps = useMemo<StartStep[]>(
     () => [
       {
-        title: t('Create API Key'),
-        description: t('Create a key for your app or service'),
+        title: '创建 API Key',
+        description: '先生成一把可用密钥，后续请求和脚本都靠它接入。',
         to: '/keys',
         icon: KeyRound,
         completed: Boolean(preferredKey),
       },
       {
-        title: t('Add credits'),
-        description: t('Keep enough balance before production traffic'),
+        title: '补充额度',
+        description: '先准备余额或套餐额度，避免请求测试到一半中断。',
         to: '/wallet',
         icon: CreditCard,
         completed: remainQuota > 0 || usedQuota > 0,
       },
       {
-        title: t('Send a request'),
-        description: t('Verify routing with Playground or your client'),
+        title: '发起请求',
+        description: '用 Playground 或客户端先跑通一条真实请求。',
         to: '/playground',
         icon: TerminalSquare,
         completed: requestCount > 0,
       },
     ],
-    [preferredKey, remainQuota, requestCount, t, usedQuota]
+    [preferredKey, remainQuota, requestCount, usedQuota]
   )
 
   const quickActions = useMemo<QuickAction[]>(
     () => [
       {
-        title: t('Playground'),
-        description: t('Test models and prompts from the browser'),
+        title: 'Playground',
+        description: '先在浏览器里直接试模型和提示词。',
         to: '/playground',
         icon: Play,
       },
       {
-        title: t('Channels'),
-        description: t('Configure upstream providers and routing.'),
-        to: '/channels',
-        icon: RadioTower,
-        adminOnly: true,
-      },
-      {
-        title: t('Usage Logs'),
-        description: t('Inspect requests, errors, and billing details'),
+        title: '使用日志',
+        description: '看请求、扣费和报错记录，排查最直接。',
         to: '/usage-logs',
         icon: FileText,
       },
       {
-        title: t('Pricing'),
-        description: t('Review model rates before scaling traffic'),
+        title: '价格总览',
+        description: '先确认模型价格，再决定用余额还是套餐。',
         to: '/pricing',
         icon: BookOpen,
       },
+      {
+        title: '渠道管理',
+        description: '配置上游和路由策略，仅管理员可见。',
+        to: '/channels',
+        icon: RadioTower,
+        adminOnly: true,
+      },
     ],
-    [t]
+    []
   )
 
   const visibleQuickActions = useMemo(
@@ -534,29 +561,29 @@ export function OverviewDashboard() {
   const heroSignals = useMemo<HeroSignal[]>(
     () => [
       {
-        label: t('Route active'),
-        value: apiInfoItems.length > 0 ? t('Online') : t('Current domain'),
+        label: '路由状态',
+        value: apiInfoItems.length > 0 ? '在线' : '使用当前域名',
         icon: RadioTower,
       },
       {
-        label: t('Auth configured'),
-        value: preferredKey ? t('Secured') : t('Needs API key'),
+        label: '鉴权状态',
+        value: preferredKey ? '已就绪' : '缺少 API Key',
         icon: ShieldCheck,
       },
       {
-        label: t('Model selected'),
-        value: modelsQuery.data?.[0] ?? t('Loading'),
+        label: '默认模型',
+        value: modelsQuery.data?.[0] ?? '加载中',
         icon: Timer,
       },
     ],
-    [apiInfoItems.length, modelsQuery.data, preferredKey, t]
+    [apiInfoItems.length, modelsQuery.data, preferredKey]
   )
 
   const requestExample = useMemo<RequestExample>(() => {
     const endpoint = normalizeEndpoint(apiInfoItems[0]?.url)
     const model = modelsQuery.data?.[0] ?? 'gpt-4o-mini'
     const apiKey = realKeyQuery.data ?? ''
-    const keyName = preferredKey?.name ?? t('No API key yet')
+    const keyName = preferredKey?.name ?? '还没有 API Key'
     const ready = Boolean(apiKey && model)
 
     return {
@@ -571,11 +598,14 @@ export function OverviewDashboard() {
         model,
       }),
     }
-  }, [apiInfoItems, modelsQuery.data, preferredKey, realKeyQuery.data, t])
+  }, [apiInfoItems, modelsQuery.data, preferredKey, realKeyQuery.data])
 
   const completedStepCount = startSteps.filter((step) => step.completed).length
   const setupComplete = completedStepCount === startSteps.length
-  const setupGuideExpanded = manualSetupGuideExpanded ?? !setupComplete
+  const setupGuideExpanded = manualSetupGuideExpanded ?? false
+  const nextSetupStep =
+    startSteps.find((step) => !step.completed) ??
+    startSteps[startSteps.length - 1]
 
   const handleSetupGuideToggle = () => {
     const nextExpanded = !setupGuideExpanded
@@ -594,15 +624,15 @@ export function OverviewDashboard() {
                 <div className='flex min-w-0 flex-col gap-5'>
                   <div className='flex flex-wrap items-start justify-between gap-3'>
                     <div className='flex max-w-2xl flex-col gap-1'>
-                      <div className='text-muted-foreground flex items-center gap-2 text-xs font-medium tracking-wider uppercase'>
+                      <div className='text-muted-foreground flex items-center gap-2 text-xs font-medium uppercase tracking-wider'>
                         <ListChecks className='size-3.5' aria-hidden='true' />
-                        快速开始
+                        快速接入
                       </div>
                       <h3 className='text-xl font-semibold tracking-tight sm:text-2xl'>
-                        三步完成接入，先把请求跑通
+                        三步跑通调用，剩下的交给概览页帮你管理
                       </h3>
                       <p className='text-muted-foreground max-w-xl text-sm leading-relaxed'>
-                        把密钥、余额、模型和服务状态集中在同一个起点，减少首次接入的判断成本。
+                        这里保留完整接入引导，但默认不再占据首页主体。你可以随时展开查看。
                       </p>
                     </div>
                     <div className='flex flex-wrap items-center gap-2'>
@@ -616,7 +646,7 @@ export function OverviewDashboard() {
                       </Button>
                       <Button size='sm' render={<Link to='/keys' />}>
                         <KeyRound data-icon='inline-start' />
-                        创建 API 密钥
+                        创建 API Key
                       </Button>
                     </div>
                   </div>
@@ -644,11 +674,11 @@ export function OverviewDashboard() {
           <CardStaggerItem className='bg-card h-full rounded-2xl border p-4 shadow-xs sm:p-5'>
             <div className='flex h-full flex-col gap-4'>
               <div className='flex flex-col gap-1'>
-                <div className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>
+                <div className='text-muted-foreground text-xs font-medium uppercase tracking-wider'>
                   常用入口
                 </div>
                 <h3 className='text-lg font-semibold tracking-tight'>
-                  快速处理常见操作
+                  从这里快速进入高频操作
                 </h3>
               </div>
               <div className='grid gap-2'>
@@ -659,63 +689,29 @@ export function OverviewDashboard() {
             </div>
           </CardStaggerItem>
         </CardStaggerContainer>
-      ) : (
-        <CardStaggerContainer>
-          <CardStaggerItem className='bg-card overflow-hidden rounded-2xl border shadow-xs'>
-            <div className='relative overflow-hidden px-4 py-3 sm:px-5'>
-              <SetupGuideBackdrop compact />
-              <div className='relative flex flex-wrap items-center justify-between gap-3'>
-                <div className='flex min-w-0 items-center gap-3'>
-                  <span className='bg-background/70 flex size-9 shrink-0 items-center justify-center rounded-xl border shadow-xs'>
-                    <Check className='text-success size-4' aria-hidden='true' />
-                  </span>
-                  <div className='min-w-0'>
-                    <div className='flex items-center gap-2'>
-                      <h3 className='truncate text-sm font-semibold'>
-                        {setupComplete
-                          ? t('Setup guide complete')
-                          : t('Setup guide')}
-                      </h3>
-                      <span className='text-muted-foreground bg-background/60 rounded-md border px-2 py-0.5 text-xs'>
-                        已完成 {completedStepCount}/{startSteps.length}
-                      </span>
-                    </div>
-                    <p className='text-muted-foreground line-clamp-1 text-xs'>
-                      {setupComplete
-                        ? '引导已收起，概览区会优先展示用量与扣费信息。'
-                        : '引导已收起，需要时可以随时展开。'}
-                    </p>
-                  </div>
-                </div>
-
-                <div className='flex flex-wrap items-center gap-2'>
-                  {visibleQuickActions.map((action) => (
-                    <CompactQuickAction key={action.title} action={action} />
-                  ))}
-                  <Button
-                    variant='outline'
-                    size='sm'
-                    className='bg-background/70 h-8 min-w-28'
-                    onClick={handleSetupGuideToggle}
-                  >
-                    <ChevronDown data-icon='inline-start' />
-                    展开引导
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </CardStaggerItem>
-        </CardStaggerContainer>
-      )}
+      ) : !setupComplete ? (
+        <CompactSetupStrip
+          completedStepCount={completedStepCount}
+          totalStepCount={startSteps.length}
+          nextStep={nextSetupStep}
+          onExpand={handleSetupGuideToggle}
+        />
+      ) : null}
 
       <SummaryCards />
+
+      <CardStaggerContainer>
+        <CardStaggerItem>
+          <PrimaryActionCard />
+        </CardStaggerItem>
+      </CardStaggerContainer>
 
       <CardStaggerContainer className='grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_24rem]'>
         <CardStaggerItem>
           <SubscriptionUsagePanel />
         </CardStaggerItem>
         <CardStaggerItem>
-          <WorkshopOverviewPanel compact />
+          <WorkshopOverviewSidebar />
         </CardStaggerItem>
       </CardStaggerContainer>
 

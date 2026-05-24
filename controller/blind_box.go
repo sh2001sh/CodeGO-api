@@ -66,22 +66,29 @@ func GetBlindBoxSelf(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	firstPurchaseEligible, err := model.IsBlindBoxFirstPurchaseEligible(c.GetInt("id"))
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
 	common.ApiSuccess(c, gin.H{
-		"enabled":                        enabled,
-		"unit_price":                     setting.UnitPrice,
-		"expire_days":                    setting.ExpireDays,
-		"daily_limit":                    setting.DailyLimit,
-		"monthly_limit":                  setting.MonthlyLimit,
-		"daily_open_limit":               setting.DailyOpenLimit,
-		"count_options":                  setting.CountOptions,
-		"tiers":                          setting.Tiers,
-		"subscription_prize_probability": setting.SubscriptionPrizeProbability,
-		"subscription_plan_title":        setting.SubscriptionPlanTitle,
-		"pity_threshold":                 setting.PityThreshold,
-		"pity_guarantee_usd":             setting.PityGuaranteeUSD,
-		"low_reward_threshold_usd":       setting.LowRewardThresholdUSD,
-		"pay_methods":                    getBlindBoxPayMethods(c),
-		"overview":                       overview,
+		"enabled":                           enabled,
+		"unit_price":                        setting.UnitPrice,
+		"expire_days":                       setting.ExpireDays,
+		"daily_limit":                       setting.DailyLimit,
+		"monthly_limit":                     setting.MonthlyLimit,
+		"daily_open_limit":                  setting.DailyOpenLimit,
+		"first_purchase_guarantee_usd":      setting.FirstPurchaseGuaranteeUSD,
+		"first_purchase_guarantee_eligible": firstPurchaseEligible,
+		"count_options":                     setting.CountOptions,
+		"tiers":                             setting.Tiers,
+		"subscription_prize_probability":    setting.SubscriptionPrizeProbability,
+		"subscription_plan_title":           setting.SubscriptionPlanTitle,
+		"pity_threshold":                    setting.PityThreshold,
+		"pity_guarantee_usd":                setting.PityGuaranteeUSD,
+		"low_reward_threshold_usd":          setting.LowRewardThresholdUSD,
+		"pay_methods":                       getBlindBoxPayMethods(c),
+		"overview":                          overview,
 	})
 }
 
@@ -98,21 +105,28 @@ func AdminGetBlindBoxUserOverview(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	firstPurchaseEligible, err := model.IsBlindBoxFirstPurchaseEligible(userId)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
 	common.ApiSuccess(c, gin.H{
-		"enabled":                        enabled,
-		"unit_price":                     setting.UnitPrice,
-		"expire_days":                    setting.ExpireDays,
-		"daily_limit":                    setting.DailyLimit,
-		"monthly_limit":                  setting.MonthlyLimit,
-		"daily_open_limit":               setting.DailyOpenLimit,
-		"count_options":                  setting.CountOptions,
-		"tiers":                          setting.Tiers,
-		"subscription_prize_probability": setting.SubscriptionPrizeProbability,
-		"subscription_plan_title":        setting.SubscriptionPlanTitle,
-		"pity_threshold":                 setting.PityThreshold,
-		"pity_guarantee_usd":             setting.PityGuaranteeUSD,
-		"low_reward_threshold_usd":       setting.LowRewardThresholdUSD,
-		"overview":                       overview,
+		"enabled":                           enabled,
+		"unit_price":                        setting.UnitPrice,
+		"expire_days":                       setting.ExpireDays,
+		"daily_limit":                       setting.DailyLimit,
+		"monthly_limit":                     setting.MonthlyLimit,
+		"daily_open_limit":                  setting.DailyOpenLimit,
+		"first_purchase_guarantee_usd":      setting.FirstPurchaseGuaranteeUSD,
+		"first_purchase_guarantee_eligible": firstPurchaseEligible,
+		"count_options":                     setting.CountOptions,
+		"tiers":                             setting.Tiers,
+		"subscription_prize_probability":    setting.SubscriptionPrizeProbability,
+		"subscription_plan_title":           setting.SubscriptionPlanTitle,
+		"pity_threshold":                    setting.PityThreshold,
+		"pity_guarantee_usd":                setting.PityGuaranteeUSD,
+		"low_reward_threshold_usd":          setting.LowRewardThresholdUSD,
+		"overview":                          overview,
 	})
 }
 
