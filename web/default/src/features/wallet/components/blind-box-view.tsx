@@ -137,7 +137,7 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
               </div>
               {firstPurchaseEligible ? (
                 <div className='mt-3 rounded-2xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200'>
-                  首次购买本次保底开出 {firstPurchaseStartUSD.toFixed(2)} 美元额度
+                  首次开盒保底开出 {firstPurchaseStartUSD.toFixed(2)} 美元额度
                 </div>
               ) : null}
               <div className='mt-3 flex flex-wrap gap-2'>
