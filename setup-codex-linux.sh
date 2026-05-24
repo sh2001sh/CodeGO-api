@@ -34,26 +34,26 @@ fi
 cat > "${TARGET_FILE}" <<EOF
 export OPENAI_BASE_URL="${API_BASE}"
 export OPENAI_API_BASE="${API_BASE}"
-export OPENAI_API_KEY="${API_KEY}"
 export OPENAI_MODEL="${MODEL}"
 EOF
 
-"${PYTHON_BIN}" - "${CODEX_CONFIG_FILE}" <<'PY'
+"${PYTHON_BIN}" - "${CODEX_CONFIG_FILE}" "${API_BASE}" "${MODEL}" <<'PY'
 from pathlib import Path
 import re
 import sys
 
 config_path = Path(sys.argv[1])
+api_base = sys.argv[2]
+model_name = sys.argv[3]
 provider_name = "codexforall"
 provider_block = """
 # BEGIN CODEXFORALL MANAGED PROVIDER
 [model_providers.codexforall]
 name = "codexforall"
-base_url = "https://your-codexforall.example.com/v1"
+base_url = "{api_base}"
 wire_api = "responses"
-requires_openai_auth = true
 # END CODEXFORALL MANAGED PROVIDER
-""".strip()
+""".format(api_base=api_base).strip()
 
 existing = config_path.read_text(encoding="utf-8") if config_path.exists() else ""
 existing = existing.lstrip("\ufeff")
@@ -78,23 +78,49 @@ for pattern in patterns:
     cleaned = re.sub(pattern, "", cleaned)
 
 cleaned = cleaned.strip()
-model_provider_line = f'model_provider = "{provider_name}"'
-if re.search(r"(?m)^model_provider\s*=.*$", cleaned):
-    cleaned = re.sub(r"(?m)^model_provider\s*=.*$", model_provider_line, cleaned)
-elif cleaned:
-    cleaned = model_provider_line + "\n\n" + cleaned
+root_match = re.search(r"(?m)^\[", cleaned)
+if root_match:
+    root_section = cleaned[:root_match.start()].strip()
+    table_section = cleaned[root_match.start():].strip()
 else:
-    cleaned = model_provider_line
+    root_section = cleaned
+    table_section = ""
 
-parts = [cleaned.strip(), provider_block]
+root_lines = [line for line in root_section.splitlines() if line.strip()]
+
+def upsert_root_setting(lines, key, value):
+    setting = f'{key} = "{value}"'
+    output = []
+    replaced = False
+    pattern = re.compile(rf"^{re.escape(key)}\s*=")
+    for line in lines:
+        if pattern.match(line):
+            if not replaced:
+                output.append(setting)
+                replaced = True
+            continue
+        output.append(line)
+    if not replaced:
+        output.append(setting)
+    return output
+
+root_lines = upsert_root_setting(root_lines, "model_provider", provider_name)
+root_lines = upsert_root_setting(root_lines, "model", model_name)
+
+parts = ["\n".join(root_lines).strip(), table_section, provider_block]
 output = "\n\n".join(part for part in parts if part.strip()) + "\n"
 config_path.write_text(output, encoding="utf-8")
 PY
 
 chmod 600 "${TARGET_FILE}"
 chmod 600 "${CODEX_CONFIG_FILE}"
-printf '{"OPENAI_API_KEY":"%s"}\n' "${API_KEY}" > "${CODEX_AUTH_FILE}"
+
+: > "${CODEX_AUTH_FILE}"
+cat > "${CODEX_AUTH_FILE}" <<EOF
+{"OPENAI_API_KEY":"${API_KEY}"}
+EOF
 chmod 600 "${CODEX_AUTH_FILE}"
+
 touch "${PROFILE_FILE}"
 
 if ! grep -qxF "${SOURCE_LINE}" "${PROFILE_FILE}"; then

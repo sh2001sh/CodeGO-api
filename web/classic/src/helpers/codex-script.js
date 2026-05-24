@@ -56,7 +56,6 @@ function buildCodexProviderBlock(serverAddress) {
 name = "${CODEX_PROVIDER}"
 base_url = "${serverAddress}/v1"
 wire_api = "responses"
-requires_openai_auth = true
 # END CODEXFORALL MANAGED PROVIDER`;
 }
 
@@ -94,9 +93,6 @@ if exist "!codexDir!" (
         copy "!codexDir!\\config.toml" "!codexDir!\\config.toml.backup_!TIMESTAMP!" >nul 2>&1
     )
 
-    if exist "!codexDir!\\auth.json" (
-        copy "!codexDir!\\auth.json" "!codexDir!\\auth.json.backup_!TIMESTAMP!" >nul 2>&1
-    )
 ) else (
     mkdir "!codexDir!" 2>nul
     if !errorlevel! neq 0 (
@@ -104,11 +100,13 @@ if exist "!codexDir!" (
     )
 )
 
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$configPath = Join-Path $env:USERPROFILE '.codex\\config.toml'; $dq = [char]34; $providerBlock = @('# BEGIN CODEXFORALL MANAGED PROVIDER','[model_providers.${CODEX_PROVIDER}]',[string]::Concat('name = ', $dq, '${CODEX_PROVIDER}', $dq),[string]::Concat('base_url = ', $dq, '${apiBase}', $dq),[string]::Concat('wire_api = ', $dq, 'responses', $dq),'requires_openai_auth = true',[string]::Concat('web_search = ', $dq, 'live', $dq),'# END CODEXFORALL MANAGED PROVIDER') -join [Environment]::NewLine; $existing = ''; if (Test-Path $configPath) { $existing = Get-Content -Raw -Encoding UTF8 $configPath }; $cleaned = $existing.TrimStart([char]0xFEFF); $managedMarker = '# BEGIN CODEXFORALL MANAGED PROVIDER'; $markerIndex = $cleaned.IndexOf($managedMarker, [System.StringComparison]::Ordinal); if ($markerIndex -gt 0) { $prefix = $cleaned.Substring(0, $markerIndex); $suffix = $cleaned.Substring($markerIndex); $prefixLines = @($prefix -split '\\r?\\n' | Where-Object { $_.Trim() -and -not $_.TrimStart().StartsWith('#') }); if ($prefixLines.Count -gt 0) { $allRepeated = $true; foreach ($line in $prefixLines) { if ($suffix.IndexOf($line, [System.StringComparison]::Ordinal) -lt 0) { $allRepeated = $false; break } }; if ($allRepeated) { $cleaned = $suffix.TrimStart() } } }; $patterns = @('(?ms)^# BEGIN CODEXFORALL MANAGED PROVIDER.*?^# END CODEXFORALL MANAGED PROVIDER\\s*','(?ms)^\\[model_providers\\.${CODEX_PROVIDER}\\]\\r?\\n.*?(?=^\\[|\\z)'); foreach ($pattern in $patterns) { $cleaned = [regex]::Replace($cleaned, $pattern, '') }; $cleaned = $cleaned.Trim(); $modelProviderLine = [string]::Concat('model_provider = ', $dq, '${CODEX_PROVIDER}', $dq); if ([regex]::IsMatch($cleaned, '(?m)^model_provider\\s*=.*$')) { $cleaned = [regex]::Replace($cleaned, '(?m)^model_provider\\s*=.*$', [System.Text.RegularExpressions.MatchEvaluator]{ param($m) $modelProviderLine }) } elseif ($cleaned.Length -gt 0) { $cleaned = $modelProviderLine + [Environment]::NewLine + [Environment]::NewLine + $cleaned } else { $cleaned = $modelProviderLine }; $parts = @($cleaned.Trim(), $providerBlock.Trim()) | Where-Object { $_ }; $output = $parts -join ([Environment]::NewLine + [Environment]::NewLine); $encoding = New-Object System.Text.UTF8Encoding($false); [System.IO.File]::WriteAllText($configPath, $output + [Environment]::NewLine, $encoding)"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$configPath = Join-Path $env:USERPROFILE '.codex\\config.toml'; $dq = [char]34; $providerBlock = @('# BEGIN CODEXFORALL MANAGED PROVIDER','[model_providers.${CODEX_PROVIDER}]',[string]::Concat('name = ', $dq, '${CODEX_PROVIDER}', $dq),[string]::Concat('base_url = ', $dq, '${apiBase}', $dq),[string]::Concat('wire_api = ', $dq, 'responses', $dq),'# END CODEXFORALL MANAGED PROVIDER') -join [Environment]::NewLine; $existing = ''; if (Test-Path $configPath) { $existing = Get-Content -Raw -Encoding UTF8 $configPath }; $cleaned = $existing.TrimStart([char]0xFEFF); $managedMarker = '# BEGIN CODEXFORALL MANAGED PROVIDER'; $markerIndex = $cleaned.IndexOf($managedMarker, [System.StringComparison]::Ordinal); if ($markerIndex -gt 0) { $prefix = $cleaned.Substring(0, $markerIndex); $suffix = $cleaned.Substring($markerIndex); $prefixLines = @($prefix -split '\\r?\\n' | Where-Object { $_.Trim() -and -not $_.TrimStart().StartsWith('#') }); if ($prefixLines.Count -gt 0) { $allRepeated = $true; foreach ($line in $prefixLines) { if ($suffix.IndexOf($line, [System.StringComparison]::Ordinal) -lt 0) { $allRepeated = $false; break } }; if ($allRepeated) { $cleaned = $suffix.TrimStart() } } }; $patterns = @('(?ms)^# BEGIN CODEXFORALL MANAGED PROVIDER.*?^# END CODEXFORALL MANAGED PROVIDER\\s*','(?ms)^\\[model_providers\\.${CODEX_PROVIDER}\\]\\r?\\n.*?(?=^\\[|\\z)'); foreach ($pattern in $patterns) { $cleaned = [regex]::Replace($cleaned, $pattern, '') }; $cleaned = $cleaned.Trim(); $modelProviderLine = [string]::Concat('model_provider = ', $dq, '${CODEX_PROVIDER}', $dq); $modelLine = [string]::Concat('model = ', $dq, '${model}', $dq); if ([regex]::IsMatch($cleaned, '(?m)^model_provider\\s*=.*$')) { $cleaned = [regex]::Replace($cleaned, '(?m)^model_provider\\s*=.*$', [System.Text.RegularExpressions.MatchEvaluator]{ param($m) $modelProviderLine }) } elseif ($cleaned.Length -gt 0) { $cleaned = $modelProviderLine + [Environment]::NewLine + [Environment]::NewLine + $cleaned } else { $cleaned = $modelProviderLine }; if ([regex]::IsMatch($cleaned, '(?m)^model\\s*=.*$')) { $cleaned = [regex]::Replace($cleaned, '(?m)^model\\s*=.*$', [System.Text.RegularExpressions.MatchEvaluator]{ param($m) $modelLine }) } elseif ($cleaned.Length -gt 0) { $cleaned = $modelLine + [Environment]::NewLine + $cleaned } else { $cleaned = $modelLine }; $parts = @($cleaned.Trim(), $providerBlock.Trim()) | Where-Object { $_ }; $output = $parts -join ([Environment]::NewLine + [Environment]::NewLine); $encoding = New-Object System.Text.UTF8Encoding($false); [System.IO.File]::WriteAllText($configPath, $output + [Environment]::NewLine, $encoding)"
 
 if !errorlevel! neq 0 (
     goto :error_write_config
 )
+
+if exist "!codexDir!\\auth.json" del /f /q "!codexDir!\\auth.json" >nul 2>&1
 
 (
 echo {
@@ -141,7 +139,7 @@ echo ERROR: Cannot write config.toml
 exit /b 1
 
 :error_write_auth
-echo ERROR: Cannot write auth.json
+echo ERROR: Cannot rewrite auth.json
 exit /b 1
 `;
 }
@@ -184,7 +182,6 @@ fi
 cat > "\${TARGET_FILE}" <<EOF
 export OPENAI_BASE_URL="\${API_BASE}"
 export OPENAI_API_BASE="\${API_BASE}"
-export OPENAI_API_KEY="\${API_KEY}"
 export OPENAI_MODEL="\${MODEL}"
 EOF
 
@@ -195,6 +192,7 @@ import sys
 
 config_path = Path(sys.argv[1])
 provider_name = "${CODEX_PROVIDER}"
+model_name = "${model}"
 provider_block = """
 ${codexProviderBlock}
 """.strip()
@@ -222,23 +220,49 @@ for pattern in patterns:
     cleaned = re.sub(pattern, "", cleaned)
 
 cleaned = cleaned.strip()
-model_provider_line = f'model_provider = "{provider_name}"'
-if re.search(r"(?m)^model_provider\\s*=.*$", cleaned):
-    cleaned = re.sub(r"(?m)^model_provider\\s*=.*$", model_provider_line, cleaned)
-elif cleaned:
-    cleaned = model_provider_line + "\\n\\n" + cleaned
+root_match = re.search(r"(?m)^\\[", cleaned)
+if root_match:
+    root_section = cleaned[:root_match.start()].strip()
+    table_section = cleaned[root_match.start():].strip()
 else:
-    cleaned = model_provider_line
+    root_section = cleaned
+    table_section = ""
 
-parts = [cleaned.strip(), provider_block]
+root_lines = [line for line in root_section.splitlines() if line.strip()]
+
+def upsert_root_setting(lines, key, value):
+    setting = f'{key} = "{value}"'
+    output = []
+    replaced = False
+    pattern = re.compile(rf"^{re.escape(key)}\\s*=")
+    for line in lines:
+        if pattern.match(line):
+            if not replaced:
+                output.append(setting)
+                replaced = True
+            continue
+        output.append(line)
+    if not replaced:
+        output.append(setting)
+    return output
+
+root_lines = upsert_root_setting(root_lines, "model_provider", provider_name)
+root_lines = upsert_root_setting(root_lines, "model", model_name)
+
+parts = ["\\n".join(root_lines).strip(), table_section, provider_block]
 output = "\\n\\n".join(part for part in parts if part.strip()) + "\\n"
 config_path.write_text(output, encoding="utf-8")
 PY
 
 chmod 600 "\${TARGET_FILE}"
 chmod 600 "\${CODEX_CONFIG_FILE}"
-printf '{"OPENAI_API_KEY":"%s"}\n' "\${API_KEY}" > "\${CODEX_AUTH_FILE}"
+
+: > "\${CODEX_AUTH_FILE}"
+cat > "\${CODEX_AUTH_FILE}" <<EOF
+{"OPENAI_API_KEY":"\${API_KEY}"}
+EOF
 chmod 600 "\${CODEX_AUTH_FILE}"
+
 touch "\${PROFILE_FILE}"
 
 if ! grep -qxF "\${SOURCE_LINE}" "\${PROFILE_FILE}"; then
