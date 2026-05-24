@@ -71,6 +71,12 @@ function getOrderedSubscriptions(
   return ordered
 }
 
+function formatUsageHourLabel(timestamp?: number) {
+  if (!timestamp) return '--'
+  const date = new Date(timestamp * 1000)
+  return `${String(date.getHours()).padStart(2, '0')}:00`
+}
+
 export function SummaryCards() {
   const user = useAuthStore((state) => state.auth.user)
   const summaryTimeRange = useMemo(() => computeTimeRange(1), [])
@@ -129,6 +135,12 @@ export function SummaryCards() {
   const chartValues = usageRows.map(
     (item: QuotaDataItem) => Number(item.quota) || 0
   )
+  const chartPoints = usageRows
+    .slice(-12)
+    .map((item: QuotaDataItem) => ({
+      label: formatUsageHourLabel(item.created_at),
+      value: Number(item.quota) || 0,
+    }))
   const recentUsage = chartValues.reduce((total, value) => total + value, 0)
   const blindBoxQuota = Number(blindBoxQuery.data?.overview?.remaining_quota ?? 0)
   const totalAvailableQuota = remainQuota + blindBoxQuota
@@ -180,7 +192,7 @@ export function SummaryCards() {
     <div className='overflow-hidden rounded-[30px] border border-slate-200 bg-card shadow-[0_28px_90px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:shadow-[0_24px_80px_rgba(2,6,23,0.42)]'>
       <div className='grid gap-4 p-4 xl:grid-cols-[minmax(0,1.2fr)_380px] xl:p-5'>
         <div className='grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_240px]'>
-          <UsageChart values={chartValues} />
+          <UsageChart points={chartPoints} />
 
           <div className='space-y-3'>
             <DataMetric

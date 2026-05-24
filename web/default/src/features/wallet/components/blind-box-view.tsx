@@ -3,8 +3,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
   PixelPetSprite,
-  getBlindBoxPetHighlights,
+  type PetProfile,
 } from '@/features/gamification/pet-catalog'
+import type { CompanionBuffView } from '@/features/gamification/types'
 import { formatQuota } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { CircleAlert, Loader2, Sparkles, WandSparkles, X } from 'lucide-react'
@@ -35,6 +36,8 @@ interface BlindBoxCardViewProps {
   remainingPity: number
   activeCredits: BlindBoxCredit[]
   showPrizeNotice: boolean
+  petProfile: PetProfile | null
+  petSkill: CompanionBuffView | null
   onQuantityChange: (value: number) => void
   onPaymentMethodChange: (method: PaymentMethod) => void
   onPay: () => void
@@ -43,63 +46,69 @@ interface BlindBoxCardViewProps {
   onClosePrizeNotice: () => void
 }
 
-const showcasePet = getBlindBoxPetHighlights()[0]
-
 export function BlindBoxCardView(props: BlindBoxCardViewProps) {
   const firstPurchaseStartUSD = props.data?.first_purchase_guarantee_usd ?? 0
   const firstPurchaseEligible =
     props.data?.first_purchase_guarantee_eligible ?? false
+  const petTitle = props.petProfile?.species || '盲盒宠物'
+  const petNote =
+    props.petProfile?.note || '装备盲盒系宠物后，保底推进或返还效果会立刻生效。'
+  const petSkillName = props.petSkill
+    ? `${props.petSkill.name} ${props.petSkill.value_text}`.trim()
+    : '盲盒联动'
+  const petSkillDescription =
+    props.petSkill?.description ||
+    '盲盒系宠物会缩短保底触发次数，或在开盒时返还额外额度。'
 
   return (
-    <div className='grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_360px]'>
-      <div className='overflow-hidden rounded-[30px] border border-slate-200 bg-[radial-gradient(circle_at_top_left,rgba(250,204,21,0.22),transparent_30%),radial-gradient(circle_at_top_right,rgba(251,146,60,0.18),transparent_24%),linear-gradient(145deg,rgba(255,255,255,0.98),rgba(255,247,237,0.98),rgba(248,250,252,0.98))] p-4 shadow-[0_26px_90px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-[radial-gradient(circle_at_top_left,rgba(250,204,21,0.18),transparent_28%),radial-gradient(circle_at_top_right,rgba(249,115,22,0.16),transparent_24%),linear-gradient(145deg,rgba(30,20,8,0.96),rgba(15,23,42,0.96),rgba(17,24,39,0.94))]'>
-        <div className='grid gap-4 lg:grid-cols-[minmax(0,1fr)_240px]'>
-          <div className='space-y-4'>
-            <div className='flex flex-wrap items-start justify-between gap-3'>
-              <div>
-                <div className='flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400'>
-                  <Sparkles className='size-4 text-amber-500' />
-                  盲盒活动
-                </div>
-                <h3 className='mt-2 text-3xl font-semibold tracking-tight text-slate-950 dark:text-slate-50'>
-                  盲盒购买与开奖
-                </h3>
-              </div>
-              <div className='rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200'>
-                单盒 {props.data?.unit_price?.toFixed(1) || '0.0'} 元
-              </div>
+    <div className='space-y-4'>
+      <div className='rounded-[30px] border border-slate-200 bg-card p-4 shadow-[0_20px_56px_rgba(15,23,42,0.06)] dark:border-slate-800 dark:bg-slate-950/70'>
+        <div className='flex flex-wrap items-center justify-between gap-3'>
+          <div>
+            <div className='flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400'>
+              <Sparkles className='size-4 text-amber-500' />
+              盲盒额度情况
             </div>
-
-            {showcasePet ? (
-              <div className='grid gap-4 rounded-[28px] border border-slate-200 bg-white/84 p-4 dark:border-slate-800 dark:bg-slate-950/58 md:grid-cols-[220px_minmax(0,1fr)]'>
-                <div className='rounded-[24px] border border-slate-200 bg-[linear-gradient(180deg,#fff7ed,#fffbeb)] p-4 dark:border-slate-800 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(30,41,59,0.88))]'>
-                  <div className='aspect-square rounded-[20px] border border-slate-200 bg-white/85 p-3 dark:border-slate-700 dark:bg-slate-950/80'>
-                    <PixelPetSprite id={showcasePet.id} label={showcasePet.species} />
-                  </div>
-                </div>
-                <div className='flex flex-col justify-between gap-4'>
-                  <div className='text-xl font-semibold text-slate-950 dark:text-slate-50'>
-                    {showcasePet.species}
-                  </div>
-                </div>
-              </div>
-            ) : null}
+            <div className='mt-1 text-2xl font-semibold text-slate-950 dark:text-slate-50'>
+              {formatQuota(props.data?.overview?.remaining_quota || 0)}
+            </div>
           </div>
+          <div className='rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200'>
+            最近到期 {formatBlindBoxTimestamp(props.data?.overview?.next_expire_at)}
+          </div>
+        </div>
 
-          <div className='space-y-3'>
-            <MetricCard label='待开奖盲盒' value={String(props.availableBoxes)} />
-            <MetricCard
-              label='盲盒额度'
-              value={formatQuota(props.data?.overview?.remaining_quota || 0)}
-            />
-            <MetricCard
-              label='最近到期'
-              value={formatBlindBoxTimestamp(props.data?.overview?.next_expire_at)}
-            />
-            <MetricCard
-              label='保底进度'
-              value={`${props.pityProgress}/${props.effectivePityThreshold}`}
-            />
+        <div className='mt-4 grid gap-3 md:grid-cols-4'>
+          <MetricCard label='盲盒额度' value={formatQuota(props.data?.overview?.remaining_quota || 0)} />
+          <MetricCard label='待开奖盲盒' value={String(props.availableBoxes)} />
+          <MetricCard
+            label='活跃额度份数'
+            value={String(props.data?.overview?.active_credit_count || 0)}
+          />
+          <MetricCard
+            label='保底进度'
+            value={`${props.pityProgress}/${props.effectivePityThreshold}`}
+          />
+        </div>
+
+        <div className='mt-4'>
+          <ActiveCreditList credits={props.activeCredits} />
+        </div>
+      </div>
+
+      <div className='overflow-hidden rounded-[30px] border border-slate-200 bg-[radial-gradient(circle_at_top_left,rgba(250,204,21,0.22),transparent_30%),radial-gradient(circle_at_top_right,rgba(251,146,60,0.18),transparent_24%),linear-gradient(145deg,rgba(255,255,255,0.98),rgba(255,247,237,0.98),rgba(248,250,252,0.98))] p-4 shadow-[0_26px_90px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-[radial-gradient(circle_at_top_left,rgba(250,204,21,0.18),transparent_28%),radial-gradient(circle_at_top_right,rgba(249,115,22,0.16),transparent_24%),linear-gradient(145deg,rgba(30,20,8,0.96),rgba(15,23,42,0.96),rgba(17,24,39,0.94))]'>
+        <div className='flex flex-wrap items-start justify-between gap-3'>
+          <div>
+            <div className='flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400'>
+              <Sparkles className='size-4 text-amber-500' />
+              盲盒活动
+            </div>
+            <h3 className='mt-2 text-3xl font-semibold tracking-tight text-slate-950 dark:text-slate-50'>
+              盲盒购买与开奖
+            </h3>
+          </div>
+          <div className='rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200'>
+            单盒 {props.data?.unit_price?.toFixed(1) || '0.0'} 元
           </div>
         </div>
 
@@ -127,8 +136,8 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
                 购买数量
               </div>
               {firstPurchaseEligible ? (
-                <div className='mt-3 rounded-2xl border border-rose-300 bg-rose-50 px-3 py-3 text-sm font-semibold text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200'>
-                  首次开盒额度最低 {firstPurchaseStartUSD.toFixed(2)} 美元起
+                <div className='mt-3 rounded-2xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200'>
+                  首次购买本次保底开出 {firstPurchaseStartUSD.toFixed(2)} 美元额度
                 </div>
               ) : null}
               <div className='mt-3 flex flex-wrap gap-2'>
@@ -268,67 +277,97 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
         </div>
       </div>
 
-      <div className='space-y-4'>
-        <div className='rounded-[30px] border border-slate-200 bg-card p-4 shadow-xs dark:border-slate-800'>
-          <div className='text-base font-semibold text-slate-950 dark:text-slate-50'>
-            盲盒额度使用情况
+      <div className='rounded-[30px] border border-slate-200 bg-card p-4 shadow-[0_20px_56px_rgba(15,23,42,0.06)] dark:border-slate-800 dark:bg-slate-950/70'>
+        <div className='flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400'>
+          当前出战宠物
+        </div>
+        <div className='mt-4 grid gap-4 md:grid-cols-[220px_minmax(0,1fr)]'>
+          <div className='rounded-[24px] border border-slate-200 bg-[linear-gradient(180deg,#fff7ed,#fffbeb)] p-4 dark:border-slate-800 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(30,41,59,0.88))]'>
+            <div className='aspect-square rounded-[20px] border border-slate-200 bg-white/90 p-3 dark:border-slate-700 dark:bg-slate-950/80'>
+              {props.petProfile ? (
+                <PixelPetSprite id={props.petProfile.id} label={petTitle} />
+              ) : (
+                <div className='flex h-full items-center justify-center text-sm text-slate-500 dark:text-slate-400'>
+                  暂无宠物
+                </div>
+              )}
+            </div>
           </div>
-
-          <div className='mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-1'>
-            <MetricCard
-              label='临时额度余额'
-              value={formatQuota(props.data?.overview?.remaining_quota || 0)}
-              hint={`最近到期：${formatBlindBoxTimestamp(props.data?.overview?.next_expire_at)}`}
-            />
-            <MetricCard
-              label='活跃额度份数'
-              value={String(props.data?.overview?.active_credit_count || 0)}
-              hint='只要还有余额，就会优先被消耗。'
-            />
-          </div>
-
-          <div className='mt-4'>
-            <ActiveCreditList credits={props.activeCredits} />
+          <div className='space-y-4'>
+            <div>
+              <div className='text-2xl font-semibold text-slate-950 dark:text-slate-50'>
+                {petTitle}
+              </div>
+              <div className='mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300'>
+                {petNote}
+              </div>
+            </div>
+            <div className='grid gap-3 md:grid-cols-2'>
+              <div className='rounded-[22px] border border-slate-200 bg-white/84 p-4 dark:border-slate-800 dark:bg-slate-950/60'>
+                <div className='text-[11px] font-medium uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400'>
+                  技能效果
+                </div>
+                <div className='mt-2 text-base font-semibold text-slate-950 dark:text-slate-50'>
+                  {petSkillName}
+                </div>
+                <div className='mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300'>
+                  {petSkillDescription}
+                </div>
+              </div>
+              <div className='rounded-[22px] border border-slate-200 bg-white/84 p-4 dark:border-slate-800 dark:bg-slate-950/60'>
+                <div className='text-[11px] font-medium uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400'>
+                  当前进度
+                </div>
+                <div className='mt-2 text-base font-semibold text-slate-950 dark:text-slate-50'>
+                  {props.remainingPity > 0
+                    ? `距离保底还差 ${props.remainingPity} 次`
+                    : '下一次低档奖励直接保底'}
+                </div>
+                <div className='mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300'>
+                  当前保底进度 {props.pityProgress}/{props.effectivePityThreshold}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
+      </div>
 
-        {props.availableBoxes > 0 ? (
-          <div className='rounded-[30px] border border-amber-200 bg-amber-50/85 p-4 dark:border-amber-500/20 dark:bg-amber-500/10'>
-            <div className='flex items-center gap-2 text-base font-semibold text-amber-900 dark:text-amber-100'>
-              <CircleAlert className='size-4' />
-              待处理盲盒
-            </div>
-            <div className='mt-1 text-sm leading-6 text-amber-700 dark:text-amber-200'>
-              当前还有 {props.availableBoxes}{' '}
-              个盲盒未处理，通常来自历史订单或支付回调延迟。你可以直接补开奖，不会重复扣费。
-            </div>
-            <Button
-              type='button'
-              variant='outline'
-              className='mt-4 border-amber-300 bg-white text-amber-800 hover:bg-amber-100 dark:border-amber-500/30 dark:bg-transparent dark:text-amber-200 dark:hover:bg-amber-500/10'
-              onClick={() => props.onManualOpen(props.availableBoxes)}
-              disabled={props.openingCount !== null}
-            >
-              {props.openingCount === props.availableBoxes
-                ? '补开奖中...'
-                : `立即补开 ${props.availableBoxes} 个`}
-            </Button>
+      {props.availableBoxes > 0 ? (
+        <div className='rounded-[30px] border border-amber-200 bg-amber-50/85 p-4 dark:border-amber-500/20 dark:bg-amber-500/10'>
+          <div className='flex items-center gap-2 text-base font-semibold text-amber-900 dark:text-amber-100'>
+            <CircleAlert className='size-4' />
+            待处理盲盒
           </div>
-        ) : null}
+          <div className='mt-1 text-sm leading-6 text-amber-700 dark:text-amber-200'>
+            当前还有 {props.availableBoxes}{' '}
+            个盲盒未处理，通常来自历史订单或支付回调延迟。你可以直接补开奖，不会重复扣费。
+          </div>
+          <Button
+            type='button'
+            variant='outline'
+            className='mt-4 border-amber-300 bg-white text-amber-800 hover:bg-amber-100 dark:border-amber-500/30 dark:bg-transparent dark:text-amber-200 dark:hover:bg-amber-500/10'
+            onClick={() => props.onManualOpen(props.availableBoxes)}
+            disabled={props.openingCount !== null}
+          >
+            {props.openingCount === props.availableBoxes
+              ? '补开奖中...'
+              : `立即补开 ${props.availableBoxes} 个`}
+          </Button>
+        </div>
+      ) : null}
 
-        <div className='rounded-[30px] border border-slate-200 bg-card p-4 shadow-xs dark:border-slate-800'>
-          <div className='flex items-center justify-between gap-3'>
-            <div className='text-base font-semibold text-slate-950 dark:text-slate-50'>
-              最近掉落
-            </div>
-            <div className='rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'>
-              <WandSparkles className='mr-1 inline size-3.5' />
-              实时同步
-            </div>
+      <div className='rounded-[30px] border border-slate-200 bg-card p-4 shadow-xs dark:border-slate-800'>
+        <div className='flex items-center justify-between gap-3'>
+          <div className='text-base font-semibold text-slate-950 dark:text-slate-50'>
+            最近掉落
           </div>
-          <div className='mt-3'>
-            <DropRecordList records={props.data?.overview?.recent_records || []} />
+          <div className='rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'>
+            <WandSparkles className='mr-1 inline size-3.5' />
+            实时同步
           </div>
+        </div>
+        <div className='mt-3'>
+          <DropRecordList records={props.data?.overview?.recent_records || []} />
         </div>
       </div>
     </div>

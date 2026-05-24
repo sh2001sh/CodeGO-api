@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
+import { getGamificationDashboard } from '@/features/gamification/api'
+import { getPetProfile, type PetProfile } from '@/features/gamification/pet-catalog'
+import type { CompanionBuffView } from '@/features/gamification/types'
 import {
   calculateBlindBoxAmount,
   getBlindBoxOrderStatus,
@@ -37,6 +40,8 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 export function BlindBoxCard(props: BlindBoxCardProps) {
   const [data, setData] = useState<BlindBoxSelfData | null>(null)
+  const [petProfile, setPetProfile] = useState<PetProfile | null>(null)
+  const [petSkill, setPetSkill] = useState<CompanionBuffView | null>(null)
   const [loading, setLoading] = useState(true)
   const [selectedQuantity, setSelectedQuantity] = useState(1)
   const [selectedPaymentMethod, setSelectedPaymentMethod] =
@@ -73,17 +78,44 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
     }
   }, [])
 
+  const fetchCompanion = useCallback(async () => {
+    try {
+      const response = await getGamificationDashboard()
+      if (!response.success || !response.data?.companion) return
+
+      const equippedPet = response.data.companion.equipped_pet
+      const activeBuff = response.data.companion.active_buff
+
+      if (equippedPet?.achievement_key) {
+        setPetProfile(getPetProfile(equippedPet.achievement_key))
+        setPetSkill(equippedPet.buff || activeBuff || null)
+        return
+      }
+
+      setPetProfile(null)
+      setPetSkill(activeBuff || null)
+    } catch {
+      setPetProfile(null)
+      setPetSkill(null)
+    }
+  }, [])
+
   const refreshAll = useCallback(async () => {
     await Promise.all([
       fetchSelf(),
+      fetchCompanion(),
       props.onSubscriptionRefresh(),
       props.onUserRefresh(),
     ])
-  }, [fetchSelf, props])
+  }, [fetchCompanion, fetchSelf, props])
 
   useEffect(() => {
     void fetchSelf()
   }, [fetchSelf])
+
+  useEffect(() => {
+    void fetchCompanion()
+  }, [fetchCompanion])
 
   useEffect(() => {
     if (selectedQuantity <= 0) return
@@ -309,6 +341,8 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
         remainingPity={remainingPity}
         activeCredits={activeCredits}
         showPrizeNotice={showPrizeNotice}
+        petProfile={petProfile}
+        petSkill={petSkill}
         onQuantityChange={setSelectedQuantity}
         onPaymentMethodChange={setSelectedPaymentMethod}
         onPay={() => void handlePay()}

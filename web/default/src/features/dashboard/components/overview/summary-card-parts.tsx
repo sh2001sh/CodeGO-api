@@ -1,102 +1,83 @@
+import { formatQuota } from '@/lib/format'
 import { Progress } from '@/components/ui/progress'
-
-const CHART_WIDTH = 660
-const CHART_HEIGHT = 260
-
-function buildLineChart(values: number[]) {
-  if (values.length === 0) {
-    return { path: '', area: '' }
-  }
-
-  const max = Math.max(...values, 1)
-  const min = Math.min(...values, 0)
-  const range = Math.max(1, max - min)
-  const points = values.map((value, index) => {
-    const x =
-      values.length === 1
-        ? CHART_WIDTH / 2
-        : (index / (values.length - 1)) * CHART_WIDTH
-    const normalized = (value - min) / range
-    const y = CHART_HEIGHT - normalized * (CHART_HEIGHT - 20) - 10
-    return { x, y }
-  })
-
-  const path = points
-    .map((point, index) => `${index === 0 ? 'M' : 'L'} ${point.x} ${point.y}`)
-    .join(' ')
-  const first = points[0]
-  const last = points[points.length - 1]
-
-  return {
-    path,
-    area: `${path} L ${last.x} ${CHART_HEIGHT} L ${first.x} ${CHART_HEIGHT} Z`,
-  }
-}
 
 function clampPercent(used: number, total: number) {
   if (total <= 0) return 0
   return Math.max(0, Math.min(100, Math.round((used / total) * 100)))
 }
 
-export function UsageChart(props: { values: number[] }) {
-  const { path, area } = buildLineChart(props.values)
+type UsagePoint = {
+  label: string
+  value: number
+}
+
+export function UsageChart(props: { points: UsagePoint[] }) {
+  const maxValue = Math.max(...props.points.map((point) => point.value), 1)
+  const currentValue = props.points.at(-1)?.value ?? 0
+  const peakPoint =
+    props.points.reduce<UsagePoint | null>((peak, point) => {
+      if (!peak || point.value > peak.value) return point
+      return peak
+    }, null) ?? null
+  const averageValue =
+    props.points.length > 0
+      ? props.points.reduce((sum, point) => sum + point.value, 0) /
+        props.points.length
+      : 0
 
   return (
     <div className='self-start rounded-[28px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(248,250,252,0.96))] p-4 dark:border-slate-800 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.82),rgba(2,6,23,0.78))]'>
       <div className='flex items-center justify-between gap-3'>
         <div className='text-base font-semibold text-slate-950 dark:text-slate-50'>
-          用量总览
+          最近 12 小时用量
         </div>
         <div className='rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-medium text-sky-700 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-200'>
           最近 24 小时
         </div>
       </div>
 
-      <div className='mt-4 overflow-hidden rounded-[22px] border border-[#f3dcc2] bg-[linear-gradient(180deg,rgba(255,252,247,0.98),rgba(255,244,229,0.98))] p-3 dark:border-slate-700 dark:bg-[linear-gradient(180deg,rgba(30,41,59,0.88),rgba(15,23,42,0.82))]'>
-        <svg
-          viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
-          className='h-[260px] w-full'
-          preserveAspectRatio='none'
-        >
-          <defs>
-            <linearGradient id='usage-area' x1='0' x2='0' y1='0' y2='1'>
-              <stop offset='0%' stopColor='#fb923c' stopOpacity='0.38' />
-              <stop offset='100%' stopColor='#fb923c' stopOpacity='0.04' />
-            </linearGradient>
-            <linearGradient id='usage-line' x1='0' x2='1' y1='0' y2='0'>
-              <stop offset='0%' stopColor='#f97316' />
-              <stop offset='100%' stopColor='#f59e0b' />
-            </linearGradient>
-          </defs>
-
-          {Array.from({ length: 5 }).map((_, index) => {
-            const y = (CHART_HEIGHT / 4) * index
-            return (
-              <line
-                key={y}
-                x1='0'
-                x2={CHART_WIDTH}
-                y1={y}
-                y2={y}
-                stroke='rgba(191,128,64,0.16)'
-                strokeDasharray='6 8'
-              />
-            )
-          })}
-
-          {area ? <path d={area} fill='url(#usage-area)' /> : null}
-          {path ? (
-            <path
-              d={path}
-              fill='none'
-              stroke='url(#usage-line)'
-              strokeWidth='5'
-              strokeLinecap='round'
-              strokeLinejoin='round'
-            />
-          ) : null}
-        </svg>
+      <div className='mt-4 grid gap-3 sm:grid-cols-3'>
+        <DataMetric label='当前时段' value={formatQuota(currentValue)} />
+        <DataMetric
+          label='峰值时段'
+          value={peakPoint ? `${formatQuota(peakPoint.value)} · ${peakPoint.label}` : '--'}
+        />
+        <DataMetric label='平均时段' value={formatQuota(averageValue)} />
       </div>
+
+      {props.points.length > 0 ? (
+        <div className='mt-4 rounded-[22px] border border-[#f3dcc2] bg-[linear-gradient(180deg,rgba(255,252,247,0.98),rgba(255,244,229,0.98))] p-4 dark:border-slate-700 dark:bg-[linear-gradient(180deg,rgba(30,41,59,0.88),rgba(15,23,42,0.82))]'>
+          <div className='grid h-[240px] grid-cols-12 items-end gap-2'>
+            {props.points.map((point, index) => {
+              const isPeak = peakPoint?.label === point.label && peakPoint.value === point.value
+              const isCurrent = index === props.points.length - 1
+              const height = Math.max(12, Math.round((point.value / maxValue) * 100))
+
+              return (
+                <div key={`${point.label}-${index}`} className='flex h-full flex-col justify-end gap-2'>
+                  <div
+                    className={
+                      isPeak
+                        ? 'rounded-t-[14px] bg-[linear-gradient(180deg,#fb923c,#f97316)] shadow-[0_12px_28px_rgba(249,115,22,0.24)]'
+                        : isCurrent
+                          ? 'rounded-t-[14px] bg-[linear-gradient(180deg,#fdba74,#fb923c)]'
+                          : 'rounded-t-[14px] bg-[linear-gradient(180deg,#fed7aa,#fdba74)]'
+                    }
+                    style={{ height: `${height}%` }}
+                  />
+                  <div className='text-center text-[11px] font-medium text-slate-500 dark:text-slate-400'>
+                    {point.label}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      ) : (
+        <div className='mt-4 rounded-[22px] border border-dashed border-slate-300 px-4 py-10 text-center text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400'>
+          最近 24 小时还没有可展示的用量数据。
+        </div>
+      )}
     </div>
   )
 }
