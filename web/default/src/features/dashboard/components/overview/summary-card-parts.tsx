@@ -1,7 +1,7 @@
 import { Progress } from '@/components/ui/progress'
 
 const CHART_WIDTH = 660
-const CHART_HEIGHT = 220
+const CHART_HEIGHT = 260
 
 function buildLineChart(values: number[]) {
   if (values.length === 0) {
@@ -42,35 +42,30 @@ export function UsageChart(props: { values: number[] }) {
   const { path, area } = buildLineChart(props.values)
 
   return (
-    <div className='rounded-[28px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(248,250,252,0.96))] p-4 dark:border-slate-800 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.82),rgba(2,6,23,0.78))]'>
+    <div className='self-start rounded-[28px] border border-slate-200 bg-[linear-gradient(180deg,rgba(255,255,255,0.94),rgba(248,250,252,0.96))] p-4 dark:border-slate-800 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.82),rgba(2,6,23,0.78))]'>
       <div className='flex items-center justify-between gap-3'>
-        <div>
-          <div className='text-base font-semibold text-slate-950 dark:text-slate-50'>
-            用量总览
-          </div>
-          <div className='text-sm text-slate-500 dark:text-slate-400'>
-            只保留一张主图，右侧用数字列承载核心指标。
-          </div>
+        <div className='text-base font-semibold text-slate-950 dark:text-slate-50'>
+          用量总览
         </div>
         <div className='rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-medium text-sky-700 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-200'>
           最近 24 小时
         </div>
       </div>
 
-      <div className='mt-4 overflow-hidden rounded-[22px] border border-slate-200 bg-slate-950/95 p-3 dark:border-slate-700'>
+      <div className='mt-4 overflow-hidden rounded-[22px] border border-[#f3dcc2] bg-[linear-gradient(180deg,rgba(255,252,247,0.98),rgba(255,244,229,0.98))] p-3 dark:border-slate-700 dark:bg-[linear-gradient(180deg,rgba(30,41,59,0.88),rgba(15,23,42,0.82))]'>
         <svg
           viewBox={`0 0 ${CHART_WIDTH} ${CHART_HEIGHT}`}
-          className='h-[220px] w-full'
+          className='h-[260px] w-full'
           preserveAspectRatio='none'
         >
           <defs>
             <linearGradient id='usage-area' x1='0' x2='0' y1='0' y2='1'>
-              <stop offset='0%' stopColor='#38bdf8' stopOpacity='0.55' />
-              <stop offset='100%' stopColor='#38bdf8' stopOpacity='0.02' />
+              <stop offset='0%' stopColor='#fb923c' stopOpacity='0.38' />
+              <stop offset='100%' stopColor='#fb923c' stopOpacity='0.04' />
             </linearGradient>
             <linearGradient id='usage-line' x1='0' x2='1' y1='0' y2='0'>
-              <stop offset='0%' stopColor='#34d399' />
-              <stop offset='100%' stopColor='#38bdf8' />
+              <stop offset='0%' stopColor='#f97316' />
+              <stop offset='100%' stopColor='#f59e0b' />
             </linearGradient>
           </defs>
 
@@ -83,7 +78,7 @@ export function UsageChart(props: { values: number[] }) {
                 x2={CHART_WIDTH}
                 y1={y}
                 y2={y}
-                stroke='rgba(148,163,184,0.14)'
+                stroke='rgba(191,128,64,0.16)'
                 strokeDasharray='6 8'
               />
             )

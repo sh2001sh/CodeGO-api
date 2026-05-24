@@ -44,6 +44,7 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
   const [amountDue, setAmountDue] = useState(0)
   const [paying, setPaying] = useState(false)
   const [openingCount, setOpeningCount] = useState<number | null>(null)
+  const [showPrizeNotice, setShowPrizeNotice] = useState(false)
   const [paymentState, setPaymentState] =
     useState<BlindBoxPaymentState>(EMPTY_PAYMENT_STATE)
   const [prizeState, setPrizeState] = useState<PrizeDialogState>(EMPTY_PRIZE_STATE)
@@ -187,7 +188,6 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
   const effectivePityThreshold =
     data?.overview?.effective_pity_threshold || data?.pity_threshold || 1
   const pityProgress = data?.overview?.pity_progress || 0
-  const pityPercent = Math.min(100, (pityProgress / effectivePityThreshold) * 100)
   const remainingPity = Math.max(0, effectivePityThreshold - pityProgress)
 
   const activeCredits = useMemo(
@@ -306,13 +306,15 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
         availableBoxes={availableBoxes}
         effectivePityThreshold={effectivePityThreshold}
         pityProgress={pityProgress}
-        pityPercent={pityPercent}
         remainingPity={remainingPity}
         activeCredits={activeCredits}
+        showPrizeNotice={showPrizeNotice}
         onQuantityChange={setSelectedQuantity}
         onPaymentMethodChange={setSelectedPaymentMethod}
         onPay={() => void handlePay()}
         onManualOpen={(count) => void handleManualOpen(count)}
+        onTogglePrizeNotice={() => setShowPrizeNotice((current) => !current)}
+        onClosePrizeNotice={() => setShowPrizeNotice(false)}
       />
 
       <BlindBoxPaymentDialog

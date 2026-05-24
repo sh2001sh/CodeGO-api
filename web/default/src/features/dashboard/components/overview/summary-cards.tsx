@@ -179,7 +179,7 @@ export function SummaryCards() {
   return (
     <div className='overflow-hidden rounded-[30px] border border-slate-200 bg-card shadow-[0_28px_90px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:shadow-[0_24px_80px_rgba(2,6,23,0.42)]'>
       <div className='grid gap-4 p-4 xl:grid-cols-[minmax(0,1.2fr)_380px] xl:p-5'>
-        <div className='grid gap-4 xl:grid-cols-[minmax(0,1fr)_240px]'>
+        <div className='grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_240px]'>
           <UsageChart values={chartValues} />
 
           <div className='space-y-3'>

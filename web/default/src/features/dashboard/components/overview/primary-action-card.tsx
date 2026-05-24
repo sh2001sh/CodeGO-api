@@ -119,7 +119,7 @@ export function PrimaryActionCard() {
             },
             {
               icon: Sparkles,
-              label: `单盒 ${Number(blindBox?.unit_price ?? 2.5).toFixed(1)} 美元`,
+              label: `单盒 ${Number(blindBox?.unit_price ?? 2.5).toFixed(1)} 元`,
             },
             {
               icon: CreditCard,
