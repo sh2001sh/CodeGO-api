@@ -16,6 +16,10 @@ type joinPeoplePlanTeamRequest struct {
 	InviteCode string `json:"invite_code"`
 }
 
+type removePeoplePlanMemberRequest struct {
+	MemberUserId int `json:"member_user_id"`
+}
+
 type createPeoplePlanSubmissionRequest struct {
 	Type          string   `json:"type"`
 	Title         string   `json:"title"`
@@ -97,6 +101,23 @@ func LeavePeoplePlanTeam(c *gin.Context) {
 		return
 	}
 	common.ApiSuccess(c, gin.H{"left": true})
+}
+
+func RemovePeoplePlanMember(c *gin.Context) {
+	userId := c.GetInt("id")
+	var req removePeoplePlanMemberRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	data, err := service.RemovePeoplePlanMember(userId, service.RemovePeoplePlanMemberInput{
+		MemberUserId: req.MemberUserId,
+	})
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	common.ApiSuccess(c, data)
 }
 
 func GetPeoplePlanRewards(c *gin.Context) {

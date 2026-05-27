@@ -29,6 +29,9 @@ type PeoplePlanOverview struct {
 	HeroTitle         string                         `json:"hero_title"`
 	HeroSubtitle      string                         `json:"hero_subtitle"`
 	HeroDescription   string                         `json:"hero_description"`
+	MaxTeamRewardUSD  int64                          `json:"max_team_reward_usd"`
+	MaxSubmissionUSD  int64                          `json:"max_submission_reward_usd"`
+	MaxTotalRewardUSD int64                          `json:"max_total_reward_usd"`
 	Popup             PeoplePlanPopupPayload         `json:"popup"`
 	TeamRules         PeoplePlanTeamRules            `json:"team_rules"`
 	Achievements      []PeoplePlanAchievementRef     `json:"achievements"`
@@ -106,26 +109,31 @@ type PeoplePlanTeamSummary struct {
 	MaxMembers           int   `json:"max_members"`
 	TeamCalls            int64 `json:"team_calls"`
 	TeamSpendUSD         int64 `json:"team_spend_usd"`
+	TeamInvites          int64 `json:"team_invites"`
+	TeamBlindBoxOpens    int64 `json:"team_blind_box_opens"`
 	MonthlyActiveMembers int   `json:"monthly_active_members"`
 	MonthlyTeamSpendUSD  int64 `json:"monthly_team_spend_usd"`
 }
 
 type PeoplePlanMemberProfile struct {
-	UserId            int    `json:"user_id"`
-	Username          string `json:"username"`
-	DisplayName       string `json:"display_name"`
-	Role              string `json:"role"`
-	Status            string `json:"status"`
-	JoinSource        string `json:"join_source"`
-	VerifiedAt        int64  `json:"verified_at"`
-	FirstApiKeyAt     int64  `json:"first_api_key_at"`
-	FirstCallAt       int64  `json:"first_call_at"`
-	FirstTopupAt      int64  `json:"first_topup_at"`
-	EffectiveAt       int64  `json:"effective_at"`
-	CurrentMonthSpend int64  `json:"current_month_spend"`
-	CurrentMonthCalls int64  `json:"current_month_calls"`
-	LifetimeSpend     int64  `json:"lifetime_spend"`
-	LifetimeCalls     int64  `json:"lifetime_calls"`
+	UserId                  int    `json:"user_id"`
+	Username                string `json:"username"`
+	DisplayName             string `json:"display_name"`
+	Role                    string `json:"role"`
+	Status                  string `json:"status"`
+	JoinSource              string `json:"join_source"`
+	VerifiedAt              int64  `json:"verified_at"`
+	FirstApiKeyAt           int64  `json:"first_api_key_at"`
+	FirstCallAt             int64  `json:"first_call_at"`
+	FirstTopupAt            int64  `json:"first_topup_at"`
+	EffectiveAt             int64  `json:"effective_at"`
+	CurrentMonthSpend       int64  `json:"current_month_spend"`
+	CurrentMonthCalls       int64  `json:"current_month_calls"`
+	LifetimeSpend           int64  `json:"lifetime_spend"`
+	LifetimeCalls           int64  `json:"lifetime_calls"`
+	LifetimeInvites         int64  `json:"lifetime_invites"`
+	LifetimeBlindBoxOpens   int64  `json:"lifetime_blind_box_opens"`
+	CountsAsEffectiveMember bool   `json:"counts_as_effective_member"`
 }
 
 type PeoplePlanAchievementState struct {
@@ -159,16 +167,27 @@ type peoplePlanUserLite struct {
 }
 
 type peoplePlanMemberStats struct {
-	verifiedAt        int64
-	firstAPIKeyAt     int64
-	firstCallAt       int64
-	firstTopupAt      int64
-	effectiveAt       int64
-	lastActiveAt      int64
-	currentMonthSpend int64
-	currentMonthCalls int64
-	lifetimeSpend     int64
-	lifetimeCalls     int64
+	verifiedAt            int64
+	firstAPIKeyAt         int64
+	firstCallAt           int64
+	firstTopupAt          int64
+	effectiveAt           int64
+	lastActiveAt          int64
+	currentMonthSpend     int64
+	currentMonthCalls     int64
+	lifetimeSpend         int64
+	lifetimeCalls         int64
+	lifetimeInvites       int64
+	lifetimeBlindBoxOpens int64
+}
+
+type peoplePlanMemberSnapshot struct {
+	DisplayName             string `json:"display_name"`
+	Username                string `json:"username"`
+	Effective               bool   `json:"effective"`
+	LifetimeInvites         int64  `json:"lifetime_invites"`
+	LifetimeBlindBoxOpens   int64  `json:"lifetime_blind_box_opens"`
+	CountsAsEffectiveMember bool   `json:"counts_as_effective_member"`
 }
 
 func buildAchievementRefs(rules []PeoplePlanAchievementRule) []PeoplePlanAchievementRef {
@@ -199,7 +218,8 @@ func buildAchievementRefs(rules []PeoplePlanAchievementRule) []PeoplePlanAchieve
 	return items
 }
 
-func buildSubmissionTaskRefs(rules []PeoplePlanSubmissionTaskRule) []PeoplePlanSubmissionTaskRef {
+func buildSubmissionTaskRefs(settings PeoplePlanSubmissionSettings) []PeoplePlanSubmissionTaskRef {
+	rules := settings.Tasks
 	items := make([]PeoplePlanSubmissionTaskRef, 0, len(rules))
 	for _, rule := range rules {
 		items = append(items, PeoplePlanSubmissionTaskRef{
@@ -207,13 +227,126 @@ func buildSubmissionTaskRefs(rules []PeoplePlanSubmissionTaskRule) []PeoplePlanS
 			Type:                rule.Type,
 			Title:               rule.Title,
 			Description:         rule.Description,
-			RewardPoolUSD:       rule.RewardPoolUSD,
+			RewardPoolUSD:       getPeoplePlanSubmissionRewardUSD(PeoplePlanSettings{Submissions: settings}, rule.Type),
 			Repeatable:          rule.Repeatable,
 			MaxCompletions:      rule.MaxCompletions,
 			ContributionSummary: rule.ContributionSummary,
 		})
 	}
 	return items
+}
+
+func getPeoplePlanMaxRewardPoolUSD(rule PeoplePlanAchievementRule) int64 {
+	maxRewardUSD := rule.RewardPoolUSD
+	if maxRewardUSD <= 0 {
+		maxRewardUSD = rule.RewardQuotaUSD
+	}
+	for _, tier := range rule.RewardTiers {
+		if tier.RewardPoolUSD > maxRewardUSD {
+			maxRewardUSD = tier.RewardPoolUSD
+		}
+	}
+	return maxRewardUSD
+}
+
+func getPeoplePlanContributionWeightTotal(rule PeoplePlanAchievementRule) int64 {
+	total := int64(0)
+	for _, weight := range rule.ContributionWeights {
+		if weight.Weight > 0 {
+			total += int64(weight.Weight)
+		}
+	}
+	if total <= 0 {
+		return 100
+	}
+	return total
+}
+
+func estimatePeoplePlanPersonalRewardUSD(rule PeoplePlanAchievementRule, rewardUSD int64, requiredMembers int) int64 {
+	if rewardUSD <= 0 {
+		return 0
+	}
+	if requiredMembers <= 0 {
+		requiredMembers = 1
+	}
+	if rule.ContributionMode == "equal" {
+		return int64(math.Round(float64(rewardUSD) / float64(requiredMembers)))
+	}
+	weightTotal := getPeoplePlanContributionWeightTotal(rule)
+	maxRatio := float64(weightTotal+1) / float64(weightTotal+int64(requiredMembers))
+	return int64(math.Round(float64(rewardUSD) * maxRatio))
+}
+
+func getPeoplePlanTheoreticalPersonalAchievementRewardUSD(
+	settings PeoplePlanSettings,
+	rule PeoplePlanAchievementRule,
+) int64 {
+	bestRewardUSD := estimatePeoplePlanPersonalRewardUSD(
+		rule,
+		getPeoplePlanMaxRewardPoolUSD(rule),
+		max(settings.TeamRules.MinMembers, 1),
+	)
+	for _, tier := range rule.RewardTiers {
+		tierRewardUSD := tier.RewardPoolUSD
+		if tierRewardUSD <= 0 {
+			tierRewardUSD = rule.RewardPoolUSD
+		}
+		if tierRewardUSD <= 0 {
+			tierRewardUSD = rule.RewardQuotaUSD
+		}
+		shareUSD := estimatePeoplePlanPersonalRewardUSD(
+			rule,
+			tierRewardUSD,
+			max(tier.RequiredMembers, 1),
+		)
+		if shareUSD > bestRewardUSD {
+			bestRewardUSD = shareUSD
+		}
+	}
+	if rule.Metric == "effective_members" && rule.Target > 0 {
+		shareUSD := estimatePeoplePlanPersonalRewardUSD(
+			rule,
+			getPeoplePlanMaxRewardPoolUSD(rule),
+			int(rule.Target),
+		)
+		if shareUSD > bestRewardUSD {
+			bestRewardUSD = shareUSD
+		}
+	}
+	return bestRewardUSD
+}
+
+func getPeoplePlanTheoreticalMaxRewardUSD(settings PeoplePlanSettings) (int64, int64, int64) {
+	teamMaxUSD := int64(0)
+	for _, rule := range append(append([]PeoplePlanAchievementRule{}, settings.Achievements...), settings.Monthly...) {
+		rewardUSD := getPeoplePlanTheoreticalPersonalAchievementRewardUSD(settings, rule)
+		if rewardUSD <= 0 {
+			continue
+		}
+		completionLimit := 1
+		if rule.Repeatable && rule.MaxCompletions > 0 {
+			completionLimit = rule.MaxCompletions
+		}
+		teamMaxUSD += rewardUSD * int64(completionLimit)
+	}
+
+	submissionMaxUSD := int64(0)
+	for _, task := range settings.Submissions.Tasks {
+		rewardUSD := getPeoplePlanSubmissionRewardUSD(settings, task.Type)
+		if rewardUSD <= 0 {
+			rewardUSD = task.RewardPoolUSD
+		}
+		if rewardUSD <= 0 {
+			continue
+		}
+		completionLimit := 1
+		if task.Repeatable && task.MaxCompletions > 0 {
+			completionLimit = task.MaxCompletions
+		}
+		submissionMaxUSD += rewardUSD * int64(completionLimit)
+	}
+
+	return teamMaxUSD, submissionMaxUSD, teamMaxUSD + submissionMaxUSD
 }
 
 func ensurePeoplePlanEnabled() (PeoplePlanSettings, error) {
@@ -253,6 +386,43 @@ func pickTimestamp(values ...int64) int64 {
 	return result
 }
 
+func parsePeoplePlanMemberSnapshot(snapshot string) peoplePlanMemberSnapshot {
+	var result peoplePlanMemberSnapshot
+	if strings.TrimSpace(snapshot) == "" {
+		return result
+	}
+	_ = json.Unmarshal([]byte(snapshot), &result)
+	return result
+}
+
+func countsPeoplePlanEffectiveMember(member model.PeoplePlanMember, rules PeoplePlanTeamRules) bool {
+	if member.Status != model.PeoplePlanMemberStatusActive {
+		return false
+	}
+	if member.VerifiedAt <= 0 || member.FirstApiKeyAt <= 0 {
+		return false
+	}
+	return member.LifetimeCalls >= rules.EffectiveMinCalls || member.LifetimeSpend >= rules.EffectiveMinSpendUSD
+}
+
+func isPeoplePlanFormationRule(rule PeoplePlanAchievementRule) bool {
+	return rule.Metric == "effective_members" && strings.HasPrefix(rule.Key, "team-formed-")
+}
+
+func hasPeoplePlanFormationRewardByRuleTx(tx *gorm.DB, userId int, ruleKey string) (bool, error) {
+	if userId <= 0 || strings.TrimSpace(ruleKey) == "" {
+		return false, nil
+	}
+	var count int64
+	query := tx.Model(&model.PeoplePlanRewardLedger{}).
+		Where("user_id = ? AND source_type = ?", userId, peoplePlanSourceTypeAchievement).
+		Where("source_key LIKE ?", "%:"+ruleKey+":%")
+	if err := query.Count(&count).Error; err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
 func loadPeoplePlanUserMap(userIds []int) (map[int]peoplePlanUserLite, error) {
 	if len(userIds) == 0 {
 		return map[int]peoplePlanUserLite{}, nil
@@ -277,18 +447,7 @@ func computePeoplePlanMemberStats(userId int, user peoplePlanUserLite) (peoplePl
 	monthKey, monthStart, monthEnd := currentMonthInfo()
 	_ = monthKey
 
-	verifiedAt := int64(0)
-	if strings.TrimSpace(user.Email) != "" ||
-		strings.TrimSpace(user.GitHubId) != "" ||
-		strings.TrimSpace(user.DiscordId) != "" ||
-		strings.TrimSpace(user.OidcId) != "" ||
-		strings.TrimSpace(user.WeChatId) != "" ||
-		strings.TrimSpace(user.TelegramId) != "" ||
-		strings.TrimSpace(user.LinuxDOId) != "" ||
-		user.LastLoginAt > 0 {
-		verifiedAt = pickTimestamp(user.LastLoginAt, user.CreatedAt)
-	}
-	stats.verifiedAt = verifiedAt
+	stats.verifiedAt = pickTimestamp(user.LastLoginAt, user.CreatedAt)
 
 	model.DB.Model(&model.Token{}).
 		Where("user_id = ?", userId).
@@ -307,6 +466,10 @@ func computePeoplePlanMemberStats(userId int, user peoplePlanUserLite) (peoplePl
 	model.DB.Model(&model.Log{}).
 		Where("user_id = ? AND type = ? AND created_at >= ? AND created_at < ?", userId, model.LogTypeConsume, monthStart, monthEnd).
 		Count(&stats.currentMonthCalls)
+
+	model.DB.Model(&model.User{}).
+		Where("inviter_id = ?", userId).
+		Count(&stats.lifetimeInvites)
 
 	var firstTopup int64
 	model.DB.Model(&model.TopUp{}).
@@ -329,10 +492,11 @@ func computePeoplePlanMemberStats(userId int, user peoplePlanUserLite) (peoplePl
 		Scan(&monthSpend)
 	stats.currentMonthSpend = int64(math.Round(monthSpend))
 
+	model.DB.Model(&model.BlindBoxOpenRecord{}).
+		Where("user_id = ?", userId).
+		Count(&stats.lifetimeBlindBoxOpens)
+
 	stats.lastActiveAt = pickTimestamp(user.LastLoginAt, stats.firstCallAt, stats.firstTopupAt)
-	if stats.verifiedAt > 0 && stats.firstAPIKeyAt > 0 && stats.firstCallAt > 0 {
-		stats.effectiveAt = pickTimestamp(stats.verifiedAt, stats.firstAPIKeyAt, stats.firstCallAt)
-	}
 	return stats, nil
 }
 
@@ -381,51 +545,63 @@ func syncPeoplePlanTeam(team *model.PeoplePlanTeam, settings PeoplePlanSettings)
 		member.FirstApiKeyAt = stats.firstAPIKeyAt
 		member.FirstCallAt = stats.firstCallAt
 		member.FirstTopupAt = stats.firstTopupAt
-		member.EffectiveAt = stats.effectiveAt
 		member.LastActiveAt = stats.lastActiveAt
 		member.CurrentMonthSpend = stats.currentMonthSpend
 		member.CurrentMonthCalls = stats.currentMonthCalls
 		member.LifetimeSpend = stats.lifetimeSpend
 		member.LifetimeCalls = stats.lifetimeCalls
+		member.EffectiveAt = 0
+		if countsPeoplePlanEffectiveMember(member, settings.TeamRules) {
+			member.EffectiveAt = pickTimestamp(
+				member.VerifiedAt,
+				member.FirstApiKeyAt,
+				member.FirstCallAt,
+				member.FirstTopupAt,
+			)
+		}
+		countsAsEffectiveMember := countsPeoplePlanEffectiveMember(member, settings.TeamRules)
 		member.Snapshot = marshalPeoplePlanSnapshot(map[string]any{
-			"display_name": user.DisplayName,
-			"username":     user.Username,
-			"effective":    member.EffectiveAt > 0,
+			"display_name":               user.DisplayName,
+			"username":                   user.Username,
+			"effective":                  member.EffectiveAt > 0,
+			"lifetime_invites":           stats.lifetimeInvites,
+			"lifetime_blind_box_opens":   stats.lifetimeBlindBoxOpens,
+			"counts_as_effective_member": countsAsEffectiveMember,
 		})
 		memberUpdates = append(memberUpdates, member)
 		summary.ActiveMembers++
 		summary.TeamCalls += member.LifetimeCalls
 		summary.TeamSpendUSD += member.LifetimeSpend
+		summary.TeamInvites += stats.lifetimeInvites
+		summary.TeamBlindBoxOpens += stats.lifetimeBlindBoxOpens
 		summary.MonthlyTeamSpendUSD += member.CurrentMonthSpend
-		if member.CurrentMonthCalls > 0 {
+		if member.CurrentMonthCalls >= settings.TeamRules.MonthlyActiveMinCalls {
 			summary.MonthlyActiveMembers++
 		}
 		memberProfiles = append(memberProfiles, PeoplePlanMemberProfile{
-			UserId:            member.UserId,
-			Username:          user.Username,
-			DisplayName:       user.DisplayName,
-			Role:              member.Role,
-			Status:            member.Status,
-			JoinSource:        member.JoinSource,
-			VerifiedAt:        member.VerifiedAt,
-			FirstApiKeyAt:     member.FirstApiKeyAt,
-			FirstCallAt:       member.FirstCallAt,
-			FirstTopupAt:      member.FirstTopupAt,
-			EffectiveAt:       member.EffectiveAt,
-			CurrentMonthSpend: member.CurrentMonthSpend,
-			CurrentMonthCalls: member.CurrentMonthCalls,
-			LifetimeSpend:     member.LifetimeSpend,
-			LifetimeCalls:     member.LifetimeCalls,
+			UserId:                  member.UserId,
+			Username:                user.Username,
+			DisplayName:             user.DisplayName,
+			Role:                    member.Role,
+			Status:                  member.Status,
+			JoinSource:              member.JoinSource,
+			VerifiedAt:              member.VerifiedAt,
+			FirstApiKeyAt:           member.FirstApiKeyAt,
+			FirstCallAt:             member.FirstCallAt,
+			FirstTopupAt:            member.FirstTopupAt,
+			EffectiveAt:             member.EffectiveAt,
+			CurrentMonthSpend:       member.CurrentMonthSpend,
+			CurrentMonthCalls:       member.CurrentMonthCalls,
+			LifetimeSpend:           member.LifetimeSpend,
+			LifetimeCalls:           member.LifetimeCalls,
+			LifetimeInvites:         stats.lifetimeInvites,
+			LifetimeBlindBoxOpens:   stats.lifetimeBlindBoxOpens,
+			CountsAsEffectiveMember: countsAsEffectiveMember,
 		})
 	}
 
-	minCalls := settings.TeamRules.EffectiveMinCalls
-	minSpend := settings.TeamRules.EffectiveMinSpendUSD
 	for _, member := range memberUpdates {
-		if member.EffectiveAt <= 0 {
-			continue
-		}
-		if member.LifetimeCalls >= minCalls || member.LifetimeSpend >= minSpend {
+		if countsPeoplePlanEffectiveMember(member, settings.TeamRules) {
 			summary.EffectiveMembers++
 		}
 	}
@@ -644,6 +820,10 @@ func computePeoplePlanMetricValue(metric string, summary PeoplePlanTeamSummary) 
 		return summary.TeamCalls
 	case "team_spend_usd":
 		return summary.TeamSpendUSD
+	case "team_invites":
+		return summary.TeamInvites
+	case "team_blind_box_opens":
+		return summary.TeamBlindBoxOpens
 	case "monthly_active_members":
 		return int64(summary.MonthlyActiveMembers)
 	case "monthly_team_spend_usd":
@@ -682,9 +862,10 @@ func resolvePeoplePlanRewardPoolUSD(rule PeoplePlanAchievementRule, effectiveMem
 }
 
 func getPeoplePlanContributionMetricValue(key string, member model.PeoplePlanMember) int64 {
+	snapshot := parsePeoplePlanMemberSnapshot(member.Snapshot)
 	switch key {
 	case "effective_members":
-		if member.EffectiveAt > 0 {
+		if snapshot.CountsAsEffectiveMember {
 			return 1
 		}
 		return 0
@@ -696,6 +877,10 @@ func getPeoplePlanContributionMetricValue(key string, member model.PeoplePlanMem
 		return member.LifetimeCalls
 	case "lifetime_spend":
 		return member.LifetimeSpend
+	case "lifetime_invites":
+		return snapshot.LifetimeInvites
+	case "lifetime_blind_box_opens":
+		return snapshot.LifetimeBlindBoxOpens
 	default:
 		return 0
 	}
@@ -716,11 +901,15 @@ func buildPeoplePlanContributionScores(
 	if len(eligibleMembers) == 0 {
 		return scores
 	}
+	for _, member := range eligibleMembers {
+		scores[member.UserId] = 1
+	}
+
+	if rule.ContributionMode == "equal" {
+		return scores
+	}
 
 	if len(rule.ContributionWeights) == 0 {
-		for _, member := range eligibleMembers {
-			scores[member.UserId] = 1
-		}
 		return scores
 	}
 
@@ -827,37 +1016,30 @@ func issuePeoplePlanAchievementRewardsTx(
 		if rule.CaptainOnly && member.UserId != team.CaptainUserId {
 			continue
 		}
+		if !rule.CaptainOnly && !countsPeoplePlanEffectiveMember(member, settings.TeamRules) {
+			continue
+		}
 		eligibleMembers = append(eligibleMembers, member)
+	}
+	if isPeoplePlanFormationRule(rule) {
+		filteredMembers := make([]model.PeoplePlanMember, 0, len(eligibleMembers))
+		for _, member := range eligibleMembers {
+			claimed, err := hasPeoplePlanFormationRewardByRuleTx(tx, member.UserId, rule.Key)
+			if err != nil {
+				return 0, err
+			}
+			if claimed {
+				continue
+			}
+			filteredMembers = append(filteredMembers, member)
+		}
+		eligibleMembers = filteredMembers
 	}
 	if len(eligibleMembers) == 0 {
 		return 0, nil
 	}
 
 	scores := buildPeoplePlanContributionScores(rule, eligibleMembers)
-
-	minRatio := float64(settings.TeamRules.RewardMinContributionBps) / 10000.0
-	totalScore := 0.0
-	for _, score := range scores {
-		totalScore += score
-	}
-	filteredMembers := make([]model.PeoplePlanMember, 0, len(eligibleMembers))
-	deniedUserIds := map[int]bool{}
-	if minRatio > 0 && totalScore > 0 {
-		for _, member := range eligibleMembers {
-			ratio := scores[member.UserId] / totalScore
-			if ratio < minRatio {
-				deniedUserIds[member.UserId] = true
-			} else {
-				filteredMembers = append(filteredMembers, member)
-			}
-		}
-	} else {
-		filteredMembers = eligibleMembers
-	}
-	if len(filteredMembers) == 0 {
-		filteredMembers = eligibleMembers
-		deniedUserIds = map[int]bool{}
-	}
 
 	rewardPoolUSD := resolvePeoplePlanRewardPoolUSD(rule, summary.EffectiveMembers)
 	if rewardPoolUSD <= 0 {
@@ -868,8 +1050,8 @@ func issuePeoplePlanAchievementRewardsTx(
 	}
 
 	for completionIndex := completedCount + 1; completionIndex <= eligibleCount; completionIndex++ {
-		filteredScores := make(map[int]float64, len(filteredMembers))
-		for _, member := range filteredMembers {
+		filteredScores := make(map[int]float64, len(eligibleMembers))
+		for _, member := range eligibleMembers {
 			filteredScores[member.UserId] = scores[member.UserId]
 		}
 		shares := allocatePeoplePlanRewardShares(rewardPoolUSD, filteredScores)
@@ -877,7 +1059,7 @@ func issuePeoplePlanAchievementRewardsTx(
 		for _, score := range filteredScores {
 			filteredTotalScore += score
 		}
-		for _, member := range filteredMembers {
+		for _, member := range eligibleMembers {
 			shareUSD := shares[member.UserId]
 			scoreRatio := 0.0
 			if filteredTotalScore > 0 {

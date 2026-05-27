@@ -1,4 +1,3 @@
-import { Badge } from '@/components/ui/badge'
 import type {
   PeoplePlanOverview,
   PeoplePlanRewardSummary,
@@ -14,51 +13,71 @@ export function HeroSection(props: {
 }) {
   const minMembers = props.overview?.team_rules.min_members ?? 3
   const maxMembers = props.overview?.team_rules.max_members ?? 8
+  const maxTotal = props.overview?.max_total_reward_usd ?? 0
+  const maxTeam = props.overview?.max_team_reward_usd ?? 0
+  const maxSubmission = props.overview?.max_submission_reward_usd ?? 0
 
   return (
     <section className='relative overflow-hidden rounded-[28px] border bg-slate-950 text-white'>
       <img
         src='/people-plan-poster.png'
-        alt='人海计划海报'
+        alt=''
         className='absolute inset-0 h-full w-full object-cover'
       />
-      <div className='absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/88 to-slate-950/42' />
-      <div className='absolute inset-0 bg-gradient-to-t from-slate-950/92 via-slate-950/20 to-transparent' />
+      <div className='absolute inset-0 bg-gradient-to-r from-slate-950 via-slate-950/90 to-slate-950/50' />
+      <div className='absolute inset-0 bg-gradient-to-t from-slate-950/95 via-slate-950/25 to-transparent' />
 
-      <div className='relative flex min-h-[500px] flex-col justify-between gap-8 px-6 py-7 sm:px-8 sm:py-9 lg:min-h-[620px] lg:px-10 lg:py-10'>
-        <div className='max-w-3xl space-y-4 pt-2 lg:pt-6'>
-          <Badge className='w-fit border-white/20 bg-white/12 text-white hover:bg-white/12'>
-            {props.overview?.entry_title || 'Code Go 人海计划'}
-          </Badge>
-          <div className='space-y-3'>
-            <h2 className='max-w-2xl text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl'>
-              Code Go 人海计划
-            </h2>
-            <p className='max-w-2xl text-sm leading-7 text-white/90 sm:text-base'>
-              组队做任务，按贡献分奖金；投稿交成果，奖励个人独享。
+      <div className='relative flex min-h-[480px] flex-col justify-between gap-8 px-6 py-7 sm:px-8 sm:py-9 lg:min-h-[560px] lg:px-10 lg:py-10'>
+        {/* Top: headline + reward number */}
+        <div className='max-w-3xl space-y-5 pt-2 lg:pt-4'>
+          <p className='text-sm font-medium tracking-wide text-amber-300/90 uppercase'>
+            {props.overview?.entry_title || '人海计划'}
+          </p>
+
+          <div className='space-y-2'>
+            <div className='text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl'>
+              单人最高{' '}
+              <span className='text-amber-400'>{formatMoney(maxTotal)}</span>
+            </div>
+            <p className='max-w-xl text-sm leading-6 text-white/70 sm:text-base'>
+              组队任务按贡献分配，投稿任务奖励独享。两项可叠加，未组队也能先查看全部任务和奖励。
             </p>
-            <p className='max-w-2xl text-sm leading-7 text-white/72'>
-              组队任务标注"小队总奖池"并按贡献权重分配给成员；投稿活动审核通过后，奖励直接发给投稿人本人。未组队也能先查看全部任务和奖励。
-            </p>
+          </div>
+
+          {/* Reward breakdown */}
+          <div className='flex flex-wrap gap-x-6 gap-y-1 text-sm text-white/60'>
+            <span>
+              组队最高 <span className='font-medium text-white/90'>{formatMoney(maxTeam)}</span>
+            </span>
+            <span>
+              投稿最高 <span className='font-medium text-white/90'>{formatMoney(maxSubmission)}</span>
+            </span>
           </div>
         </div>
 
-        <div className='grid gap-3 md:grid-cols-3'>
+        {/* Bottom: stat cards */}
+        <div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-4'>
           <SummaryCard
             dark
             label='组队人数'
             value={`${minMembers} - ${maxMembers} 人`}
-            hint='达到有效成员要求后开始按档位结算'
+            hint='有效成员越多，档位越高'
+          />
+          <SummaryCard
+            dark
+            label='单人最高可得'
+            value={formatMoney(maxTotal)}
+            hint='组队 + 投稿两项合计'
           />
           <SummaryCard
             dark
             label='当前可领取'
             value={props.rewardSummary?.claimable ?? 0}
-            hint={`待领取金额 ${formatMoney(props.rewardSummary?.quota_usd ?? 0)}`}
+            hint={`待领取 ${formatMoney(props.rewardSummary?.quota_usd ?? 0)}`}
           />
           <SummaryCard
             dark
-            label='我的小队进度'
+            label='我的小队'
             value={
               props.team
                 ? `${props.team.summary.effective_members}/${props.team.summary.max_members}`
@@ -66,8 +85,8 @@ export function HeroSection(props: {
             }
             hint={
               props.team
-                ? `小队状态：${getStatusLabel(props.team.team.status)}`
-                : '可通过邀请链接注册自动入队'
+                ? `状态：${getStatusLabel(props.team.team.status)}`
+                : '邀请链接注册可自动入队'
             }
           />
         </div>

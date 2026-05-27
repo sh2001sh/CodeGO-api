@@ -1,4 +1,6 @@
-import { Check, Users, UserCheck, Target, Coins } from 'lucide-react'
+import type { ComponentType, ReactNode } from 'react'
+import { Check, Coins, Target, UserCheck, Users } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import {
   Card,
   CardContent,
@@ -6,20 +8,19 @@ import {
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
 import type {
   PeoplePlanOverview,
   PeoplePlanRewardSummary,
   PeoplePlanTeamDetail,
 } from '../types'
-import { formatMoney, formatTime, getStatusLabel } from '../utils'
+import { formatTime, getStatusLabel } from '../utils'
 import { SummaryCard } from './shared'
 
 function StepCard(props: {
   step: number
-  icon: React.ComponentType<{ className?: string }>
+  icon: ComponentType<{ className?: string }>
   title: string
-  children: React.ReactNode
+  children: ReactNode
   last?: boolean
 }) {
   const Icon = props.icon
@@ -29,9 +30,7 @@ function StepCard(props: {
         <div className='flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary text-sm font-bold text-primary-foreground'>
           {props.step}
         </div>
-        {!props.last ? (
-          <div className='mt-1.5 w-0.5 flex-1 rounded-full bg-border' />
-        ) : null}
+        {!props.last ? <div className='mt-1.5 w-0.5 flex-1 rounded-full bg-border' /> : null}
       </div>
       <div className={props.last ? 'pb-0' : 'pb-7'}>
         <div className='flex items-center gap-2'>
@@ -94,88 +93,84 @@ export function RulesTab(props: {
   const tiers = props.overview?.team_rules.reward_tiers ?? []
   const minMembers = props.overview?.team_rules.min_members ?? 3
   const maxMembers = props.overview?.team_rules.max_members ?? 8
+  const effectiveMinCalls = props.overview?.team_rules.effective_min_calls ?? 30
+  const effectiveMinSpend = props.overview?.team_rules.effective_min_spend_usd ?? 3
 
   return (
     <div className='space-y-5'>
-      {/* Section A: 参与流程 */}
       <Card>
         <CardHeader>
           <CardTitle>参与流程</CardTitle>
           <CardDescription>
-            从组队到拿奖金，一共四步。未组队也能先看任务和奖励。
+            先看规则，再决定组队还是投稿。两条线可以同时参与。
           </CardDescription>
         </CardHeader>
         <CardContent>
           <StepCard step={1} icon={Users} title='创建或加入小队'>
-            队长创建小队后获得邀请码，成员通过邀请码或邀请链接加入。
+            队长创建小队后会获得邀请码和邀请链接，成员可直接输入邀请码加入，也可以通过邀请链接注册后自动入队。
             <br />
-            小队人数范围：{minMembers} - {maxMembers} 人。你也可以通过邀请链接注册后自动入队。
+            小队人数范围：{minMembers} - {maxMembers} 人。
           </StepCard>
 
-          <StepCard step={2} icon={UserCheck} title='成为有效成员'>
-            有效成员需同时满足：
+          <StepCard step={2} icon={UserCheck} title='达到有效成员标准'>
+            只有有效成员才会计入成团人数和人数档位。
             <ul className='mt-1 list-inside list-disc space-y-0.5'>
               <li>完成注册</li>
               <li>生成 API Key</li>
-              <li>产生至少 1 次 API 调用</li>
-            </ul>
-            满足以上条件即为有效成员，可以参与奖励分配。但计入成团人数需要达到最低用量：
-            <div className='mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300'>
-              个人累计调用 ≥ 50 次 或 累计消费 ≥ $5，才计入成团人数。只看你自己的用量，不跟队友比。拉来只调用过几次的僵尸号不能帮全队提档。
-            </div>
-          </StepCard>
-
-          <StepCard step={3} icon={Target} title='完成组队任务'>
-            任务分为两类：
-            <ul className='mt-1 list-inside list-disc space-y-0.5'>
               <li>
-                <span className='font-medium text-foreground'>长期任务</span>
-                ：调用冲刺、消费冲刺、成团奖励。可多次完成，长期有效。
-              </li>
-              <li>
-                <span className='font-medium text-foreground'>月度任务</span>
-                ：月度活跃、月度消费。每月结算一次。
+                个人累计调用 ≥ {effectiveMinCalls} 次，或累计消费 ≥ ${effectiveMinSpend}
               </li>
             </ul>
-            每项任务有明确的目标值和完成次数上限。小队成员一起做，进度全队共享。
+            队长可以移出成员；成团后只能移出未达有效标准的成员。
           </StepCard>
 
-          <StepCard step={4} icon={Coins} title='按贡献分奖金' last>
-            每次任务完成后，系统自动分配奖励：
+          <StepCard step={3} icon={Target} title='完成组队任务或个人投稿'>
+            组队活动按小队累计进度结算，投稿活动按个人提交记录结算。
             <ul className='mt-1 list-inside list-disc space-y-0.5'>
-              <li>根据贡献权重计算每位有效成员的贡献占比</li>
-              <li>贡献占比低于 5% 的成员不参与分奖，其份额分配给其他合格成员</li>
-              <li>贡献越大的成员，分到的奖金越多</li>
+              <li>组队长期任务：成团奖励、消费冲刺、邀请冲刺、盲盒冲刺</li>
+              <li>组队月度任务：月度消费</li>
+              <li>投稿活动：内容投稿、项目接入、社区共建</li>
             </ul>
-            <div className='mt-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-300'>
-              简单说：多劳多得。拉来的成员如果自己不活跃、不消费，既不能帮你提档位，也分不到奖金。
-            </div>
+          </StepCard>
+
+          <StepCard step={4} icon={Coins} title='领取奖励' last>
+            奖励方式很简单：
+            <ul className='mt-1 list-inside list-disc space-y-0.5'>
+              <li>成团奖励按当次有效成员平分</li>
+              <li>其他组队任务按贡献奖励给个人</li>
+              <li>投稿活动奖励只发给投稿人本人</li>
+              <li>同一档成团奖励每人全活动期只发一次，换队不重复发</li>
+            </ul>
           </StepCard>
         </CardContent>
       </Card>
 
-      {/* Section B: 奖励机制对比 */}
       <Card>
         <CardHeader>
-          <CardTitle>奖励机制说明</CardTitle>
+          <CardTitle>奖励方式</CardTitle>
           <CardDescription>
-            组队任务和投稿任务的奖励方式不同，这里一次说清楚。
+            组队活动和投稿活动分开结算，奖励记录也分开展示。
           </CardDescription>
         </CardHeader>
         <CardContent>
           <div className='overflow-hidden rounded-2xl border'>
-            {/* Header row */}
             <div className='grid grid-cols-[120px_1fr_1fr] gap-3 border-b bg-muted/40 px-4 py-3 text-sm font-semibold'>
               <div />
               <div className='flex items-center gap-1.5'>
-                <Badge variant='outline' className='border-amber-300 bg-amber-100 text-amber-800 dark:border-amber-700 dark:bg-amber-950/50 dark:text-amber-300'>
-                  组队任务
+                <Badge
+                  variant='outline'
+                  className='border-amber-300 bg-amber-100 text-amber-800 dark:border-amber-700 dark:bg-amber-950/50 dark:text-amber-300'
+                >
+                  组队活动
                 </Badge>
                 小队总奖池
               </div>
               <div className='flex items-center gap-1.5'>
-                <Badge variant='outline' className='border-blue-300 bg-blue-100 text-blue-800 dark:border-blue-700 dark:bg-blue-950/50 dark:text-blue-300'>
-                  投稿任务
+                <Badge
+                  variant='outline'
+                  className='border-blue-300 bg-blue-100 text-blue-800 dark:border-blue-700 dark:bg-blue-950/50 dark:text-blue-300'
+                >
+                  投稿活动
                 </Badge>
                 个人奖励
               </div>
@@ -183,62 +178,63 @@ export function RulesTab(props: {
 
             <div className='px-4'>
               <ComparisonRow
-                label='奖励来源'
-                teamText='小队总奖池：后台配置的固定金额，按人数档位浮动'
-                submissionText='单人固定奖励：后台为每种投稿类型配置的奖励金额'
-              />
-              <ComparisonRow
-                label='分配方式'
-                teamText='按贡献权重分配给每位有效成员，贡献越大分得越多'
-                submissionText='审核通过后，奖励全额发给投稿人本人，不与他人分成'
+                label='奖励归属'
+                teamText='成团奖励平分；其余任务按贡献分配给成员'
+                submissionText='奖励全额归投稿人本人，不与他人分成'
               />
               <ComparisonRow
                 label='参与方式'
-                teamText='必须先加入小队。未组队时可查看任务，但不能累计进度'
+                teamText='必须先加入小队，未组队时只能先查看任务和规则'
                 submissionText='个人直接投稿，不需要加入任何小队'
               />
               <ComparisonRow
-                label='任务进度'
-                teamText='全队共享进度。任一成员的行为都计入小队总进度'
-                submissionText='个人独立统计。每人单独计算完成次数'
+                label='进度统计'
+                teamText='全队共享进度，人数档位越高，目标和奖池都会提高'
+                submissionText='每个人独立统计，按通过审核的投稿记录结算'
+              />
+              <ComparisonRow
+                label='奖励展示'
+                teamText='组队奖励页只显示组队奖励'
+                submissionText='投稿奖励显示在投稿活动页和个人投稿记录里'
               />
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Section C: 组队人数档位 */}
       <Card>
         <CardHeader>
           <CardTitle>组队人数档位</CardTitle>
           <CardDescription>
-            小队有效成员越多，同一项任务的总奖池越高。每项任务在每个档位有独立的总奖池金额。
+            有效成员越多，任务目标更高，但完成后的总奖池和人均奖金也更高。
           </CardDescription>
         </CardHeader>
         <CardContent className='grid gap-3 md:grid-cols-3'>
           {tiers.map((tier, index) => {
             const descriptions = [
-              `达到 ${tier.required_members} 名有效成员后，各项任务按入门档总奖池结算。适合刚刚组队的小团队。`,
-              `达到 ${tier.required_members} 名有效成员后，总奖池大幅提升。人数越多，单次任务完成的收益越高。`,
-              `达到 ${tier.required_members} 名有效成员后，解锁最高档位。满编小队每次任务完成的收益最大化。`,
+              `达到 ${tier.required_members} 名有效成员后，解锁入门档，适合小队启动阶段。`,
+              `达到 ${tier.required_members} 名有效成员后，解锁进阶档，人均门槛和奖池都会上升。`,
+              `达到 ${tier.required_members} 名有效成员后，解锁满编档，单次任务的人均奖励最高。`,
             ]
             return (
               <TierCard
                 key={tier.required_members}
                 members={tier.required_members}
-                label={`总奖池 ${formatMoney(tier.reward_pool_usd)} 起`}
-                description={descriptions[index] || `达到 ${tier.required_members} 名有效成员后，人数档位总奖池为 ${formatMoney(tier.reward_pool_usd)}。`}
+                label={index === 0 ? '入门档' : index === 1 ? '进阶档' : '满编档'}
+                description={
+                  descriptions[index] ||
+                  `达到 ${tier.required_members} 名有效成员后，会自动切换到更高档位。`
+                }
               />
             )
           })}
         </CardContent>
       </Card>
 
-      {/* Section D: 当前状态 */}
       <Card>
         <CardHeader>
           <CardTitle>我的当前状态</CardTitle>
-          <CardDescription>这里显示你现在最关心的进度。</CardDescription>
+          <CardDescription>这里显示你现在最关心的几项信息。</CardDescription>
         </CardHeader>
         <CardContent className='grid gap-3 sm:grid-cols-2 xl:grid-cols-4'>
           <SummaryCard

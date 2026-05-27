@@ -16,6 +16,7 @@ import { RulesTab } from './components/rules-tab'
 import { SubmissionBoard } from './components/submission-board'
 import {
   TeamRewardsWorkspace,
+  TeamTaskBoard,
   TeamWorkspace,
 } from './components/rewards-tab'
 import { usePeoplePlanMutations, usePeoplePlanQueries } from './hooks'
@@ -60,6 +61,7 @@ function PeoplePlanContent(props: {
   createTeamPending: boolean
   joinTeamPending: boolean
   leaveTeamPending: boolean
+  removeMemberPending: boolean
   claimRewardPending: boolean
   createSubmissionPending: boolean
   inviteLink: string
@@ -67,7 +69,8 @@ function PeoplePlanContent(props: {
   onJoinTeam: () => Promise<void>
   onCopyInviteCode: () => Promise<void>
   onCopyInviteLink: () => Promise<void>
-  onLeaveTeam: () => void
+  onLeaveTeam: () => Promise<void>
+  onRemoveMember: (memberUserId: number) => Promise<void>
   onClaimReward: (rewardId: number) => void
   onCreateSubmission: () => Promise<void>
 }) {
@@ -163,20 +166,25 @@ function PeoplePlanContent(props: {
                 onCopyInviteCode={props.onCopyInviteCode}
                 onCopyInviteLink={props.onCopyInviteLink}
                 onLeaveTeam={props.onLeaveTeam}
+                onRemoveMember={props.onRemoveMember}
                 creating={props.createTeamPending}
                 joining={props.joinTeamPending}
                 leaving={props.leaveTeamPending}
+                removingMember={props.removeMemberPending}
               />
               <TeamRewardsWorkspace
                 rewardSummary={props.peoplePlan.rewardSummary}
                 rewards={teamRewards}
                 claimPending={props.claimRewardPending}
                 onClaim={props.onClaimReward}
-                tasks={props.overview?.team_tasks ?? []}
-                team={props.peoplePlan.team}
-                progressMap={props.progressMap}
               />
             </div>
+
+            <TeamTaskBoard
+              tasks={props.overview?.team_tasks ?? []}
+              team={props.peoplePlan.team}
+              progressMap={props.progressMap}
+            />
           </TabsContent>
 
           <TabsContent value='submissions' className='mt-0'>
@@ -219,6 +227,7 @@ export function PeoplePlanPage() {
     createTeamMutation,
     joinTeamMutation,
     leaveTeamMutation,
+    removeMemberMutation,
     claimRewardMutation,
     createSubmissionMutation,
   } = usePeoplePlanMutations()
@@ -306,7 +315,15 @@ export function PeoplePlanPage() {
     <SectionPageLayout>
       <SectionPageLayout.Title>人海计划</SectionPageLayout.Title>
       <SectionPageLayout.Description>
-        组队任务标注"小队总奖池"按贡献分配，投稿任务标注"个人奖励"独享。
+        单人最高{' '}
+        {peoplePlan.overview?.max_total_reward_usd
+          ? new Intl.NumberFormat('zh-CN', {
+              style: 'currency',
+              currency: 'USD',
+              maximumFractionDigits: 0,
+            }).format(peoplePlan.overview.max_total_reward_usd)
+          : '—'}
+        ，组队按贡献分 + 投稿个人独享，两项可叠加。先看规则，再进组队或投稿页面。
       </SectionPageLayout.Description>
       <SectionPageLayout.Content>
         <PeoplePlanContent
@@ -334,6 +351,7 @@ export function PeoplePlanPage() {
           createTeamPending={createTeamMutation.isPending}
           joinTeamPending={joinTeamMutation.isPending}
           leaveTeamPending={leaveTeamMutation.isPending}
+          removeMemberPending={removeMemberMutation.isPending}
           claimRewardPending={claimRewardMutation.isPending}
           createSubmissionPending={createSubmissionMutation.isPending}
           inviteLink={inviteLink}
@@ -341,7 +359,10 @@ export function PeoplePlanPage() {
           onJoinTeam={handleJoinTeam}
           onCopyInviteCode={handleCopyInviteCode}
           onCopyInviteLink={handleCopyInviteLink}
-          onLeaveTeam={() => leaveTeamMutation.mutate()}
+          onLeaveTeam={() => leaveTeamMutation.mutateAsync().then(() => undefined)}
+          onRemoveMember={(memberUserId) =>
+            removeMemberMutation.mutateAsync(memberUserId).then(() => undefined)
+          }
           onClaimReward={(rewardId) => claimRewardMutation.mutate(rewardId)}
           onCreateSubmission={handleCreateSubmission}
         />

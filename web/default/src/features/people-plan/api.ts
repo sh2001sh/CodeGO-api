@@ -45,6 +45,14 @@ export async function leavePeoplePlanTeam() {
   return response.data
 }
 
+export async function removePeoplePlanMember(memberUserId: number) {
+  const response = await api.post<ApiEnvelope<PeoplePlanTeamDetail>>(
+    '/api/user/people-plan/team/remove-member',
+    { member_user_id: memberUserId }
+  )
+  return response.data
+}
+
 export async function getPeoplePlanRewards() {
   const response = await api.get<
     ApiEnvelope<{ summary: PeoplePlanRewardSummary; items: PeoplePlanReward[] }>

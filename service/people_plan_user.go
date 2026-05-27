@@ -18,6 +18,10 @@ type JoinPeoplePlanTeamInput struct {
 	InviteCode string `json:"invite_code"`
 }
 
+type RemovePeoplePlanMemberInput struct {
+	MemberUserId int `json:"member_user_id"`
+}
+
 type CreatePeoplePlanSubmissionInput struct {
 	Type          string   `json:"type"`
 	Title         string   `json:"title"`
@@ -30,13 +34,17 @@ type CreatePeoplePlanSubmissionInput struct {
 
 func GetPeoplePlanOverview(userId int) (*PeoplePlanOverview, error) {
 	settings := GetPeoplePlanSettings()
+	maxTeamRewardUSD, maxSubmissionUSD, maxTotalRewardUSD := getPeoplePlanTheoreticalMaxRewardUSD(settings)
 	overview := &PeoplePlanOverview{
-		Enabled:         settings.Enabled,
-		EntryTitle:      settings.EntryTitle,
-		EntrySubtitle:   settings.EntrySubtitle,
-		HeroTitle:       settings.HeroTitle,
-		HeroSubtitle:    settings.HeroSubtitle,
-		HeroDescription: settings.HeroDescription,
+		Enabled:           settings.Enabled,
+		EntryTitle:        settings.EntryTitle,
+		EntrySubtitle:     settings.EntrySubtitle,
+		HeroTitle:         settings.HeroTitle,
+		HeroSubtitle:      settings.HeroSubtitle,
+		HeroDescription:   settings.HeroDescription,
+		MaxTeamRewardUSD:  maxTeamRewardUSD,
+		MaxSubmissionUSD:  maxSubmissionUSD,
+		MaxTotalRewardUSD: maxTotalRewardUSD,
 		Popup: PeoplePlanPopupPayload{
 			Enabled: settings.Popup.Enabled,
 			Version: settings.Popup.Version,
@@ -47,7 +55,7 @@ func GetPeoplePlanOverview(userId int) (*PeoplePlanOverview, error) {
 		Achievements:    buildAchievementRefs(settings.Achievements),
 		Monthly:         buildAchievementRefs(settings.Monthly),
 		TeamTasks:       append(buildAchievementRefs(settings.Achievements), buildAchievementRefs(settings.Monthly)...),
-		SubmissionTasks: buildSubmissionTaskRefs(settings.Submissions.Tasks),
+		SubmissionTasks: buildSubmissionTaskRefs(settings.Submissions),
 		GeneratedAt:     nowMillis(),
 	}
 	rewards, _ := model.GetPeoplePlanRewardsByUser(userId, true)
@@ -223,6 +231,70 @@ func LeavePeoplePlanTeam(userId int) error {
 		}
 		return nil
 	})
+}
+
+func RemovePeoplePlanMember(captainUserId int, input RemovePeoplePlanMemberInput) (*PeoplePlanTeamDetail, error) {
+	settings, err := ensurePeoplePlanEnabled()
+	if err != nil {
+		return nil, err
+	}
+	if input.MemberUserId <= 0 {
+		return nil, errors.New("member user id is required")
+	}
+	team, member, err := model.GetPeoplePlanTeamByUser(captainUserId)
+	if err != nil {
+		return nil, err
+	}
+	if team == nil || member == nil {
+		return nil, errors.New("team not found")
+	}
+	if member.Role != model.PeoplePlanMemberRoleCaptain {
+		return nil, errors.New("only captain can remove members")
+	}
+	if input.MemberUserId == captainUserId {
+		return nil, errors.New("captain cannot remove self")
+	}
+
+	detail, err := syncPeoplePlanTeam(team, settings)
+	if err != nil {
+		return nil, err
+	}
+	if detail == nil {
+		return nil, errors.New("team not found")
+	}
+	if detail.Team.Status == model.PeoplePlanTeamStatusLocked {
+		return nil, errors.New("team is locked")
+	}
+
+	var targetProfile *PeoplePlanMemberProfile
+	for i := range detail.Members {
+		if detail.Members[i].UserId == input.MemberUserId {
+			targetProfile = &detail.Members[i]
+			break
+		}
+	}
+	if targetProfile == nil {
+		return nil, errors.New("member not found")
+	}
+	if targetProfile.Role == model.PeoplePlanMemberRoleCaptain {
+		return nil, errors.New("captain cannot be removed")
+	}
+	if detail.Team.Status == model.PeoplePlanTeamStatusFormed && targetProfile.CountsAsEffectiveMember {
+		return nil, errors.New("effective members cannot be removed after the team is formed")
+	}
+
+	if err := model.DB.Transaction(func(tx *gorm.DB) error {
+		return tx.Model(&model.PeoplePlanMember{}).
+			Where("team_id = ? AND user_id = ? AND status = ?", detail.Team.Id, input.MemberUserId, model.PeoplePlanMemberStatusActive).
+			Updates(map[string]any{
+				"status": model.PeoplePlanMemberStatusLeft,
+			}).Error
+	}); err != nil {
+		return nil, err
+	}
+
+	model.RecordLog(captainUserId, model.LogTypeSystem, fmt.Sprintf("removed people plan member %d from team %d", input.MemberUserId, detail.Team.Id))
+	return GetPeoplePlanTeam(captainUserId)
 }
 
 func ListPeoplePlanRewards(userId int) ([]model.PeoplePlanRewardLedger, PeoplePlanRewardSummary, error) {

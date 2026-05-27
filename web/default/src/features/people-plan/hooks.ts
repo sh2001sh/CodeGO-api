@@ -9,6 +9,7 @@ import {
   getPeoplePlanSubmissions,
   joinPeoplePlanTeam,
   leavePeoplePlanTeam,
+  removePeoplePlanMember,
 } from './api'
 import type { PeoplePlanOverview } from './types'
 import { getRequestErrorMessage } from './utils'
@@ -78,6 +79,14 @@ export function usePeoplePlanMutations() {
       mutationFn: leavePeoplePlanTeam,
       onSuccess: async () => {
         toast.success('已退出队伍')
+        await invalidatePeoplePlan()
+      },
+      onError: (error) => toast.error(getRequestErrorMessage(error)),
+    }),
+    removeMemberMutation: useMutation({
+      mutationFn: removePeoplePlanMember,
+      onSuccess: async () => {
+        toast.success('成员已移出小队')
         await invalidatePeoplePlan()
       },
       onError: (error) => toast.error(getRequestErrorMessage(error)),

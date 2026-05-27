@@ -146,6 +146,7 @@ export function getStatusLabel(status: string) {
     submission: '投稿任务',
     team: '小队任务',
     tracking: '进行中',
+    equal: '平分',
     weighted: '按贡献',
   }
   return map[status] || status
@@ -172,7 +173,7 @@ export function parseSubmissionAttachments(attachments: string) {
 function getMetricValue(metric: string, member: PeoplePlanMemberProfile) {
   switch (metric) {
     case 'effective_members':
-      return member.effective_at > 0 ? 1 : 0
+      return member.counts_as_effective_member ? 1 : 0
     case 'current_month_calls':
       return member.current_month_calls
     case 'current_month_spend':
@@ -183,6 +184,12 @@ function getMetricValue(metric: string, member: PeoplePlanMemberProfile) {
     case 'lifetime_spend':
     case 'team_spend_usd':
       return member.lifetime_spend
+    case 'lifetime_invites':
+    case 'team_invites':
+      return member.lifetime_invites
+    case 'lifetime_blind_box_opens':
+    case 'team_blind_box_opens':
+      return member.lifetime_blind_box_opens
     case 'monthly_active_members':
       return member.current_month_calls > 0 ? 1 : 0
     case 'monthly_team_spend_usd':
@@ -206,6 +213,12 @@ function getMetricLabel(metric: string) {
     case 'lifetime_spend':
     case 'team_spend_usd':
       return '累计消费'
+    case 'lifetime_invites':
+    case 'team_invites':
+      return '累计邀请'
+    case 'lifetime_blind_box_opens':
+    case 'team_blind_box_opens':
+      return '累计盲盒'
     case 'monthly_active_members':
       return '本月活跃'
     case 'monthly_team_spend_usd':
@@ -227,6 +240,10 @@ export function getTaskCurrentValue(
       return team.summary.team_calls
     case 'team_spend_usd':
       return team.summary.team_spend_usd
+    case 'team_invites':
+      return team.summary.team_invites
+    case 'team_blind_box_opens':
+      return team.summary.team_blind_box_opens
     case 'monthly_active_members':
       return team.summary.monthly_active_members
     case 'monthly_team_spend_usd':
@@ -311,11 +328,13 @@ function buildContributionDetails(
 }
 
 export function getTaskContributionItems(
-  task: Pick<PeoplePlanTask, 'metric' | 'contribution_weights'>,
+  task: Pick<PeoplePlanTask, 'metric' | 'contribution_weights' | 'contribution_mode'>,
   members: PeoplePlanMemberProfile[]
 ) {
-  const contributionWeights = task.contribution_weights ?? []
-  const detailList = members.map((member) => ({
+  const contributionWeights =
+    task.contribution_mode === 'equal' ? [] : (task.contribution_weights ?? [])
+  const eligibleMembers = members.filter((member) => member.counts_as_effective_member)
+  const detailList = eligibleMembers.map((member) => ({
     user_id: member.user_id,
     name: member.display_name || member.username,
     details: buildContributionDetails(
@@ -342,7 +361,7 @@ export function getTaskContributionItems(
         return sum
       }
       return sum + (detail.value / total) * detail.weight
-    }, 0)
+    }, 1)
 
     return {
       ...item,
@@ -395,7 +414,7 @@ export function getPerCapitaTarget(
 export function getEstimatedPersonalShare(
   task: Pick<
     PeoplePlanTask,
-    'reward_pool_usd' | 'reward_tiers' | 'contribution_weights' | 'metric'
+    'reward_pool_usd' | 'reward_tiers' | 'contribution_weights' | 'contribution_mode' | 'metric'
   >,
   team: PeoplePlanTeamDetail,
   effectiveMembers: number

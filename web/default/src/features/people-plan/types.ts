@@ -27,6 +27,7 @@ export type PeoplePlanTeamRules = {
   reward_min_contribution_bps: number
   effective_min_calls: number
   effective_min_spend_usd: number
+  monthly_active_min_calls: number
   reward_tiers: PeoplePlanRewardTier[]
 }
 
@@ -131,6 +132,9 @@ export type PeoplePlanMemberProfile = {
   current_month_calls: number
   lifetime_spend: number
   lifetime_calls: number
+  lifetime_invites: number
+  lifetime_blind_box_opens: number
+  counts_as_effective_member: boolean
 }
 
 export type PeoplePlanProgress = {
@@ -155,6 +159,8 @@ export type PeoplePlanTeamSummary = {
   max_members: number
   team_calls: number
   team_spend_usd: number
+  team_invites: number
+  team_blind_box_opens: number
   monthly_active_members: number
   monthly_team_spend_usd: number
 }
@@ -213,6 +219,9 @@ export type PeoplePlanOverview = {
   hero_title: string
   hero_subtitle: string
   hero_description: string
+  max_team_reward_usd: number
+  max_submission_reward_usd: number
+  max_total_reward_usd: number
   popup: PeoplePlanPopup
   team_rules: PeoplePlanTeamRules
   achievements: PeoplePlanTask[]

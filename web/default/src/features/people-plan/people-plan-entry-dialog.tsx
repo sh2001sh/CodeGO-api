@@ -9,13 +9,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
+import { formatMoney } from './utils'
 import { useNotificationStore } from '@/stores/notification-store'
 import { getPeoplePlanOverview } from './api'
-
-const POPUP_TITLE = 'Code Go 人海计划已开启'
-const POPUP_SUBTITLE = '登录后可直接查看组队活动和投稿活动'
-const POPUP_BODY =
-  '组队活动看小队，投稿活动看个人。进入后可直接查看总奖池、完成次数和贡献分配。'
 
 export function PeoplePlanEntryDialog() {
   const navigate = useNavigate()
@@ -75,11 +71,16 @@ export function PeoplePlanEntryDialog() {
     return null
   }
 
+  const popupTitle = overview.popup.title || 'Code Go 人海计划已开启'
+  const maxTotal = overview.max_total_reward_usd ?? 0
+  const maxTeam = overview.max_team_reward_usd ?? 0
+  const maxSubmission = overview.max_submission_reward_usd ?? 0
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogContent className='max-w-5xl overflow-hidden p-0'>
         <DialogHeader className='sr-only'>
-          <DialogTitle>{POPUP_TITLE}</DialogTitle>
+          <DialogTitle>{popupTitle}</DialogTitle>
         </DialogHeader>
 
         <div className='relative min-h-[460px] overflow-hidden bg-slate-950 text-white lg:min-h-[620px]'>
@@ -92,22 +93,35 @@ export function PeoplePlanEntryDialog() {
           <div className='absolute inset-0 bg-gradient-to-t from-slate-950/96 via-transparent to-slate-950/18' />
 
           <div className='relative flex min-h-[460px] flex-col justify-between gap-8 p-6 sm:p-8 lg:min-h-[620px] lg:p-10'>
-            <div className='max-w-3xl space-y-4 pt-2 lg:pt-6'>
-              <div className='inline-flex w-fit rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs text-white/80'>
-                登录后自动弹窗提醒
+            <div className='max-w-3xl space-y-5 pt-2 lg:pt-6'>
+              <div className='inline-flex w-fit rounded-full border border-amber-300/40 bg-amber-400/20 px-4 py-1.5 text-sm font-medium text-amber-100'>
+                单人最高可获 {formatMoney(maxTotal)} 等值额度
               </div>
-              <div className='space-y-3'>
+              <div className='space-y-4'>
                 <h2 className='text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl'>
-                  {POPUP_TITLE}
+                  {popupTitle}
                 </h2>
-                <p className='text-sm leading-7 text-white/88 sm:text-base'>
-                  {POPUP_SUBTITLE}
+                <p className='max-w-xl text-base leading-7 text-white/90 sm:text-lg'>
+                  组队做任务，按贡献分奖金；独立投稿，奖励个人独享。两项可叠加。
                 </p>
+              </div>
+
+              <div className='flex flex-wrap gap-3'>
+                <div className='rounded-2xl border border-white/12 bg-white/5 px-4 py-3 backdrop-blur-sm'>
+                  <div className='text-xs text-white/60'>组队活动单人最高</div>
+                  <div className='mt-0.5 text-xl font-semibold text-white'>{formatMoney(maxTeam)}</div>
+                </div>
+                <div className='rounded-2xl border border-white/12 bg-white/5 px-4 py-3 backdrop-blur-sm'>
+                  <div className='text-xs text-white/60'>投稿活动单人最高</div>
+                  <div className='mt-0.5 text-xl font-semibold text-white'>{formatMoney(maxSubmission)}</div>
+                </div>
               </div>
             </div>
 
-            <div className='max-w-2xl rounded-3xl border border-white/12 bg-black/30 p-5 backdrop-blur-sm'>
-              <p className='text-sm leading-7 text-white/88'>{POPUP_BODY}</p>
+            <div className='max-w-xl rounded-2xl border border-white/10 bg-black/30 p-4 backdrop-blur-sm'>
+              <p className='text-sm leading-6 text-white/80'>
+                进入后可直接查看每项任务的总奖池、完成进度和你的预估分成。未组队也能先看全部内容。
+              </p>
             </div>
           </div>
         </div>
