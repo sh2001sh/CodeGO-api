@@ -109,6 +109,15 @@ func SetApiRouter(router *gin.Engine) {
 				//selfRoute.POST("/waffo-pancake/pay", middleware.CriticalRateLimit(), controller.RequestWaffoPancakePay)
 				selfRoute.POST("/aff_transfer", controller.TransferAffQuota)
 				selfRoute.PUT("/setting", controller.UpdateUserSetting)
+				selfRoute.GET("/people-plan/overview", controller.GetPeoplePlanOverview)
+				selfRoute.GET("/people-plan/team", controller.GetPeoplePlanTeam)
+				selfRoute.POST("/people-plan/team", controller.CreatePeoplePlanTeam)
+				selfRoute.POST("/people-plan/team/join", controller.JoinPeoplePlanTeam)
+				selfRoute.POST("/people-plan/team/leave", controller.LeavePeoplePlanTeam)
+				selfRoute.GET("/people-plan/rewards", controller.GetPeoplePlanRewards)
+				selfRoute.POST("/people-plan/rewards/:id/claim", controller.ClaimPeoplePlanReward)
+				selfRoute.GET("/people-plan/submissions", controller.GetPeoplePlanSubmissions)
+				selfRoute.POST("/people-plan/submissions", controller.CreatePeoplePlanSubmission)
 
 				// 2FA routes
 				selfRoute.GET("/2fa/status", controller.Get2FAStatus)
@@ -129,19 +138,22 @@ func SetApiRouter(router *gin.Engine) {
 					gamificationRoute.POST("/share-link", controller.ClaimGamificationShareLink)
 					gamificationRoute.POST("/equip", controller.EquipGamificationCompanionPet)
 					gamificationRoute.POST("/upgrade", controller.UpgradeGamificationCompanionPet)
-				gamificationRoute.POST("/feed", controller.FeedGamificationCompanionPet)
-			}
+					gamificationRoute.POST("/feed", controller.FeedGamificationCompanionPet)
+				}
 
-			geneMapRoute := selfRoute.Group("/gene-map")
-			{
-				geneMapRoute.GET("/generate", controller.GenerateGeneMap)
-				geneMapRoute.POST("/share", middleware.CriticalRateLimit(), controller.ShareGeneMap)
-				geneMapRoute.GET("/compare/:token", controller.CompareGeneMapShare)
-			}
+				geneMapRoute := selfRoute.Group("/gene-map")
+				{
+					geneMapRoute.GET("/generate", controller.GenerateGeneMap)
+					geneMapRoute.POST("/share", middleware.CriticalRateLimit(), controller.ShareGeneMap)
+					geneMapRoute.GET("/compare/:token", controller.CompareGeneMapShare)
+				}
 
 				// Custom OAuth bindings
 				selfRoute.GET("/oauth/bindings", controller.GetUserOAuthBindings)
 				selfRoute.DELETE("/oauth/bindings/:provider_id", controller.UnbindCustomOAuth)
+				selfRoute.POST("/miniprogram/bind-code", middleware.CriticalRateLimit(), controller.CreateMiniProgramBindCode)
+				selfRoute.GET("/miniprogram/binding", controller.GetMiniProgramBinding)
+				selfRoute.DELETE("/miniprogram/binding", controller.DeleteMiniProgramBinding)
 			}
 
 			adminRoute := userRoute.Group("/")
@@ -165,6 +177,22 @@ func SetApiRouter(router *gin.Engine) {
 				adminRoute.GET("/2fa/stats", controller.Admin2FAStats)
 				adminRoute.DELETE("/:id/2fa", controller.AdminDisable2FA)
 			}
+		}
+
+		legacyPeoplePlanRoute := apiRouter.Group("/people-plan")
+		legacyPeoplePlanRoute.Use(middleware.UserAuth())
+		{
+			// Backward-compatible aliases for older frontend bundles.
+			legacyPeoplePlanRoute.GET("/overview", controller.GetPeoplePlanOverview)
+			legacyPeoplePlanRoute.GET("/summary", controller.GetPeoplePlanOverview)
+			legacyPeoplePlanRoute.GET("/team", controller.GetPeoplePlanTeam)
+			legacyPeoplePlanRoute.POST("/team", controller.CreatePeoplePlanTeam)
+			legacyPeoplePlanRoute.POST("/team/join", controller.JoinPeoplePlanTeam)
+			legacyPeoplePlanRoute.POST("/team/leave", controller.LeavePeoplePlanTeam)
+			legacyPeoplePlanRoute.GET("/rewards", controller.GetPeoplePlanRewards)
+			legacyPeoplePlanRoute.POST("/rewards/:id/claim", controller.ClaimPeoplePlanReward)
+			legacyPeoplePlanRoute.GET("/submissions", controller.GetPeoplePlanSubmissions)
+			legacyPeoplePlanRoute.POST("/submissions", controller.CreatePeoplePlanSubmission)
 		}
 
 		// Subscription billing (plans, purchase, admin management)
@@ -220,6 +248,16 @@ func SetApiRouter(router *gin.Engine) {
 		blindBoxAdminRoute.Use(middleware.AdminAuth())
 		{
 			blindBoxAdminRoute.GET("/users/:id/overview", controller.AdminGetBlindBoxUserOverview)
+		}
+		peoplePlanAdminRoute := apiRouter.Group("/people-plan/admin")
+		peoplePlanAdminRoute.Use(middleware.AdminAuth())
+		{
+			peoplePlanAdminRoute.GET("/stats", controller.GetPeoplePlanAdminStats)
+			peoplePlanAdminRoute.GET("/teams", controller.GetPeoplePlanAdminTeams)
+			peoplePlanAdminRoute.GET("/rewards", controller.GetPeoplePlanAdminRewards)
+			peoplePlanAdminRoute.POST("/rewards/:id/review", controller.ReviewPeoplePlanReward)
+			peoplePlanAdminRoute.GET("/submissions", controller.GetPeoplePlanAdminSubmissions)
+			peoplePlanAdminRoute.POST("/submissions/:id/review", controller.ReviewPeoplePlanSubmission)
 		}
 		apiRouter.POST("/blind-box/epay/notify", controller.BlindBoxEpayNotify)
 		apiRouter.GET("/blind-box/epay/notify", controller.BlindBoxEpayNotify)
@@ -387,6 +425,29 @@ func SetApiRouter(router *gin.Engine) {
 		{
 			taskRoute.GET("/self", middleware.UserAuth(), controller.GetUserTask)
 			taskRoute.GET("/", middleware.AdminAuth(), controller.GetAllTask)
+		}
+
+		miniProgramRoute := apiRouter.Group("/miniprogram")
+		{
+			miniProgramRoute.POST("/session", middleware.CriticalRateLimit(), controller.MiniProgramSession)
+
+			miniProgramAuthedRoute := miniProgramRoute.Group("/")
+			miniProgramAuthedRoute.Use(middleware.MiniProgramAuth())
+			{
+				miniProgramAuthedRoute.GET("/me", controller.GetMiniProgramMe)
+				miniProgramAuthedRoute.POST("/bind", middleware.CriticalRateLimit(), controller.BindMiniProgram)
+				miniProgramAuthedRoute.POST("/unbind", controller.UnbindMiniProgram)
+				miniProgramAuthedRoute.POST("/share-check", middleware.CriticalRateLimit(), controller.CheckMiniProgramShareContent)
+			}
+
+			miniProgramBoundRoute := miniProgramRoute.Group("/")
+			miniProgramBoundRoute.Use(middleware.MiniProgramAuth(), middleware.MiniProgramBoundAuth())
+			{
+				miniProgramBoundRoute.GET("/dashboard", controller.GetMiniProgramDashboard)
+				miniProgramBoundRoute.GET("/logs", controller.GetMiniProgramLogs)
+				miniProgramBoundRoute.GET("/stat", controller.GetMiniProgramStat)
+				miniProgramBoundRoute.GET("/gene-map", controller.GetMiniProgramGeneMap)
+			}
 		}
 
 		vendorRoute := apiRouter.Group("/vendors")

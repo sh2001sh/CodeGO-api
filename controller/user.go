@@ -197,6 +197,13 @@ func Register(c *gin.Context) {
 		common.ApiErrorI18n(c, i18n.MsgUserRegisterFailed)
 		return
 	}
+	if inviteCode := strings.TrimSpace(user.PeoplePlanInviteCode); inviteCode != "" {
+		if _, joinErr := service.JoinPeoplePlanTeam(insertedUser.Id, service.JoinPeoplePlanTeamInput{
+			InviteCode: inviteCode,
+		}); joinErr != nil {
+			common.SysLog(fmt.Sprintf("people plan auto join failed for user %d: %v", insertedUser.Id, joinErr))
+		}
+	}
 	// 生成默认令牌
 	if constant.GenerateDefaultToken {
 		key, err := common.GenerateKey()

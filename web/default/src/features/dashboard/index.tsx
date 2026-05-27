@@ -29,6 +29,7 @@ import {
   WorkshopDexSection,
   WorkshopHallOfFameSection,
 } from '@/features/gamification'
+import { PeoplePlanEntryDialog } from '@/features/people-plan/people-plan-entry-dialog'
 import { ModelsChartPreferences } from './components/models/models-chart-preferences'
 import { ModelsFilter } from './components/models/models-filter-dialog'
 import { OverviewDashboard } from './components/overview/overview-dashboard'
@@ -266,7 +267,12 @@ export function Dashboard() {
               )}
             </div>
           )}
-          {activeSection === 'overview' && <OverviewDashboard />}
+          {activeSection === 'overview' && (
+            <>
+              <OverviewDashboard />
+              <PeoplePlanEntryDialog />
+            </>
+          )}
           {activeSection === 'models' && (
             <>
               <FadeIn>

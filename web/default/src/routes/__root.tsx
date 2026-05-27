@@ -32,16 +32,25 @@ import { NavigationProgress } from '@/components/navigation-progress'
 import { GeneralError } from '@/features/errors/general-error'
 import { NotFoundError } from '@/features/errors/not-found-error'
 import { getSetupStatus } from '@/features/setup/api'
-import { saveAffiliateCode } from '@/features/auth/lib/storage'
+import {
+  saveAffiliateCode,
+  savePeoplePlanInviteCode,
+} from '@/features/auth/lib/storage'
 
 function RootComponent() {
   // Load system configuration (logo, system name, etc.) from backend
   useSystemConfig({ autoLoad: true })
 
   useEffect(() => {
-    const aff = new URLSearchParams(window.location.search).get('aff')?.trim()
+    const params = new URLSearchParams(window.location.search)
+    const aff = params.get('aff')?.trim()
+    const peoplePlanInvite =
+      params.get('people_plan_invite')?.trim() || params.get('ppi')?.trim()
     if (aff) {
       saveAffiliateCode(aff)
+    }
+    if (peoplePlanInvite) {
+      savePeoplePlanInviteCode(peoplePlanInvite)
     }
   }, [])
 

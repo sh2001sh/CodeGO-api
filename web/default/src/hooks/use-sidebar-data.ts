@@ -11,6 +11,7 @@ import {
   Gem,
   MessageSquare,
   Radio,
+  Rocket,
   ScrollText,
   Settings,
   Share2,
@@ -106,6 +107,11 @@ export function useSidebarData(): SidebarData {
             title: '盲盒活动',
             url: '/blind-box',
             icon: Egg,
+          },
+          {
+            title: '人海计划',
+            url: '/people-plan',
+            icon: Rocket,
           },
           {
             title: t('Invite Rewards'),
