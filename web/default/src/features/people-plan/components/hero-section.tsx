@@ -28,23 +28,20 @@ export function HeroSection(props: {
       <div className='absolute inset-0 bg-gradient-to-t from-slate-950/95 via-slate-950/25 to-transparent' />
 
       <div className='relative flex min-h-[480px] flex-col justify-between gap-8 px-6 py-7 sm:px-8 sm:py-9 lg:min-h-[560px] lg:px-10 lg:py-10'>
-        {/* Top: headline + reward number */}
         <div className='max-w-3xl space-y-5 pt-2 lg:pt-4'>
-          <p className='text-sm font-medium tracking-wide text-amber-300/90 uppercase'>
+          <p className='text-sm font-medium uppercase tracking-wide text-amber-300/90'>
             {props.overview?.entry_title || '人海计划'}
           </p>
 
           <div className='space-y-2'>
             <div className='text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl'>
-              单人最高{' '}
-              <span className='text-amber-400'>{formatMoney(maxTotal)}</span>
+              单人最高可得 <span className='text-amber-400'>{formatMoney(maxTotal)}</span>
             </div>
             <p className='max-w-xl text-sm leading-6 text-white/70 sm:text-base'>
-              组队任务按贡献分配，投稿任务奖励独享。两项可叠加，未组队也能先查看全部任务和奖励。
+              组队任务和投稿活动可以同时参与。组队任务从成团后开始累计，奖励发放后会直接进入你的额度。
             </p>
           </div>
 
-          {/* Reward breakdown */}
           <div className='flex flex-wrap gap-x-6 gap-y-1 text-sm text-white/60'>
             <span>
               组队最高 <span className='font-medium text-white/90'>{formatMoney(maxTeam)}</span>
@@ -55,25 +52,24 @@ export function HeroSection(props: {
           </div>
         </div>
 
-        {/* Bottom: stat cards */}
         <div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-4'>
           <SummaryCard
             dark
             label='组队人数'
             value={`${minMembers} - ${maxMembers} 人`}
-            hint='有效成员越多，档位越高'
+            hint='有效成员越多，任务档位越高'
           />
           <SummaryCard
             dark
             label='单人最高可得'
             value={formatMoney(maxTotal)}
-            hint='组队 + 投稿两项合计'
+            hint='组队活动和投稿活动合计'
           />
           <SummaryCard
             dark
-            label='当前可领取'
-            value={props.rewardSummary?.claimable ?? 0}
-            hint={`待领取 ${formatMoney(props.rewardSummary?.quota_usd ?? 0)}`}
+            label='已发放额度'
+            value={formatMoney(props.rewardSummary?.issued_quota_usd ?? 0)}
+            hint={`已发放 ${props.rewardSummary?.claimed ?? 0} 条奖励`}
           />
           <SummaryCard
             dark
@@ -86,7 +82,7 @@ export function HeroSection(props: {
             hint={
               props.team
                 ? `状态：${getStatusLabel(props.team.team.status)}`
-                : '邀请链接注册可自动入队'
+                : '通过邀请链接注册可自动加入小队'
             }
           />
         </div>

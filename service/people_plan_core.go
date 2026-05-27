@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"strconv"
 	"strings"
 	"time"
 
@@ -86,12 +87,14 @@ type PeoplePlanSubmissionTaskRef struct {
 }
 
 type PeoplePlanRewardSummary struct {
-	Total     int   `json:"total"`
-	Claimable int   `json:"claimable"`
-	Pending   int   `json:"pending"`
-	Frozen    int   `json:"frozen"`
-	Claimed   int   `json:"claimed"`
-	QuotaUSD  int64 `json:"quota_usd"`
+	Total             int   `json:"total"`
+	Claimable         int   `json:"claimable"`
+	Pending           int   `json:"pending"`
+	Frozen            int   `json:"frozen"`
+	Claimed           int   `json:"claimed"`
+	QuotaUSD          int64 `json:"quota_usd"`
+	ClaimableQuotaUSD int64 `json:"claimable_quota_usd"`
+	IssuedQuotaUSD    int64 `json:"issued_quota_usd"`
 }
 
 type PeoplePlanTeamDetail struct {
@@ -133,6 +136,11 @@ type PeoplePlanMemberProfile struct {
 	LifetimeCalls           int64  `json:"lifetime_calls"`
 	LifetimeInvites         int64  `json:"lifetime_invites"`
 	LifetimeBlindBoxOpens   int64  `json:"lifetime_blind_box_opens"`
+	FormedTeamCalls         int64  `json:"formed_team_calls"`
+	FormedTeamSpendUSD      int64  `json:"formed_team_spend_usd"`
+	FormedTeamInvites       int64  `json:"formed_team_invites"`
+	FormedTeamBlindBoxOpens int64  `json:"formed_team_blind_box_opens"`
+	FormedMonthlySpendUSD   int64  `json:"formed_monthly_spend_usd"`
 	CountsAsEffectiveMember bool   `json:"counts_as_effective_member"`
 }
 
@@ -179,6 +187,11 @@ type peoplePlanMemberStats struct {
 	lifetimeCalls         int64
 	lifetimeInvites       int64
 	lifetimeBlindBoxOpens int64
+	formedTeamCalls       int64
+	formedTeamSpend       int64
+	formedTeamInvites     int64
+	formedBlindBoxOpens   int64
+	formedMonthlySpend    int64
 }
 
 type peoplePlanMemberSnapshot struct {
@@ -187,6 +200,11 @@ type peoplePlanMemberSnapshot struct {
 	Effective               bool   `json:"effective"`
 	LifetimeInvites         int64  `json:"lifetime_invites"`
 	LifetimeBlindBoxOpens   int64  `json:"lifetime_blind_box_opens"`
+	FormedTeamCalls         int64  `json:"formed_team_calls"`
+	FormedTeamSpendUSD      int64  `json:"formed_team_spend_usd"`
+	FormedTeamInvites       int64  `json:"formed_team_invites"`
+	FormedTeamBlindBoxOpens int64  `json:"formed_team_blind_box_opens"`
+	FormedMonthlySpendUSD   int64  `json:"formed_monthly_spend_usd"`
 	CountsAsEffectiveMember bool   `json:"counts_as_effective_member"`
 }
 
@@ -361,6 +379,23 @@ func nowMillis() int64 {
 	return time.Now().UnixMilli()
 }
 
+func normalizeUnixSeconds(value int64) int64 {
+	if value <= 0 {
+		return 0
+	}
+	if value > 1_000_000_000_000 {
+		return value / 1000
+	}
+	return value
+}
+
+func maxPeoplePlanInt64(a int64, b int64) int64 {
+	if a > b {
+		return a
+	}
+	return b
+}
+
 func currentMonthInfo() (string, int64, int64) {
 	now := time.Now()
 	start := time.Date(now.Year(), now.Month(), 1, 0, 0, 0, 0, now.Location())
@@ -500,6 +535,56 @@ func computePeoplePlanMemberStats(userId int, user peoplePlanUserLite) (peoplePl
 	return stats, nil
 }
 
+func computePeoplePlanMemberProgressStats(userId int, formedAt int64) (peoplePlanMemberStats, error) {
+	var stats peoplePlanMemberStats
+	formedStart := normalizeUnixSeconds(formedAt)
+	if userId <= 0 || formedStart <= 0 {
+		return stats, nil
+	}
+	_, monthStart, monthEnd := currentMonthInfo()
+	progressMonthStart := maxPeoplePlanInt64(formedStart, monthStart)
+
+	if err := model.DB.Model(&model.Log{}).
+		Where("user_id = ? AND type = ? AND created_at >= ?", userId, model.LogTypeConsume, formedStart).
+		Count(&stats.formedTeamCalls).Error; err != nil {
+		return stats, err
+	}
+
+	var formedSpend float64
+	if err := model.DB.Model(&model.TopUp{}).
+		Where("user_id = ? AND status = ? AND create_time >= ?", userId, common.TopUpStatusSuccess, formedStart).
+		Select("COALESCE(SUM(money), 0)").
+		Scan(&formedSpend).Error; err != nil {
+		return stats, err
+	}
+	stats.formedTeamSpend = int64(math.Round(formedSpend))
+
+	if err := model.DB.Model(&model.User{}).
+		Where("inviter_id = ? AND created_at >= ?", userId, formedStart).
+		Count(&stats.formedTeamInvites).Error; err != nil {
+		return stats, err
+	}
+
+	if err := model.DB.Model(&model.BlindBoxOpenRecord{}).
+		Where("user_id = ? AND create_time >= ?", userId, formedStart).
+		Count(&stats.formedBlindBoxOpens).Error; err != nil {
+		return stats, err
+	}
+
+	if progressMonthStart < monthEnd {
+		var formedMonthSpend float64
+		if err := model.DB.Model(&model.TopUp{}).
+			Where("user_id = ? AND status = ? AND create_time >= ? AND create_time < ?", userId, common.TopUpStatusSuccess, progressMonthStart, monthEnd).
+			Select("COALESCE(SUM(money), 0)").
+			Scan(&formedMonthSpend).Error; err != nil {
+			return stats, err
+		}
+		stats.formedMonthlySpend = int64(math.Round(formedMonthSpend))
+	}
+
+	return stats, nil
+}
+
 func syncPeoplePlanTeamByID(teamId int, settings PeoplePlanSettings) (*PeoplePlanTeamDetail, error) {
 	if teamId <= 0 {
 		return nil, nil
@@ -570,14 +655,6 @@ func syncPeoplePlanTeam(team *model.PeoplePlanTeam, settings PeoplePlanSettings)
 		})
 		memberUpdates = append(memberUpdates, member)
 		summary.ActiveMembers++
-		summary.TeamCalls += member.LifetimeCalls
-		summary.TeamSpendUSD += member.LifetimeSpend
-		summary.TeamInvites += stats.lifetimeInvites
-		summary.TeamBlindBoxOpens += stats.lifetimeBlindBoxOpens
-		summary.MonthlyTeamSpendUSD += member.CurrentMonthSpend
-		if member.CurrentMonthCalls >= settings.TeamRules.MonthlyActiveMinCalls {
-			summary.MonthlyActiveMembers++
-		}
 		memberProfiles = append(memberProfiles, PeoplePlanMemberProfile{
 			UserId:                  member.UserId,
 			Username:                user.Username,
@@ -613,6 +690,41 @@ func syncPeoplePlanTeam(team *model.PeoplePlanTeam, settings PeoplePlanSettings)
 		team.Status = model.PeoplePlanTeamStatusFormed
 		if team.FormedAt <= 0 {
 			team.FormedAt = nowMillis()
+		}
+	}
+
+	formedAt := team.FormedAt
+	if formedAt > 0 {
+		for index, member := range memberUpdates {
+			progressStats, statsErr := computePeoplePlanMemberProgressStats(member.UserId, formedAt)
+			if statsErr != nil {
+				return nil, statsErr
+			}
+			snapshot := parsePeoplePlanMemberSnapshot(member.Snapshot)
+			snapshot.FormedTeamCalls = progressStats.formedTeamCalls
+			snapshot.FormedTeamSpendUSD = progressStats.formedTeamSpend
+			snapshot.FormedTeamInvites = progressStats.formedTeamInvites
+			snapshot.FormedTeamBlindBoxOpens = progressStats.formedBlindBoxOpens
+			snapshot.FormedMonthlySpendUSD = progressStats.formedMonthlySpend
+			member.Snapshot = marshalPeoplePlanSnapshot(snapshot)
+			memberUpdates[index].Snapshot = member.Snapshot
+
+			summary.TeamCalls += progressStats.formedTeamCalls
+			summary.TeamSpendUSD += progressStats.formedTeamSpend
+			summary.TeamInvites += progressStats.formedTeamInvites
+			summary.TeamBlindBoxOpens += progressStats.formedBlindBoxOpens
+			summary.MonthlyTeamSpendUSD += progressStats.formedMonthlySpend
+			if progressStats.formedMonthlySpend > 0 {
+				summary.MonthlyActiveMembers++
+			}
+
+			if index < len(memberProfiles) {
+				memberProfiles[index].FormedTeamCalls = progressStats.formedTeamCalls
+				memberProfiles[index].FormedTeamSpendUSD = progressStats.formedTeamSpend
+				memberProfiles[index].FormedTeamInvites = progressStats.formedTeamInvites
+				memberProfiles[index].FormedTeamBlindBoxOpens = progressStats.formedBlindBoxOpens
+				memberProfiles[index].FormedMonthlySpendUSD = progressStats.formedMonthlySpend
+			}
 		}
 	}
 	team.LastSyncedAt = nowMillis()
@@ -728,10 +840,26 @@ func reconcilePeoplePlanAchievementsTx(
 			}
 		}
 		effectiveTarget := resolvePeoplePlanTarget(rule, summary.EffectiveMembers)
+		ruleEligible := isPeoplePlanRuleEligible(rule, summary.EffectiveMembers)
+		eligibleCount := computePeoplePlanCompletionCount(rule, currentValue, summary.EffectiveMembers)
+		if progress.CompletionCount > eligibleCount {
+			normalizedCount, err := prunePeoplePlanAchievementRewardsTx(
+				tx,
+				team.Id,
+				rule,
+				periodKey,
+				eligibleCount,
+			)
+			if err != nil {
+				return nil, err
+			}
+			progress.CompletionCount = normalizedCount
+			progress.RewardLedgerId = 0
+		}
 		progress.CurrentValue = currentValue
 		progress.TargetValue = effectiveTarget
 		progress.Status = "tracking"
-		if currentValue >= effectiveTarget {
+		if ruleEligible && currentValue >= effectiveTarget {
 			progress.Status = "reached"
 			if progress.LastReachedAt <= 0 {
 				progress.LastReachedAt = now
@@ -748,16 +876,17 @@ func reconcilePeoplePlanAchievementsTx(
 			}
 		} else {
 			if err := tx.Model(&model.PeoplePlanAchievementProgress{}).Where("id = ?", progress.Id).Updates(map[string]any{
-				"current_value":   progress.CurrentValue,
-				"target_value":    progress.TargetValue,
-				"status":          progress.Status,
-				"last_reached_at": progress.LastReachedAt,
-				"snapshot":        progress.Snapshot,
+				"current_value":    progress.CurrentValue,
+				"target_value":     progress.TargetValue,
+				"status":           progress.Status,
+				"last_reached_at":  progress.LastReachedAt,
+				"completion_count": progress.CompletionCount,
+				"reward_ledger_id": progress.RewardLedgerId,
+				"snapshot":         progress.Snapshot,
 			}).Error; err != nil {
 				return nil, err
 			}
 		}
-		eligibleCount := computePeoplePlanCompletionCount(rule, currentValue, summary.EffectiveMembers)
 		if eligibleCount > progress.CompletionCount {
 			firstRewardID, err := issuePeoplePlanAchievementRewardsTx(
 				tx,
@@ -791,6 +920,9 @@ func reconcilePeoplePlanAchievementsTx(
 }
 
 func computePeoplePlanCompletionCount(rule PeoplePlanAchievementRule, currentValue int64, effectiveMembers int) int {
+	if !isPeoplePlanRuleEligible(rule, effectiveMembers) {
+		return 0
+	}
 	effectiveTarget := resolvePeoplePlanTarget(rule, effectiveMembers)
 	if effectiveTarget <= 0 {
 		return 0
@@ -845,6 +977,36 @@ func resolvePeoplePlanTarget(rule PeoplePlanAchievementRule, effectiveMembers in
 	return rule.Target
 }
 
+func isPeoplePlanRuleEligible(rule PeoplePlanAchievementRule, effectiveMembers int) bool {
+	if isPeoplePlanFormationRule(rule) {
+		return true
+	}
+	if rule.Audience != "team" {
+		return true
+	}
+	requiredMembers := resolvePeoplePlanMinimumRequiredMembers(rule)
+	if requiredMembers <= 0 {
+		return true
+	}
+	return effectiveMembers >= requiredMembers
+}
+
+func resolvePeoplePlanMinimumRequiredMembers(rule PeoplePlanAchievementRule) int {
+	if len(rule.RewardTiers) == 0 {
+		return 0
+	}
+	requiredMembers := 0
+	for _, tier := range rule.RewardTiers {
+		if tier.RequiredMembers <= 0 {
+			continue
+		}
+		if requiredMembers == 0 || tier.RequiredMembers < requiredMembers {
+			requiredMembers = tier.RequiredMembers
+		}
+	}
+	return requiredMembers
+}
+
 func resolvePeoplePlanRewardPoolUSD(rule PeoplePlanAchievementRule, effectiveMembers int) int64 {
 	if len(rule.RewardTiers) == 0 {
 		return rule.RewardPoolUSD
@@ -870,17 +1032,17 @@ func getPeoplePlanContributionMetricValue(key string, member model.PeoplePlanMem
 		}
 		return 0
 	case "current_month_calls":
-		return member.CurrentMonthCalls
+		return snapshot.FormedTeamCalls
 	case "current_month_spend":
-		return member.CurrentMonthSpend
+		return snapshot.FormedMonthlySpendUSD
 	case "lifetime_calls":
-		return member.LifetimeCalls
+		return snapshot.FormedTeamCalls
 	case "lifetime_spend":
-		return member.LifetimeSpend
+		return snapshot.FormedTeamSpendUSD
 	case "lifetime_invites":
-		return snapshot.LifetimeInvites
+		return snapshot.FormedTeamInvites
 	case "lifetime_blind_box_opens":
-		return snapshot.LifetimeBlindBoxOpens
+		return snapshot.FormedTeamBlindBoxOpens
 	default:
 		return 0
 	}
@@ -1007,6 +1169,9 @@ func issuePeoplePlanAchievementRewardsTx(
 	settings PeoplePlanSettings,
 ) (int, error) {
 	firstRewardID := 0
+	if !isPeoplePlanRuleEligible(rule, summary.EffectiveMembers) {
+		return 0, nil
+	}
 
 	eligibleMembers := make([]model.PeoplePlanMember, 0, len(members))
 	for _, member := range members {
@@ -1098,12 +1263,100 @@ func issuePeoplePlanAchievementRewardsTx(
 			if err := model.CreatePeoplePlanRewardTx(tx, &reward); err != nil {
 				return 0, err
 			}
+			if reward.Id > 0 && reward.Status == model.PeoplePlanRewardStatusClaimable {
+				claimedAt := nowMillis()
+				if err := model.ClaimPeoplePlanQuotaRewardTx(tx, &reward, claimedAt); err != nil {
+					return 0, err
+				}
+				reward.Status = model.PeoplePlanRewardStatusClaimed
+				reward.ClaimedAt = claimedAt
+			}
 			if reward.Id > 0 && firstRewardID == 0 {
 				firstRewardID = reward.Id
 			}
 		}
 	}
 	return firstRewardID, nil
+}
+
+func autoClaimPeoplePlanRewardsForUser(userId int) error {
+	if userId <= 0 {
+		return nil
+	}
+	return model.DB.Transaction(func(tx *gorm.DB) error {
+		rewards := make([]model.PeoplePlanRewardLedger, 0)
+		if err := tx.Where("user_id = ? AND status = ?", userId, model.PeoplePlanRewardStatusClaimable).
+			Order("id asc").
+			Find(&rewards).Error; err != nil {
+			return err
+		}
+		for index := range rewards {
+			if err := model.ClaimPeoplePlanQuotaRewardTx(tx, &rewards[index], nowMillis()); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
+}
+
+func prunePeoplePlanAchievementRewardsTx(
+	tx *gorm.DB,
+	teamID int,
+	rule PeoplePlanAchievementRule,
+	periodKey string,
+	completionLimit int,
+) (int, error) {
+	if teamID <= 0 {
+		return completionLimit, nil
+	}
+	prefix := fmt.Sprintf("achievement:%d:%s:%s:", teamID, rule.Key, periodKey)
+	rewards := make([]model.PeoplePlanRewardLedger, 0)
+	if err := tx.Where("team_id = ? AND source_type = ? AND source_key LIKE ?", teamID, peoplePlanSourceTypeAchievement, prefix+"%").
+		Order("id asc").
+		Find(&rewards).Error; err != nil {
+		return completionLimit, err
+	}
+	if len(rewards) == 0 {
+		return completionLimit, nil
+	}
+
+	deleteRewardIDs := make([]int, 0)
+	retainedCompletionCount := completionLimit
+	for _, reward := range rewards {
+		completionIndex := parsePeoplePlanRewardCompletionIndex(reward.SourceKey)
+		if completionIndex <= completionLimit {
+			continue
+		}
+		if reward.Status == model.PeoplePlanRewardStatusClaimed {
+			if completionIndex > retainedCompletionCount {
+				retainedCompletionCount = completionIndex
+			}
+			continue
+		}
+		deleteRewardIDs = append(deleteRewardIDs, reward.Id)
+	}
+	if len(deleteRewardIDs) == 0 {
+		return retainedCompletionCount, nil
+	}
+	if err := tx.Where("reward_ledger_id IN ?", deleteRewardIDs).Delete(&model.PeoplePlanRiskReview{}).Error; err != nil {
+		return retainedCompletionCount, err
+	}
+	if err := tx.Where("id IN ?", deleteRewardIDs).Delete(&model.PeoplePlanRewardLedger{}).Error; err != nil {
+		return retainedCompletionCount, err
+	}
+	return retainedCompletionCount, nil
+}
+
+func parsePeoplePlanRewardCompletionIndex(sourceKey string) int {
+	parts := strings.Split(sourceKey, ":")
+	if len(parts) < 6 {
+		return 0
+	}
+	index, err := strconv.Atoi(parts[4])
+	if err != nil || index < 0 {
+		return 0
+	}
+	return index
 }
 
 func createPeoplePlanRiskReviewTx(tx *gorm.DB, userId int, teamId int, rewardLedgerId int, ruleKey string, reason string) error {

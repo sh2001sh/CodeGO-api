@@ -42,6 +42,9 @@ type PeoplePlanAdminTeamRow struct {
 	ClaimableRewardCount    int64   `json:"claimable_reward_count"`
 	ClaimedRewardCount      int64   `json:"claimed_reward_count"`
 	RewardQuotaUSD          int64   `json:"reward_quota_usd"`
+	TotalRewardQuotaUSD     int64   `json:"total_reward_quota_usd"`
+	ClaimableRewardQuotaUSD int64   `json:"claimable_reward_quota_usd"`
+	ClaimedRewardQuotaUSD   int64   `json:"claimed_reward_quota_usd"`
 	SubmissionCount         int64   `json:"submission_count"`
 	PendingSubmissionCount  int64   `json:"pending_submission_count"`
 	ApprovedSubmissionCount int64   `json:"approved_submission_count"`
@@ -138,7 +141,9 @@ type peoplePlanAdminRewardAgg struct {
 	PendingRewardCount   int64
 	ClaimableRewardCount int64
 	ClaimedRewardCount   int64
-	RewardQuota          int64
+	TotalRewardQuota     int64
+	ClaimableRewardQuota int64
+	ClaimedRewardQuota   int64
 }
 
 type peoplePlanAdminSubmissionAgg struct {
@@ -186,7 +191,9 @@ func ListPeoplePlanAdminTeams() ([]PeoplePlanAdminTeamRow, error) {
 				"SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending_reward_count, "+
 				"SUM(CASE WHEN status = 'claimable' THEN 1 ELSE 0 END) as claimable_reward_count, "+
 				"SUM(CASE WHEN status = 'claimed' THEN 1 ELSE 0 END) as claimed_reward_count, "+
-				"COALESCE(SUM(quota_delta), 0) as reward_quota",
+				"COALESCE(SUM(quota_delta), 0) as total_reward_quota, "+
+				"COALESCE(SUM(CASE WHEN status = 'claimable' THEN quota_delta ELSE 0 END), 0) as claimable_reward_quota, "+
+				"COALESCE(SUM(CASE WHEN status = 'claimed' THEN quota_delta ELSE 0 END), 0) as claimed_reward_quota",
 		).
 		Where("team_id IN ?", teamIDs).
 		Group("team_id").
@@ -258,7 +265,10 @@ func ListPeoplePlanAdminTeams() ([]PeoplePlanAdminTeamRow, error) {
 			PendingRewardCount:      rewardAgg.PendingRewardCount,
 			ClaimableRewardCount:    rewardAgg.ClaimableRewardCount,
 			ClaimedRewardCount:      rewardAgg.ClaimedRewardCount,
-			RewardQuotaUSD:          int64(math.Round(float64(rewardAgg.RewardQuota) / common.QuotaPerUnit)),
+			RewardQuotaUSD:          int64(math.Round(float64(rewardAgg.ClaimedRewardQuota) / common.QuotaPerUnit)),
+			TotalRewardQuotaUSD:     int64(math.Round(float64(rewardAgg.TotalRewardQuota) / common.QuotaPerUnit)),
+			ClaimableRewardQuotaUSD: int64(math.Round(float64(rewardAgg.ClaimableRewardQuota) / common.QuotaPerUnit)),
+			ClaimedRewardQuotaUSD:   int64(math.Round(float64(rewardAgg.ClaimedRewardQuota) / common.QuotaPerUnit)),
 			SubmissionCount:         submissionAgg.SubmissionCount,
 			PendingSubmissionCount:  submissionAgg.PendingSubmissionCount,
 			ApprovedSubmissionCount: submissionAgg.ApprovedSubmissionCount,
@@ -385,6 +395,14 @@ func ReviewPeoplePlanSubmission(adminUserId int, submissionId int, input ReviewP
 		}
 		if err := model.CreatePeoplePlanRewardTx(tx, &reward); err != nil {
 			return err
+		}
+		if reward.Id > 0 && reward.Status == model.PeoplePlanRewardStatusClaimable {
+			claimedAt := nowMillis()
+			if err := model.ClaimPeoplePlanQuotaRewardTx(tx, &reward, claimedAt); err != nil {
+				return err
+			}
+			reward.Status = model.PeoplePlanRewardStatusClaimed
+			reward.ClaimedAt = claimedAt
 		}
 		if reward.Id > 0 && reward.Status == model.PeoplePlanRewardStatusFrozen {
 			return createPeoplePlanRiskReviewTx(tx, reward.UserId, reward.TeamId, reward.Id, "submission_reward", "large manual reward requires review")

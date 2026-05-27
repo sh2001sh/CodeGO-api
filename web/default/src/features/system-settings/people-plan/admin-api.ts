@@ -37,6 +37,9 @@ export type PeoplePlanAdminTeamRow = {
   claimable_reward_count: number
   claimed_reward_count: number
   reward_quota_usd: number
+  total_reward_quota_usd: number
+  claimable_reward_quota_usd: number
+  claimed_reward_quota_usd: number
   submission_count: number
   pending_submission_count: number
   approved_submission_count: number

@@ -114,6 +114,8 @@ export type PeoplePlanRewardSummary = {
   frozen: number
   claimed: number
   quota_usd: number
+  claimable_quota_usd: number
+  issued_quota_usd: number
 }
 
 export type PeoplePlanMemberProfile = {
@@ -134,6 +136,11 @@ export type PeoplePlanMemberProfile = {
   lifetime_calls: number
   lifetime_invites: number
   lifetime_blind_box_opens: number
+  formed_team_calls: number
+  formed_team_spend_usd: number
+  formed_team_invites: number
+  formed_team_blind_box_opens: number
+  formed_monthly_spend_usd: number
   counts_as_effective_member: boolean
 }
 

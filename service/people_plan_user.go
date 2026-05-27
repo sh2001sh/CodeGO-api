@@ -35,6 +35,9 @@ type CreatePeoplePlanSubmissionInput struct {
 func GetPeoplePlanOverview(userId int) (*PeoplePlanOverview, error) {
 	settings := GetPeoplePlanSettings()
 	maxTeamRewardUSD, maxSubmissionUSD, maxTotalRewardUSD := getPeoplePlanTheoreticalMaxRewardUSD(settings)
+	if err := autoClaimPeoplePlanRewardsForUser(userId); err != nil {
+		return nil, err
+	}
 	overview := &PeoplePlanOverview{
 		Enabled:           settings.Enabled,
 		EntryTitle:        settings.EntryTitle,
@@ -310,6 +313,9 @@ func ListPeoplePlanRewards(userId int) ([]model.PeoplePlanRewardLedger, PeoplePl
 			}
 		}
 	}
+	if err := autoClaimPeoplePlanRewardsForUser(userId); err != nil {
+		return nil, PeoplePlanRewardSummary{}, err
+	}
 	rewards, err := model.GetPeoplePlanRewardsByUser(userId, true)
 	if err != nil {
 		return nil, PeoplePlanRewardSummary{}, err
@@ -396,16 +402,19 @@ func CreatePeoplePlanSubmission(userId int, input CreatePeoplePlanSubmissionInpu
 func buildPeoplePlanRewardSummary(rewards []model.PeoplePlanRewardLedger) PeoplePlanRewardSummary {
 	summary := PeoplePlanRewardSummary{Total: len(rewards)}
 	for _, reward := range rewards {
+		rewardUSD := int64(float64(reward.QuotaDelta) / common.QuotaPerUnit)
 		switch reward.Status {
 		case model.PeoplePlanRewardStatusClaimable:
 			summary.Claimable++
-			summary.QuotaUSD += int64(float64(reward.QuotaDelta) / common.QuotaPerUnit)
+			summary.QuotaUSD += rewardUSD
+			summary.ClaimableQuotaUSD += rewardUSD
 		case model.PeoplePlanRewardStatusPending:
 			summary.Pending++
 		case model.PeoplePlanRewardStatusFrozen:
 			summary.Frozen++
 		case model.PeoplePlanRewardStatusClaimed:
 			summary.Claimed++
+			summary.IssuedQuotaUSD += rewardUSD
 		}
 	}
 	return summary

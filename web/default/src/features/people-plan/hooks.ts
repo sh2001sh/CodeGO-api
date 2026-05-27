@@ -1,5 +1,9 @@
+import { useEffect } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
+import { useAuthStore } from '@/stores/auth-store'
+import { getSelf } from '@/lib/api'
+import type { User } from '@/features/users/types'
 import {
   claimPeoplePlanReward,
   createPeoplePlanSubmission,
@@ -13,6 +17,30 @@ import {
 } from './api'
 import type { PeoplePlanOverview } from './types'
 import { getRequestErrorMessage } from './utils'
+
+function useSyncPeoplePlanQuota(trigger: number, enabled: boolean) {
+  const setUser = useAuthStore((state) => state.auth.setUser)
+
+  useEffect(() => {
+    if (!enabled || trigger <= 0) {
+      return
+    }
+
+    let cancelled = false
+
+    void getSelf()
+      .then((response) => {
+        if (!cancelled && response?.success && response.data) {
+          setUser(response.data as User)
+        }
+      })
+      .catch(() => {})
+
+    return () => {
+      cancelled = true
+    }
+  }, [enabled, setUser, trigger])
+}
 
 export function usePeoplePlanQueries() {
   const overviewQuery = useQuery({
@@ -37,6 +65,8 @@ export function usePeoplePlanQueries() {
     submissionsQuery.data?.data ?? overview?.recent_submissions ?? []
   const isLoading =
     overviewQuery.isLoading || rewardsQuery.isLoading || submissionsQuery.isLoading
+
+  useSyncPeoplePlanQuota(overviewQuery.dataUpdatedAt, overviewQuery.isSuccess)
 
   return {
     overview,

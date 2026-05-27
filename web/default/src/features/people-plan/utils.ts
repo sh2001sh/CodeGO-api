@@ -175,25 +175,29 @@ function getMetricValue(metric: string, member: PeoplePlanMemberProfile) {
     case 'effective_members':
       return member.counts_as_effective_member ? 1 : 0
     case 'current_month_calls':
-      return member.current_month_calls
+      return member.formed_team_calls
     case 'current_month_spend':
-      return member.current_month_spend
+      return member.formed_monthly_spend_usd
     case 'lifetime_calls':
-    case 'team_calls':
       return member.lifetime_calls
+    case 'team_calls':
+      return member.formed_team_calls
     case 'lifetime_spend':
-    case 'team_spend_usd':
       return member.lifetime_spend
+    case 'team_spend_usd':
+      return member.formed_team_spend_usd
     case 'lifetime_invites':
-    case 'team_invites':
       return member.lifetime_invites
+    case 'team_invites':
+      return member.formed_team_invites
     case 'lifetime_blind_box_opens':
-    case 'team_blind_box_opens':
       return member.lifetime_blind_box_opens
+    case 'team_blind_box_opens':
+      return member.formed_team_blind_box_opens
     case 'monthly_active_members':
-      return member.current_month_calls > 0 ? 1 : 0
+      return member.formed_monthly_spend_usd > 0 ? 1 : 0
     case 'monthly_team_spend_usd':
-      return member.current_month_spend
+      return member.formed_monthly_spend_usd
     default:
       return 0
   }
