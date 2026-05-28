@@ -477,6 +477,13 @@ func loadPeoplePlanUserMap(userIds []int) (map[int]peoplePlanUserLite, error) {
 	return result, nil
 }
 
+func peoplePlanQuotaToUSDInt(quota int64) int64 {
+	if quota <= 0 || common.QuotaPerUnit <= 0 {
+		return 0
+	}
+	return int64(math.Round(float64(quota) / common.QuotaPerUnit))
+}
+
 func computePeoplePlanMemberStats(userId int, user peoplePlanUserLite) (peoplePlanMemberStats, error) {
 	var stats peoplePlanMemberStats
 	monthKey, monthStart, monthEnd := currentMonthInfo()
@@ -513,19 +520,19 @@ func computePeoplePlanMemberStats(userId int, user peoplePlanUserLite) (peoplePl
 		Scan(&firstTopup)
 	stats.firstTopupAt = firstTopup
 
-	var lifetimeSpend float64
-	model.DB.Model(&model.TopUp{}).
-		Where("user_id = ? AND status = ?", userId, common.TopUpStatusSuccess).
-		Select("COALESCE(SUM(money), 0)").
-		Scan(&lifetimeSpend)
-	stats.lifetimeSpend = int64(math.Round(lifetimeSpend))
+	var lifetimeQuota int64
+	model.DB.Model(&model.Log{}).
+		Where("user_id = ? AND type = ?", userId, model.LogTypeConsume).
+		Select("COALESCE(SUM(quota), 0)").
+		Scan(&lifetimeQuota)
+	stats.lifetimeSpend = peoplePlanQuotaToUSDInt(lifetimeQuota)
 
-	var monthSpend float64
-	model.DB.Model(&model.TopUp{}).
-		Where("user_id = ? AND status = ? AND create_time >= ? AND create_time < ?", userId, common.TopUpStatusSuccess, monthStart, monthEnd).
-		Select("COALESCE(SUM(money), 0)").
-		Scan(&monthSpend)
-	stats.currentMonthSpend = int64(math.Round(monthSpend))
+	var monthQuota int64
+	model.DB.Model(&model.Log{}).
+		Where("user_id = ? AND type = ? AND created_at >= ? AND created_at < ?", userId, model.LogTypeConsume, monthStart, monthEnd).
+		Select("COALESCE(SUM(quota), 0)").
+		Scan(&monthQuota)
+	stats.currentMonthSpend = peoplePlanQuotaToUSDInt(monthQuota)
 
 	model.DB.Model(&model.BlindBoxOpenRecord{}).
 		Where("user_id = ?", userId).
@@ -550,14 +557,14 @@ func computePeoplePlanMemberProgressStats(userId int, formedAt int64) (peoplePla
 		return stats, err
 	}
 
-	var formedSpend float64
-	if err := model.DB.Model(&model.TopUp{}).
-		Where("user_id = ? AND status = ? AND create_time >= ?", userId, common.TopUpStatusSuccess, formedStart).
-		Select("COALESCE(SUM(money), 0)").
-		Scan(&formedSpend).Error; err != nil {
+	var formedQuota int64
+	if err := model.DB.Model(&model.Log{}).
+		Where("user_id = ? AND type = ? AND created_at >= ?", userId, model.LogTypeConsume, formedStart).
+		Select("COALESCE(SUM(quota), 0)").
+		Scan(&formedQuota).Error; err != nil {
 		return stats, err
 	}
-	stats.formedTeamSpend = int64(math.Round(formedSpend))
+	stats.formedTeamSpend = peoplePlanQuotaToUSDInt(formedQuota)
 
 	if err := model.DB.Model(&model.User{}).
 		Where("inviter_id = ? AND created_at >= ?", userId, formedStart).
@@ -572,14 +579,14 @@ func computePeoplePlanMemberProgressStats(userId int, formedAt int64) (peoplePla
 	}
 
 	if progressMonthStart < monthEnd {
-		var formedMonthSpend float64
-		if err := model.DB.Model(&model.TopUp{}).
-			Where("user_id = ? AND status = ? AND create_time >= ? AND create_time < ?", userId, common.TopUpStatusSuccess, progressMonthStart, monthEnd).
-			Select("COALESCE(SUM(money), 0)").
-			Scan(&formedMonthSpend).Error; err != nil {
+		var formedMonthQuota int64
+		if err := model.DB.Model(&model.Log{}).
+			Where("user_id = ? AND type = ? AND created_at >= ? AND created_at < ?", userId, model.LogTypeConsume, progressMonthStart, monthEnd).
+			Select("COALESCE(SUM(quota), 0)").
+			Scan(&formedMonthQuota).Error; err != nil {
 			return stats, err
 		}
-		stats.formedMonthlySpend = int64(math.Round(formedMonthSpend))
+		stats.formedMonthlySpend = peoplePlanQuotaToUSDInt(formedMonthQuota)
 	}
 
 	return stats, nil

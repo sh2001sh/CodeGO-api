@@ -3,6 +3,7 @@ package service
 import (
 	"testing"
 
+	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/model"
 )
 
@@ -74,5 +75,68 @@ func TestBuildPeoplePlanRewardSummarySeparatesIssuedQuota(t *testing.T) {
 	}
 	if summary.IssuedQuotaUSD != 24 {
 		t.Fatalf("expected issued quota 24, got %d", summary.IssuedQuotaUSD)
+	}
+}
+
+func TestPeoplePlanSpendStatsUseActualConsumeQuota(t *testing.T) {
+	truncate(t)
+	if err := model.DB.AutoMigrate(&model.BlindBoxOpenRecord{}); err != nil {
+		t.Fatalf("failed to migrate blind box open records: %v", err)
+	}
+	t.Cleanup(func() {
+		model.DB.Exec("DELETE FROM blind_box_open_records")
+	})
+
+	originalQuotaPerUnit := common.QuotaPerUnit
+	common.QuotaPerUnit = 100
+	t.Cleanup(func() {
+		common.QuotaPerUnit = originalQuotaPerUnit
+	})
+
+	_, monthStart, _ := currentMonthInfo()
+	userId := 92001
+	formedAt := monthStart + 100
+
+	if err := model.DB.Create(&model.User{Id: userId, Username: "people-plan-quota", CreatedAt: monthStart}).Error; err != nil {
+		t.Fatalf("failed to create user: %v", err)
+	}
+	if err := model.DB.Create(&model.TopUp{
+		UserId:       userId,
+		Money:        999,
+		Status:       common.TopUpStatusSuccess,
+		CreateTime:   formedAt + 20,
+		CompleteTime: formedAt + 20,
+	}).Error; err != nil {
+		t.Fatalf("failed to create topup: %v", err)
+	}
+	logs := []model.Log{
+		{UserId: userId, Type: model.LogTypeConsume, Quota: 120, CreatedAt: formedAt - 10},
+		{UserId: userId, Type: model.LogTypeConsume, Quota: 280, CreatedAt: formedAt + 10},
+		{UserId: userId, Type: model.LogTypeTopup, Quota: 5000, CreatedAt: formedAt + 20},
+	}
+	if err := model.DB.Create(&logs).Error; err != nil {
+		t.Fatalf("failed to create logs: %v", err)
+	}
+
+	stats, err := computePeoplePlanMemberStats(userId, peoplePlanUserLite{Id: userId, CreatedAt: monthStart})
+	if err != nil {
+		t.Fatalf("failed to compute member stats: %v", err)
+	}
+	if stats.lifetimeSpend != 4 {
+		t.Fatalf("expected lifetime spend to use consume quota only, got %d", stats.lifetimeSpend)
+	}
+	if stats.currentMonthSpend != 4 {
+		t.Fatalf("expected current month spend to use consume quota only, got %d", stats.currentMonthSpend)
+	}
+
+	progress, err := computePeoplePlanMemberProgressStats(userId, formedAt)
+	if err != nil {
+		t.Fatalf("failed to compute progress stats: %v", err)
+	}
+	if progress.formedTeamSpend != 3 {
+		t.Fatalf("expected formed team spend to exclude pre-formation quota, got %d", progress.formedTeamSpend)
+	}
+	if progress.formedMonthlySpend != 3 {
+		t.Fatalf("expected formed monthly spend to exclude topups, got %d", progress.formedMonthlySpend)
 	}
 }
