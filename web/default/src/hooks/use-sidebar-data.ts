@@ -13,6 +13,7 @@ import {
   Radio,
   Rocket,
   ScrollText,
+  ShoppingBag,
   Settings,
   Share2,
   Ticket,
@@ -102,6 +103,11 @@ export function useSidebarData(): SidebarData {
             title: '套餐购买',
             url: '/packages',
             icon: ScrollText,
+          },
+          {
+            title: '积分商城',
+            url: '/point-mall',
+            icon: ShoppingBag,
           },
           {
             title: '盲盒活动',

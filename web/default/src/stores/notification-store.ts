@@ -26,19 +26,12 @@ interface NotificationState {
   readAnnouncementKeys: string[]
   // Timestamp of last "Close Today" action
   closedUntilDate: string | null
-  // People Plan popup state
-  peoplePlanDismissedVersion: string
-  peoplePlanClosedUntilDate: string | null
-
   // Actions
   markNoticeRead: (noticeContent: string) => void
   markAnnouncementsRead: (keys: string[]) => void
   setClosedUntilDate: (date: string | null) => void
-  dismissPeoplePlanVersion: (version: string) => void
-  setPeoplePlanClosedUntilDate: (date: string | null) => void
   isAnnouncementRead: (key: string) => boolean
   isNoticeClosed: () => boolean
-  isPeoplePlanClosed: () => boolean
 }
 
 /**
@@ -51,8 +44,6 @@ export const useNotificationStore = create<NotificationState>()(
       lastReadNotice: '',
       readAnnouncementKeys: [],
       closedUntilDate: null,
-      peoplePlanDismissedVersion: '',
-      peoplePlanClosedUntilDate: null,
 
       markNoticeRead: (noticeContent: string) => {
         // Persist the full trimmed content so edits beyond 100 chars register
@@ -72,14 +63,6 @@ export const useNotificationStore = create<NotificationState>()(
         set({ closedUntilDate: date })
       },
 
-      dismissPeoplePlanVersion: (version: string) => {
-        set({ peoplePlanDismissedVersion: version })
-      },
-
-      setPeoplePlanClosedUntilDate: (date: string | null) => {
-        set({ peoplePlanClosedUntilDate: date })
-      },
-
       isAnnouncementRead: (key: string) => {
         return get().readAnnouncementKeys.includes(key)
       },
@@ -91,14 +74,6 @@ export const useNotificationStore = create<NotificationState>()(
         const today = new Date().toDateString()
         return closedUntilDate === today
       },
-
-      isPeoplePlanClosed: () => {
-        const { peoplePlanClosedUntilDate } = get()
-        if (!peoplePlanClosedUntilDate) return false
-
-        const today = new Date().toDateString()
-        return peoplePlanClosedUntilDate === today
-      },
     }),
     {
       name: 'notification-storage',
@@ -106,8 +81,6 @@ export const useNotificationStore = create<NotificationState>()(
         lastReadNotice: state.lastReadNotice,
         readAnnouncementKeys: state.readAnnouncementKeys,
         closedUntilDate: state.closedUntilDate,
-        peoplePlanDismissedVersion: state.peoplePlanDismissedVersion,
-        peoplePlanClosedUntilDate: state.peoplePlanClosedUntilDate,
       }),
     }
   )

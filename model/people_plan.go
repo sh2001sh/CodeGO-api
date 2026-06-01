@@ -263,7 +263,8 @@ func ClaimPeoplePlanQuotaRewardTx(tx *gorm.DB, reward *PeoplePlanRewardLedger, c
 		return fmt.Errorf("reward status %s is not claimable", reward.Status)
 	}
 	if reward.QuotaDelta > 0 {
-		if err := tx.Model(&User{}).Where("id = ?", reward.UserId).Update("quota", gorm.Expr("quota + ?", reward.QuotaDelta)).Error; err != nil {
+		key := fmt.Sprintf("people-plan-reward:%d", reward.Id)
+		if _, err := GrantBonusQuotaTx(tx, reward.UserId, reward.QuotaDelta, "people_plan_reward", fmt.Sprintf("%d", reward.Id), key); err != nil {
 			return err
 		}
 	}

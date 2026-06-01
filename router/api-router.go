@@ -251,6 +251,28 @@ func SetApiRouter(router *gin.Engine) {
 		{
 			blindBoxAdminRoute.GET("/users/:id/overview", controller.AdminGetBlindBoxUserOverview)
 		}
+		pointMallRoute := apiRouter.Group("/point-mall")
+		pointMallRoute.Use(middleware.UserAuth())
+		{
+			pointMallRoute.GET("/overview", controller.GetPointMallOverview)
+			pointMallRoute.POST("/bonus-quota/convert", middleware.CriticalRateLimit(), controller.ConvertPointMallBonusQuota)
+			pointMallRoute.POST("/products/:id/redeem", middleware.CriticalRateLimit(), controller.RedeemPointMallProduct)
+			pointMallRoute.GET("/orders", controller.GetPointMallOrders)
+		}
+		pointMallAdminRoute := apiRouter.Group("/point-mall/admin")
+		pointMallAdminRoute.Use(middleware.AdminAuth())
+		{
+			pointMallAdminRoute.GET("/products", controller.AdminListPointMallProducts)
+			pointMallAdminRoute.POST("/products", controller.AdminCreatePointMallProduct)
+			pointMallAdminRoute.PUT("/products/:id", controller.AdminUpdatePointMallProduct)
+			pointMallAdminRoute.GET("/card-secrets", controller.AdminListPointMallCardSecrets)
+			pointMallAdminRoute.POST("/card-secrets", controller.AdminCreatePointMallCardSecret)
+			pointMallAdminRoute.PATCH("/card-secrets/:id/void", controller.AdminVoidPointMallCardSecret)
+			pointMallAdminRoute.GET("/orders", controller.AdminListPointMallOrders)
+			pointMallAdminRoute.PATCH("/orders/:id", controller.AdminPatchPointMallOrder)
+			pointMallAdminRoute.GET("/rules", controller.AdminGetPointMallRules)
+			pointMallAdminRoute.PUT("/rules", controller.AdminUpdatePointMallRules)
+		}
 		peoplePlanAdminRoute := apiRouter.Group("/people-plan/admin")
 		peoplePlanAdminRoute.Use(middleware.AdminAuth())
 		{

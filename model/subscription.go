@@ -1041,10 +1041,16 @@ func CompleteSubscriptionOrder(tradeNo string, providerPayload string, expectedP
 		if err != nil {
 			return err
 		}
+		if err := AwardPackagePurchasePointsTx(tx, order.UserId, plan, order.Id); err != nil {
+			return err
+		}
 		if preview != nil {
 			upgradeGroup = strings.TrimSpace(sub.UpgradeGroup)
 		}
 		if err := upsertSubscriptionTopUpTx(tx, &order); err != nil {
+			return err
+		}
+		if err := awardReferralFirstTopupForCompletedOrderTx(tx, order.UserId, order.TradeNo); err != nil {
 			return err
 		}
 		order.Status = common.TopUpStatusSuccess
@@ -1984,29 +1990,29 @@ func defaultSubscriptionPlans() []SubscriptionPlan {
 		{
 			Title:            "Pro月卡",
 			Subtitle:         "月卡",
-			PriceAmount:      170,
+			PriceAmount:      159,
 			Currency:         "CNY",
 			DurationUnit:     SubscriptionDurationMonth,
 			DurationValue:    1,
 			Enabled:          true,
 			InternalOnly:     false,
 			SortOrder:        40,
-			TotalAmount:      quotaUnitsFromUSD(1500),
-			PeriodAmount:     quotaUnitsFromUSD(375),
+			TotalAmount:      quotaUnitsFromUSD(1200),
+			PeriodAmount:     quotaUnitsFromUSD(300),
 			QuotaResetPeriod: SubscriptionResetWeekly,
 		},
 		{
 			Title:            "Ultra月卡",
 			Subtitle:         "月卡",
-			PriceAmount:      360,
+			PriceAmount:      299,
 			Currency:         "CNY",
 			DurationUnit:     SubscriptionDurationMonth,
 			DurationValue:    1,
 			Enabled:          true,
 			InternalOnly:     false,
 			SortOrder:        30,
-			TotalAmount:      quotaUnitsFromUSD(4000),
-			PeriodAmount:     quotaUnitsFromUSD(1000),
+			TotalAmount:      quotaUnitsFromUSD(2200),
+			PeriodAmount:     quotaUnitsFromUSD(550),
 			QuotaResetPeriod: SubscriptionResetWeekly,
 		},
 		{

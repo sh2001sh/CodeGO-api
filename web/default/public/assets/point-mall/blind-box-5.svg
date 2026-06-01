@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 480" role="img" aria-labelledby="title desc">
+  <title id="title">Blind Box Ticket x5</title>
+  <desc id="desc">Indigo blind box reward ticket marked x5.</desc>
+  <rect width="640" height="480" fill="#eef2ff"/>
+  <rect x="156" y="164" width="328" height="214" rx="28" fill="#4338ca"/>
+  <path d="M156 224h328v52H156z" fill="#818cf8"/>
+  <path d="M292 164h56v214h-56z" fill="#fde68a"/>
+  <path d="M220 116c58-38 92 8 100 48-46 8-88 0-100-48z" fill="#f97316"/>
+  <path d="M420 116c-58-38-92 8-100 48 46 8 88 0 100-48z" fill="#f97316"/>
+  <circle cx="320" cy="256" r="56" fill="#f8fafc"/>
+  <text x="278" y="276" fill="#4338ca" font-family="Arial, sans-serif" font-size="58" font-weight="800">x5</text>
+  <text x="208" y="426" fill="#3730a3" font-family="Arial, sans-serif" font-size="26" font-weight="700">BLIND BOX TICKET</text>
+</svg>

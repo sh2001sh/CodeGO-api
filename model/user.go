@@ -35,7 +35,7 @@ type User struct {
 	OidcId                       string         `json:"oidc_id" gorm:"column:oidc_id;index"`
 	WeChatId                     string         `json:"wechat_id" gorm:"column:wechat_id;index"`
 	TelegramId                   string         `json:"telegram_id" gorm:"column:telegram_id;index"`
-	VerificationCode             string         `json:"verification_code" gorm:"-:all"`                                    // this field is only for Email verification, don't save it to database!
+	VerificationCode             string         `json:"verification_code" gorm:"-:all"` // this field is only for Email verification, don't save it to database!
 	PeoplePlanInviteCode         string         `json:"people_plan_invite_code" gorm:"-:all"`
 	AccessToken                  *string        `json:"access_token" gorm:"type:char(32);column:access_token;uniqueIndex"` // this token is for system management
 	Quota                        int            `json:"quota" gorm:"type:int;default:0"`
@@ -494,6 +494,9 @@ func (user *User) Insert(inviterId int) error {
 		RecordLog(user.Id, LogTypeSystem, fmt.Sprintf("新用户注册赠送 %s", logger.LogQuota(common.QuotaForNewUser)))
 	}
 	if inviterId != 0 && operation_setting.IsPaymentComplianceConfirmed() {
+		_ = DB.Transaction(func(tx *gorm.DB) error {
+			return AwardReferralRegisterFrozenPointsTx(tx, inviterId, user.Id)
+		})
 		if common.QuotaForInvitee > 0 {
 			_ = IncreaseUserQuota(user.Id, common.QuotaForInvitee, true)
 			RecordLog(user.Id, LogTypeSystem, fmt.Sprintf("使用邀请码赠送 %s", logger.LogQuota(common.QuotaForInvitee)))
@@ -555,6 +558,9 @@ func (user *User) FinalizeOAuthUserCreation(inviterId int) {
 		RecordLog(user.Id, LogTypeSystem, fmt.Sprintf("新用户注册赠送 %s", logger.LogQuota(common.QuotaForNewUser)))
 	}
 	if inviterId != 0 && operation_setting.IsPaymentComplianceConfirmed() {
+		_ = DB.Transaction(func(tx *gorm.DB) error {
+			return AwardReferralRegisterFrozenPointsTx(tx, inviterId, user.Id)
+		})
 		if common.QuotaForInvitee > 0 {
 			_ = IncreaseUserQuota(user.Id, common.QuotaForInvitee, true)
 			RecordLog(user.Id, LogTypeSystem, fmt.Sprintf("使用邀请码赠送 %s", logger.LogQuota(common.QuotaForInvitee)))
@@ -1004,9 +1010,14 @@ func DecreaseUserQuota(id int, quota int, db bool) (err error) {
 	})
 	if !db && common.BatchUpdateEnabled {
 		addNewRecord(BatchUpdateTypeUserQuota, id, -quota)
+		ConsumeBonusQuotaCredits(id, int64(quota))
 		return nil
 	}
-	return decreaseUserQuota(id, quota)
+	if err := decreaseUserQuota(id, quota); err != nil {
+		return err
+	}
+	ConsumeBonusQuotaCredits(id, int64(quota))
+	return nil
 }
 
 func decreaseUserQuota(id int, quota int) (err error) {

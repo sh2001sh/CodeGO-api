@@ -45,6 +45,7 @@ import { Route as AuthenticatedSystemSettingsIndexRouteImport } from './routes/_
 import { Route as AuthenticatedSubscriptionsIndexRouteImport } from './routes/_authenticated/subscriptions/index'
 import { Route as AuthenticatedRedemptionCodesIndexRouteImport } from './routes/_authenticated/redemption-codes/index'
 import { Route as AuthenticatedProfileIndexRouteImport } from './routes/_authenticated/profile/index'
+import { Route as AuthenticatedPointMallIndexRouteImport } from './routes/_authenticated/point-mall/index'
 import { Route as AuthenticatedPlaygroundIndexRouteImport } from './routes/_authenticated/playground/index'
 import { Route as AuthenticatedPeoplePlanIndexRouteImport } from './routes/_authenticated/people-plan/index'
 import { Route as AuthenticatedPackagesIndexRouteImport } from './routes/_authenticated/packages/index'
@@ -62,6 +63,7 @@ import { Route as AuthenticatedChatChatIdRouteImport } from './routes/_authentic
 import { Route as authUserResetRouteImport } from './routes/(auth)/user/reset'
 import { Route as AuthenticatedSystemSettingsSiteIndexRouteImport } from './routes/_authenticated/system-settings/site/index'
 import { Route as AuthenticatedSystemSettingsSecurityIndexRouteImport } from './routes/_authenticated/system-settings/security/index'
+import { Route as AuthenticatedSystemSettingsPointMallIndexRouteImport } from './routes/_authenticated/system-settings/point-mall/index'
 import { Route as AuthenticatedSystemSettingsPeoplePlanIndexRouteImport } from './routes/_authenticated/system-settings/people-plan/index'
 import { Route as AuthenticatedSystemSettingsOperationsIndexRouteImport } from './routes/_authenticated/system-settings/operations/index'
 import { Route as AuthenticatedSystemSettingsModelsIndexRouteImport } from './routes/_authenticated/system-settings/models/index'
@@ -262,6 +264,12 @@ const AuthenticatedProfileIndexRoute =
     path: '/profile/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedPointMallIndexRoute =
+  AuthenticatedPointMallIndexRouteImport.update({
+    id: '/point-mall/',
+    path: '/point-mall/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedPlaygroundIndexRoute =
   AuthenticatedPlaygroundIndexRouteImport.update({
     id: '/playground/',
@@ -359,6 +367,12 @@ const AuthenticatedSystemSettingsSecurityIndexRoute =
   AuthenticatedSystemSettingsSecurityIndexRouteImport.update({
     id: '/security/',
     path: '/security/',
+    getParentRoute: () => AuthenticatedSystemSettingsRouteRoute,
+  } as any)
+const AuthenticatedSystemSettingsPointMallIndexRoute =
+  AuthenticatedSystemSettingsPointMallIndexRouteImport.update({
+    id: '/point-mall/',
+    path: '/point-mall/',
     getParentRoute: () => AuthenticatedSystemSettingsRouteRoute,
   } as any)
 const AuthenticatedSystemSettingsPeoplePlanIndexRoute =
@@ -488,6 +502,7 @@ export interface FileRoutesByFullPath {
   '/packages/': typeof AuthenticatedPackagesIndexRoute
   '/people-plan/': typeof AuthenticatedPeoplePlanIndexRoute
   '/playground/': typeof AuthenticatedPlaygroundIndexRoute
+  '/point-mall/': typeof AuthenticatedPointMallIndexRoute
   '/profile/': typeof AuthenticatedProfileIndexRoute
   '/redemption-codes/': typeof AuthenticatedRedemptionCodesIndexRoute
   '/subscriptions/': typeof AuthenticatedSubscriptionsIndexRoute
@@ -510,6 +525,7 @@ export interface FileRoutesByFullPath {
   '/system-settings/models/': typeof AuthenticatedSystemSettingsModelsIndexRoute
   '/system-settings/operations/': typeof AuthenticatedSystemSettingsOperationsIndexRoute
   '/system-settings/people-plan/': typeof AuthenticatedSystemSettingsPeoplePlanIndexRoute
+  '/system-settings/point-mall/': typeof AuthenticatedSystemSettingsPointMallIndexRoute
   '/system-settings/security/': typeof AuthenticatedSystemSettingsSecurityIndexRoute
   '/system-settings/site/': typeof AuthenticatedSystemSettingsSiteIndexRoute
 }
@@ -554,6 +570,7 @@ export interface FileRoutesByTo {
   '/packages': typeof AuthenticatedPackagesIndexRoute
   '/people-plan': typeof AuthenticatedPeoplePlanIndexRoute
   '/playground': typeof AuthenticatedPlaygroundIndexRoute
+  '/point-mall': typeof AuthenticatedPointMallIndexRoute
   '/profile': typeof AuthenticatedProfileIndexRoute
   '/redemption-codes': typeof AuthenticatedRedemptionCodesIndexRoute
   '/subscriptions': typeof AuthenticatedSubscriptionsIndexRoute
@@ -576,6 +593,7 @@ export interface FileRoutesByTo {
   '/system-settings/models': typeof AuthenticatedSystemSettingsModelsIndexRoute
   '/system-settings/operations': typeof AuthenticatedSystemSettingsOperationsIndexRoute
   '/system-settings/people-plan': typeof AuthenticatedSystemSettingsPeoplePlanIndexRoute
+  '/system-settings/point-mall': typeof AuthenticatedSystemSettingsPointMallIndexRoute
   '/system-settings/security': typeof AuthenticatedSystemSettingsSecurityIndexRoute
   '/system-settings/site': typeof AuthenticatedSystemSettingsSiteIndexRoute
 }
@@ -624,6 +642,7 @@ export interface FileRoutesById {
   '/_authenticated/packages/': typeof AuthenticatedPackagesIndexRoute
   '/_authenticated/people-plan/': typeof AuthenticatedPeoplePlanIndexRoute
   '/_authenticated/playground/': typeof AuthenticatedPlaygroundIndexRoute
+  '/_authenticated/point-mall/': typeof AuthenticatedPointMallIndexRoute
   '/_authenticated/profile/': typeof AuthenticatedProfileIndexRoute
   '/_authenticated/redemption-codes/': typeof AuthenticatedRedemptionCodesIndexRoute
   '/_authenticated/subscriptions/': typeof AuthenticatedSubscriptionsIndexRoute
@@ -646,6 +665,7 @@ export interface FileRoutesById {
   '/_authenticated/system-settings/models/': typeof AuthenticatedSystemSettingsModelsIndexRoute
   '/_authenticated/system-settings/operations/': typeof AuthenticatedSystemSettingsOperationsIndexRoute
   '/_authenticated/system-settings/people-plan/': typeof AuthenticatedSystemSettingsPeoplePlanIndexRoute
+  '/_authenticated/system-settings/point-mall/': typeof AuthenticatedSystemSettingsPointMallIndexRoute
   '/_authenticated/system-settings/security/': typeof AuthenticatedSystemSettingsSecurityIndexRoute
   '/_authenticated/system-settings/site/': typeof AuthenticatedSystemSettingsSiteIndexRoute
 }
@@ -693,6 +713,7 @@ export interface FileRouteTypes {
     | '/packages/'
     | '/people-plan/'
     | '/playground/'
+    | '/point-mall/'
     | '/profile/'
     | '/redemption-codes/'
     | '/subscriptions/'
@@ -715,6 +736,7 @@ export interface FileRouteTypes {
     | '/system-settings/models/'
     | '/system-settings/operations/'
     | '/system-settings/people-plan/'
+    | '/system-settings/point-mall/'
     | '/system-settings/security/'
     | '/system-settings/site/'
   fileRoutesByTo: FileRoutesByTo
@@ -759,6 +781,7 @@ export interface FileRouteTypes {
     | '/packages'
     | '/people-plan'
     | '/playground'
+    | '/point-mall'
     | '/profile'
     | '/redemption-codes'
     | '/subscriptions'
@@ -781,6 +804,7 @@ export interface FileRouteTypes {
     | '/system-settings/models'
     | '/system-settings/operations'
     | '/system-settings/people-plan'
+    | '/system-settings/point-mall'
     | '/system-settings/security'
     | '/system-settings/site'
   id:
@@ -828,6 +852,7 @@ export interface FileRouteTypes {
     | '/_authenticated/packages/'
     | '/_authenticated/people-plan/'
     | '/_authenticated/playground/'
+    | '/_authenticated/point-mall/'
     | '/_authenticated/profile/'
     | '/_authenticated/redemption-codes/'
     | '/_authenticated/subscriptions/'
@@ -850,6 +875,7 @@ export interface FileRouteTypes {
     | '/_authenticated/system-settings/models/'
     | '/_authenticated/system-settings/operations/'
     | '/_authenticated/system-settings/people-plan/'
+    | '/_authenticated/system-settings/point-mall/'
     | '/_authenticated/system-settings/security/'
     | '/_authenticated/system-settings/site/'
   fileRoutesById: FileRoutesById
@@ -1132,6 +1158,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProfileIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/point-mall/': {
+      id: '/_authenticated/point-mall/'
+      path: '/point-mall'
+      fullPath: '/point-mall/'
+      preLoaderRoute: typeof AuthenticatedPointMallIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/playground/': {
       id: '/_authenticated/playground/'
       path: '/playground'
@@ -1249,6 +1282,13 @@ declare module '@tanstack/react-router' {
       path: '/security'
       fullPath: '/system-settings/security/'
       preLoaderRoute: typeof AuthenticatedSystemSettingsSecurityIndexRouteImport
+      parentRoute: typeof AuthenticatedSystemSettingsRouteRoute
+    }
+    '/_authenticated/system-settings/point-mall/': {
+      id: '/_authenticated/system-settings/point-mall/'
+      path: '/point-mall'
+      fullPath: '/system-settings/point-mall/'
+      preLoaderRoute: typeof AuthenticatedSystemSettingsPointMallIndexRouteImport
       parentRoute: typeof AuthenticatedSystemSettingsRouteRoute
     }
     '/_authenticated/system-settings/people-plan/': {
@@ -1392,6 +1432,7 @@ interface AuthenticatedSystemSettingsRouteRouteChildren {
   AuthenticatedSystemSettingsModelsIndexRoute: typeof AuthenticatedSystemSettingsModelsIndexRoute
   AuthenticatedSystemSettingsOperationsIndexRoute: typeof AuthenticatedSystemSettingsOperationsIndexRoute
   AuthenticatedSystemSettingsPeoplePlanIndexRoute: typeof AuthenticatedSystemSettingsPeoplePlanIndexRoute
+  AuthenticatedSystemSettingsPointMallIndexRoute: typeof AuthenticatedSystemSettingsPointMallIndexRoute
   AuthenticatedSystemSettingsSecurityIndexRoute: typeof AuthenticatedSystemSettingsSecurityIndexRoute
   AuthenticatedSystemSettingsSiteIndexRoute: typeof AuthenticatedSystemSettingsSiteIndexRoute
 }
@@ -1428,6 +1469,8 @@ const AuthenticatedSystemSettingsRouteRouteChildren: AuthenticatedSystemSettings
       AuthenticatedSystemSettingsOperationsIndexRoute,
     AuthenticatedSystemSettingsPeoplePlanIndexRoute:
       AuthenticatedSystemSettingsPeoplePlanIndexRoute,
+    AuthenticatedSystemSettingsPointMallIndexRoute:
+      AuthenticatedSystemSettingsPointMallIndexRoute,
     AuthenticatedSystemSettingsSecurityIndexRoute:
       AuthenticatedSystemSettingsSecurityIndexRoute,
     AuthenticatedSystemSettingsSiteIndexRoute:
@@ -1456,6 +1499,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedPackagesIndexRoute: typeof AuthenticatedPackagesIndexRoute
   AuthenticatedPeoplePlanIndexRoute: typeof AuthenticatedPeoplePlanIndexRoute
   AuthenticatedPlaygroundIndexRoute: typeof AuthenticatedPlaygroundIndexRoute
+  AuthenticatedPointMallIndexRoute: typeof AuthenticatedPointMallIndexRoute
   AuthenticatedProfileIndexRoute: typeof AuthenticatedProfileIndexRoute
   AuthenticatedRedemptionCodesIndexRoute: typeof AuthenticatedRedemptionCodesIndexRoute
   AuthenticatedSubscriptionsIndexRoute: typeof AuthenticatedSubscriptionsIndexRoute
@@ -1482,6 +1526,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedPackagesIndexRoute: AuthenticatedPackagesIndexRoute,
   AuthenticatedPeoplePlanIndexRoute: AuthenticatedPeoplePlanIndexRoute,
   AuthenticatedPlaygroundIndexRoute: AuthenticatedPlaygroundIndexRoute,
+  AuthenticatedPointMallIndexRoute: AuthenticatedPointMallIndexRoute,
   AuthenticatedProfileIndexRoute: AuthenticatedProfileIndexRoute,
   AuthenticatedRedemptionCodesIndexRoute:
     AuthenticatedRedemptionCodesIndexRoute,

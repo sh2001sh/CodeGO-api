@@ -295,6 +295,12 @@ func migrateDB() error {
 		&PeoplePlanAchievementProgress{},
 		&PeoplePlanSubmission{},
 		&PeoplePlanRiskReview{},
+		&PointAccount{},
+		&PointLedger{},
+		&PointMallProduct{},
+		&PointMallCardSecret{},
+		&PointMallOrder{},
+		&BonusQuotaCredit{},
 		&CustomOAuthProvider{},
 		&UserOAuthBinding{},
 		&PerfMetric{},
@@ -312,6 +318,9 @@ func migrateDB() error {
 		}
 	}
 	if err := SeedDefaultSubscriptionPlans(); err != nil {
+		return err
+	}
+	if err := SeedDefaultPointMallProducts(); err != nil {
 		return err
 	}
 	return nil
@@ -364,6 +373,12 @@ func migrateDBFast() error {
 		{&PeoplePlanAchievementProgress{}, "PeoplePlanAchievementProgress"},
 		{&PeoplePlanSubmission{}, "PeoplePlanSubmission"},
 		{&PeoplePlanRiskReview{}, "PeoplePlanRiskReview"},
+		{&PointAccount{}, "PointAccount"},
+		{&PointLedger{}, "PointLedger"},
+		{&PointMallProduct{}, "PointMallProduct"},
+		{&PointMallCardSecret{}, "PointMallCardSecret"},
+		{&PointMallOrder{}, "PointMallOrder"},
+		{&BonusQuotaCredit{}, "BonusQuotaCredit"},
 		{&CustomOAuthProvider{}, "CustomOAuthProvider"},
 		{&UserOAuthBinding{}, "UserOAuthBinding"},
 		{&PerfMetric{}, "PerfMetric"},
@@ -401,6 +416,9 @@ func migrateDBFast() error {
 		}
 	}
 	if err := SeedDefaultSubscriptionPlans(); err != nil {
+		return err
+	}
+	if err := SeedDefaultPointMallProducts(); err != nil {
 		return err
 	}
 	common.SysLog("database migrated")

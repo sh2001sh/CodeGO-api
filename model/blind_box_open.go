@@ -380,26 +380,32 @@ func OpenBlindBoxOrderByTradeNo(tradeNo string) ([]BlindBoxOpenRecord, error) {
 	}
 	var records []BlindBoxOpenRecord
 	err := DB.Transaction(func(tx *gorm.DB) error {
-		var order BlindBoxOrder
-		if err := tx.Set("gorm:query_option", "FOR UPDATE").
-			Where("trade_no = ?", tradeNo).
-			First(&order).Error; err != nil {
-			return ErrBlindBoxOrderNotFound
-		}
-		if order.Status != common.TopUpStatusSuccess {
-			return ErrBlindBoxOrderStatusInvalid
-		}
-		remaining := order.Quantity - order.OpenedCount
-		if remaining <= 0 {
-			records = []BlindBoxOpenRecord{}
-			return nil
-		}
 		var err error
-		records, err = openBlindBoxesTx(tx, order.UserId, remaining, &order.Id)
+		records, err = OpenBlindBoxOrderByTradeNoTx(tx, tradeNo)
 		return err
 	})
 	if err != nil {
 		return nil, err
 	}
 	return records, nil
+}
+
+func OpenBlindBoxOrderByTradeNoTx(tx *gorm.DB, tradeNo string) ([]BlindBoxOpenRecord, error) {
+	if strings.TrimSpace(tradeNo) == "" {
+		return nil, errors.New("tradeNo is empty")
+	}
+	var order BlindBoxOrder
+	if err := tx.Set("gorm:query_option", "FOR UPDATE").
+		Where("trade_no = ?", tradeNo).
+		First(&order).Error; err != nil {
+		return nil, ErrBlindBoxOrderNotFound
+	}
+	if order.Status != common.TopUpStatusSuccess {
+		return nil, ErrBlindBoxOrderStatusInvalid
+	}
+	remaining := order.Quantity - order.OpenedCount
+	if remaining <= 0 {
+		return []BlindBoxOpenRecord{}, nil
+	}
+	return openBlindBoxesTx(tx, order.UserId, remaining, &order.Id)
 }
