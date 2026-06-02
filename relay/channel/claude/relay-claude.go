@@ -831,6 +831,7 @@ func HandleStreamResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 }
 
 func HandleStreamFinalResponse(c *gin.Context, info *relaycommon.RelayInfo, claudeInfo *ClaudeResponseInfo) {
+	info.ConversationResponseText = claudeInfo.ResponseText.String()
 	if claudeInfo.Usage.PromptTokens == 0 {
 		//上游出错
 	}
@@ -931,8 +932,27 @@ func HandleClaudeResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 		c.Set("claude_web_search_requests", claudeResponse.Usage.ServerToolUse.WebSearchRequests)
 	}
 
+	info.ConversationResponseText = claudeResponsePlainText(&claudeResponse)
 	service.IOCopyBytesGracefully(c, httpResp, responseData)
 	return nil
+}
+
+func claudeResponsePlainText(response *dto.ClaudeResponse) string {
+	if response == nil {
+		return ""
+	}
+	parts := make([]string, 0, len(response.Content))
+	for _, content := range response.Content {
+		switch content.Type {
+		case "text":
+			parts = append(parts, content.GetText())
+		case "thinking":
+			if content.Thinking != nil {
+				parts = append(parts, *content.Thinking)
+			}
+		}
+	}
+	return strings.Join(parts, "\n")
 }
 
 func ClaudeHandler(c *gin.Context, resp *http.Response, info *relaycommon.RelayInfo) (*dto.Usage, *types.NewAPIError) {

@@ -71,6 +71,7 @@ func xAIStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Re
 		usage = service.ResponseText2Usage(c, responseTextBuilder.String(), info.UpstreamModelName, info.GetEstimatePromptTokens())
 		usage.CompletionTokens += toolCount * 7
 	}
+	info.ConversationResponseText = responseTextBuilder.String()
 
 	helper.Done(c)
 	service.CloseResponseBodyGracefully(resp)
@@ -93,6 +94,7 @@ func xAIHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response
 		xaiResponse.Usage.CompletionTokens = xaiResponse.Usage.TotalTokens - xaiResponse.Usage.PromptTokens
 		xaiResponse.Usage.CompletionTokenDetails.TextTokens = xaiResponse.Usage.CompletionTokens - xaiResponse.Usage.CompletionTokenDetails.ReasoningTokens
 	}
+	info.ConversationResponseText = xaiTextResponseContent(&xaiResponse)
 
 	// new body
 	encodeJson, err := common.Marshal(xaiResponse)
@@ -103,4 +105,21 @@ func xAIHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response
 	service.IOCopyBytesGracefully(c, resp, encodeJson)
 
 	return xaiResponse.Usage, nil
+}
+
+func xaiTextResponseContent(response *ChatCompletionResponse) string {
+	if response == nil {
+		return ""
+	}
+	parts := make([]string, 0, len(response.Choices))
+	for _, choice := range response.Choices {
+		content := choice.Message.StringContent()
+		if reasoning := choice.Message.GetReasoningContent(); reasoning != "" {
+			content = strings.TrimSpace(strings.Join([]string{reasoning, content}, "\n"))
+		}
+		if strings.TrimSpace(content) != "" {
+			parts = append(parts, content)
+		}
+	}
+	return strings.Join(parts, "\n")
 }

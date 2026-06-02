@@ -41,6 +41,7 @@ func OaiResponsesHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 	}
 
 	// 写入新的 response body
+	info.ConversationResponseText = responsesOutputText(&responsesResponse)
 	service.IOCopyBytesGracefully(c, resp, responseBody)
 
 	// compute usage
@@ -145,6 +146,22 @@ func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 	}
 
 	usage.TotalTokens = usage.PromptTokens + usage.CompletionTokens
+	info.ConversationResponseText = responseTextBuilder.String()
 
 	return usage, nil
+}
+
+func responsesOutputText(response *dto.OpenAIResponsesResponse) string {
+	if response == nil {
+		return ""
+	}
+	var parts []string
+	for _, output := range response.Output {
+		for _, content := range output.Content {
+			if strings.TrimSpace(content.Text) != "" {
+				parts = append(parts, content.Text)
+			}
+		}
+	}
+	return strings.Join(parts, "\n")
 }

@@ -1322,6 +1322,7 @@ func geminiStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 			usage = &dto.Usage{}
 		}
 	}
+	info.ConversationResponseText = responseText.String()
 
 	return usage, nil
 }
@@ -1470,6 +1471,7 @@ func GeminiChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.R
 	usage := buildUsageFromGeminiMetadata(geminiResponse.UsageMetadata, info.GetEstimatePromptTokens())
 
 	fullTextResponse.Usage = usage
+	info.ConversationResponseText = geminiOpenAIResponseText(fullTextResponse)
 
 	switch info.RelayFormat {
 	case types.RelayFormatOpenAI:
@@ -1491,6 +1493,20 @@ func GeminiChatHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.R
 	service.IOCopyBytesGracefully(c, resp, responseBody)
 
 	return &usage, nil
+}
+
+func geminiOpenAIResponseText(response *dto.OpenAITextResponse) string {
+	if response == nil {
+		return ""
+	}
+	parts := make([]string, 0, len(response.Choices))
+	for _, choice := range response.Choices {
+		text := choice.Message.StringContent()
+		if strings.TrimSpace(text) != "" {
+			parts = append(parts, text)
+		}
+	}
+	return strings.Join(parts, "\n")
 }
 
 func GeminiEmbeddingHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*dto.Usage, *types.NewAPIError) {
