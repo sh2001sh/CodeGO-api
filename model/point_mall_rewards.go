@@ -94,10 +94,6 @@ func AwardReferralFirstCallTx(tx *gorm.DB, inviteeId int) error {
 		if _, _, err := AddPointLedgerTx(tx, item.userId, PointLedgerTypeEarn, 5, PointSourceReferralCall, fmt.Sprintf("%d", inviteeId), key, "邀请首调赠送积分"); err != nil {
 			return err
 		}
-		quotaKey := fmt.Sprintf("referral-first-call-quota:%s:%d:%d", item.role, inviterId, inviteeId)
-		if _, err := GrantBonusQuotaTx(tx, item.userId, quotaUnitsFromPointMallUSD(10), PointSourceReferralCall, fmt.Sprintf("%d", inviteeId), quotaKey); err != nil {
-			return err
-		}
 	}
 	return nil
 }

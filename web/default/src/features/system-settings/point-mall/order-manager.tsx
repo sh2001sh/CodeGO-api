@@ -13,6 +13,20 @@ import {
   adminGetPointMallOrders,
   adminPatchPointMallOrder,
 } from '@/features/point-mall/api'
+import {
+  formatDeliverySummary,
+  formatTime,
+} from '@/features/point-mall/delivery-content'
+
+function statusLabel(status: string) {
+  const labels: Record<string, string> = {
+    pending: '待发放',
+    success: '成功',
+    failed: '失败',
+    refunded: '已退回',
+  }
+  return labels[status] ?? status
+}
 
 export function OrderManager() {
   const queryClient = useQueryClient()
@@ -26,6 +40,12 @@ export function OrderManager() {
       await queryClient.invalidateQueries({
         queryKey: ['point-mall-admin', 'orders'],
       })
+      await queryClient.invalidateQueries({
+        queryKey: ['point-mall-admin', 'cards'],
+      })
+      await queryClient.invalidateQueries({
+        queryKey: ['point-mall-admin', 'points'],
+      })
     },
   })
 
@@ -35,49 +55,66 @@ export function OrderManager() {
         <CardTitle>兑换订单</CardTitle>
       </CardHeader>
       <CardContent>
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead>ID</TableHead>
-              <TableHead>用户</TableHead>
-              <TableHead>商品</TableHead>
-              <TableHead>积分</TableHead>
-              <TableHead>状态</TableHead>
-              <TableHead>操作</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {(ordersQuery.data?.data ?? []).map((order) => (
-              <TableRow key={order.id}>
-                <TableCell>{order.id}</TableCell>
-                <TableCell>{order.user_id}</TableCell>
-                <TableCell>{order.product_name}</TableCell>
-                <TableCell>{order.points_cost}</TableCell>
-                <TableCell>{order.status}</TableCell>
-                <TableCell className='space-x-2'>
-                  <Button
-                    size='sm'
-                    variant='outline'
-                    onClick={() =>
-                      patchMutation.mutate({ id: order.id, status: 'failed' })
-                    }
-                  >
-                    标记失败
-                  </Button>
-                  <Button
-                    size='sm'
-                    variant='outline'
-                    onClick={() =>
-                      patchMutation.mutate({ id: order.id, status: 'refunded' })
-                    }
-                  >
-                    退回积分
-                  </Button>
-                </TableCell>
+        <div className='overflow-auto'>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>ID</TableHead>
+                <TableHead>时间</TableHead>
+                <TableHead>用户</TableHead>
+                <TableHead>商品</TableHead>
+                <TableHead>积分</TableHead>
+                <TableHead>状态</TableHead>
+                <TableHead>发放摘要</TableHead>
+                <TableHead>操作</TableHead>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
+            </TableHeader>
+            <TableBody>
+              {(ordersQuery.data?.data ?? []).map((order) => (
+                <TableRow key={order.id}>
+                  <TableCell>{order.id}</TableCell>
+                  <TableCell>{formatTime(order.created_at)}</TableCell>
+                  <TableCell>{order.user_id}</TableCell>
+                  <TableCell>{order.product_name}</TableCell>
+                  <TableCell>{order.points_cost}</TableCell>
+                  <TableCell>{statusLabel(order.status)}</TableCell>
+                  <TableCell className='max-w-[280px] truncate'>
+                    {formatDeliverySummary(order)}
+                  </TableCell>
+                  <TableCell className='space-x-2 whitespace-nowrap'>
+                    <Button
+                      size='sm'
+                      variant='outline'
+                      disabled={order.status === 'refunded'}
+                      onClick={() =>
+                        patchMutation.mutate({ id: order.id, status: 'failed' })
+                      }
+                    >
+                      标记失败
+                    </Button>
+                    <Button
+                      size='sm'
+                      variant='outline'
+                      disabled={order.status === 'refunded'}
+                      onClick={() =>
+                        patchMutation.mutate({ id: order.id, status: 'refunded' })
+                      }
+                    >
+                      退回积分
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+              {!ordersQuery.isLoading && (ordersQuery.data?.data ?? []).length === 0 && (
+                <TableRow>
+                  <TableCell colSpan={8} className='py-8 text-center'>
+                    暂无兑换订单
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </CardContent>
     </Card>
   )

@@ -75,7 +75,11 @@ func getProductStockRemaining(product model.PointMallProduct) int64 {
 		_ = model.DB.Model(&model.PointMallCardSecret{}).
 			Where("product_id = ? AND status = ?", product.Id, model.PointCardStatusUnused).
 			Count(&count).Error
-		return count
+		required := jdCardSecretCount(product)
+		if required <= 0 {
+			return 0
+		}
+		return count / int64(required)
 	default:
 		return int64(product.VirtualStock)
 	}
@@ -106,7 +110,7 @@ func validateJDCardRedeemTx(tx *gorm.DB, userId int, product *model.PointMallPro
 		Count(&stock).Error; err != nil {
 		return err
 	}
-	if stock <= 0 {
+	if stock < int64(jdCardSecretCount(*product)) {
 		return errors.New("JD E-Card stock is insufficient")
 	}
 	now := model.GetDBTimestamp()
@@ -135,7 +139,7 @@ func validateJDCardRedeemTx(tx *gorm.DB, userId int, product *model.PointMallPro
 func deliverPointMallOrderTx(tx *gorm.DB, order *model.PointMallOrder, product *model.PointMallProduct) error {
 	switch product.Type {
 	case model.PointProductTypeJDCard:
-		return deliverJDCardTx(tx, order)
+		return deliverJDCardTx(tx, order, product)
 	case model.PointProductTypeBlindBox:
 		return deliverBlindBoxTicketTx(tx, order, product)
 	case model.PointProductTypeSubscription:
@@ -145,26 +149,40 @@ func deliverPointMallOrderTx(tx *gorm.DB, order *model.PointMallOrder, product *
 	}
 }
 
-func deliverJDCardTx(tx *gorm.DB, order *model.PointMallOrder) error {
-	var card model.PointMallCardSecret
+func deliverJDCardTx(tx *gorm.DB, order *model.PointMallOrder, product *model.PointMallProduct) error {
+	required := jdCardSecretCount(*product)
+	var cards []model.PointMallCardSecret
 	if err := tx.Set("gorm:query_option", "FOR UPDATE").
 		Where("product_id = ? AND status = ?", order.ProductId, model.PointCardStatusUnused).
-		Order("id asc").First(&card).Error; err != nil {
+		Order("id asc").Limit(required).Find(&cards).Error; err != nil {
 		return err
 	}
-	card.Status = model.PointCardStatusIssued
-	card.OrderId = order.Id
-	card.UserId = order.UserId
-	card.IssuedAt = model.GetDBTimestamp()
-	if err := tx.Save(&card).Error; err != nil {
-		return err
+	if len(cards) < required {
+		return errors.New("JD E-Card stock is insufficient")
 	}
-	content := map[string]interface{}{"card_no": card.CardNo, "card_secret_masked": maskCardSecret(card.CardSecret)}
+	issuedAt := model.GetDBTimestamp()
+	cardIds := make([]int, 0, len(cards))
+	maskedSecrets := make([]string, 0, len(cards))
+	for _, card := range cards {
+		card.Status = model.PointCardStatusIssued
+		card.OrderId = order.Id
+		card.UserId = order.UserId
+		card.IssuedAt = issuedAt
+		if err := tx.Save(&card).Error; err != nil {
+			return err
+		}
+		cardIds = append(cardIds, card.Id)
+		maskedSecrets = append(maskedSecrets, maskCardSecret(card.CardSecret))
+	}
+	content := map[string]interface{}{
+		"card_count":          len(cards),
+		"card_secrets_masked": maskedSecrets,
+	}
 	raw, err := common.Marshal(content)
 	if err != nil {
 		return err
 	}
-	return markOrderDeliveredTx(tx, order, string(raw), map[string]interface{}{"card_secret_id": card.Id})
+	return markOrderDeliveredTx(tx, order, string(raw), map[string]interface{}{"card_secret_id": cardIds[0]})
 }
 
 func deliverBlindBoxTicketTx(tx *gorm.DB, order *model.PointMallOrder, product *model.PointMallProduct) error {
@@ -174,10 +192,16 @@ func deliverBlindBoxTicketTx(tx *gorm.DB, order *model.PointMallOrder, product *
 	}
 	tradeNo := fmt.Sprintf("POINT-MALL-%d", order.Id)
 	blindOrder := model.BlindBoxOrder{
-		UserId: order.UserId, Quantity: quantity, OpenedCount: 0, Money: 0,
-		TradeNo: tradeNo, PaymentMethod: "point_mall",
-		PaymentProvider: "point_mall", Status: common.TopUpStatusSuccess,
-		CreateTime: model.GetDBTimestamp(), CompleteTime: model.GetDBTimestamp(),
+		UserId:          order.UserId,
+		Quantity:        quantity,
+		OpenedCount:     0,
+		Money:           0,
+		TradeNo:         tradeNo,
+		PaymentMethod:   "point_mall",
+		PaymentProvider: "point_mall",
+		Status:          common.TopUpStatusSuccess,
+		CreateTime:      model.GetDBTimestamp(),
+		CompleteTime:    model.GetDBTimestamp(),
 	}
 	if err := tx.Create(&blindOrder).Error; err != nil {
 		return err
@@ -230,8 +254,11 @@ func deliverSubscriptionPlanTx(tx *gorm.DB, order *model.PointMallOrder, product
 		return err
 	}
 	content := map[string]interface{}{
-		"subscription_plan_id": plan.Id, "subscription_plan_title": plan.Title,
-		"user_subscription_id": sub.Id, "start_time": sub.StartTime, "end_time": sub.EndTime,
+		"subscription_plan_id":    plan.Id,
+		"subscription_plan_title": plan.Title,
+		"user_subscription_id":    sub.Id,
+		"start_time":              sub.StartTime,
+		"end_time":                sub.EndTime,
 	}
 	raw, err := common.Marshal(content)
 	if err != nil {
@@ -253,21 +280,42 @@ func markOrderDeliveredTx(tx *gorm.DB, order *model.PointMallOrder, content stri
 }
 
 func attachOrderCardSecret(order *model.PointMallOrder) {
-	if order.CardSecretId <= 0 {
+	var cards []model.PointMallCardSecret
+	if err := model.DB.Where("order_id = ?", order.Id).Order("id asc").Find(&cards).Error; err != nil {
 		return
 	}
-	var card model.PointMallCardSecret
-	if err := model.DB.Where("id = ?", order.CardSecretId).First(&card).Error; err != nil {
+	if len(cards) == 0 && order.CardSecretId > 0 {
+		var card model.PointMallCardSecret
+		if err := model.DB.Where("id = ?", order.CardSecretId).First(&card).Error; err == nil {
+			cards = append(cards, card)
+		}
+	}
+	if len(cards) == 0 {
 		return
 	}
-	secret, err := model.DecryptPointMallSecret(card.CardSecret)
-	if err != nil {
-		return
+	secrets := make([]string, 0, len(cards))
+	for _, card := range cards {
+		secret, err := model.DecryptPointMallSecret(card.CardSecret)
+		if err != nil {
+			return
+		}
+		secrets = append(secrets, secret)
 	}
-	raw, err := common.Marshal(map[string]interface{}{"card_no": card.CardNo, "card_secret": secret})
+	content := map[string]interface{}{"card_secrets": secrets, "card_count": len(secrets)}
+	if len(secrets) > 0 {
+		content["card_secret"] = strings.Join(secrets, " / ")
+	}
+	raw, err := common.Marshal(content)
 	if err == nil {
 		order.DeliveryContent = string(raw)
 	}
+}
+
+func jdCardSecretCount(product model.PointMallProduct) int {
+	if product.FaceValue == 10 {
+		return 2
+	}
+	return 1
 }
 
 func maskCardSecret(encrypted string) string {

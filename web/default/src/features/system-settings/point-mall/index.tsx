@@ -4,6 +4,7 @@ import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { CardSecretManager } from './card-secret-manager'
 import { OrderManager } from './order-manager'
+import { PointsOverview } from './points-overview'
 import { ProductEditor } from './product-editor'
 import { RulesPanel } from './rules-panel'
 
@@ -16,7 +17,7 @@ export function PointMallSettings() {
         <div>
           <h1 className='text-xl font-semibold'>积分商城</h1>
           <p className='text-muted-foreground text-sm'>
-            管理商品、京东 E 卡卡密、兑换订单和当前活动规则。
+            管理商品、京东 E 卡卡密、兑换订单、用户积分和活动规则。
           </p>
         </div>
         <Button
@@ -34,6 +35,7 @@ export function PointMallSettings() {
         <TabsList>
           <TabsTrigger value='products'>商品</TabsTrigger>
           <TabsTrigger value='cards'>卡密池</TabsTrigger>
+          <TabsTrigger value='points'>积分情况</TabsTrigger>
           <TabsTrigger value='orders'>订单</TabsTrigger>
           <TabsTrigger value='rules'>规则</TabsTrigger>
         </TabsList>
@@ -42,6 +44,9 @@ export function PointMallSettings() {
         </TabsContent>
         <TabsContent value='cards'>
           <CardSecretManager />
+        </TabsContent>
+        <TabsContent value='points'>
+          <PointsOverview />
         </TabsContent>
         <TabsContent value='orders'>
           <OrderManager />

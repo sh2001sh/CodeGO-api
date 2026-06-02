@@ -22,6 +22,7 @@ import { getPointMallOrders } from './api'
 import {
   formatDeliverySummary,
   formatTime,
+  getCardSecrets,
   parseDeliveryContent,
 } from './delivery-content'
 import type { DeliveryContent } from './delivery-content'
@@ -40,26 +41,30 @@ function DeliveryCell(props: {
   content: DeliveryContent | null
   summary: string
 }) {
-  const cardSecret = props.content?.card_secret || ''
-  if (!cardSecret) {
+  const secrets = getCardSecrets(props.content)
+  if (secrets.length === 0) {
     return <span className='text-muted-foreground'>{props.summary}</span>
   }
   return (
-    <div className='flex items-center gap-2'>
-      <span className='font-mono text-xs'>
-        {props.content?.card_no || '-'} / {cardSecret}
-      </span>
+    <div className='space-y-2'>
+      <div className='space-y-1'>
+        {secrets.map((secret, index) => (
+          <div key={`${secret}-${index}`} className='font-mono text-xs'>
+            卡密{index + 1}: {secret}
+          </div>
+        ))}
+      </div>
       <Button
         type='button'
-        size='icon'
-        variant='ghost'
-        aria-label='复制卡密'
+        size='sm'
+        variant='outline'
         onClick={async () => {
-          await navigator.clipboard.writeText(cardSecret)
-          toast.success('已复制')
+          await navigator.clipboard.writeText(secrets.join('\n'))
+          toast.success('卡密已复制')
         }}
       >
-        <Copy className='size-4' aria-hidden='true' />
+        <Copy className='mr-2 size-4' aria-hidden='true' />
+        复制卡密
       </Button>
     </div>
   )

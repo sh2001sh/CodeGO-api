@@ -44,6 +44,36 @@ type PointMallAdminRules struct {
 	JDCardMonthlyFaceLimit      int64            `json:"jd_card_monthly_face_limit"`
 }
 
+type PointMallAdminAccountView struct {
+	UserId        int    `json:"user_id"`
+	Username      string `json:"username"`
+	DisplayName   string `json:"display_name"`
+	Balance       int64  `json:"balance"`
+	FrozenBalance int64  `json:"frozen_balance"`
+	TotalEarned   int64  `json:"total_earned"`
+	TotalSpent    int64  `json:"total_spent"`
+	UpdatedAt     int64  `json:"updated_at"`
+}
+
+type PointMallAdminLedgerView struct {
+	Id           int    `json:"id"`
+	UserId       int    `json:"user_id"`
+	Username     string `json:"username"`
+	DisplayName  string `json:"display_name"`
+	Type         string `json:"type"`
+	Delta        int64  `json:"delta"`
+	BalanceAfter int64  `json:"balance_after"`
+	FrozenAfter  int64  `json:"frozen_after"`
+	SourceType   string `json:"source_type"`
+	Note         string `json:"note"`
+	CreatedAt    int64  `json:"created_at"`
+}
+
+type PointMallAdminPointsOverview struct {
+	Accounts      []PointMallAdminAccountView `json:"accounts"`
+	RecentLedgers []PointMallAdminLedgerView  `json:"recent_ledgers"`
+}
+
 func pointMallDayRange(now int64) (int64, int64) {
 	base := time.Unix(now, 0).In(time.Local)
 	start := time.Date(base.Year(), base.Month(), base.Day(), 0, 0, 0, 0, base.Location()).Unix()
@@ -230,6 +260,50 @@ func UpdatePointMallAdminRules(input model.PointMallRulesConfig) (PointMallAdmin
 		return PointMallAdminRules{}, err
 	}
 	return GetPointMallAdminRules(), nil
+}
+
+func GetPointMallAdminPointsOverview() (*PointMallAdminPointsOverview, error) {
+	var accounts []PointMallAdminAccountView
+	if err := model.DB.Table("point_accounts").
+		Select("point_accounts.user_id, users.username, users.display_name, point_accounts.balance, point_accounts.frozen_balance, point_accounts.updated_at").
+		Joins("LEFT JOIN users ON users.id = point_accounts.user_id").
+		Order("point_accounts.updated_at desc, point_accounts.user_id desc").
+		Limit(300).Scan(&accounts).Error; err != nil {
+		return nil, err
+	}
+
+	type totalsRow struct {
+		UserId      int
+		TotalEarned int64
+		TotalSpent  int64
+	}
+	var totals []totalsRow
+	if err := model.DB.Table("point_ledgers").
+		Select("user_id, SUM(CASE WHEN delta > 0 THEN delta ELSE 0 END) AS total_earned, SUM(CASE WHEN delta < 0 THEN -delta ELSE 0 END) AS total_spent").
+		Group("user_id").Scan(&totals).Error; err != nil {
+		return nil, err
+	}
+	totalsByUser := make(map[int]totalsRow, len(totals))
+	for _, row := range totals {
+		totalsByUser[row.UserId] = row
+	}
+	for index := range accounts {
+		if row, ok := totalsByUser[accounts[index].UserId]; ok {
+			accounts[index].TotalEarned = row.TotalEarned
+			accounts[index].TotalSpent = row.TotalSpent
+		}
+	}
+
+	var ledgers []PointMallAdminLedgerView
+	if err := model.DB.Table("point_ledgers").
+		Select("point_ledgers.id, point_ledgers.user_id, users.username, users.display_name, point_ledgers.type, point_ledgers.delta, point_ledgers.balance_after, point_ledgers.frozen_after, point_ledgers.source_type, point_ledgers.note, point_ledgers.created_at").
+		Joins("LEFT JOIN users ON users.id = point_ledgers.user_id").
+		Order("point_ledgers.created_at desc, point_ledgers.id desc").
+		Limit(300).Scan(&ledgers).Error; err != nil {
+		return nil, err
+	}
+
+	return &PointMallAdminPointsOverview{Accounts: accounts, RecentLedgers: ledgers}, nil
 }
 
 func ListPointMallProducts(admin bool) ([]PointMallProductView, error) {

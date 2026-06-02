@@ -270,6 +270,7 @@ func SetApiRouter(router *gin.Engine) {
 			pointMallAdminRoute.PATCH("/card-secrets/:id/void", controller.AdminVoidPointMallCardSecret)
 			pointMallAdminRoute.GET("/orders", controller.AdminListPointMallOrders)
 			pointMallAdminRoute.PATCH("/orders/:id", controller.AdminPatchPointMallOrder)
+			pointMallAdminRoute.GET("/points", controller.AdminGetPointMallPoints)
 			pointMallAdminRoute.GET("/rules", controller.AdminGetPointMallRules)
 			pointMallAdminRoute.PUT("/rules", controller.AdminUpdatePointMallRules)
 		}

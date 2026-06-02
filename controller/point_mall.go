@@ -21,9 +21,9 @@ type pointMallProductRequest struct {
 }
 
 type pointMallCardSecretRequest struct {
-	ProductId  int    `json:"product_id"`
-	CardNo     string `json:"card_no"`
-	CardSecret string `json:"card_secret"`
+	ProductId   int      `json:"product_id"`
+	CardSecret  string   `json:"card_secret"`
+	CardSecrets []string `json:"card_secrets"`
 }
 
 type pointMallOrderPatchRequest struct {
@@ -123,12 +123,20 @@ func AdminUpdatePointMallProduct(c *gin.Context) {
 		return
 	}
 	updates := map[string]interface{}{
-		"name": req.Product.Name, "type": req.Product.Type, "image_url": req.Product.ImageUrl,
-		"description": req.Product.Description, "points_price": req.Product.PointsPrice,
-		"face_value": req.Product.FaceValue, "blind_box_quantity": req.Product.BlindBoxQuantity,
-		"subscription_plan_id": req.Product.SubscriptionPlanId, "virtual_stock": req.Product.VirtualStock,
-		"daily_limit_per_user": req.Product.DailyLimitPerUser, "monthly_limit_per_user": req.Product.MonthlyLimitPerUser,
-		"total_limit": req.Product.TotalLimit, "status": req.Product.Status, "sort_order": req.Product.SortOrder,
+		"name":                   req.Product.Name,
+		"type":                   req.Product.Type,
+		"image_url":              req.Product.ImageUrl,
+		"description":            req.Product.Description,
+		"points_price":           req.Product.PointsPrice,
+		"face_value":             req.Product.FaceValue,
+		"blind_box_quantity":     req.Product.BlindBoxQuantity,
+		"subscription_plan_id":   req.Product.SubscriptionPlanId,
+		"virtual_stock":          req.Product.VirtualStock,
+		"daily_limit_per_user":   req.Product.DailyLimitPerUser,
+		"monthly_limit_per_user": req.Product.MonthlyLimitPerUser,
+		"total_limit":            req.Product.TotalLimit,
+		"status":                 req.Product.Status,
+		"sort_order":             req.Product.SortOrder,
 	}
 	if err := model.DB.Model(&model.PointMallProduct{}).Where("id = ?", id).Updates(updates).Error; err != nil {
 		common.ApiError(c, err)
@@ -155,24 +163,35 @@ func AdminListPointMallCardSecrets(c *gin.Context) {
 
 func AdminCreatePointMallCardSecret(c *gin.Context) {
 	var req pointMallCardSecretRequest
-	if err := c.ShouldBindJSON(&req); err != nil || req.ProductId <= 0 || strings.TrimSpace(req.CardSecret) == "" {
+	if err := c.ShouldBindJSON(&req); err != nil || req.ProductId <= 0 {
 		common.ApiErrorMsg(c, "invalid card secret request")
 		return
 	}
-	encrypted, err := model.EncryptPointMallSecret(strings.TrimSpace(req.CardSecret))
+	secrets := normalizePointMallCardSecrets(req)
+	if len(secrets) == 0 {
+		common.ApiErrorMsg(c, "card secret is required")
+		return
+	}
+	cards := make([]model.PointMallCardSecret, 0, len(secrets))
+	err := model.DB.Transaction(func(tx *gorm.DB) error {
+		for _, secret := range secrets {
+			encrypted, err := model.EncryptPointMallSecret(secret)
+			if err != nil {
+				return err
+			}
+			cards = append(cards, model.PointMallCardSecret{
+				ProductId:  req.ProductId,
+				CardSecret: encrypted,
+				Status:     model.PointCardStatusUnused,
+			})
+		}
+		return tx.Create(&cards).Error
+	})
 	if err != nil {
 		common.ApiError(c, err)
 		return
 	}
-	card := model.PointMallCardSecret{
-		ProductId: req.ProductId, CardNo: strings.TrimSpace(req.CardNo),
-		CardSecret: encrypted, Status: model.PointCardStatusUnused,
-	}
-	if err := model.DB.Create(&card).Error; err != nil {
-		common.ApiError(c, err)
-		return
-	}
-	common.ApiSuccess(c, card)
+	common.ApiSuccess(c, cards)
 }
 
 func AdminVoidPointMallCardSecret(c *gin.Context) {
@@ -217,6 +236,15 @@ func AdminPatchPointMallOrder(c *gin.Context) {
 	common.ApiSuccess(c, nil)
 }
 
+func AdminGetPointMallPoints(c *gin.Context) {
+	overview, err := service.GetPointMallAdminPointsOverview()
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	common.ApiSuccess(c, overview)
+}
+
 func AdminGetPointMallRules(c *gin.Context) {
 	common.ApiSuccess(c, service.GetPointMallAdminRules())
 }
@@ -257,6 +285,28 @@ func validatePointMallProduct(product model.PointMallProduct) error {
 	}
 }
 
+func normalizePointMallCardSecrets(req pointMallCardSecretRequest) []string {
+	values := make([]string, 0, len(req.CardSecrets)+1)
+	if strings.TrimSpace(req.CardSecret) != "" {
+		values = append(values, req.CardSecret)
+	}
+	values = append(values, req.CardSecrets...)
+	secrets := make([]string, 0, len(values))
+	seen := make(map[string]struct{}, len(values))
+	for _, value := range values {
+		secret := strings.TrimSpace(value)
+		if secret == "" {
+			continue
+		}
+		if _, ok := seen[secret]; ok {
+			continue
+		}
+		seen[secret] = struct{}{}
+		secrets = append(secrets, secret)
+	}
+	return secrets
+}
+
 func patchPointMallOrder(id int, req pointMallOrderPatchRequest) error {
 	status := strings.TrimSpace(req.Status)
 	if status != model.PointOrderStatusFailed && status != model.PointOrderStatusRefunded {
@@ -277,10 +327,16 @@ func patchPointMallOrder(id int, req pointMallOrderPatchRequest) error {
 				return err
 			}
 		}
-		if order.CardSecretId > 0 && status == model.PointOrderStatusRefunded {
-			if err := tx.Model(&model.PointMallCardSecret{}).Where("id = ?", order.CardSecretId).
+		if status == model.PointOrderStatusRefunded {
+			if err := tx.Model(&model.PointMallCardSecret{}).Where("order_id = ?", order.Id).
 				Updates(map[string]interface{}{"status": model.PointCardStatusUnused, "order_id": 0, "user_id": 0, "issued_at": 0}).Error; err != nil {
 				return err
+			}
+			if order.CardSecretId > 0 {
+				if err := tx.Model(&model.PointMallCardSecret{}).Where("id = ?", order.CardSecretId).
+					Updates(map[string]interface{}{"status": model.PointCardStatusUnused, "order_id": 0, "user_id": 0, "issued_at": 0}).Error; err != nil {
+					return err
+				}
 			}
 		}
 		return tx.Model(&order).Updates(updates).Error

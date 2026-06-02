@@ -36,11 +36,11 @@ const pointSources = [
   {
     source: '邀请首调',
     condition: '新用户完成首次成功 API 调用',
-    reward: '双方各 5 积分 + $10 赠送额度',
+    reward: '双方各 5 积分',
   },
   {
     source: '邀请首充',
-    condition: '新用户首次现金购买月卡套餐',
+    condition: '新用户首次现金购买月卡套餐，赠送额度不计入首充',
     reward: '邀请人 12 积分，新用户 5 积分',
   },
   {

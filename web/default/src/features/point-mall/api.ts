@@ -2,6 +2,7 @@ import { api } from '@/lib/api'
 import type {
   ApiResponse,
   BonusQuotaConversionResult,
+  PointMallAdminPointsOverview,
   PointMallCardSecret,
   PointMallOrder,
   PointMallOverview,
@@ -73,10 +74,9 @@ export async function adminGetPointMallCardSecrets(reveal = false) {
 
 export async function adminCreatePointMallCardSecret(payload: {
   product_id: number
-  card_no: string
-  card_secret: string
+  card_secrets: string[]
 }) {
-  const res = await api.post<ApiResponse<PointMallCardSecret>>(
+  const res = await api.post<ApiResponse<PointMallCardSecret[]>>(
     '/api/point-mall/admin/card-secrets',
     payload
   )
@@ -106,6 +106,13 @@ export async function adminPatchPointMallOrder(payload: {
   const res = await api.patch<ApiResponse<null>>(
     `/api/point-mall/admin/orders/${payload.id}`,
     { status: payload.status, reason: payload.reason ?? '' }
+  )
+  return res.data
+}
+
+export async function adminGetPointMallPoints() {
+  const res = await api.get<ApiResponse<PointMallAdminPointsOverview>>(
+    '/api/point-mall/admin/points'
   )
   return res.data
 }

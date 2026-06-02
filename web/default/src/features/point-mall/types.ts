@@ -80,13 +80,42 @@ export type BonusQuotaConversionResult = {
 export type PointMallCardSecret = {
   id: number
   product_id: number
-  card_no: string
   status: string
   order_id: number
   user_id: number
   issued_at: number
   created_at: number
   card_secret?: string
+}
+
+export type PointMallAdminAccount = {
+  user_id: number
+  username: string
+  display_name: string
+  balance: number
+  frozen_balance: number
+  total_earned: number
+  total_spent: number
+  updated_at: number
+}
+
+export type PointMallAdminLedger = {
+  id: number
+  user_id: number
+  username: string
+  display_name: string
+  type: string
+  delta: number
+  balance_after: number
+  frozen_after: number
+  source_type: string
+  note: string
+  created_at: number
+}
+
+export type PointMallAdminPointsOverview = {
+  accounts: PointMallAdminAccount[]
+  recent_ledgers: PointMallAdminLedger[]
 }
 
 export type PointMallRules = {
