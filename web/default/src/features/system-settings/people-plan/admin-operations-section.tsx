@@ -65,9 +65,33 @@ function EmptyState(props: { text: string }) {
 
 function TeamBoard(props: {
   teams: PeoplePlanAdminTeamRow[]
+  isLoading: boolean
+  isError: boolean
+  onRetry: () => void
   onCopyCode: (code: string) => Promise<void>
   onCopyLink: (code: string) => Promise<void>
 }) {
+  if (props.isLoading) {
+    return <EmptyState text='Team data is loading. Please wait.' />
+  }
+
+  if (props.isError) {
+    return (
+      <div className='rounded-xl border border-destructive/40 bg-destructive/5 px-4 py-5 text-sm'>
+        <div className='font-medium text-destructive'>Team data failed to load.</div>
+        <div className='mt-1 text-muted-foreground'>Stats use a separate lightweight endpoint, so team failures are shown explicitly.</div>
+        <Button
+          className='mt-3'
+          size='sm'
+          variant='outline'
+          onClick={props.onRetry}
+        >
+          Retry team data
+        </Button>
+      </div>
+    )
+  }
+
   if (props.teams.length === 0) {
     return <EmptyState text='当前还没有创建中的人海计划队伍。' />
   }
@@ -519,6 +543,11 @@ export function AdminOperationsSection() {
           </div>
           <TeamBoard
             teams={teamsQuery.data?.data ?? []}
+            isLoading={teamsQuery.isLoading || teamsQuery.isFetching}
+            isError={teamsQuery.isError}
+            onRetry={() => {
+              void teamsQuery.refetch()
+            }}
             onCopyCode={handleCopyInviteCode}
             onCopyLink={handleCopyInviteLink}
           />

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math"
@@ -153,36 +154,75 @@ type peoplePlanAdminSubmissionAgg struct {
 	ApprovedSubmissionCount int64
 }
 
-func ListPeoplePlanAdminTeams() ([]PeoplePlanAdminTeamRow, error) {
-	var teams []model.PeoplePlanTeam
-	if err := model.DB.Order("updated_at desc, id desc").Find(&teams).Error; err != nil {
+type peoplePlanAdminMemberAgg struct {
+	TeamID               int
+	ActiveMembers        int
+	EffectiveMembers     int
+	TeamCalls            int64
+	TeamSpendUSD         int64
+	MonthlyActiveMembers int
+	MonthlyTeamSpendUSD  int64
+}
+
+func buildPeoplePlanAdminTeamSummary(team model.PeoplePlanTeam, memberAgg peoplePlanAdminMemberAgg) PeoplePlanTeamSummary {
+	summary := PeoplePlanTeamSummary{
+		MinMembers: team.MinMembers,
+		MaxMembers: team.MaxMembers,
+	}
+	if strings.TrimSpace(team.Snapshot) != "" {
+		_ = json.Unmarshal([]byte(team.Snapshot), &summary)
+	}
+	if summary.MinMembers <= 0 {
+		summary.MinMembers = team.MinMembers
+	}
+	if summary.MaxMembers <= 0 {
+		summary.MaxMembers = team.MaxMembers
+	}
+
+	// Membership counts should reflect the latest member rows even when the
+	// heavier progress snapshot has not been regenerated yet.
+	summary.ActiveMembers = memberAgg.ActiveMembers
+	summary.EffectiveMembers = memberAgg.EffectiveMembers
+	if summary.TeamCalls == 0 {
+		summary.TeamCalls = memberAgg.TeamCalls
+	}
+	if summary.TeamSpendUSD == 0 {
+		summary.TeamSpendUSD = memberAgg.TeamSpendUSD
+	}
+	if summary.MonthlyActiveMembers == 0 {
+		summary.MonthlyActiveMembers = memberAgg.MonthlyActiveMembers
+	}
+	if summary.MonthlyTeamSpendUSD == 0 {
+		summary.MonthlyTeamSpendUSD = memberAgg.MonthlyTeamSpendUSD
+	}
+	return summary
+}
+
+func loadPeoplePlanAdminMemberAggMap(teamIDs []int) (map[int]peoplePlanAdminMemberAgg, error) {
+	memberAggs := make([]peoplePlanAdminMemberAgg, 0)
+	if err := model.DB.Model(&model.PeoplePlanMember{}).
+		Select(
+			"team_id as team_id, "+
+				"COUNT(*) as active_members, "+
+				"SUM(CASE WHEN effective_at > 0 THEN 1 ELSE 0 END) as effective_members, "+
+				"COALESCE(SUM(lifetime_calls), 0) as team_calls, "+
+				"COALESCE(SUM(lifetime_spend), 0) as team_spend_usd, "+
+				"SUM(CASE WHEN current_month_calls > 0 OR current_month_spend > 0 THEN 1 ELSE 0 END) as monthly_active_members, "+
+				"COALESCE(SUM(current_month_spend), 0) as monthly_team_spend_usd",
+		).
+		Where("team_id IN ? AND status = ?", teamIDs, model.PeoplePlanMemberStatusActive).
+		Group("team_id").
+		Scan(&memberAggs).Error; err != nil {
 		return nil, err
 	}
-	if len(teams) == 0 {
-		return []PeoplePlanAdminTeamRow{}, nil
+	result := make(map[int]peoplePlanAdminMemberAgg, len(memberAggs))
+	for _, agg := range memberAggs {
+		result[agg.TeamID] = agg
 	}
+	return result, nil
+}
 
-	settings := GetPeoplePlanSettings()
-	teamIDs := make([]int, 0, len(teams))
-	captainIDs := make([]int, 0, len(teams))
-	detailMap := make(map[int]*PeoplePlanTeamDetail, len(teams))
-	for i := range teams {
-		teamIDs = append(teamIDs, teams[i].Id)
-		captainIDs = append(captainIDs, teams[i].CaptainUserId)
-		if settings.Enabled && teams[i].Status != model.PeoplePlanTeamStatusLocked {
-			detail, err := syncPeoplePlanTeam(&teams[i], settings)
-			if err != nil {
-				return nil, err
-			}
-			detailMap[teams[i].Id] = detail
-		}
-	}
-
-	userMap, err := loadPeoplePlanUserMap(captainIDs)
-	if err != nil {
-		return nil, err
-	}
-
+func loadPeoplePlanAdminRewardAggMap(teamIDs []int) (map[int]peoplePlanAdminRewardAgg, error) {
 	rewardAggs := make([]peoplePlanAdminRewardAgg, 0)
 	if err := model.DB.Model(&model.PeoplePlanRewardLedger{}).
 		Select(
@@ -200,11 +240,14 @@ func ListPeoplePlanAdminTeams() ([]PeoplePlanAdminTeamRow, error) {
 		Scan(&rewardAggs).Error; err != nil {
 		return nil, err
 	}
-	rewardAggMap := make(map[int]peoplePlanAdminRewardAgg, len(rewardAggs))
+	result := make(map[int]peoplePlanAdminRewardAgg, len(rewardAggs))
 	for _, agg := range rewardAggs {
-		rewardAggMap[agg.TeamID] = agg
+		result[agg.TeamID] = agg
 	}
+	return result, nil
+}
 
+func loadPeoplePlanAdminSubmissionAggMap(teamIDs []int) (map[int]peoplePlanAdminSubmissionAgg, error) {
 	submissionAggs := make([]peoplePlanAdminSubmissionAgg, 0)
 	if err := model.DB.Model(&model.PeoplePlanSubmission{}).
 		Select(
@@ -218,20 +261,52 @@ func ListPeoplePlanAdminTeams() ([]PeoplePlanAdminTeamRow, error) {
 		Scan(&submissionAggs).Error; err != nil {
 		return nil, err
 	}
-	submissionAggMap := make(map[int]peoplePlanAdminSubmissionAgg, len(submissionAggs))
+	result := make(map[int]peoplePlanAdminSubmissionAgg, len(submissionAggs))
 	for _, agg := range submissionAggs {
-		submissionAggMap[agg.TeamID] = agg
+		result[agg.TeamID] = agg
+	}
+	return result, nil
+}
+
+func ListPeoplePlanAdminTeams() ([]PeoplePlanAdminTeamRow, error) {
+	var teams []model.PeoplePlanTeam
+	if err := model.DB.Order("updated_at desc, id desc").Find(&teams).Error; err != nil {
+		return nil, err
+	}
+	if len(teams) == 0 {
+		return []PeoplePlanAdminTeamRow{}, nil
+	}
+
+	teamIDs := make([]int, 0, len(teams))
+	captainIDs := make([]int, 0, len(teams))
+	for i := range teams {
+		teamIDs = append(teamIDs, teams[i].Id)
+		captainIDs = append(captainIDs, teams[i].CaptainUserId)
+	}
+
+	userMap, err := loadPeoplePlanUserMap(captainIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	memberAggMap, err := loadPeoplePlanAdminMemberAggMap(teamIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	rewardAggMap, err := loadPeoplePlanAdminRewardAggMap(teamIDs)
+	if err != nil {
+		return nil, err
+	}
+
+	submissionAggMap, err := loadPeoplePlanAdminSubmissionAggMap(teamIDs)
+	if err != nil {
+		return nil, err
 	}
 
 	rows := make([]PeoplePlanAdminTeamRow, 0, len(teams))
 	for _, team := range teams {
-		summary := PeoplePlanTeamSummary{
-			MinMembers: team.MinMembers,
-			MaxMembers: team.MaxMembers,
-		}
-		if detail := detailMap[team.Id]; detail != nil {
-			summary = detail.Summary
-		}
+		summary := buildPeoplePlanAdminTeamSummary(team, memberAggMap[team.Id])
 		rewardAgg := rewardAggMap[team.Id]
 		submissionAgg := submissionAggMap[team.Id]
 		captain := userMap[team.CaptainUserId]
