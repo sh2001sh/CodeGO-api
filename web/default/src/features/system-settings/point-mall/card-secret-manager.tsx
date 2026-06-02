@@ -27,7 +27,20 @@ import {
   adminGetPointMallProducts,
   adminVoidPointMallCardSecret,
 } from '@/features/point-mall/api'
-import type { PointMallProduct } from '@/features/point-mall/types'
+import type {
+  PointMallCardSecret,
+  PointMallProduct,
+} from '@/features/point-mall/types'
+
+type CardSecretGroup = {
+  key: string
+  ids: number[]
+  product_id: number
+  status: string
+  order_id: number
+  user_id: number
+  created_at: number
+}
 
 function jdCardSecretCount(product?: PointMallProduct) {
   return product?.face_value === 10 ? 2 : 1
@@ -35,7 +48,7 @@ function jdCardSecretCount(product?: PointMallProduct) {
 
 function splitSecretLine(line: string) {
   return line
-    .split(/[\s,，、|]+/)
+    .split(/[\s,，、]+/)
     .map((item) => item.trim())
     .filter(Boolean)
 }
@@ -69,6 +82,43 @@ function statusLabel(status: string) {
   return labels[status] ?? status
 }
 
+function groupCardSecrets(
+  cards: PointMallCardSecret[],
+  products: Map<number, PointMallProduct>
+) {
+  const buckets = new Map<string, PointMallCardSecret[]>()
+  for (const card of cards) {
+    const key = [
+      card.product_id,
+      card.status,
+      card.order_id || 0,
+      card.user_id || 0,
+    ].join(':')
+    buckets.set(key, [...(buckets.get(key) ?? []), card])
+  }
+
+  const groups: CardSecretGroup[] = []
+  for (const bucket of buckets.values()) {
+    const sorted = [...bucket].sort((left, right) => left.id - right.id)
+    const product = products.get(sorted[0]?.product_id ?? 0)
+    const groupSize = jdCardSecretCount(product)
+    for (let index = 0; index < sorted.length; index += groupSize) {
+      const chunk = sorted.slice(index, index + groupSize)
+      if (chunk.length === 0) continue
+      groups.push({
+        key: chunk.map((card) => card.id).join('-'),
+        ids: chunk.map((card) => card.id),
+        product_id: chunk[0].product_id,
+        status: chunk[0].status,
+        order_id: chunk[0].order_id,
+        user_id: chunk[0].user_id,
+        created_at: Math.max(...chunk.map((card) => card.created_at || 0)),
+      })
+    }
+  }
+  return groups.sort((left, right) => right.created_at - left.created_at)
+}
+
 export function CardSecretManager() {
   const queryClient = useQueryClient()
   const [productId, setProductId] = useState(0)
@@ -89,15 +139,20 @@ export function CardSecretManager() {
   )
   const selectedProduct = jdProducts.find((product) => product.id === productId)
   const groupSize = jdCardSecretCount(selectedProduct)
-  const productNameById = useMemo(() => {
-    return new Map(jdProducts.map((product) => [product.id, product.name]))
+  const productById = useMemo(() => {
+    return new Map(jdProducts.map((product) => [product.id, product]))
   }, [jdProducts])
+  const cardGroups = useMemo(
+    () => groupCardSecrets(cardsQuery.data?.data ?? [], productById),
+    [cardsQuery.data?.data, productById]
+  )
 
   const createMutation = useMutation({
     mutationFn: adminCreatePointMallCardSecret,
     onSuccess: async (res) => {
       if (res.success) {
-        toast.success(`已添加 ${res.data?.length ?? 0} 条卡密`)
+        const cardCount = Math.floor((res.data?.length ?? 0) / groupSize)
+        toast.success(`已添加 ${cardCount || 1} 张 E 卡`)
         setCardSecret1('')
         setCardSecret2('')
         setBatchText('')
@@ -112,7 +167,11 @@ export function CardSecretManager() {
     },
   })
   const voidMutation = useMutation({
-    mutationFn: adminVoidPointMallCardSecret,
+    mutationFn: async (ids: number[]) => {
+      for (const id of ids) {
+        await adminVoidPointMallCardSecret(id)
+      }
+    },
     onSuccess: async () => {
       await queryClient.invalidateQueries({
         queryKey: ['point-mall-admin', 'cards'],
@@ -190,7 +249,7 @@ export function CardSecretManager() {
               <div className='text-sm font-medium'>批量添加</div>
               <div className='text-muted-foreground text-xs'>
                 {groupSize === 2
-                  ? '10 元卡每行填写两个 5 元卡密，可用空格、逗号或顿号分隔。'
+                  ? '10 元 E 卡每行填写两个 5 元卡密，会合并显示为一张 10 元 E 卡。'
                   : '每行一条卡密，也可用空格、逗号或顿号分隔。'}
               </div>
             </div>
@@ -233,6 +292,7 @@ export function CardSecretManager() {
               <TableRow>
                 <TableHead>ID</TableHead>
                 <TableHead>商品</TableHead>
+                <TableHead>卡密数</TableHead>
                 <TableHead>状态</TableHead>
                 <TableHead>订单</TableHead>
                 <TableHead>用户</TableHead>
@@ -240,30 +300,31 @@ export function CardSecretManager() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {(cardsQuery.data?.data ?? []).map((card) => (
-                <TableRow key={card.id}>
-                  <TableCell>{card.id}</TableCell>
+              {cardGroups.map((group) => (
+                <TableRow key={group.key}>
+                  <TableCell>{group.ids.join(' / ')}</TableCell>
                   <TableCell>
-                    {productNameById.get(card.product_id) ?? card.product_id}
+                    {productById.get(group.product_id)?.name ?? group.product_id}
                   </TableCell>
-                  <TableCell>{statusLabel(card.status)}</TableCell>
-                  <TableCell>{card.order_id || '-'}</TableCell>
-                  <TableCell>{card.user_id || '-'}</TableCell>
+                  <TableCell>{group.ids.length}</TableCell>
+                  <TableCell>{statusLabel(group.status)}</TableCell>
+                  <TableCell>{group.order_id || '-'}</TableCell>
+                  <TableCell>{group.user_id || '-'}</TableCell>
                   <TableCell>
                     <Button
                       size='sm'
                       variant='outline'
-                      disabled={card.status !== 'unused'}
-                      onClick={() => voidMutation.mutate(card.id)}
+                      disabled={group.status !== 'unused' || voidMutation.isPending}
+                      onClick={() => voidMutation.mutate(group.ids)}
                     >
                       作废
                     </Button>
                   </TableCell>
                 </TableRow>
               ))}
-              {!cardsQuery.isLoading && (cardsQuery.data?.data ?? []).length === 0 && (
+              {!cardsQuery.isLoading && cardGroups.length === 0 && (
                 <TableRow>
-                  <TableCell colSpan={6} className='py-8 text-center'>
+                  <TableCell colSpan={7} className='py-8 text-center'>
                     暂无卡密
                   </TableCell>
                 </TableRow>

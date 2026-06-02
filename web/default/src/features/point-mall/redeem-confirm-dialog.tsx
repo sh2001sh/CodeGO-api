@@ -38,7 +38,8 @@ export function RedeemConfirmDialog(props: {
         ) : null}
         {type === 'jd_card' ? (
           <p className='text-muted-foreground text-sm'>
-            京东 E 卡兑换成功后，请在兑换记录中查看卡密；10 元卡会发放两张 5 元卡密。
+            京东 E 卡兑换成功后，请在兑换记录中查看卡密；10 元 E
+            卡由两张 5 元卡密组成一张 10 元 E 卡。
           </p>
         ) : null}
         <DialogFooter>

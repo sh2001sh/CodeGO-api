@@ -24,7 +24,8 @@ export function SourceAndRules() {
           <div>
             <div className='font-medium'>京东 E 卡</div>
             <p className='text-muted-foreground mt-1'>
-              兑换成功后在兑换记录中查看卡密；10 元京东卡默认发放两张 5 元卡密。
+              兑换成功后在兑换记录中查看卡密；10 元 E 卡由两张 5
+              元卡密组成一张 10 元 E 卡，20 元 E 卡配置一条卡密。
             </p>
           </div>
           <div>
