@@ -58,6 +58,7 @@ import { ApiInfoPanel } from './api-info-panel'
 import { FAQPanel } from './faq-panel'
 import { PerformanceHealthPanel } from './performance-health-panel'
 import { PrimaryActionCard } from './primary-action-card'
+import { PointMallPromoCard } from './point-mall-promo-card'
 import { SubscriptionUsagePanel } from './subscription-usage-panel'
 import { SummaryCards } from './summary-cards'
 import { UptimePanel } from './uptime-panel'
@@ -699,6 +700,12 @@ export function OverviewDashboard() {
       ) : null}
 
       <SummaryCards />
+
+      <CardStaggerContainer>
+        <CardStaggerItem>
+          <PointMallPromoCard />
+        </CardStaggerItem>
+      </CardStaggerContainer>
 
       <CardStaggerContainer>
         <CardStaggerItem>
