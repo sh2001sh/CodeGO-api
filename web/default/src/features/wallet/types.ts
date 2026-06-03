@@ -51,7 +51,8 @@ export type PaymentResponse = ApiResponse<Record<string, unknown>> & {
 export type StripePaymentResponse = ApiResponse<{ pay_link: string }>
 export type AffiliateCodeResponse = ApiResponse<string>
 export type AffiliateTransferResponse = ApiResponse
-export type AffiliateRewardsOverviewResponse = ApiResponse<AffiliateRewardsOverview>
+export type AffiliateRewardsOverviewResponse =
+  ApiResponse<AffiliateRewardsOverview>
 export type CreemPaymentResponse = ApiResponse<{ checkout_url: string }>
 export type WaffoPaymentResponse = ApiResponse<
   { payment_url?: string } | string
@@ -91,6 +92,8 @@ export interface CreemPaymentRequest {
   /** Payment method identifier */
   payment_method: 'creem'
 }
+
+export type WalletType = 'default' | 'claude'
 
 /**
  * Payment method configuration
@@ -190,6 +193,8 @@ export interface PaymentRequest {
   amount: number
   /** Payment method identifier */
   payment_method: string
+  /** Target wallet balance pool */
+  wallet_type?: WalletType
 }
 
 /**
@@ -198,6 +203,8 @@ export interface PaymentRequest {
 export interface WaffoPaymentRequest {
   /** Topup amount */
   amount: number
+  /** Target wallet balance pool */
+  wallet_type?: WalletType
   /** Optional server-side Waffo payment method index */
   pay_method_index?: number
 }
@@ -208,6 +215,8 @@ export interface WaffoPaymentRequest {
 export interface WaffoPancakePaymentRequest {
   /** Topup amount */
   amount: number
+  /** Target wallet balance pool */
+  wallet_type?: WalletType
 }
 
 /**
@@ -216,6 +225,8 @@ export interface WaffoPancakePaymentRequest {
 export interface AmountRequest {
   /** Topup amount to calculate */
   amount: number
+  /** Target wallet balance pool */
+  wallet_type?: WalletType
 }
 
 /**
@@ -272,6 +283,8 @@ export interface UserWalletData {
   username: string
   /** Current quota balance */
   quota: number
+  /** Claude-only quota balance */
+  claude_quota?: number
   /** Total used quota */
   used_quota: number
   /** Total request count */
@@ -307,6 +320,8 @@ export interface TopupRecord {
   trade_no: string
   /** Payment method type */
   payment_method: string
+  /** Target wallet balance pool */
+  wallet_type?: WalletType
   /** Creation timestamp */
   create_time: number
   /** Completion timestamp */

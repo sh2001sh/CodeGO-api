@@ -10,13 +10,12 @@ import (
 	"github.com/QuantumNous/new-api/model"
 	"github.com/QuantumNous/new-api/service"
 	"github.com/QuantumNous/new-api/setting"
-	"github.com/QuantumNous/new-api/setting/operation_setting"
 	"github.com/gin-gonic/gin"
-	"github.com/shopspring/decimal"
 )
 
 func requestXunhuPayment(c *gin.Context, req EpayRequest) {
-	minTopup := getMinTopup()
+	walletType := normalizeTopupWalletType(req.WalletType)
+	minTopup := getTopupMinAmount(walletType)
 	if req.Amount < minTopup {
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": fmt.Sprintf("minimum top-up is %d", minTopup)})
 		return
@@ -28,7 +27,7 @@ func requestXunhuPayment(c *gin.Context, req EpayRequest) {
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "failed to get user group"})
 		return
 	}
-	payMoney := getPayMoney(req.Amount, group)
+	payMoney := getTopupPayMoney(req.Amount, group, walletType)
 	if payMoney < 0.01 {
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "payment amount is too low"})
 		return
@@ -53,12 +52,7 @@ func requestXunhuPayment(c *gin.Context, req EpayRequest) {
 		return
 	}
 
-	amount := req.Amount
-	if operation_setting.GetQuotaDisplayType() == operation_setting.QuotaDisplayTypeTokens {
-		dAmount := decimal.NewFromInt(int64(amount))
-		dQuotaPerUnit := decimal.NewFromFloat(common.QuotaPerUnit)
-		amount = dAmount.Div(dQuotaPerUnit).IntPart()
-	}
+	amount := normalizeStoredTopupAmount(req.Amount, walletType)
 	topup := &model.TopUp{
 		UserId:          userId,
 		Amount:          amount,
@@ -66,6 +60,7 @@ func requestXunhuPayment(c *gin.Context, req EpayRequest) {
 		TradeNo:         tradeNo,
 		PaymentMethod:   model.PaymentMethodXunhu,
 		PaymentProvider: model.PaymentProviderXunhu,
+		WalletType:      walletType,
 		CreateTime:      time.Now().Unix(),
 		Status:          common.TopUpStatusPending,
 	}
@@ -122,24 +117,12 @@ func XunhuNotify(c *gin.Context) {
 		return
 	}
 
-	dAmount := decimal.NewFromInt(topup.Amount)
-	dQuotaPerUnit := decimal.NewFromFloat(common.QuotaPerUnit)
-	quotaToAdd := int(dAmount.Mul(dQuotaPerUnit).IntPart())
-	if quotaToAdd <= 0 {
+	completedTopUp, quotaToAdd, err := model.CompleteTopUpByTradeNo(tradeNo, model.PaymentProviderXunhu, "", "", "")
+	if err != nil {
 		_, _ = c.Writer.Write([]byte("fail"))
 		return
 	}
-	topup.Status = common.TopUpStatusSuccess
-	topup.CompleteTime = common.GetTimestamp()
-	if err := topup.Update(); err != nil {
-		_, _ = c.Writer.Write([]byte("fail"))
-		return
-	}
-	if err := model.IncreaseUserQuota(topup.UserId, quotaToAdd, true); err != nil {
-		_, _ = c.Writer.Write([]byte("fail"))
-		return
-	}
-	model.RecordTopupLog(topup.UserId, fmt.Sprintf("xunhu top-up success, quota: %v, paid: %.2f", logger.LogQuota(quotaToAdd), topup.Money), c.ClientIP(), topup.PaymentMethod, model.PaymentProviderXunhu)
+	model.RecordTopupLog(completedTopUp.UserId, fmt.Sprintf("xunhu top-up success, wallet: %s, quota: %v, paid: %.2f", completedTopUp.NormalizedWalletType(), logger.LogQuota(quotaToAdd), completedTopUp.Money), c.ClientIP(), completedTopUp.PaymentMethod, model.PaymentProviderXunhu)
 	_, _ = c.Writer.Write([]byte("success"))
 }
 

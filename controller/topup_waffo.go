@@ -94,6 +94,7 @@ func getWaffoPayMoney(amount float64, group string) float64 {
 
 type WaffoPayRequest struct {
 	Amount         int64  `json:"amount"`
+	WalletType     string `json:"wallet_type,omitempty"`
 	PayMethodIndex *int   `json:"pay_method_index"` // 服务端支付方式列表的索引，nil 表示由 Waffo 自动选择
 	PayMethodType  string `json:"pay_method_type"`  // Deprecated: 兼容旧前端，优先使用 pay_method_index
 	PayMethodName  string `json:"pay_method_name"`  // Deprecated: 兼容旧前端，优先使用 pay_method_index
@@ -106,7 +107,11 @@ func RequestWaffoAmount(c *gin.Context) {
 		return
 	}
 
+	walletType := normalizeTopupWalletType(req.WalletType)
 	waffoMinTopup := int64(setting.WaffoMinTopUp)
+	if isClaudeTopupWallet(walletType) {
+		waffoMinTopup = 1
+	}
 	if req.Amount < waffoMinTopup {
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": fmt.Sprintf("充值数量不能小于 %d", waffoMinTopup)})
 		return
@@ -120,6 +125,9 @@ func RequestWaffoAmount(c *gin.Context) {
 	}
 
 	payMoney := getWaffoPayMoney(float64(req.Amount), group)
+	if isClaudeTopupWallet(walletType) {
+		payMoney = float64(req.Amount)
+	}
 	if payMoney <= 0.01 {
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "充值金额过低"})
 		return
@@ -140,7 +148,11 @@ func RequestWaffoPay(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "参数错误"})
 		return
 	}
+	walletType := normalizeTopupWalletType(req.WalletType)
 	waffoMinTopup := int64(setting.WaffoMinTopUp)
+	if isClaudeTopupWallet(walletType) {
+		waffoMinTopup = 1
+	}
 	if req.Amount < waffoMinTopup {
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": fmt.Sprintf("充值数量不能小于 %d", waffoMinTopup)})
 		return
@@ -187,6 +199,9 @@ func RequestWaffoPay(c *gin.Context) {
 
 	group, _ := model.GetUserGroup(id, true)
 	payMoney := getWaffoPayMoney(float64(req.Amount), group)
+	if isClaudeTopupWallet(walletType) {
+		payMoney = float64(req.Amount)
+	}
 	if payMoney < 0.01 {
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "充值金额过低"})
 		return
@@ -198,7 +213,7 @@ func RequestWaffoPay(c *gin.Context) {
 
 	// Token 模式下归一化 Amount（存等价美元/CNY 数量，避免 RechargeWaffo 双重放大）
 	amount := req.Amount
-	if operation_setting.GetQuotaDisplayType() == operation_setting.QuotaDisplayTypeTokens {
+	if !isClaudeTopupWallet(walletType) && operation_setting.GetQuotaDisplayType() == operation_setting.QuotaDisplayTypeTokens {
 		amount = int64(float64(req.Amount) / common.QuotaPerUnit)
 		if amount < 1 {
 			amount = 1
@@ -213,6 +228,7 @@ func RequestWaffoPay(c *gin.Context) {
 		TradeNo:         merchantOrderId,
 		PaymentMethod:   model.PaymentMethodWaffo,
 		PaymentProvider: model.PaymentProviderWaffo,
+		WalletType:      walletType,
 		CreateTime:      time.Now().Unix(),
 		Status:          common.TopUpStatusPending,
 	}

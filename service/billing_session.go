@@ -17,6 +17,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func isClaudeBillingRequest(relayInfo *relaycommon.RelayInfo) bool {
+	if relayInfo == nil {
+		return false
+	}
+	if relayInfo.GetFinalRequestRelayFormat() == types.RelayFormatClaude || relayInfo.RelayFormat == types.RelayFormatClaude {
+		return true
+	}
+	modelName := strings.ToLower(strings.TrimSpace(relayInfo.OriginModelName))
+	return strings.HasPrefix(modelName, "claude-") || strings.Contains(modelName, "/claude-") || strings.Contains(modelName, "anthropic/claude")
+}
+
 // BillingSession owns the lifecycle of pre-consume, settle, and refund for
 // one relay request.
 type BillingSession struct {
@@ -279,6 +290,12 @@ func (s *BillingSession) reserveFunding(delta int) error {
 		}
 		funding.consumed += delta
 		return nil
+	case *ClaudeWalletFunding:
+		if err := model.DecreaseUserClaudeQuota(funding.userId, delta, false); err != nil {
+			return types.NewError(err, types.ErrorCodeUpdateDataError, types.ErrOptionWithSkipRetry())
+		}
+		funding.consumed += delta
+		return nil
 	case *SubscriptionFunding:
 		if err := model.PostConsumeUserSubscriptionUsageDelta(funding.subscriptionId, funding.modelName, int64(delta)); err != nil {
 			return types.NewErrorWithStatusCode(
@@ -308,6 +325,12 @@ func (s *BillingSession) rollbackFundingReserve(delta int) {
 	case *WalletFunding:
 		if err := model.IncreaseUserQuota(funding.userId, delta, false); err != nil {
 			common.SysLog("error rolling back wallet funding reserve: " + err.Error())
+		} else {
+			funding.consumed -= delta
+		}
+	case *ClaudeWalletFunding:
+		if err := model.IncreaseUserClaudeQuota(funding.userId, delta, false); err != nil {
+			common.SysLog("error rolling back claude wallet funding reserve: " + err.Error())
 		} else {
 			funding.consumed -= delta
 		}
@@ -358,6 +381,8 @@ func (s *BillingSession) shouldTrust(c *gin.Context) bool {
 		return false
 	case BillingSourceWallet:
 		return s.relayInfo.UserQuota > trustQuota
+	case BillingSourceClaudeWallet:
+		return false
 	case BillingSourceSubscription:
 		return false
 	default:
@@ -449,6 +474,45 @@ func NewBillingSession(c *gin.Context, relayInfo *relaycommon.RelayInfo, preCons
 		return session, nil
 	}
 
+	tryClaudeWallet := func() (*BillingSession, *types.NewAPIError) {
+		claudeQuota, err := model.GetUserClaudeQuota(relayInfo.UserId, false)
+		if err != nil {
+			return nil, types.NewError(err, types.ErrorCodeQueryDataError, types.ErrOptionWithSkipRetry())
+		}
+		if claudeQuota <= 0 {
+			return nil, types.NewErrorWithStatusCode(
+				fmt.Errorf("claude quota insufficient, remain: %s", logger.FormatQuota(claudeQuota)),
+				types.ErrorCodeInsufficientUserQuota,
+				http.StatusForbidden,
+				types.ErrOptionWithSkipRetry(),
+				types.ErrOptionWithNoRecordErrorLog(),
+			)
+		}
+		if claudeQuota-preConsumedQuota < 0 {
+			return nil, types.NewErrorWithStatusCode(
+				fmt.Errorf(
+					"pre-consume failed, claude quota remain: %s, required: %s",
+					logger.FormatQuota(claudeQuota),
+					logger.FormatQuota(preConsumedQuota),
+				),
+				types.ErrorCodeInsufficientUserQuota,
+				http.StatusForbidden,
+				types.ErrOptionWithSkipRetry(),
+				types.ErrOptionWithNoRecordErrorLog(),
+			)
+		}
+
+		relayInfo.UserQuota = claudeQuota
+		session := &BillingSession{
+			relayInfo: relayInfo,
+			funding:   &ClaudeWalletFunding{userId: relayInfo.UserId},
+		}
+		if apiErr := session.preConsume(c, preConsumedQuota); apiErr != nil {
+			return nil, apiErr
+		}
+		return session, nil
+	}
+
 	tryBlindBox := func() (*BillingSession, *types.NewAPIError) {
 		if relayInfo.ForcePreConsume || preConsumedQuota <= 0 {
 			return nil, nil
@@ -489,6 +553,10 @@ func NewBillingSession(c *gin.Context, relayInfo *relaycommon.RelayInfo, preCons
 			return nil, apiErr
 		}
 		return session, nil
+	}
+
+	if isClaudeBillingRequest(relayInfo) {
+		return tryClaudeWallet()
 	}
 
 	var lastInsufficientErr *types.NewAPIError

@@ -50,6 +50,8 @@ export function Wallet(props: WalletProps) {
               presetAmounts={workspace.presetAmounts}
               selectedPreset={workspace.selectedPreset}
               onSelectPreset={workspace.handleSelectPreset}
+              selectedWalletType={workspace.selectedWalletType}
+              onWalletTypeChange={workspace.handleWalletTypeChange}
               topupAmount={workspace.topupAmount}
               onTopupAmountChange={workspace.handleTopupAmountChange}
               paymentAmount={workspace.paymentAmount}

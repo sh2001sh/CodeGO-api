@@ -84,6 +84,41 @@ func (w *WalletFunding) Refund() error {
 	return model.IncreaseUserQuota(w.userId, w.consumed, false)
 }
 
+type ClaudeWalletFunding struct {
+	userId   int
+	consumed int
+}
+
+func (w *ClaudeWalletFunding) Source() string { return BillingSourceClaudeWallet }
+
+func (w *ClaudeWalletFunding) PreConsume(amount int) error {
+	if amount <= 0 {
+		return nil
+	}
+	if err := model.DecreaseUserClaudeQuota(w.userId, amount, false); err != nil {
+		return err
+	}
+	w.consumed = amount
+	return nil
+}
+
+func (w *ClaudeWalletFunding) Settle(delta int) error {
+	if delta == 0 {
+		return nil
+	}
+	if delta > 0 {
+		return model.DecreaseUserClaudeQuota(w.userId, delta, false)
+	}
+	return model.IncreaseUserClaudeQuota(w.userId, -delta, false)
+}
+
+func (w *ClaudeWalletFunding) Refund() error {
+	if w.consumed <= 0 {
+		return nil
+	}
+	return model.IncreaseUserClaudeQuota(w.userId, w.consumed, false)
+}
+
 type SubscriptionFunding struct {
 	requestId       string
 	userId          int

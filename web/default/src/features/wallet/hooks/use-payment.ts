@@ -32,6 +32,7 @@ import {
   isWaffoPancakePayment,
   submitPaymentForm,
 } from '../lib'
+import type { WalletType } from '../types'
 
 // ============================================================================
 // Payment Hook
@@ -44,17 +45,30 @@ export function usePayment() {
 
   // Calculate payment amount
   const calculatePaymentAmount = useCallback(
-    async (topupAmount: number, paymentType: string) => {
+    async (
+      topupAmount: number,
+      paymentType: string,
+      walletType: WalletType = 'default'
+    ) => {
       try {
         setCalculating(true)
 
         const isStripe = isStripePayment(paymentType)
         const isPancake = isWaffoPancakePayment(paymentType)
         const response = isStripe
-          ? await calculateStripeAmount({ amount: topupAmount })
+          ? await calculateStripeAmount({
+              amount: topupAmount,
+              wallet_type: walletType,
+            })
           : isPancake
-            ? await calculateWaffoPancakeAmount({ amount: topupAmount })
-            : await calculateAmount({ amount: topupAmount })
+            ? await calculateWaffoPancakeAmount({
+                amount: topupAmount,
+                wallet_type: walletType,
+              })
+            : await calculateAmount({
+                amount: topupAmount,
+                wallet_type: walletType,
+              })
 
         if (isApiSuccess(response) && response.data) {
           const calculatedAmount = parseFloat(response.data)
@@ -77,7 +91,11 @@ export function usePayment() {
 
   // Process payment
   const processPayment = useCallback(
-    async (topupAmount: number, paymentType: string) => {
+    async (
+      topupAmount: number,
+      paymentType: string,
+      walletType: WalletType = 'default'
+    ) => {
       try {
         setProcessing(true)
 
@@ -88,10 +106,12 @@ export function usePayment() {
           ? await requestStripePayment({
               amount,
               payment_method: 'stripe',
+              wallet_type: walletType,
             })
           : await requestPayment({
               amount,
               payment_method: paymentType,
+              wallet_type: walletType,
             })
 
         if (!isApiSuccess(response)) {

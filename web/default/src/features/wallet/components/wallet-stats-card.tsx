@@ -347,6 +347,10 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
         </div>
         <div className='mt-4 grid gap-2'>
           <StatItem
+            label='Claude 额度'
+            value={formatQuota(props.user?.claude_quota ?? 0)}
+          />
+          <StatItem
             label='累计消耗'
             value={formatQuota(props.user?.used_quota ?? 0)}
           />

@@ -19,7 +19,8 @@ import (
 )
 
 type WaffoPancakePayRequest struct {
-	Amount int64 `json:"amount"`
+	Amount     int64  `json:"amount"`
+	WalletType string `json:"wallet_type,omitempty"`
 }
 
 func RequestWaffoPancakeAmount(c *gin.Context) {
@@ -29,7 +30,12 @@ func RequestWaffoPancakeAmount(c *gin.Context) {
 		return
 	}
 
-	if req.Amount < int64(setting.WaffoPancakeMinTopUp) {
+	walletType := normalizeTopupWalletType(req.WalletType)
+	minTopup := int64(setting.WaffoPancakeMinTopUp)
+	if isClaudeTopupWallet(walletType) {
+		minTopup = 1
+	}
+	if req.Amount < minTopup {
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": fmt.Sprintf("充值数量不能小于 %d", setting.WaffoPancakeMinTopUp)})
 		return
 	}
@@ -42,6 +48,9 @@ func RequestWaffoPancakeAmount(c *gin.Context) {
 	}
 
 	payMoney := getWaffoPancakePayMoney(req.Amount, group)
+	if isClaudeTopupWallet(walletType) {
+		payMoney = float64(req.Amount)
+	}
 	if payMoney <= 0.01 {
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "充值金额过低"})
 		return
@@ -132,7 +141,12 @@ func RequestWaffoPancakePay(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "参数错误"})
 		return
 	}
-	if req.Amount < int64(setting.WaffoPancakeMinTopUp) {
+	walletType := normalizeTopupWalletType(req.WalletType)
+	minTopup := int64(setting.WaffoPancakeMinTopUp)
+	if isClaudeTopupWallet(walletType) {
+		minTopup = 1
+	}
+	if req.Amount < minTopup {
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": fmt.Sprintf("充值数量不能小于 %d", setting.WaffoPancakeMinTopUp)})
 		return
 	}
@@ -151,6 +165,9 @@ func RequestWaffoPancakePay(c *gin.Context) {
 	}
 
 	payMoney := getWaffoPancakePayMoney(req.Amount, group)
+	if isClaudeTopupWallet(walletType) {
+		payMoney = float64(req.Amount)
+	}
 	if payMoney < 0.01 {
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "充值金额过低"})
 		return
@@ -159,11 +176,12 @@ func RequestWaffoPancakePay(c *gin.Context) {
 	tradeNo := fmt.Sprintf("WAFFO_PANCAKE-%d-%d-%s", id, time.Now().UnixMilli(), randstr.String(6))
 	topUp := &model.TopUp{
 		UserId:          id,
-		Amount:          normalizeWaffoPancakeTopUpAmount(req.Amount),
+		Amount:          normalizeStoredTopupAmount(req.Amount, walletType),
 		Money:           payMoney,
 		TradeNo:         tradeNo,
 		PaymentMethod:   model.PaymentMethodWaffoPancake,
 		PaymentProvider: model.PaymentProviderWaffoPancake,
+		WalletType:      walletType,
 		CreateTime:      time.Now().Unix(),
 		Status:          common.TopUpStatusPending,
 	}

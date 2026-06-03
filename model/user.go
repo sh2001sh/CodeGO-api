@@ -39,6 +39,7 @@ type User struct {
 	PeoplePlanInviteCode         string         `json:"people_plan_invite_code" gorm:"-:all"`
 	AccessToken                  *string        `json:"access_token" gorm:"type:char(32);column:access_token;uniqueIndex"` // this token is for system management
 	Quota                        int            `json:"quota" gorm:"type:int;default:0"`
+	ClaudeQuota                  int            `json:"claude_quota" gorm:"type:int;default:0;column:claude_quota"`
 	UsedQuota                    int            `json:"used_quota" gorm:"type:int;default:0;column:used_quota"` // used quota
 	RequestCount                 int            `json:"request_count" gorm:"type:int;default:0;"`               // request number
 	Group                        string         `json:"group" gorm:"type:varchar(64);default:'default'"`
@@ -61,13 +62,14 @@ type User struct {
 
 func (user *User) ToBaseUser() *UserBase {
 	cache := &UserBase{
-		Id:       user.Id,
-		Group:    user.Group,
-		Quota:    user.Quota,
-		Status:   user.Status,
-		Username: user.Username,
-		Setting:  user.Setting,
-		Email:    user.Email,
+		Id:          user.Id,
+		Group:       user.Group,
+		Quota:       user.Quota,
+		ClaudeQuota: user.ClaudeQuota,
+		Status:      user.Status,
+		Username:    user.Username,
+		Setting:     user.Setting,
+		Email:       user.Email,
 	}
 	return cache
 }
@@ -897,6 +899,30 @@ func GetUserQuota(id int, fromDB bool) (quota int, err error) {
 	return quota, nil
 }
 
+func GetUserClaudeQuota(id int, fromDB bool) (quota int, err error) {
+	defer func() {
+		if shouldUpdateRedis(fromDB, err) {
+			gopool.Go(func() {
+				if err := updateUserClaudeQuotaCache(id, quota); err != nil {
+					common.SysLog("failed to update user claude quota cache: " + err.Error())
+				}
+			})
+		}
+	}()
+	if !fromDB && common.RedisEnabled {
+		quota, err := getUserClaudeQuotaCache(id)
+		if err == nil {
+			return quota, nil
+		}
+	}
+	fromDB = true
+	err = DB.Model(&User{}).Where("id = ?", id).Select("claude_quota").Find(&quota).Error
+	if err != nil {
+		return 0, err
+	}
+	return quota, nil
+}
+
 func GetUserUsedQuota(id int) (quota int, err error) {
 	err = DB.Model(&User{}).Where("id = ?", id).Select("used_quota").Find(&quota).Error
 	return quota, err
@@ -990,6 +1016,27 @@ func IncreaseUserQuota(id int, quota int, db bool) (err error) {
 	return increaseUserQuota(id, quota)
 }
 
+func IncreaseUserClaudeQuota(id int, quota int, db bool) (err error) {
+	if quota < 0 {
+		return errors.New("claude quota 不能为负数！")
+	}
+	gopool.Go(func() {
+		err := cacheIncrUserClaudeQuota(id, int64(quota))
+		if err != nil {
+			common.SysLog("failed to increase user claude quota: " + err.Error())
+		}
+	})
+	if !db && common.BatchUpdateEnabled {
+		addNewRecord(BatchUpdateTypeUserClaudeQuota, id, quota)
+		return nil
+	}
+	return increaseUserClaudeQuota(id, quota)
+}
+
+func increaseUserClaudeQuota(id int, quota int) (err error) {
+	return DB.Model(&User{}).Where("id = ?", id).Update("claude_quota", gorm.Expr("claude_quota + ?", quota)).Error
+}
+
 func increaseUserQuota(id int, quota int) (err error) {
 	err = DB.Model(&User{}).Where("id = ?", id).Update("quota", gorm.Expr("quota + ?", quota)).Error
 	if err != nil {
@@ -1018,6 +1065,27 @@ func DecreaseUserQuota(id int, quota int, db bool) (err error) {
 	}
 	ConsumeBonusQuotaCredits(id, int64(quota))
 	return nil
+}
+
+func DecreaseUserClaudeQuota(id int, quota int, db bool) (err error) {
+	if quota < 0 {
+		return errors.New("claude quota 不能为负数！")
+	}
+	gopool.Go(func() {
+		err := cacheDecrUserClaudeQuota(id, int64(quota))
+		if err != nil {
+			common.SysLog("failed to decrease user claude quota: " + err.Error())
+		}
+	})
+	if !db && common.BatchUpdateEnabled {
+		addNewRecord(BatchUpdateTypeUserClaudeQuota, id, -quota)
+		return nil
+	}
+	return decreaseUserClaudeQuota(id, quota)
+}
+
+func decreaseUserClaudeQuota(id int, quota int) (err error) {
+	return DB.Model(&User{}).Where("id = ?", id).Update("claude_quota", gorm.Expr("claude_quota - ?", quota)).Error
 }
 
 func decreaseUserQuota(id int, quota int) (err error) {

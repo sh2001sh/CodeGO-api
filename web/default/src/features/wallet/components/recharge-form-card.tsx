@@ -47,6 +47,7 @@ import type {
   TopupInfo,
   CreemProduct,
   WaffoPayMethod,
+  WalletType,
 } from '../types'
 import { CreemProductsSection } from './creem-products-section'
 
@@ -55,6 +56,8 @@ interface RechargeFormCardProps {
   presetAmounts: PresetAmount[]
   selectedPreset: number | null
   onSelectPreset: (preset: PresetAmount) => void
+  selectedWalletType: WalletType
+  onWalletTypeChange: (walletType: WalletType) => void
   topupAmount: number
   onTopupAmountChange: (amount: number) => void
   paymentAmount: number
@@ -86,6 +89,8 @@ export function RechargeFormCard({
   presetAmounts,
   selectedPreset,
   onSelectPreset,
+  selectedWalletType,
+  onWalletTypeChange,
   topupAmount,
   onTopupAmountChange,
   paymentAmount,
@@ -137,6 +142,7 @@ export function RechargeFormCard({
   const hasWaffoPaymentMethods =
     Array.isArray(waffoPayMethods) && waffoPayMethods.length > 0
   const minTopup = getMinTopupAmount(topupInfo)
+  const effectiveMinTopup = selectedWalletType === 'claude' ? 1 : minTopup
   const redemptionEnabled = topupInfo?.enable_redemption !== false
 
   if (loading) {
@@ -214,6 +220,48 @@ export function RechargeFormCard({
         <div className='space-y-4 sm:space-y-6'>
           {hasConfigurableTopup && (
             <>
+              <div className='space-y-2.5 sm:space-y-3'>
+                <Label className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>
+                  充值余额池
+                </Label>
+                <div className='grid grid-cols-1 gap-2 sm:grid-cols-2'>
+                  {[
+                    {
+                      value: 'default' as const,
+                      title: '普通余额',
+                      description:
+                        '用于非 Claude 模型，保留原有折扣和分组倍率。',
+                    },
+                    {
+                      value: 'claude' as const,
+                      title: 'Claude 额度',
+                      description:
+                        '仅用于 Claude 模型，最小 1，固定 1:1 充值。',
+                    },
+                  ].map((item) => (
+                    <Button
+                      key={item.value}
+                      type='button'
+                      variant='outline'
+                      onClick={() => onWalletTypeChange(item.value)}
+                      className={cn(
+                        'h-auto min-h-20 flex-col items-start justify-start gap-1 rounded-xl p-3 text-left whitespace-normal',
+                        selectedWalletType === item.value
+                          ? 'border-foreground bg-foreground/5'
+                          : 'border-muted'
+                      )}
+                    >
+                      <span className='text-sm font-semibold'>
+                        {item.title}
+                      </span>
+                      <span className='text-muted-foreground text-xs leading-relaxed'>
+                        {item.description}
+                      </span>
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
               {presetAmounts.length > 0 && (
                 <div className='space-y-2.5 sm:space-y-3'>
                   <Label className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>
@@ -222,9 +270,11 @@ export function RechargeFormCard({
                   <div className='grid grid-cols-2 gap-1.5 sm:gap-3 md:grid-cols-4'>
                     {presetAmounts.map((preset, index) => {
                       const discount =
-                        preset.discount ||
-                        topupInfo?.discount?.[preset.value] ||
-                        1.0
+                        selectedWalletType === 'claude'
+                          ? 1.0
+                          : preset.discount ||
+                            topupInfo?.discount?.[preset.value] ||
+                            1.0
                       const {
                         displayValue,
                         actualPrice,
@@ -287,8 +337,8 @@ export function RechargeFormCard({
                     type='number'
                     value={localAmount}
                     onChange={(e) => handleAmountChange(e.target.value)}
-                    min={minTopup}
-                    placeholder={`最低 ${minTopup}`}
+                    min={effectiveMinTopup}
+                    placeholder={`最低 ${effectiveMinTopup}`}
                     className='h-9 text-base sm:h-10 sm:text-lg'
                   />
                   <div className='bg-muted/30 flex min-h-9 items-center justify-between gap-2 rounded-md border px-3 lg:min-w-52'>
@@ -313,7 +363,10 @@ export function RechargeFormCard({
                 {hasStandardPaymentMethods ? (
                   <div className='grid grid-cols-2 gap-1.5 sm:gap-3 lg:grid-cols-3'>
                     {topupInfo?.pay_methods?.map((method) => {
-                      const minTopup = method.min_topup || 0
+                      const minTopup =
+                        selectedWalletType === 'claude'
+                          ? 1
+                          : method.min_topup || 0
                       const disabled = minTopup > topupAmount
 
                       const button = (
@@ -375,7 +428,10 @@ export function RechargeFormCard({
                     <div className='grid grid-cols-2 gap-1.5 sm:gap-3 lg:grid-cols-3'>
                       {waffoPayMethods?.map((method, index) => {
                         const loadingKey = `waffo-${index}`
-                        const waffoMin = waffoMinTopup || 0
+                        const waffoMin =
+                          selectedWalletType === 'claude'
+                            ? 1
+                            : waffoMinTopup || 0
                         const belowMin = waffoMin > topupAmount
 
                         const button = (

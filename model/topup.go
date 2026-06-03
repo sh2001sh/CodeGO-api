@@ -3,6 +3,7 @@ package model
 import (
 	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/logger"
@@ -19,6 +20,7 @@ type TopUp struct {
 	TradeNo         string  `json:"trade_no" gorm:"unique;type:varchar(255);index"`
 	PaymentMethod   string  `json:"payment_method" gorm:"type:varchar(50)"`
 	PaymentProvider string  `json:"payment_provider" gorm:"type:varchar(50);default:''"`
+	WalletType      string  `json:"wallet_type" gorm:"type:varchar(32);default:'default';index"`
 	CreateTime      int64   `json:"create_time"`
 	CompleteTime    int64   `json:"complete_time"`
 	Status          string  `json:"status"`
@@ -41,11 +43,159 @@ const (
 	PaymentProviderXunhu        = "xunhu"
 )
 
+const (
+	WalletTypeDefault = "default"
+	WalletTypeClaude  = "claude"
+)
+
 var (
 	ErrPaymentMethodMismatch = errors.New("payment method mismatch")
 	ErrTopUpNotFound         = errors.New("topup not found")
 	ErrTopUpStatusInvalid    = errors.New("topup status invalid")
 )
+
+func NormalizeWalletType(walletType string) string {
+	switch strings.ToLower(strings.TrimSpace(walletType)) {
+	case WalletTypeClaude:
+		return WalletTypeClaude
+	default:
+		return WalletTypeDefault
+	}
+}
+
+func IsClaudeWalletType(walletType string) bool {
+	return NormalizeWalletType(walletType) == WalletTypeClaude
+}
+
+func (topUp *TopUp) NormalizedWalletType() string {
+	if topUp == nil {
+		return WalletTypeDefault
+	}
+	return NormalizeWalletType(topUp.WalletType)
+}
+
+func (topUp *TopUp) BeforeCreate(tx *gorm.DB) error {
+	topUp.WalletType = NormalizeWalletType(topUp.WalletType)
+	return nil
+}
+
+func (topUp *TopUp) BeforeUpdate(tx *gorm.DB) error {
+	topUp.WalletType = NormalizeWalletType(topUp.WalletType)
+	return nil
+}
+
+func calculateTopUpQuotaToAdd(topUp *TopUp) int {
+	if topUp == nil {
+		return 0
+	}
+	dQuotaPerUnit := decimal.NewFromFloat(common.QuotaPerUnit)
+	if topUp.NormalizedWalletType() == WalletTypeClaude {
+		return int(decimal.NewFromInt(topUp.Amount).Mul(dQuotaPerUnit).IntPart())
+	}
+	if topUp.PaymentProvider == PaymentProviderStripe {
+		return int(decimal.NewFromFloat(topUp.Money).Mul(dQuotaPerUnit).IntPart())
+	}
+	if topUp.PaymentProvider == PaymentProviderCreem {
+		return int(topUp.Amount)
+	}
+	return int(decimal.NewFromInt(topUp.Amount).Mul(dQuotaPerUnit).IntPart())
+}
+
+func CompleteTopUpByTradeNo(tradeNo string, expectedPaymentProvider string, actualPaymentMethod string, customerId string, customerEmail string) (*TopUp, int, error) {
+	if tradeNo == "" {
+		return nil, 0, errors.New("missing trade no")
+	}
+
+	refCol := "`trade_no`"
+	if common.UsingPostgreSQL {
+		refCol = `"trade_no"`
+	}
+
+	var completedTopUp *TopUp
+	var quotaToAdd int
+	err := DB.Transaction(func(tx *gorm.DB) error {
+		topUp := &TopUp{}
+		if err := tx.Set("gorm:query_option", "FOR UPDATE").Where(refCol+" = ?", tradeNo).First(topUp).Error; err != nil {
+			return ErrTopUpNotFound
+		}
+		if expectedPaymentProvider != "" && topUp.PaymentProvider != expectedPaymentProvider {
+			return ErrPaymentMethodMismatch
+		}
+		if topUp.Status == common.TopUpStatusSuccess {
+			completedTopUp = topUp
+			return nil
+		}
+		if topUp.Status != common.TopUpStatusPending {
+			return ErrTopUpStatusInvalid
+		}
+		if actualPaymentMethod != "" {
+			topUp.PaymentMethod = actualPaymentMethod
+		}
+
+		quotaToAdd = calculateTopUpQuotaToAdd(topUp)
+		if quotaToAdd <= 0 {
+			return errors.New("invalid topup quota")
+		}
+
+		topUp.CompleteTime = common.GetTimestamp()
+		topUp.Status = common.TopUpStatusSuccess
+		if err := tx.Save(topUp).Error; err != nil {
+			return err
+		}
+		if err := creditTopUpQuotaTx(tx, topUp, quotaToAdd, customerId, customerEmail); err != nil {
+			return err
+		}
+		completedTopUp = topUp
+		return nil
+	})
+	return completedTopUp, quotaToAdd, err
+}
+
+func creditTopUpQuotaTx(tx *gorm.DB, topUp *TopUp, quotaToAdd int, customerId string, customerEmail string) error {
+	if tx == nil {
+		tx = DB
+	}
+	if topUp == nil || topUp.UserId <= 0 {
+		return errors.New("invalid topup")
+	}
+	if quotaToAdd <= 0 {
+		return errors.New("invalid topup quota")
+	}
+	updateFields := map[string]interface{}{}
+	if topUp.NormalizedWalletType() == WalletTypeClaude {
+		updateFields["claude_quota"] = gorm.Expr("claude_quota + ?", quotaToAdd)
+	} else {
+		updateFields["quota"] = gorm.Expr("quota + ?", quotaToAdd)
+	}
+	if topUp.PaymentProvider == PaymentProviderStripe && customerId != "" {
+		updateFields["stripe_customer"] = customerId
+	}
+	if topUp.PaymentProvider == PaymentProviderCreem && customerEmail != "" {
+		var user User
+		if err := tx.Where("id = ?", topUp.UserId).First(&user).Error; err != nil {
+			return err
+		}
+		if user.Email == "" {
+			updateFields["email"] = customerEmail
+		}
+	}
+	if err := tx.Model(&User{}).Where("id = ?", topUp.UserId).Updates(updateFields).Error; err != nil {
+		return err
+	}
+	if topUp.NormalizedWalletType() == WalletTypeClaude {
+		_ = cacheIncrUserClaudeQuota(topUp.UserId, int64(quotaToAdd))
+	} else {
+		_ = cacheIncrUserQuota(topUp.UserId, int64(quotaToAdd))
+	}
+	return nil
+}
+
+func topUpWalletLogLabel(topUp *TopUp) string {
+	if topUp != nil && topUp.NormalizedWalletType() == WalletTypeClaude {
+		return "Claude额度"
+	}
+	return "额度"
+}
 
 func (topUp *TopUp) Insert() error {
 	var err error
@@ -111,7 +261,7 @@ func Recharge(referenceId string, customerId string, callerIp string) (err error
 		return errors.New("未提供支付单号")
 	}
 
-	var quota float64
+	var quotaToAdd int
 	topUp := &TopUp{}
 
 	refCol := "`trade_no`"
@@ -140,9 +290,8 @@ func Recharge(referenceId string, customerId string, callerIp string) (err error
 			return err
 		}
 
-		quota = topUp.Money * common.QuotaPerUnit
-		err = tx.Model(&User{}).Where("id = ?", topUp.UserId).Updates(map[string]interface{}{"stripe_customer": customerId, "quota": gorm.Expr("quota + ?", quota)}).Error
-		if err != nil {
+		quotaToAdd = calculateTopUpQuotaToAdd(topUp)
+		if err := creditTopUpQuotaTx(tx, topUp, quotaToAdd, customerId, ""); err != nil {
 			return err
 		}
 
@@ -154,7 +303,7 @@ func Recharge(referenceId string, customerId string, callerIp string) (err error
 		return errors.New("充值失败，请稍后重试")
 	}
 
-	RecordTopupLog(topUp.UserId, fmt.Sprintf("使用在线充值成功，充值金额: %v，支付金额：%d", logger.FormatQuota(int(quota)), topUp.Amount), callerIp, topUp.PaymentMethod, PaymentMethodStripe)
+	RecordTopupLog(topUp.UserId, fmt.Sprintf("Stripe topup success, wallet: %s, quota: %v, paid: %.2f", topUpWalletLogLabel(topUp), logger.FormatQuota(quotaToAdd), topUp.Money), callerIp, topUp.PaymentMethod, PaymentMethodStripe)
 
 	return nil
 }
@@ -351,14 +500,7 @@ func ManualCompleteTopUp(tradeNo string, callerIp string) error {
 		// 计算应充值额度：
 		// - Stripe 订单：Money 代表经分组倍率换算后的美元数量，直接 * QuotaPerUnit
 		// - 其他订单（如易支付）：Amount 为美元数量，* QuotaPerUnit
-		if topUp.PaymentProvider == PaymentProviderStripe {
-			dQuotaPerUnit := decimal.NewFromFloat(common.QuotaPerUnit)
-			quotaToAdd = int(decimal.NewFromFloat(topUp.Money).Mul(dQuotaPerUnit).IntPart())
-		} else {
-			dAmount := decimal.NewFromInt(topUp.Amount)
-			dQuotaPerUnit := decimal.NewFromFloat(common.QuotaPerUnit)
-			quotaToAdd = int(dAmount.Mul(dQuotaPerUnit).IntPart())
-		}
+		quotaToAdd = calculateTopUpQuotaToAdd(topUp)
 		if quotaToAdd <= 0 {
 			return errors.New("无效的充值额度")
 		}
@@ -371,7 +513,7 @@ func ManualCompleteTopUp(tradeNo string, callerIp string) error {
 		}
 
 		// 增加用户额度（立即写库，保持一致性）
-		if err := tx.Model(&User{}).Where("id = ?", topUp.UserId).Update("quota", gorm.Expr("quota + ?", quotaToAdd)).Error; err != nil {
+		if err := creditTopUpQuotaTx(tx, topUp, quotaToAdd, "", ""); err != nil {
 			return err
 		}
 
@@ -427,8 +569,13 @@ func RechargeCreem(referenceId string, customerEmail string, customerName string
 		quota = topUp.Amount
 
 		// 构建更新字段，优先使用邮箱，如果邮箱为空则使用用户名
-		updateFields := map[string]interface{}{
-			"quota": gorm.Expr("quota + ?", quota),
+		quotaToAdd := calculateTopUpQuotaToAdd(topUp)
+		quota = int64(quotaToAdd)
+		updateFields := map[string]interface{}{}
+		if topUp.NormalizedWalletType() == WalletTypeClaude {
+			updateFields["claude_quota"] = gorm.Expr("claude_quota + ?", quotaToAdd)
+		} else {
+			updateFields["quota"] = gorm.Expr("quota + ?", quotaToAdd)
 		}
 
 		// 如果有客户邮箱，尝试更新用户邮箱（仅当用户邮箱为空时）
@@ -449,6 +596,11 @@ func RechargeCreem(referenceId string, customerEmail string, customerName string
 		err = tx.Model(&User{}).Where("id = ?", topUp.UserId).Updates(updateFields).Error
 		if err != nil {
 			return err
+		}
+		if topUp.NormalizedWalletType() == WalletTypeClaude {
+			_ = cacheIncrUserClaudeQuota(topUp.UserId, int64(quotaToAdd))
+		} else {
+			_ = cacheIncrUserQuota(topUp.UserId, int64(quotaToAdd))
 		}
 
 		return nil
@@ -495,9 +647,7 @@ func RechargeWaffo(tradeNo string, callerIp string) (err error) {
 			return errors.New("充值订单状态错误")
 		}
 
-		dAmount := decimal.NewFromInt(topUp.Amount)
-		dQuotaPerUnit := decimal.NewFromFloat(common.QuotaPerUnit)
-		quotaToAdd = int(dAmount.Mul(dQuotaPerUnit).IntPart())
+		quotaToAdd = calculateTopUpQuotaToAdd(topUp)
 		if quotaToAdd <= 0 {
 			return errors.New("无效的充值额度")
 		}
@@ -508,7 +658,7 @@ func RechargeWaffo(tradeNo string, callerIp string) (err error) {
 			return err
 		}
 
-		if err := tx.Model(&User{}).Where("id = ?", topUp.UserId).Update("quota", gorm.Expr("quota + ?", quotaToAdd)).Error; err != nil {
+		if err := creditTopUpQuotaTx(tx, topUp, quotaToAdd, "", ""); err != nil {
 			return err
 		}
 
@@ -558,7 +708,7 @@ func RechargeWaffoPancake(tradeNo string) (err error) {
 			return errors.New("充值订单状态错误")
 		}
 
-		quotaToAdd = int(decimal.NewFromInt(topUp.Amount).Mul(decimal.NewFromFloat(common.QuotaPerUnit)).IntPart())
+		quotaToAdd = calculateTopUpQuotaToAdd(topUp)
 		if quotaToAdd <= 0 {
 			return errors.New("无效的充值额度")
 		}
@@ -569,7 +719,7 @@ func RechargeWaffoPancake(tradeNo string) (err error) {
 			return err
 		}
 
-		if err := tx.Model(&User{}).Where("id = ?", topUp.UserId).Update("quota", gorm.Expr("quota + ?", quotaToAdd)).Error; err != nil {
+		if err := creditTopUpQuotaTx(tx, topUp, quotaToAdd, "", ""); err != nil {
 			return err
 		}
 

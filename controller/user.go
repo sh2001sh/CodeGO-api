@@ -437,6 +437,7 @@ func GetSelf(c *gin.Context) {
 		"telegram_id":       user.TelegramId,
 		"group":             user.Group,
 		"quota":             user.Quota,
+		"claude_quota":      user.ClaudeQuota,
 		"used_quota":        user.UsedQuota,
 		"request_count":     user.RequestCount,
 		"aff_code":          user.AffCode,
@@ -989,6 +990,56 @@ func ManageUser(c *gin.Context) {
 			}
 			model.RecordLogWithAdminInfo(user.Id, model.LogTypeManage,
 				fmt.Sprintf("管理员覆盖用户额度从 %s 为 %s", logger.LogQuota(oldQuota), logger.LogQuota(req.Value)), adminInfo)
+		default:
+			common.ApiErrorI18n(c, i18n.MsgInvalidParams)
+			return
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"success": true,
+			"message": "",
+		})
+		return
+	case "add_claude_quota":
+		adminName := c.GetString("username")
+		adminId := c.GetInt("id")
+		adminInfo := map[string]interface{}{
+			"admin_id":       adminId,
+			"admin_username": adminName,
+		}
+		switch req.Mode {
+		case "add":
+			if req.Value <= 0 {
+				common.ApiErrorI18n(c, i18n.MsgUserQuotaChangeZero)
+				return
+			}
+			if err := model.IncreaseUserClaudeQuota(user.Id, req.Value, true); err != nil {
+				common.ApiError(c, err)
+				return
+			}
+			model.RecordLogWithAdminInfo(user.Id, model.LogTypeManage,
+				fmt.Sprintf("admin increased user Claude quota by %s", logger.LogQuota(req.Value)), adminInfo)
+		case "subtract":
+			if req.Value <= 0 {
+				common.ApiErrorI18n(c, i18n.MsgUserQuotaChangeZero)
+				return
+			}
+			if err := model.DecreaseUserClaudeQuota(user.Id, req.Value, true); err != nil {
+				common.ApiError(c, err)
+				return
+			}
+			model.RecordLogWithAdminInfo(user.Id, model.LogTypeManage,
+				fmt.Sprintf("admin decreased user Claude quota by %s", logger.LogQuota(req.Value)), adminInfo)
+		case "override":
+			oldQuota := user.ClaudeQuota
+			if err := model.DB.Model(&model.User{}).Where("id = ?", user.Id).Update("claude_quota", req.Value).Error; err != nil {
+				common.ApiError(c, err)
+				return
+			}
+			if err := model.InvalidateUserCache(user.Id); err != nil {
+				common.SysLog(fmt.Sprintf("failed to invalidate user cache for user %d: %s", user.Id, err.Error()))
+			}
+			model.RecordLogWithAdminInfo(user.Id, model.LogTypeManage,
+				fmt.Sprintf("admin overrode user Claude quota from %s to %s", logger.LogQuota(oldQuota), logger.LogQuota(req.Value)), adminInfo)
 		default:
 			common.ApiErrorI18n(c, i18n.MsgInvalidParams)
 			return
