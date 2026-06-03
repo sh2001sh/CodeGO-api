@@ -24,27 +24,11 @@ import {
   subscriptionQuotaUnitsToUSD,
 } from './display'
 
-type PlanQuotaMode = 'total' | 'weekly'
-
 function isMonthlyCardPlanInput(
   durationUnit: string,
   durationValue: number
 ): boolean {
   return durationUnit === 'month' && Number(durationValue || 0) === 1
-}
-
-function deriveQuotaMode(plan: SubscriptionPlan): PlanQuotaMode {
-  if (
-    isMonthlyCardPlanInput(
-      plan.duration_unit || 'month',
-      Number(plan.duration_value || 0)
-    ) &&
-    plan.quota_reset_period === 'weekly' &&
-    Number(plan.period_amount || 0) > 0
-  ) {
-    return 'weekly'
-  }
-  return 'total'
 }
 
 export function getPlanFormSchema(t: TFunction) {
@@ -68,7 +52,6 @@ export function getPlanFormSchema(t: TFunction) {
     internal_only: z.boolean(),
     sort_order: z.coerce.number(),
     max_purchase_per_user: z.coerce.number().min(0),
-    quota_mode: z.enum(['total', 'weekly']),
     total_amount: z.coerce.number().min(0),
     period_amount: z.coerce.number().min(0),
     model_limits: z.string().optional(),
@@ -94,7 +77,6 @@ export const PLAN_FORM_DEFAULTS: PlanFormValues = {
   internal_only: false,
   sort_order: 0,
   max_purchase_per_user: 0,
-  quota_mode: 'total',
   total_amount: 0,
   period_amount: 0,
   model_limits: '',
@@ -118,7 +100,6 @@ export function planToFormValues(plan: SubscriptionPlan): PlanFormValues {
     internal_only: plan.internal_only === true,
     sort_order: Number(plan.sort_order || 0),
     max_purchase_per_user: Number(plan.max_purchase_per_user || 0),
-    quota_mode: deriveQuotaMode(plan),
     total_amount: subscriptionQuotaUnitsToUSD(plan.total_amount),
     period_amount: subscriptionQuotaUnitsToUSD(plan.period_amount),
     model_limits: plan.model_limits || '',
@@ -133,20 +114,14 @@ export function formValuesToPlanPayload(values: PlanFormValues): PlanPayload {
     values.duration_unit,
     Number(values.duration_value || 0)
   )
-  const useWeeklyQuota = isMonthlyCard && values.quota_mode === 'weekly'
-  const periodAmountUSD = useWeeklyQuota
-    ? Number(values.period_amount || 0)
-    : isMonthlyCard
-      ? 0
-      : Number(values.period_amount || 0)
-  const totalAmountUSD = useWeeklyQuota
-    ? periodAmountUSD * 4
-    : Number(values.total_amount || 0)
+  const periodAmountUSD = isMonthlyCard ? 0 : Number(values.period_amount || 0)
+  const totalAmountUSD = Number(values.total_amount || 0)
   const periodAmount = parseSubscriptionQuotaUSDToUnits(periodAmountUSD)
   const totalAmount = parseSubscriptionQuotaUSDToUnits(totalAmountUSD)
-  const quotaResetPeriod = useWeeklyQuota
-    ? 'weekly'
-    : values.quota_reset_period || 'never'
+  const quotaResetPeriod =
+    isMonthlyCard && values.quota_reset_period === 'weekly'
+      ? 'monthly'
+      : values.quota_reset_period || 'never'
 
   return {
     plan: {

@@ -8,7 +8,7 @@ import (
 func countSuccessfulBlindBoxOrdersTx(tx *gorm.DB, userId int, beforeOrderId *int) (int64, error) {
 	var count int64
 	query := tx.Model(&BlindBoxOrder{}).
-		Where("user_id = ? AND status = ?", userId, common.TopUpStatusSuccess)
+		Where("user_id = ? AND status = ? AND money > 0", userId, common.TopUpStatusSuccess)
 	if beforeOrderId != nil && *beforeOrderId > 0 {
 		query = query.Where("id < ?", *beforeOrderId)
 	}

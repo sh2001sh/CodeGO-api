@@ -383,6 +383,28 @@ func GetAffCode(c *gin.Context) {
 	return
 }
 
+func GetAffiliateRewardsOverview(c *gin.Context) {
+	id := c.GetInt("id")
+	user, err := model.GetUserById(id, true)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	if user.AffCode == "" {
+		user.AffCode = common.GetRandomString(4)
+		if err := user.Update(false); err != nil {
+			common.ApiError(c, err)
+			return
+		}
+	}
+	overview, err := service.GetAffiliateRewardsOverview(id)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	common.ApiSuccess(c, overview)
+}
+
 func GetSelf(c *gin.Context) {
 	id := c.GetInt("id")
 	userRole := c.GetInt("role")

@@ -32,6 +32,7 @@ export const redemptionSchema = z.object({
   quota: z.number(),
   plan_id: z.number().default(0),
   plan_title: z.string().default(''),
+  blind_box_quantity: z.number().default(0),
   created_time: z.number(),
   redeemed_time: z.number(),
   expired_time: z.number(), // 0 for never expires
@@ -78,12 +79,13 @@ export interface RedemptionFormData {
   redeem_type: RedemptionType
   quota: number
   plan_id: number
+  blind_box_quantity: number
   expired_time: number
   count?: number // Only for create
   status?: number // Only for status update
 }
 
-export type RedemptionType = 'quota' | 'subscription'
+export type RedemptionType = 'quota' | 'subscription' | 'blind_box'
 
 // ============================================================================
 // Dialog Types

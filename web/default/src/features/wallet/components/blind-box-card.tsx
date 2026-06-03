@@ -133,6 +133,19 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
   }, [selectedQuantity])
 
   useEffect(() => {
+    if (typeof window === 'undefined') return
+
+    const handleBlindBoxChanged = () => {
+      void refreshAll()
+    }
+
+    window.addEventListener('blind-box:changed', handleBlindBoxChanged)
+    return () => {
+      window.removeEventListener('blind-box:changed', handleBlindBoxChanged)
+    }
+  }, [refreshAll])
+
+  useEffect(() => {
     if (!props.paymentResult) return
 
     const syncPaymentResult = async () => {

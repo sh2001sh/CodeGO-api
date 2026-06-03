@@ -105,17 +105,14 @@ export function SubscriptionsMutateDrawer({
   const durationUnit = form.watch('duration_unit')
   const durationValue = form.watch('duration_value')
   const resetPeriod = form.watch('quota_reset_period')
-  const quotaMode = form.watch('quota_mode')
-  const periodAmount = form.watch('period_amount')
   const isMonthlyCard =
     durationUnit === 'month' && Number(durationValue || 0) === 1
-  const weeklyTotalAmount = Number(periodAmount || 0) * 4
 
   useEffect(() => {
-    if (isMonthlyCard && quotaMode === 'weekly' && resetPeriod !== 'weekly') {
-      form.setValue('quota_reset_period', 'weekly', { shouldDirty: true })
+    if (isMonthlyCard && resetPeriod === 'weekly') {
+      form.setValue('quota_reset_period', 'monthly', { shouldDirty: true })
     }
-  }, [form, isMonthlyCard, quotaMode, resetPeriod])
+  }, [form, isMonthlyCard, resetPeriod])
 
   const onSubmit = async (values: PlanFormValues) => {
     setIsSubmitting(true)
@@ -144,7 +141,11 @@ export function SubscriptionsMutateDrawer({
   }
 
   const durationUnitOpts = getDurationUnitOptions(t)
-  const resetPeriodOpts = getResetPeriodOptions(t)
+  const resetPeriodOpts = isMonthlyCard
+    ? getResetPeriodOptions(t).filter((option) =>
+        ['never', 'monthly', 'custom'].includes(option.value)
+      )
+    : getResetPeriodOptions(t)
 
   return (
     <Sheet
@@ -250,87 +251,47 @@ export function SubscriptionsMutateDrawer({
                   )}
                 />
 
-                {isMonthlyCard && (
-                  <FormField
-                    control={form.control}
-                    name='quota_mode'
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('Monthly Quota Mode')}</FormLabel>
-                        <Select
-                          items={[
-                            { value: 'total', label: t('Total Quota') },
-                            { value: 'weekly', label: t('Weekly Quota') },
-                          ]}
-                          onValueChange={field.onChange}
-                          value={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent alignItemWithTrigger={false}>
-                            <SelectGroup>
-                              <SelectItem value='total'>
-                                {t('Total Quota')}
-                              </SelectItem>
-                              <SelectItem value='weekly'>
-                                {t('Weekly Quota')}
-                              </SelectItem>
-                            </SelectGroup>
-                          </SelectContent>
-                        </Select>
-                        <FormDescription>
-                          {t(
-                            'For monthly cards, choose either a month total or a weekly cap. Weekly mode will auto set total quota to weekly quota x 4.'
-                          )}
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
-
-                {(!isMonthlyCard || quotaMode === 'total') && (
-                  <FormField
-                    control={form.control}
-                    name='total_amount'
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>{t('Total Quota')} (USD)</FormLabel>
-                        <FormControl>
-                          <Input
-                            {...field}
-                            type='number'
-                            min={0}
-                            onChange={(e) =>
-                              field.onChange(parseFloat(e.target.value) || 0)
-                            }
-                          />
-                        </FormControl>
-                        <FormDescription>
-                          {t('0 means unlimited')}
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
+                <FormField
+                  control={form.control}
+                  name='total_amount'
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>
+                        {isMonthlyCard
+                          ? `${t('Monthly Quota')} (USD)`
+                          : `${t('Total Quota')} (USD)`}
+                      </FormLabel>
+                      <FormControl>
+                        <Input
+                          {...field}
+                          type='number'
+                          min={0}
+                          onChange={(e) =>
+                            field.onChange(parseFloat(e.target.value) || 0)
+                          }
+                        />
+                      </FormControl>
+                      <FormDescription>
+                        {isMonthlyCard
+                          ? t(
+                              'Monthly cards only keep a monthly quota cap. Weekly quota has been removed.'
+                            )
+                          : t('0 means unlimited')}
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               </div>
 
               <div className='grid grid-cols-1 gap-3 sm:grid-cols-2'>
-                {(!isMonthlyCard || quotaMode === 'weekly') && (
+                {!isMonthlyCard && (
                   <FormField
                     control={form.control}
                     name='period_amount'
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel>
-                          {isMonthlyCard && quotaMode === 'weekly'
-                            ? `${t('Weekly Quota')} (USD)`
-                            : `${t('Period Quota')} (USD)`}
-                        </FormLabel>
+                        <FormLabel>{t('Period Quota')} (USD)</FormLabel>
                         <FormControl>
                           <Input
                             {...field}
@@ -342,16 +303,9 @@ export function SubscriptionsMutateDrawer({
                           />
                         </FormControl>
                         <FormDescription>
-                          {isMonthlyCard && quotaMode === 'weekly'
-                            ? t(
-                                'Monthly total quota will be auto set to {{amount}}',
-                                {
-                                  amount: weeklyTotalAmount,
-                                }
-                              )
-                            : t(
-                                'Quota cap inside each reset period, 0 means disabled'
-                              )}
+                          {t(
+                            'Quota cap inside each reset period, 0 means disabled'
+                          )}
                         </FormDescription>
                         <FormMessage />
                       </FormItem>
@@ -605,7 +559,6 @@ export function SubscriptionsMutateDrawer({
                         ]}
                         onValueChange={field.onChange}
                         value={field.value}
-                        disabled={isMonthlyCard && quotaMode === 'weekly'}
                       >
                         <FormControl>
                           <SelectTrigger>
@@ -622,9 +575,9 @@ export function SubscriptionsMutateDrawer({
                           </SelectGroup>
                         </SelectContent>
                       </Select>
-                      {isMonthlyCard && quotaMode === 'weekly' && (
+                      {isMonthlyCard && (
                         <FormDescription>
-                          {t('Weekly quota mode forces the reset cycle to weekly')}
+                          {t('Monthly cards only support monthly reset or no reset.')}
                         </FormDescription>
                       )}
                       <FormMessage />

@@ -39,10 +39,15 @@ func TestMain(m *testing.M) {
 		&Token{},
 		&Log{},
 		&Channel{},
+		&Redemption{},
 		&TopUp{},
 		&SubscriptionPlan{},
 		&SubscriptionOrder{},
 		&UserSubscription{},
+		&BlindBoxOrder{},
+		&BlindBoxCredit{},
+		&BlindBoxOpenRecord{},
+		&BlindBoxPityState{},
 	); err != nil {
 		panic("failed to migrate: " + err.Error())
 	}
@@ -58,7 +63,12 @@ func truncateTables(t *testing.T) {
 		DB.Exec("DELETE FROM tokens")
 		DB.Exec("DELETE FROM logs")
 		DB.Exec("DELETE FROM channels")
+		DB.Exec("DELETE FROM redemptions")
 		DB.Exec("DELETE FROM top_ups")
+		DB.Exec("DELETE FROM blind_box_orders")
+		DB.Exec("DELETE FROM blind_box_credits")
+		DB.Exec("DELETE FROM blind_box_open_records")
+		DB.Exec("DELETE FROM blind_box_pity_states")
 		DB.Exec("DELETE FROM subscription_orders")
 		DB.Exec("DELETE FROM subscription_plans")
 		DB.Exec("DELETE FROM user_subscriptions")
@@ -228,4 +238,58 @@ func TestUpdateWithStatus_ConcurrentWinner(t *testing.T) {
 		}
 	}
 	assert.Equal(t, 1, winCount, "exactly one goroutine should win the CAS")
+}
+
+func TestRedeem_BlindBoxCodeCreatesAvailableBlindBoxOrder(t *testing.T) {
+	truncateTables(t)
+
+	user := &User{
+		Id:       8801,
+		Username: "blind_box_redeem_user",
+		Status:   common.UserStatusEnabled,
+	}
+	require.NoError(t, DB.Create(user).Error)
+
+	redemption := &Redemption{
+		Id:               9901,
+		Key:              "blind-box-redeem-key",
+		Name:             "Blind Box x3",
+		Status:           common.RedemptionCodeStatusEnabled,
+		RedeemType:       RedemptionTypeBlindBox,
+		BlindBoxQuantity: 3,
+		CreatedTime:      time.Now().Unix(),
+	}
+	require.NoError(t, DB.Create(redemption).Error)
+
+	result, err := Redeem(redemption.Key, user.Id)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	assert.Equal(t, RedemptionTypeBlindBox, result.RedeemType)
+	assert.Equal(t, 3, result.BlindBoxQuantity)
+	assert.NotZero(t, result.BlindBoxOrderId)
+
+	var order BlindBoxOrder
+	require.NoError(t, DB.Where("id = ?", result.BlindBoxOrderId).First(&order).Error)
+	assert.Equal(t, user.Id, order.UserId)
+	assert.Equal(t, 3, order.Quantity)
+	assert.Equal(t, 0, order.OpenedCount)
+	assert.Equal(t, common.TopUpStatusSuccess, order.Status)
+	assert.Equal(t, "redemption", order.PaymentMethod)
+	assert.Equal(t, "redemption", order.PaymentProvider)
+
+	overview, err := GetUserBlindBoxOverview(user.Id, 5)
+	require.NoError(t, err)
+	assert.Equal(t, 3, overview.AvailableBoxes)
+	assert.Equal(t, 0, overview.PurchasedToday)
+	assert.Equal(t, 0, overview.PurchasedThisMonth)
+
+	eligible, err := IsBlindBoxFirstPurchaseEligible(user.Id)
+	require.NoError(t, err)
+	assert.True(t, eligible)
+
+	var saved Redemption
+	require.NoError(t, DB.Where("id = ?", redemption.Id).First(&saved).Error)
+	assert.Equal(t, common.RedemptionCodeStatusUsed, saved.Status)
+	assert.Equal(t, user.Id, saved.UsedUserId)
+	assert.NotZero(t, saved.RedeemedTime)
 }

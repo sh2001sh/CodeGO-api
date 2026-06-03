@@ -30,6 +30,7 @@ import type {
   StripePaymentResponse,
   AffiliateCodeResponse,
   AffiliateTransferResponse,
+  AffiliateRewardsOverviewResponse,
   BillingHistoryResponse,
   CompleteOrderRequest,
   CreemPaymentRequest,
@@ -179,6 +180,11 @@ export async function requestWaffoPancakePayment(
  */
 export async function getAffiliateCode(): Promise<AffiliateCodeResponse> {
   const res = await api.get('/api/user/aff')
+  return res.data
+}
+
+export async function getAffiliateRewardsOverview(): Promise<AffiliateRewardsOverviewResponse> {
+  const res = await api.get('/api/user/aff/overview')
   return res.data
 }
 

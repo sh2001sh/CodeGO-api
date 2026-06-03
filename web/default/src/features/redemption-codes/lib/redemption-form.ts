@@ -41,9 +41,11 @@ export function getRedemptionFormSchema(t: TFunction) {
       redeem_type: z.enum([
         REDEMPTION_TYPES.QUOTA,
         REDEMPTION_TYPES.SUBSCRIPTION,
+        REDEMPTION_TYPES.BLIND_BOX,
       ]),
       quota_dollars: z.number().min(0),
       plan_id: z.number().int().min(0).optional(),
+      blind_box_quantity: z.number().int().min(0).optional(),
       expired_time: z.date().optional(),
       count: z
         .number()
@@ -84,6 +86,16 @@ export function getRedemptionFormSchema(t: TFunction) {
           path: ['plan_id'],
         })
       }
+      if (
+        data.redeem_type === REDEMPTION_TYPES.BLIND_BOX &&
+        (!data.blind_box_quantity || data.blind_box_quantity <= 0)
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: t('Blind box quantity must be greater than 0'),
+          path: ['blind_box_quantity'],
+        })
+      }
     })
 }
 
@@ -92,6 +104,7 @@ export type RedemptionFormValues = {
   redeem_type: RedemptionType
   quota_dollars: number
   plan_id?: number
+  blind_box_quantity?: number
   expired_time?: Date
   count?: number
 }
@@ -101,6 +114,7 @@ export const REDEMPTION_FORM_DEFAULT_VALUES: RedemptionFormValues = {
   redeem_type: REDEMPTION_TYPES.QUOTA,
   quota_dollars: 10,
   plan_id: undefined,
+  blind_box_quantity: 1,
   expired_time: undefined,
   count: 1,
 }
@@ -109,11 +123,16 @@ export function transformFormDataToPayload(
   data: RedemptionFormValues
 ): RedemptionFormData {
   const isSubscription = data.redeem_type === REDEMPTION_TYPES.SUBSCRIPTION
+  const isBlindBox = data.redeem_type === REDEMPTION_TYPES.BLIND_BOX
   return {
     name: data.name,
     redeem_type: data.redeem_type,
-    quota: isSubscription ? 0 : parseQuotaFromDollars(data.quota_dollars),
+    quota:
+      isSubscription || isBlindBox
+        ? 0
+        : parseQuotaFromDollars(data.quota_dollars),
     plan_id: isSubscription ? Number(data.plan_id || 0) : 0,
+    blind_box_quantity: isBlindBox ? Number(data.blind_box_quantity || 0) : 0,
     expired_time: data.expired_time
       ? Math.floor(data.expired_time.getTime() / 1000)
       : 0,
@@ -129,12 +148,17 @@ export function transformRedemptionToFormDefaults(
     redeem_type:
       redemption.redeem_type === REDEMPTION_TYPES.SUBSCRIPTION
         ? REDEMPTION_TYPES.SUBSCRIPTION
+        : redemption.redeem_type === REDEMPTION_TYPES.BLIND_BOX
+          ? REDEMPTION_TYPES.BLIND_BOX
         : REDEMPTION_TYPES.QUOTA,
     quota_dollars:
-      redemption.redeem_type === REDEMPTION_TYPES.SUBSCRIPTION
+      redemption.redeem_type === REDEMPTION_TYPES.SUBSCRIPTION ||
+      redemption.redeem_type === REDEMPTION_TYPES.BLIND_BOX
         ? 0
         : quotaUnitsToDollars(redemption.quota),
     plan_id: redemption.plan_id > 0 ? redemption.plan_id : undefined,
+    blind_box_quantity:
+      redemption.blind_box_quantity > 0 ? redemption.blind_box_quantity : 1,
     expired_time:
       redemption.expired_time > 0
         ? new Date(redemption.expired_time * 1000)

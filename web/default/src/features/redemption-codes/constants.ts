@@ -32,6 +32,7 @@ export const REDEMPTION_STATUS = {
 export const REDEMPTION_TYPES = {
   QUOTA: 'quota',
   SUBSCRIPTION: 'subscription',
+  BLIND_BOX: 'blind_box',
 } as const
 
 export const REDEMPTION_STATUS_VALUES = Object.values(REDEMPTION_STATUS).map(

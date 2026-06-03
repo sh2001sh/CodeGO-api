@@ -98,7 +98,7 @@ func AwardReferralFirstCallTx(tx *gorm.DB, inviteeId int) error {
 	return nil
 }
 
-func AwardReferralFirstTopupTx(tx *gorm.DB, inviteeId int, sourceId string) error {
+func AwardReferralFirstTopupTx(tx *gorm.DB, inviteeId int, _ string) error {
 	if tx == nil {
 		tx = DB
 	}
@@ -116,7 +116,7 @@ func AwardReferralFirstTopupTx(tx *gorm.DB, inviteeId int, sourceId string) erro
 	}
 	for _, award := range awards {
 		key := fmt.Sprintf("referral-first-topup:%s:%d:%d", award.role, inviterId, inviteeId)
-		if _, _, err := AddPointLedgerTx(tx, award.userId, PointLedgerTypeEarn, award.points, PointSourceReferralTopup, sourceId, key, "邀请首充赠送积分"); err != nil {
+		if _, _, err := AddPointLedgerTx(tx, award.userId, PointLedgerTypeEarn, award.points, PointSourceReferralTopup, fmt.Sprintf("%d", inviteeId), key, "邀请首充赠送积分"); err != nil {
 			return err
 		}
 	}

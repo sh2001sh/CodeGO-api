@@ -1053,6 +1053,13 @@ func CompleteSubscriptionOrder(tradeNo string, providerPayload string, expectedP
 		if err := awardReferralFirstTopupForCompletedOrderTx(tx, order.UserId, order.TradeNo); err != nil {
 			return err
 		}
+		purchaseType := ReferralPurchaseTypeMonthCard
+		if IsSubscriptionDayPassPlan(plan) {
+			purchaseType = ReferralPurchaseTypeDayPass
+		}
+		if err := AwardReferralFirstPurchaseBonusTx(tx, order.UserId, purchaseType, "subscription_order", order.TradeNo); err != nil {
+			return err
+		}
 		order.Status = common.TopUpStatusSuccess
 		order.CompleteTime = common.GetTimestamp()
 		if providerPayload != "" {

@@ -41,9 +41,13 @@ function getRedemptionTypeLabel(
   redeemType: string,
   t: (key: string, options?: Record<string, unknown>) => string
 ) {
-  return redeemType === REDEMPTION_TYPES.SUBSCRIPTION
-    ? t('Subscription')
-    : t('Quota')
+  if (redeemType === REDEMPTION_TYPES.SUBSCRIPTION) {
+    return t('Subscription')
+  }
+  if (redeemType === REDEMPTION_TYPES.BLIND_BOX) {
+    return t('Blind Box')
+  }
+  return t('Quota')
 }
 
 export function useRedemptionsColumns(): ColumnDef<Redemption>[] {
@@ -104,7 +108,11 @@ export function useRedemptionsColumns(): ColumnDef<Redemption>[] {
           <StatusBadge
             label={getRedemptionTypeLabel(redeemType, t)}
             variant={
-              redeemType === REDEMPTION_TYPES.SUBSCRIPTION ? 'info' : 'neutral'
+              redeemType === REDEMPTION_TYPES.SUBSCRIPTION
+                ? 'info'
+                : redeemType === REDEMPTION_TYPES.BLIND_BOX
+                  ? 'warning'
+                  : 'neutral'
             }
             copyable={false}
           />
@@ -215,6 +223,18 @@ export function useRedemptionsColumns(): ColumnDef<Redemption>[] {
         const redemption = row.original
         if (redemption.redeem_type === REDEMPTION_TYPES.SUBSCRIPTION) {
           return <span className='text-muted-foreground text-sm'>-</span>
+        }
+
+        if (redemption.redeem_type === REDEMPTION_TYPES.BLIND_BOX) {
+          return (
+            <StatusBadge
+              label={t('{{count}} blind box(es)', {
+                count: redemption.blind_box_quantity || 0,
+              })}
+              variant='warning'
+              copyable={false}
+            />
+          )
         }
 
         return (

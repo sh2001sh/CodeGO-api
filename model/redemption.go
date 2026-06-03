@@ -15,24 +15,26 @@ import (
 const (
 	RedemptionTypeQuota        = "quota"
 	RedemptionTypeSubscription = "subscription"
+	RedemptionTypeBlindBox     = "blind_box"
 )
 
 type Redemption struct {
-	Id           int            `json:"id"`
-	UserId       int            `json:"user_id"`
-	Key          string         `json:"key" gorm:"type:char(32);uniqueIndex"`
-	Status       int            `json:"status" gorm:"default:1"`
-	Name         string         `json:"name" gorm:"index"`
-	RedeemType   string         `json:"redeem_type" gorm:"type:varchar(32);not null;default:'quota';index"`
-	Quota        int            `json:"quota" gorm:"default:100"`
-	PlanId       int            `json:"plan_id" gorm:"default:0;index"`
-	PlanTitle    string         `json:"plan_title" gorm:"type:varchar(128);default:''"`
-	CreatedTime  int64          `json:"created_time" gorm:"bigint"`
-	RedeemedTime int64          `json:"redeemed_time" gorm:"bigint"`
-	Count        int            `json:"count" gorm:"-:all"`
-	UsedUserId   int            `json:"used_user_id"`
-	DeletedAt    gorm.DeletedAt `gorm:"index"`
-	ExpiredTime  int64          `json:"expired_time" gorm:"bigint"`
+	Id               int            `json:"id"`
+	UserId           int            `json:"user_id"`
+	Key              string         `json:"key" gorm:"type:char(32);uniqueIndex"`
+	Status           int            `json:"status" gorm:"default:1"`
+	Name             string         `json:"name" gorm:"index"`
+	RedeemType       string         `json:"redeem_type" gorm:"type:varchar(32);not null;default:'quota';index"`
+	Quota            int            `json:"quota" gorm:"default:100"`
+	PlanId           int            `json:"plan_id" gorm:"default:0;index"`
+	PlanTitle        string         `json:"plan_title" gorm:"type:varchar(128);default:''"`
+	BlindBoxQuantity int            `json:"blind_box_quantity" gorm:"type:int;not null;default:0"`
+	CreatedTime      int64          `json:"created_time" gorm:"bigint"`
+	RedeemedTime     int64          `json:"redeemed_time" gorm:"bigint"`
+	Count            int            `json:"count" gorm:"-:all"`
+	UsedUserId       int            `json:"used_user_id"`
+	DeletedAt        gorm.DeletedAt `gorm:"index"`
+	ExpiredTime      int64          `json:"expired_time" gorm:"bigint"`
 }
 
 type RedemptionResult struct {
@@ -40,6 +42,8 @@ type RedemptionResult struct {
 	Quota              int    `json:"quota,omitempty"`
 	PlanId             int    `json:"plan_id,omitempty"`
 	PlanTitle          string `json:"plan_title,omitempty"`
+	BlindBoxQuantity   int    `json:"blind_box_quantity,omitempty"`
+	BlindBoxOrderId    int    `json:"blind_box_order_id,omitempty"`
 	UserSubscriptionId int    `json:"user_subscription_id,omitempty"`
 }
 
@@ -47,9 +51,41 @@ func NormalizeRedemptionType(value string) string {
 	switch strings.TrimSpace(value) {
 	case RedemptionTypeSubscription:
 		return RedemptionTypeSubscription
+	case RedemptionTypeBlindBox:
+		return RedemptionTypeBlindBox
 	default:
 		return RedemptionTypeQuota
 	}
+}
+
+func createBlindBoxRedemptionOrderTx(tx *gorm.DB, userId int, quantity int, redemptionId int) (*BlindBoxOrder, error) {
+	if tx == nil {
+		return nil, errors.New("transaction is required")
+	}
+	if userId <= 0 {
+		return nil, errors.New("invalid user id")
+	}
+	if quantity <= 0 {
+		return nil, errors.New("invalid blind box quantity")
+	}
+
+	tradeNo := fmt.Sprintf("RDBBUSR%dRID%dNO%s", userId, redemptionId, common.GetUUID())
+	order := &BlindBoxOrder{
+		UserId:          userId,
+		Quantity:        quantity,
+		Money:           0,
+		TradeNo:         tradeNo,
+		PaymentMethod:   "redemption",
+		PaymentProvider: "redemption",
+		Status:          common.TopUpStatusSuccess,
+		CreateTime:      common.GetTimestamp(),
+		CompleteTime:    common.GetTimestamp(),
+		ProviderPayload: fmt.Sprintf(`{"source":"redemption","redemption_id":%d}`, redemptionId),
+	}
+	if err := tx.Create(order).Error; err != nil {
+		return nil, err
+	}
+	return order, nil
 }
 
 func GetAllRedemptions(startIdx int, num int) (redemptions []*Redemption, total int64, err error) {
@@ -177,6 +213,16 @@ func Redeem(key string, userId int) (*RedemptionResult, error) {
 			result.PlanId = plan.Id
 			result.PlanTitle = plan.Title
 			result.UserSubscriptionId = sub.Id
+		case RedemptionTypeBlindBox:
+			if redemption.BlindBoxQuantity <= 0 {
+				return errors.New("blind box redemption quantity is invalid")
+			}
+			order, err := createBlindBoxRedemptionOrderTx(tx, userId, redemption.BlindBoxQuantity, redemption.Id)
+			if err != nil {
+				return err
+			}
+			result.BlindBoxQuantity = redemption.BlindBoxQuantity
+			result.BlindBoxOrderId = order.Id
 		default:
 			err = tx.Model(&User{}).Where("id = ?", userId).Update("quota", gorm.Expr("quota + ?", redemption.Quota)).Error
 			if err != nil {
@@ -203,6 +249,8 @@ func Redeem(key string, userId int) (*RedemptionResult, error) {
 			planTitle = fmt.Sprintf("#%d", result.PlanId)
 		}
 		RecordLog(userId, LogTypeTopup, fmt.Sprintf("Redeemed subscription code for %s, redemption ID %d", planTitle, redemption.Id))
+	case RedemptionTypeBlindBox:
+		RecordLog(userId, LogTypeTopup, fmt.Sprintf("Redeemed blind box code for %d blind box(es), redemption ID %d", result.BlindBoxQuantity, redemption.Id))
 	default:
 		RecordLog(userId, LogTypeTopup, fmt.Sprintf("Redeemed quota code for %s, redemption ID %d", logger.LogQuota(redemption.Quota), redemption.Id))
 	}
@@ -226,6 +274,7 @@ func (redemption *Redemption) Update() error {
 		"quota",
 		"plan_id",
 		"plan_title",
+		"blind_box_quantity",
 		"redeemed_time",
 		"expired_time",
 	).Updates(redemption).Error

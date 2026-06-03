@@ -59,6 +59,15 @@ export function useRedemption() {
           if (typeof window !== 'undefined') {
             window.dispatchEvent(new Event('subscription:changed'))
           }
+        } else if (result.redeem_type === 'blind_box') {
+          toast.success(
+            i18next.t('Redemption successful! Added {{count}} blind box chance(s)', {
+              count: result.blind_box_quantity || 0,
+            })
+          )
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new Event('blind-box:changed'))
+          }
         } else {
           toast.success(
             i18next.t('Redemption successful! Added: {{quota}}', {

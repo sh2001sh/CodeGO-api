@@ -1,12 +1,13 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { ArrowRight, Ticket } from 'lucide-react'
+import { ArrowRight, Gift, Ticket } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth-store'
 import { getCurrencyLabel, isCurrencyDisplayEnabled } from '@/lib/currency'
 import { formatNumber, formatQuota } from '@/lib/format'
 import { computeTimeRange } from '@/lib/time'
 import { Button } from '@/components/ui/button'
+import { CopyButton } from '@/components/copy-button'
 import { getUserQuotaDates } from '@/features/dashboard/api'
 import type { QuotaDataItem } from '@/features/dashboard/types'
 import {
@@ -22,7 +23,8 @@ import type {
   SelfSubscriptionData,
   UserSubscriptionRecord,
 } from '@/features/subscriptions/types'
-import { getBlindBoxSelf } from '@/features/wallet/api'
+import { getAffiliateCode, getBlindBoxSelf } from '@/features/wallet/api'
+import { generateAffiliateLink } from '@/features/wallet/lib'
 import { DataMetric, ProgressBlock, UsageChart } from './summary-card-parts'
 
 const EMPTY_SUBSCRIPTIONS: SelfSubscriptionData = {
@@ -105,7 +107,9 @@ export function SummaryCards() {
     queryKey: ['dashboard', 'overview', 'subscriptions'],
     queryFn: async () => {
       const result = await getSelfSubscriptionFull()
-      return result.success ? (result.data ?? EMPTY_SUBSCRIPTIONS) : EMPTY_SUBSCRIPTIONS
+      return result.success
+        ? (result.data ?? EMPTY_SUBSCRIPTIONS)
+        : EMPTY_SUBSCRIPTIONS
     },
     staleTime: 60 * 1000,
   })
@@ -128,6 +132,22 @@ export function SummaryCards() {
     staleTime: 60 * 1000,
   })
 
+  const affiliateCodeQuery = useQuery({
+    queryKey: ['dashboard', 'overview', 'affiliate-code'],
+    queryFn: async () => {
+      const result = await getAffiliateCode()
+      return result.success ? (result.data ?? '') : ''
+    },
+    enabled: Boolean(user?.id),
+    staleTime: 5 * 60 * 1000,
+  })
+
+  const affiliateCode = affiliateCodeQuery.data || user?.aff_code || ''
+  const affiliateLink = useMemo(
+    () => (affiliateCode ? generateAffiliateLink(affiliateCode) : ''),
+    [affiliateCode]
+  )
+
   const currencyLabel = isCurrencyDisplayEnabled()
     ? getCurrencyLabel()
     : 'Tokens'
@@ -135,12 +155,10 @@ export function SummaryCards() {
   const chartValues = usageRows.map(
     (item: QuotaDataItem) => Number(item.quota) || 0
   )
-  const chartPoints = usageRows
-    .slice(-12)
-    .map((item: QuotaDataItem) => ({
-      label: formatUsageHourLabel(item.created_at),
-      value: Number(item.quota) || 0,
-    }))
+  const chartPoints = usageRows.slice(-12).map((item: QuotaDataItem) => ({
+    label: formatUsageHourLabel(item.created_at),
+    value: Number(item.quota) || 0,
+  }))
   const recentUsage = chartValues.reduce((total, value) => total + value, 0)
   const blindBoxQuota = Number(blindBoxQuery.data?.overview?.remaining_quota ?? 0)
   const totalAvailableQuota = remainQuota + blindBoxQuota
@@ -203,13 +221,58 @@ export function SummaryCards() {
             <DataMetric
               label='历史累计'
               value={formatQuota(usedQuota)}
-              hint='账号历史累计消耗'
+              hint='账户历史累计消耗'
             />
             <DataMetric
               label='请求次数'
               value={formatNumber(requestCount)}
-              hint='账号累计请求次数'
+              hint='账户累计请求次数'
             />
+
+            <div className='rounded-2xl border border-slate-200 bg-white/78 px-3 py-3 dark:border-slate-800 dark:bg-slate-950/55'>
+              <div className='flex items-center justify-between gap-3'>
+                <div className='text-[11px] font-medium uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400'>
+                  邀请链接
+                </div>
+                <div className='rounded-full border border-emerald-200 bg-emerald-50 px-2 py-0.5 text-[11px] font-medium text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-200'>
+                  已邀 {formatNumber(Number(user?.aff_count ?? 0))}
+                </div>
+              </div>
+              <div className='mt-2 flex items-center gap-2'>
+                <div className='min-w-0 flex-1 truncate rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-xs text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200'>
+                  {affiliateLink || '登录后自动生成邀请链接'}
+                </div>
+                <CopyButton
+                  value={affiliateLink}
+                  variant='outline'
+                  className='bg-background size-9'
+                  iconClassName='size-4'
+                  tooltip='复制邀请链接'
+                  successTooltip='已复制'
+                  aria-label='复制邀请链接'
+                />
+              </div>
+              <div className='mt-3 flex flex-wrap gap-2'>
+                <Button
+                  size='sm'
+                  variant='outline'
+                  className='h-8'
+                  render={<Link to='/invite-rewards' />}
+                >
+                  <Gift data-icon='inline-start' />
+                  邀请奖励
+                </Button>
+                <Button
+                  size='sm'
+                  variant='outline'
+                  className='h-8'
+                  render={<Link to='/point-mall' />}
+                >
+                  <ArrowRight data-icon='inline-start' />
+                  积分商城
+                </Button>
+              </div>
+            </div>
           </div>
         </div>
 
@@ -237,7 +300,7 @@ export function SummaryCards() {
               )}`}
             />
             <DataMetric
-              label='周额度剩余'
+              label='周期剩余'
               value={
                 periodAmount > 0
                   ? formatSubscriptionQuotaAmount(periodRemain)
@@ -245,10 +308,10 @@ export function SummaryCards() {
               }
               hint={
                 periodAmount > 0
-                  ? `刷新时间：${formatDateTime(
+                  ? `下次重置：${formatDateTime(
                       Number(subscription?.next_reset_time || 0)
                     )}`
-                  : '当前没有周额度'
+                  : '当前没有周期额度'
               }
             />
           </div>
@@ -257,7 +320,7 @@ export function SummaryCards() {
             <div className='flex items-center justify-between gap-3 rounded-2xl border border-amber-200 bg-amber-50/90 px-3 py-3 text-sm dark:border-amber-500/20 dark:bg-amber-500/10'>
               <div className='flex items-center gap-2 font-medium text-amber-900 dark:text-amber-100'>
                 <Ticket className='size-4' />
-                你还有 {availableBoxes} 个盲盒待开奖
+                你还有 {availableBoxes} 个盲盒待开启
               </div>
               <Button
                 size='sm'
@@ -303,18 +366,18 @@ export function SummaryCards() {
 
               {periodAmount > 0 ? (
                 <ProgressBlock
-                  label='周额度'
+                  label='周期额度'
                   used={periodUsed}
                   total={periodAmount}
                   remainingLabel={`${formatSubscriptionQuotaAmount(periodRemain)} / ${formatSubscriptionQuotaAmount(periodAmount)}`}
-                  hint={`刷新时间：${formatDateTime(subscription.next_reset_time)}`}
+                  hint={`下次重置：${formatDateTime(subscription.next_reset_time)}`}
                   className='[&_[data-slot=progress-indicator]]:bg-emerald-500'
                 />
               ) : null}
             </div>
           ) : (
             <div className='rounded-2xl border border-dashed border-slate-300 px-4 py-6 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400'>
-              当前没有生效套餐。购买后这里会直接展示总额度和周额度进度。
+              当前没有生效套餐。购买后这里会展示总额度和周期额度进度。
             </div>
           )}
 

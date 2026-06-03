@@ -43,6 +43,7 @@ func TestMain(m *testing.M) {
 		&model.Log{},
 		&model.Channel{},
 		&model.TopUp{},
+		&model.SubscriptionPlan{},
 		&model.UserSubscription{},
 	); err != nil {
 		panic("failed to migrate: " + err.Error())
@@ -64,6 +65,7 @@ func truncate(t *testing.T) {
 		model.DB.Exec("DELETE FROM logs")
 		model.DB.Exec("DELETE FROM channels")
 		model.DB.Exec("DELETE FROM top_ups")
+		model.DB.Exec("DELETE FROM subscription_plans")
 		model.DB.Exec("DELETE FROM user_subscriptions")
 	})
 }
@@ -88,11 +90,30 @@ func seedToken(t *testing.T, id int, userId int, key string, remainQuota int) {
 	require.NoError(t, model.DB.Create(token).Error)
 }
 
-func seedSubscription(t *testing.T, id int, userId int, amountTotal int64, amountUsed int64) {
+func seedSubscriptionPlan(t *testing.T, id int) {
+	t.Helper()
+	plan := &model.SubscriptionPlan{
+		Id:               id,
+		Title:            "Test月卡",
+		Subtitle:         "月卡",
+		PriceAmount:      99,
+		Currency:         "CNY",
+		DurationUnit:     model.SubscriptionDurationMonth,
+		DurationValue:    1,
+		Enabled:          true,
+		TotalAmount:      100000,
+		PeriodAmount:     100000,
+		QuotaResetPeriod: model.SubscriptionResetMonthly,
+	}
+	require.NoError(t, model.DB.Create(plan).Error)
+}
+
+func seedSubscription(t *testing.T, id int, userId int, planId int, amountTotal int64, amountUsed int64) {
 	t.Helper()
 	sub := &model.UserSubscription{
 		Id:          id,
 		UserId:      userId,
+		PlanId:      planId,
 		AmountTotal: amountTotal,
 		AmountUsed:  amountUsed,
 		Status:      "active",
@@ -224,6 +245,7 @@ func TestRefundTaskQuota_Subscription(t *testing.T) {
 	ctx := context.Background()
 
 	const userID, tokenID, channelID, subID = 2, 2, 2, 1
+	const planID = 1001
 	const preConsumed = 2000
 	const subTotal, subUsed int64 = 100000, 50000
 	const tokenRemain = 8000
@@ -231,7 +253,8 @@ func TestRefundTaskQuota_Subscription(t *testing.T) {
 	seedUser(t, userID, 0)
 	seedToken(t, tokenID, userID, "sk-sub-key", tokenRemain)
 	seedChannel(t, channelID)
-	seedSubscription(t, subID, userID, subTotal, subUsed)
+	seedSubscriptionPlan(t, planID)
+	seedSubscription(t, subID, userID, planID, subTotal, subUsed)
 
 	task := makeTask(userID, channelID, preConsumed, tokenID, BillingSourceSubscription, subID)
 
@@ -402,6 +425,7 @@ func TestRecalculate_Subscription_NegativeDelta(t *testing.T) {
 	ctx := context.Background()
 
 	const userID, tokenID, channelID, subID = 14, 14, 14, 2
+	const planID = 1002
 	const preConsumed = 5000
 	const actualQuota = 2000 // over-charged by 3000
 	const subTotal, subUsed int64 = 100000, 50000
@@ -410,7 +434,8 @@ func TestRecalculate_Subscription_NegativeDelta(t *testing.T) {
 	seedUser(t, userID, 0)
 	seedToken(t, tokenID, userID, "sk-sub-recalc", tokenRemain)
 	seedChannel(t, channelID)
-	seedSubscription(t, subID, userID, subTotal, subUsed)
+	seedSubscriptionPlan(t, planID)
+	seedSubscription(t, subID, userID, planID, subTotal, subUsed)
 
 	task := makeTask(userID, channelID, preConsumed, tokenID, BillingSourceSubscription, subID)
 

@@ -80,6 +80,13 @@ export function isDayPassPlan(plan?: Partial<SubscriptionPlan> | null): boolean 
   return DAY_PASS_KEYWORDS.some((keyword) => title.includes(keyword))
 }
 
+export function isMonthlyCardPlan(
+  plan?: Partial<SubscriptionPlan> | null
+): boolean {
+  if (!plan || isDayPassPlan(plan)) return false
+  return plan.duration_unit === 'month'
+}
+
 export function getSubscriptionCurrencyLabel(currency?: string | null): string {
   const normalized = trimText(currency).toUpperCase()
   switch (normalized) {
@@ -153,10 +160,19 @@ export function getSubscriptionPlanDescription(
     return `有效期 ${formatDuration(plan, t)}，总额度 ${totalText}，日卡额度独立结算，扣费时默认优先于月卡。`
   }
 
+  if (isMonthlyCardPlan(plan)) {
+    const totalText =
+      totalAmount > 0 ? formatSubscriptionQuotaAmount(totalAmount) : '不限'
+    if (periodAmount > 0) {
+      return `有效期 ${formatDuration(plan, t)}，月度额度 ${formatSubscriptionQuotaAmount(periodAmount)}，总额度 ${totalText}。`
+    }
+    return `有效期 ${formatDuration(plan, t)}，月度额度 ${totalText}，按月统计，额度到期后结束。`
+  }
+
   if (periodAmount > 0) {
     const totalText =
       totalAmount > 0 ? formatSubscriptionQuotaAmount(totalAmount) : '不限'
-    return `额度每周刷新一次，每周额度 ${formatSubscriptionQuotaAmount(periodAmount)}，总额度 ${totalText}。`
+    return `额度按周期刷新，周期额度 ${formatSubscriptionQuotaAmount(periodAmount)}，总额度 ${totalText}。`
   }
 
   if (totalAmount > 0) {
@@ -189,7 +205,9 @@ export function getSubscriptionPlanDetailText(
     detailParts.push(`额度重置 ${resetLabel}`)
   }
   if (periodAmount > 0) {
-    detailParts.push(`每周额度 ${formatSubscriptionQuotaAmount(periodAmount)}`)
+    detailParts.push(
+      `${isMonthlyCardPlan(plan) ? '月度额度' : '周期额度'} ${formatSubscriptionQuotaAmount(periodAmount)}`
+    )
   }
   if (totalAmount > 0) {
     detailParts.push(`总额度 ${formatSubscriptionQuotaAmount(totalAmount)}`)

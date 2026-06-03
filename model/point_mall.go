@@ -22,6 +22,7 @@ const (
 	PointSourceReferralRegister = "referral_register"
 	PointSourceReferralCall     = "referral_first_call"
 	PointSourceReferralTopup    = "referral_first_topup"
+	PointSourceReferralFirstPurchaseBonus = "referral_first_purchase_bonus"
 	PointSourceReferralSpend7   = "referral_7_day_spend"
 	PointSourceReferralRetain30 = "referral_30_day_retention"
 	PointSourceMallRedeem       = "mall_redeem"

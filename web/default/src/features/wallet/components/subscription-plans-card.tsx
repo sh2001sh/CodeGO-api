@@ -25,6 +25,7 @@ import {
   getSubscriptionPlanDiscountText,
   getSubscriptionPlanSubtitle,
   isDayPassPlan,
+  isMonthlyCardPlan,
   normalizeSubscriptionText,
 } from '@/features/subscriptions/lib'
 import type {
@@ -216,6 +217,15 @@ export function SubscriptionPlansCard({
     return map
   }, [plans])
 
+  const planMap = useMemo(() => {
+    const map = new Map<number, PlanRecord['plan']>()
+    for (const item of plans) {
+      if (!item?.plan?.id) continue
+      map.set(item.plan.id, item.plan)
+    }
+    return map
+  }, [plans])
+
   const renderPlanCard = (record: PlanRecord, index: number) => {
     const plan = record.plan
     if (!plan) return null
@@ -248,6 +258,7 @@ export function SubscriptionPlansCard({
       t
     )
     const discountText = getSubscriptionPlanDiscountText(plan)
+    const isMonthlyPlan = isMonthlyCardPlan(plan)
     const blockedReason =
       normalizeSubscriptionText(record.disabled_reason) ||
       '当前已有更高等级的生效套餐，暂不支持降级订阅。'
@@ -313,7 +324,13 @@ export function SubscriptionPlansCard({
           <div className='grid grid-cols-2 gap-2'>
             <MetricCard label='有效期' value={formatDuration(plan, t)} />
             <MetricCard
-              label={periodAmount > 0 ? '每周额度' : '套餐额度'}
+              label={
+                isMonthlyPlan
+                  ? '月度额度'
+                  : periodAmount > 0
+                    ? '周期额度'
+                    : '套餐额度'
+              }
               value={
                 periodAmount > 0
                   ? formatSubscriptionQuotaAmount(periodAmount)
@@ -330,7 +347,7 @@ export function SubscriptionPlansCard({
             />
             <MetricCard
               label='套餐类型'
-              value={isDayPassPlan(plan) ? '独立日卡' : '周刷月卡'}
+              value={isDayPassPlan(plan) ? '独立日卡' : '月卡'}
             />
           </div>
 
@@ -397,7 +414,7 @@ export function SubscriptionPlansCard({
         >
           <PlanSection
             title='月卡套餐'
-            description='适合长期使用 Code Go。月卡有效期 1 个月，周额度用完后会等待下次刷新，或在到期后结束。'
+            description='适合长期使用 Code Go。月卡有效期 1 个月，额度按月统计，到达月度额度或套餐到期后结束。'
             loading={loadingPlans}
             emptyText='当前没有可购买的月卡套餐。'
           >
@@ -424,7 +441,7 @@ export function SubscriptionPlansCard({
                   已购套餐使用情况
                 </div>
                 <p className='text-muted-foreground mt-1 text-sm'>
-                  在这里查看每一份订阅的剩余天数、周额度与总额度消耗。
+                  在这里查看每一份订阅的剩余天数、月度额度或套餐额度进度，以及总额度消耗。
                 </p>
               </div>
 
@@ -445,6 +462,7 @@ export function SubscriptionPlansCard({
                     const title =
                       planTitleMap.get(subscription.plan_id) ||
                       `订阅 #${subscription.id}`
+                    const relatedPlan = planMap.get(subscription.plan_id)
                     const totalAmount = Number(subscription.amount_total || 0)
                     const usedAmount = Number(subscription.amount_used || 0)
                     const totalRemain =
@@ -457,6 +475,8 @@ export function SubscriptionPlansCard({
                       periodAmount > 0
                         ? Math.max(0, periodAmount - periodUsed)
                         : 0
+                    const isMonthlyPlan = isMonthlyCardPlan(relatedPlan)
+                    const isDayPass = isDayPassPlan(relatedPlan)
                     const totalPercent = getUsagePercent(usedAmount, totalAmount)
                     const periodPercent = getUsagePercent(
                       periodUsed,
@@ -476,11 +496,21 @@ export function SubscriptionPlansCard({
                       ? totalExhausted
                         ? '额度已用完'
                         : periodExhausted
-                          ? '等待刷新'
+                          ? '等待下次重置'
                           : '生效中'
                       : subscription.status === 'cancelled'
                         ? '已取消'
                         : '已过期'
+                    const scopedUsageLabel = isMonthlyPlan
+                      ? '本月额度'
+                      : '周期额度'
+                    const totalUsageLabel = isMonthlyPlan
+                      ? periodAmount > 0
+                        ? '总额度'
+                        : '本月额度'
+                      : isDayPass
+                        ? '日卡额度'
+                        : '总额度'
 
                     return (
                       <Card
@@ -509,7 +539,7 @@ export function SubscriptionPlansCard({
 
                           {periodAmount > 0 ? (
                             <UsageBlock
-                              label='本周额度'
+                              label={scopedUsageLabel}
                               used={periodUsed}
                               total={periodAmount}
                               remain={periodRemain}
@@ -519,7 +549,7 @@ export function SubscriptionPlansCard({
                           ) : null}
 
                           <UsageBlock
-                            label='总额度'
+                            label={totalUsageLabel}
                             used={usedAmount}
                             total={totalAmount}
                             remain={totalRemain}

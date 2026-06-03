@@ -16,97 +16,86 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useState, useEffect, useCallback } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
+import { useCallback, useMemo, useState } from 'react'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import i18next from 'i18next'
 import { toast } from 'sonner'
-import { getSelf } from '@/lib/api'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 import { reportGamificationShareLink } from '@/features/gamification/api'
-import { getAffiliateCode, transferAffiliateQuota } from '../api'
+import { getAffiliateRewardsOverview, transferAffiliateQuota } from '../api'
 import { generateAffiliateLink } from '../lib'
 
-// ============================================================================
-// Affiliate Hook
-// ============================================================================
+const AFFILIATE_OVERVIEW_QUERY_KEY = ['wallet', 'affiliate', 'overview'] as const
 
 export function useAffiliate() {
   const queryClient = useQueryClient()
-  const [affiliateCode, setAffiliateCode] = useState<string>('')
-  const [affiliateLink, setAffiliateLink] = useState<string>('')
-  const [loading, setLoading] = useState(true)
   const [transferring, setTransferring] = useState(false)
   const { copyToClipboard } = useCopyToClipboard()
 
-  // Fetch affiliate code
-  const fetchAffiliateCode = useCallback(async () => {
-    try {
-      setLoading(true)
-      const response = await getAffiliateCode()
+  const overviewQuery = useQuery({
+    queryKey: AFFILIATE_OVERVIEW_QUERY_KEY,
+    queryFn: async () => {
+      const response = await getAffiliateRewardsOverview()
+      return response.success ? (response.data ?? null) : null
+    },
+    staleTime: 60 * 1000,
+  })
 
-      if (response.success && response.data) {
-        setAffiliateCode(response.data)
-        const link = generateAffiliateLink(response.data)
-        setAffiliateLink(link)
-      }
-    } catch (error) {
-      // eslint-disable-next-line no-console
-      console.error('Failed to fetch affiliate code:', error)
-    } finally {
-      setLoading(false)
-    }
-  }, [])
+  const affiliateCode = overviewQuery.data?.affiliate_code ?? ''
+  const affiliateLink = useMemo(
+    () => (affiliateCode ? generateAffiliateLink(affiliateCode) : ''),
+    [affiliateCode]
+  )
 
-  // Copy affiliate link
   const copyAffiliateLink = useCallback(async () => {
+    if (!affiliateLink) return
     const copied = await copyToClipboard(affiliateLink)
     if (!copied) return
     try {
       const response = await reportGamificationShareLink()
       if (response.success && response.data?.claimed) {
-        toast.success('分享任务已完成，工坊补给已到账')
+        toast.success('分享任务已完成，奖励已到账')
         await queryClient.invalidateQueries({
           queryKey: ['gamification', 'dashboard'],
         })
       }
     } catch {
-      // 分享本身已经完成，这里不额外打断用户
+      // Share succeeded even if reward report fails.
     }
   }, [affiliateLink, copyToClipboard, queryClient])
 
-  // Transfer affiliate quota to balance
   const transferQuota = useCallback(async (quota: number): Promise<boolean> => {
     try {
       setTransferring(true)
       const response = await transferAffiliateQuota({ quota })
-
       if (response.success) {
         toast.success(response.message || i18next.t('Transfer successful'))
-        await getSelf()
+        await queryClient.invalidateQueries({
+          queryKey: AFFILIATE_OVERVIEW_QUERY_KEY,
+        })
+        await queryClient.invalidateQueries({
+          queryKey: ['dashboard', 'overview', 'affiliate'],
+        })
         return true
       }
-
       toast.error(response.message || i18next.t('Transfer failed'))
       return false
-    } catch (_error) {
+    } catch {
       toast.error(i18next.t('Transfer failed'))
       return false
     } finally {
       setTransferring(false)
     }
-  }, [])
-
-  useEffect(() => {
-    fetchAffiliateCode()
-  }, [fetchAffiliateCode])
+  }, [queryClient])
 
   return {
+    overview: overviewQuery.data,
     affiliateCode,
     affiliateLink,
-    loading,
+    loading: overviewQuery.isLoading,
     transferring,
     copyAffiliateLink,
     transferQuota,
-    refetch: fetchAffiliateCode,
+    refetch: overviewQuery.refetch,
   }
 }

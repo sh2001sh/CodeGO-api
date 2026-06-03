@@ -30,10 +30,12 @@ export interface ApiResponse<T = unknown> {
 }
 
 export interface RedemptionResult {
-  redeem_type: 'quota' | 'subscription' | string
+  redeem_type: 'quota' | 'subscription' | 'blind_box' | string
   quota?: number
   plan_id?: number
   plan_title?: string
+  blind_box_quantity?: number
+  blind_box_order_id?: number
   user_subscription_id?: number
 }
 
@@ -49,6 +51,7 @@ export type PaymentResponse = ApiResponse<Record<string, unknown>> & {
 export type StripePaymentResponse = ApiResponse<{ pay_link: string }>
 export type AffiliateCodeResponse = ApiResponse<string>
 export type AffiliateTransferResponse = ApiResponse
+export type AffiliateRewardsOverviewResponse = ApiResponse<AffiliateRewardsOverview>
 export type CreemPaymentResponse = ApiResponse<{ checkout_url: string }>
 export type WaffoPaymentResponse = ApiResponse<
   { payment_url?: string } | string
@@ -221,6 +224,42 @@ export interface AmountRequest {
 export interface AffiliateTransferRequest {
   /** Quota amount to transfer */
   quota: number
+}
+
+export interface AffiliateRewardRule {
+  purchase_type: string
+  purchase_label: string
+  bonus_quota_amount: number
+  bonus_quota_usd: number
+}
+
+export interface AffiliateInviteeRewardStatus {
+  invitee_id: number
+  invitee_username: string
+  invitee_display_name?: string
+  created_at: number
+  first_call_completed: boolean
+  first_call_rewarded_points: number
+  first_topup_completed: boolean
+  first_topup_rewarded_points: number
+  first_purchase_completed: boolean
+  first_purchase_type?: string
+  first_purchase_label?: string
+  first_purchase_reward_quota: number
+  first_purchase_rewarded_at: number
+}
+
+export interface AffiliateRewardsOverview {
+  affiliate_code: string
+  invited_count: number
+  referral_points_earned: number
+  referral_points_pending: number
+  referral_bonus_quota_earned: number
+  legacy_affiliate_quota: number
+  legacy_affiliate_quota_earned: number
+  successful_purchase_invites: number
+  rules: AffiliateRewardRule[]
+  invitees: AffiliateInviteeRewardStatus[]
 }
 
 /**

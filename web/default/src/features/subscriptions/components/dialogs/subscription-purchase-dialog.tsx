@@ -44,6 +44,7 @@ import {
   getSubscriptionPlanDetailText,
   getSubscriptionPlanDiscountText,
   getSubscriptionPlanSubtitle,
+  isMonthlyCardPlan,
   normalizeSubscriptionText,
 } from '../../lib'
 import type {
@@ -261,6 +262,7 @@ export function SubscriptionPurchaseDialog(props: Props) {
     periodAmount,
     t
   )
+  const isMonthlyPlan = isMonthlyCardPlan(plan)
   const limitReached =
     (props.purchaseLimit || 0) > 0 &&
     (props.purchaseCount || 0) >= (props.purchaseLimit || 0)
@@ -287,21 +289,30 @@ export function SubscriptionPurchaseDialog(props: Props) {
       ),
     },
     {
-      label: periodAmount > 0 ? '每周额度' : '总额度',
+      label: isMonthlyPlan
+        ? '月度额度'
+        : periodAmount > 0
+          ? '周期额度'
+          : '总额度',
       value: formatSubscriptionQuotaAmount(
         periodAmount > 0 ? periodAmount : totalAmount
       ),
     },
+    ...(periodAmount > 0
+      ? [
+          {
+            label: '总额度',
+            value:
+              totalAmount > 0
+                ? formatSubscriptionQuotaAmount(totalAmount)
+                : '不限',
+          },
+        ]
+      : []),
     {
-      label: periodAmount > 0 ? '月度总额度' : '额度重置',
-      value:
-        periodAmount > 0
-          ? totalAmount > 0
-            ? formatSubscriptionQuotaAmount(totalAmount)
-            : '不限'
-          : resetText,
+      label: '额度重置',
+      value: resetText,
     },
-    ...(periodAmount > 0 ? [{ label: '额度重置', value: resetText }] : []),
     {
       label: '支付价格',
       value: formatSubscriptionPlanPrice(effectiveAmount, plan.currency),

@@ -338,8 +338,8 @@ export function downloadCodexSetupScript(
 
   const filename =
     platform === 'windows'
-      ? `setup-codex-windows-${keyLabel}.bat`
-      : `setup-codex-linux-${keyLabel}.sh`
+      ? `windows-config-${keyLabel}.bat`
+      : `mac-linux-config-${keyLabel}.sh`
 
   const content =
     platform === 'windows'

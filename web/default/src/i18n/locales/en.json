@@ -4484,6 +4484,14 @@
     "Downloaded Codex Linux setup script": "Downloaded Codex Linux setup script",
     "Downloaded Codex Windows setup script": "Downloaded Codex Windows setup script",
     "Linux Script": "Linux Script",
-    "Windows Script": "Windows Script"
+    "Windows Script": "Windows Script",
+    "Download Config Script": "Download Config Script",
+    "Windows Config Script Download": "Windows Config Script Download",
+    "Mac/Linux Config Script Download": "Mac/Linux Config Script Download",
+    "Downloaded Windows config script": "Downloaded Windows config script",
+    "Downloaded Mac/Linux config script": "Downloaded Mac/Linux config script",
+    "Monthly Quota": "Monthly Quota",
+    "Monthly cards only keep a monthly quota cap. Weekly quota has been removed.": "Monthly cards only keep a monthly quota cap. Weekly quota has been removed.",
+    "Monthly cards only support monthly reset or no reset.": "Monthly cards only support monthly reset or no reset."
   }
 }

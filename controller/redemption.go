@@ -93,15 +93,16 @@ func AddRedemption(c *gin.Context) {
 	var keys []string
 	for i := 0; i < redemption.Count; i++ {
 		cleanRedemption := model.Redemption{
-			UserId:      c.GetInt("id"),
-			Name:        redemption.Name,
-			Key:         common.GetUUID(),
-			CreatedTime: common.GetTimestamp(),
-			RedeemType:  redemption.RedeemType,
-			Quota:       redemption.Quota,
-			PlanId:      redemption.PlanId,
-			PlanTitle:   redemption.PlanTitle,
-			ExpiredTime: redemption.ExpiredTime,
+			UserId:           c.GetInt("id"),
+			Name:             redemption.Name,
+			Key:              common.GetUUID(),
+			CreatedTime:      common.GetTimestamp(),
+			RedeemType:       redemption.RedeemType,
+			Quota:            redemption.Quota,
+			PlanId:           redemption.PlanId,
+			PlanTitle:        redemption.PlanTitle,
+			BlindBoxQuantity: redemption.BlindBoxQuantity,
+			ExpiredTime:      redemption.ExpiredTime,
 		}
 		err = cleanRedemption.Insert()
 		if err != nil {
@@ -162,6 +163,7 @@ func UpdateRedemption(c *gin.Context) {
 		cleanRedemption.RedeemType = redemption.RedeemType
 		cleanRedemption.Quota = redemption.Quota
 		cleanRedemption.PlanId = redemption.PlanId
+		cleanRedemption.BlindBoxQuantity = redemption.BlindBoxQuantity
 		cleanRedemption.ExpiredTime = redemption.ExpiredTime
 		if err := prepareRedemptionForWrite(cleanRedemption); err != nil {
 			common.ApiErrorMsg(c, err.Error())
@@ -220,12 +222,21 @@ func prepareRedemptionForWrite(redemption *model.Redemption) error {
 		}
 		redemption.PlanTitle = plan.Title
 		redemption.Quota = 0
+		redemption.BlindBoxQuantity = 0
+	case model.RedemptionTypeBlindBox:
+		if redemption.BlindBoxQuantity <= 0 {
+			return errors.New("blind box redemption requires quantity greater than 0")
+		}
+		redemption.Quota = 0
+		redemption.PlanId = 0
+		redemption.PlanTitle = ""
 	default:
 		if redemption.Quota <= 0 {
 			return errors.New("quota redemption requires quota greater than 0")
 		}
 		redemption.PlanId = 0
 		redemption.PlanTitle = ""
+		redemption.BlindBoxQuantity = 0
 	}
 
 	return nil

@@ -27,6 +27,7 @@ export {
   getSubscriptionPlanSubtitle,
   getSubscriptionCurrencyLabel,
   isDayPassPlan,
+  isMonthlyCardPlan,
   normalizeSubscriptionText,
   parseSubscriptionQuotaUSDToUnits,
   subscriptionQuotaUnitsToUSD,

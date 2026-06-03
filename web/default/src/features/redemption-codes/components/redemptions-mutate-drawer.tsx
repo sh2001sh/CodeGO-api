@@ -247,6 +247,14 @@ export function RedemptionsMutateDrawer({
       )
     }
 
+    if (data.redeem_type === REDEMPTION_TYPES.BLIND_BOX) {
+      return trimToMaxRunes(
+        t('Blind Box x{{count}}', {
+          count: Number(data.blind_box_quantity || 0),
+        })
+      )
+    }
+
     const quotaText = tokensOnly
       ? `${t('Quota')} ${Math.round(Number(data.quota_dollars || 0))}`
       : `${t('Quota')} ${currencyLabel}${formatCompactAmount(Number(data.quota_dollars || 0))}`
@@ -274,7 +282,7 @@ export function RedemptionsMutateDrawer({
             {isUpdate
               ? t('Update the redemption code by providing necessary info.')
               : t(
-                  'Add new redemption code(s) for quota top-up or subscription activation.'
+                  'Add new redemption code(s) for quota top-up, subscription activation, or blind box grants.'
                 )}{' '}
             {t('Click save when you&apos;re done.')}
           </SheetDescription>
@@ -323,6 +331,10 @@ export function RedemptionsMutateDrawer({
                         value: REDEMPTION_TYPES.SUBSCRIPTION,
                         label: t('Subscription'),
                       },
+                      {
+                        value: REDEMPTION_TYPES.BLIND_BOX,
+                        label: t('Blind Box'),
+                      },
                     ]}
                     value={field.value}
                     onValueChange={(value) => {
@@ -330,7 +342,12 @@ export function RedemptionsMutateDrawer({
                       field.onChange(value)
                       if (value === REDEMPTION_TYPES.QUOTA) {
                         form.setValue('plan_id', undefined)
+                        form.setValue('blind_box_quantity', 1)
+                      } else if (value === REDEMPTION_TYPES.SUBSCRIPTION) {
+                        form.setValue('blind_box_quantity', 1)
+                        form.setValue('quota_dollars', 0)
                       } else {
+                        form.setValue('plan_id', undefined)
                         form.setValue('quota_dollars', 0)
                       }
                     }}
@@ -348,11 +365,16 @@ export function RedemptionsMutateDrawer({
                         <SelectItem value={REDEMPTION_TYPES.SUBSCRIPTION}>
                           {t('Subscription')}
                         </SelectItem>
+                        <SelectItem value={REDEMPTION_TYPES.BLIND_BOX}>
+                          {t('Blind Box')}
+                        </SelectItem>
                       </SelectGroup>
                     </SelectContent>
                   </Select>
                   <FormDescription>
-                    {t('Choose whether this code adds quota or activates a subscription plan')}
+                    {t(
+                      'Choose whether this code adds quota, activates a subscription plan, or grants blind box chances'
+                    )}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -388,7 +410,7 @@ export function RedemptionsMutateDrawer({
                   </FormItem>
                 )}
               />
-            ) : (
+            ) : redeemType === REDEMPTION_TYPES.SUBSCRIPTION ? (
               <FormField
                 control={form.control}
                 name='plan_id'
@@ -421,6 +443,32 @@ export function RedemptionsMutateDrawer({
                     </Select>
                     <FormDescription>
                       {t('The redeemed user will receive this subscription immediately')}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            ) : (
+              <FormField
+                control={form.control}
+                name='blind_box_quantity'
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>{t('Blind Box Quantity')}</FormLabel>
+                    <FormControl>
+                      <Input
+                        {...field}
+                        type='number'
+                        min='1'
+                        step='1'
+                        placeholder={t('Number of blind boxes to grant')}
+                        onChange={(e) =>
+                          field.onChange(parseInt(e.target.value, 10) || 0)
+                        }
+                      />
+                    </FormControl>
+                    <FormDescription>
+                      {t('The redeemed user will receive this many blind box chances immediately')}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

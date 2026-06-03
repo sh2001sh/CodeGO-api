@@ -218,7 +218,7 @@ func sumBlindBoxOrderQuantity(userId int, start, end int64) (int, error) {
 	var row result
 	err := DB.Model(&BlindBoxOrder{}).
 		Select("COALESCE(SUM(quantity), 0) AS total").
-		Where("user_id = ? AND create_time >= ? AND create_time < ? AND status <> ?", userId, start, end, common.TopUpStatusExpired).
+		Where("user_id = ? AND create_time >= ? AND create_time < ? AND status <> ? AND money > 0", userId, start, end, common.TopUpStatusExpired).
 		Scan(&row).Error
 	return int(row.Total), err
 }
@@ -337,6 +337,9 @@ func CompleteBlindBoxOrder(tradeNo string, providerPayload string, expectedPayme
 		}
 		if actualPaymentMethod != "" && order.PaymentMethod != actualPaymentMethod {
 			order.PaymentMethod = actualPaymentMethod
+		}
+		if err := AwardReferralFirstPurchaseBonusTx(tx, order.UserId, ReferralPurchaseTypeBlindBox, "blind_box_order", order.TradeNo); err != nil {
+			return err
 		}
 		shouldAutoOpen = true
 		return tx.Save(&order).Error
