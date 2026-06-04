@@ -27,6 +27,25 @@ func PreConsumeBilling(c *gin.Context, preConsumedQuota int, relayInfo *relaycom
 	return nil
 }
 
+// RefundBillingSync cancels an unsettled billing session before retrying with
+// another channel. It is synchronous so the next pre-consume sees restored quota.
+func RefundBillingSync(c *gin.Context, relayInfo *relaycommon.RelayInfo) error {
+	if relayInfo == nil || relayInfo.Billing == nil {
+		return nil
+	}
+	if session, ok := relayInfo.Billing.(*BillingSession); ok {
+		if err := session.RefundSync(c); err != nil {
+			return err
+		}
+	} else {
+		relayInfo.Billing.Refund(c)
+	}
+	relayInfo.Billing = nil
+	relayInfo.FinalPreConsumedQuota = 0
+	relayInfo.BillingSource = ""
+	return nil
+}
+
 // ---------------------------------------------------------------------------
 // SettleBilling — 后结算辅助函数
 // ---------------------------------------------------------------------------

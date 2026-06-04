@@ -21,11 +21,10 @@ func isClaudeBillingRequest(relayInfo *relaycommon.RelayInfo) bool {
 	if relayInfo == nil {
 		return false
 	}
-	if relayInfo.GetFinalRequestRelayFormat() == types.RelayFormatClaude || relayInfo.RelayFormat == types.RelayFormatClaude {
-		return true
+	if relayInfo.ChannelMeta == nil {
+		return false
 	}
-	modelName := strings.ToLower(strings.TrimSpace(relayInfo.OriginModelName))
-	return strings.HasPrefix(modelName, "claude-") || strings.Contains(modelName, "/claude-") || strings.Contains(modelName, "anthropic/claude")
+	return relayInfo.ChannelSetting.ClaudeWalletEnabled
 }
 
 // BillingSession owns the lifecycle of pre-consume, settle, and refund for
@@ -138,6 +137,54 @@ func (s *BillingSession) Refund(c *gin.Context) {
 			}
 		}
 	})
+}
+
+func (s *BillingSession) RefundSync(c *gin.Context) error {
+	s.mu.Lock()
+	if s.settled || s.refunded || !s.needsRefundLocked() {
+		s.mu.Unlock()
+		return nil
+	}
+	s.refunded = true
+	s.mu.Unlock()
+
+	logger.LogInfo(c, fmt.Sprintf(
+		"user %d request failed, refund pre-consume (token_quota=%s, funding=%s)",
+		s.relayInfo.UserId,
+		logger.FormatQuota(s.tokenConsumed),
+		s.funding.Source(),
+	))
+
+	tokenID := s.relayInfo.TokenId
+	tokenKey := s.relayInfo.TokenKey
+	isPlayground := s.relayInfo.IsPlayground
+	tokenConsumed := s.tokenConsumed
+	extraReserved := s.extraReserved
+	subscriptionID := s.relayInfo.SubscriptionId
+	funding := s.funding
+
+	var errs []error
+	if err := funding.Refund(); err != nil {
+		errs = append(errs, fmt.Errorf("refund funding source: %w", err))
+	}
+
+	if extraReserved > 0 && funding.Source() == BillingSourceSubscription && subscriptionID > 0 {
+		modelName := ""
+		if subFunding, ok := funding.(*SubscriptionFunding); ok {
+			modelName = subFunding.modelName
+		}
+		if err := model.PostConsumeUserSubscriptionUsageDelta(subscriptionID, modelName, -int64(extraReserved)); err != nil {
+			errs = append(errs, fmt.Errorf("refund subscription extra reserved quota: %w", err))
+		}
+	}
+
+	if tokenConsumed > 0 && !isPlayground {
+		if err := model.IncreaseTokenQuota(tokenID, tokenKey, tokenConsumed); err != nil {
+			errs = append(errs, fmt.Errorf("refund token quota: %w", err))
+		}
+	}
+
+	return errors.Join(errs...)
 }
 
 func (s *BillingSession) NeedsRefund() bool {

@@ -160,11 +160,6 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 
 	if priceData.FreeModel {
 		logger.LogInfo(c, fmt.Sprintf("模型 %s 免费，跳过预扣费", relayInfo.OriginModelName))
-	} else {
-		newAPIError = service.PreConsumeBilling(c, priceData.QuotaToPreConsume, relayInfo)
-		if newAPIError != nil {
-			return
-		}
 	}
 
 	defer func() {
@@ -197,6 +192,12 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 			newAPIError = channelErr
 			break
 		}
+		relayInfo.InitChannelMeta(c)
+		currentPriceData, priceErr := helper.ModelPriceHelper(c, relayInfo, tokens, meta)
+		if priceErr != nil {
+			newAPIError = types.NewError(priceErr, types.ErrorCodeModelPriceError, types.ErrOptionWithStatusCode(http.StatusBadRequest))
+			break
+		}
 
 		addUsedChannel(c, channel.Id)
 		bodyStorage, bodyErr := common.GetBodyStorage(c)
@@ -210,6 +211,13 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 			break
 		}
 		c.Request.Body = io.NopCloser(bodyStorage)
+
+		if !currentPriceData.FreeModel {
+			newAPIError = service.PreConsumeBilling(c, currentPriceData.QuotaToPreConsume, relayInfo)
+			if newAPIError != nil {
+				break
+			}
+		}
 
 		switch relayFormat {
 		case types.RelayFormatOpenAIRealtime:
@@ -234,6 +242,12 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 
 		if !shouldRetry(c, newAPIError, common.RetryTimes-retryParam.GetRetry()) {
 			break
+		}
+		if relayInfo.Billing != nil {
+			if refundErr := service.RefundBillingSync(c, relayInfo); refundErr != nil {
+				logger.LogError(c, fmt.Sprintf("refund pre-consume before retry failed: %s", refundErr.Error()))
+				break
+			}
 		}
 	}
 
