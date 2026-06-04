@@ -84,6 +84,7 @@ export function SummaryCards() {
   const user = useAuthStore((state) => state.auth.user)
   const summaryTimeRange = useMemo(() => computeTimeRange(1), [])
   const remainQuota = Number(user?.quota ?? 0)
+  const claudeQuota = Number(user?.claude_quota ?? 0)
   const usedQuota = Number(user?.used_quota ?? 0)
   const requestCount = Number(user?.request_count ?? 0)
 
@@ -288,13 +289,26 @@ export function SummaryCards() {
               <div className='mt-1 text-3xl font-semibold tracking-tight text-slate-950 dark:text-slate-50'>
                 {formatQuota(totalAvailableQuota)}
               </div>
+              <div className='mt-2 flex flex-wrap gap-2 text-xs'>
+                <span className='rounded-full border border-slate-200 bg-white/80 px-2.5 py-1 text-slate-600 dark:border-slate-700 dark:bg-slate-950/60 dark:text-slate-300'>
+                  默认钱包 {formatQuota(remainQuota)}
+                </span>
+                <span className='rounded-full border border-sky-200 bg-sky-50/90 px-2.5 py-1 text-sky-700 dark:border-sky-500/20 dark:bg-sky-500/10 dark:text-sky-200'>
+                  Claude 额度 {formatQuota(claudeQuota)}
+                </span>
+              </div>
             </div>
             <div className='rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-medium text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-200'>
               钱包 + 盲盒
             </div>
           </div>
 
-          <div className='grid gap-3 sm:grid-cols-2'>
+          <div className='grid gap-3 sm:grid-cols-3'>
+            <DataMetric
+              label='Claude 额度'
+              value={formatQuota(claudeQuota)}
+              hint='仅可用于 Claude 模型'
+            />
             <DataMetric
               label='盲盒额度'
               value={formatQuota(blindBoxQuota)}

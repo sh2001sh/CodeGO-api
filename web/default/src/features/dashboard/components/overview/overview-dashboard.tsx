@@ -459,6 +459,7 @@ export function OverviewDashboard() {
 
   const requestCount = Number(user?.request_count ?? 0)
   const remainQuota = Number(user?.quota ?? 0)
+  const claudeQuota = Number(user?.claude_quota ?? 0)
   const usedQuota = Number(user?.used_quota ?? 0)
   const isAdmin = Boolean(user?.role && user.role >= ROLE.ADMIN)
 
@@ -510,7 +511,7 @@ export function OverviewDashboard() {
         description: '先准备余额或套餐额度，避免请求测试到一半中断。',
         to: '/wallet',
         icon: CreditCard,
-        completed: remainQuota > 0 || usedQuota > 0,
+        completed: remainQuota > 0 || claudeQuota > 0 || usedQuota > 0,
       },
       {
         title: '发起请求',
@@ -520,7 +521,7 @@ export function OverviewDashboard() {
         completed: requestCount > 0,
       },
     ],
-    [preferredKey, remainQuota, requestCount, usedQuota]
+    [claudeQuota, preferredKey, remainQuota, requestCount, usedQuota]
   )
 
   const quickActions = useMemo<QuickAction[]>(

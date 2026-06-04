@@ -121,7 +121,7 @@ const RechargeCard = ({
         className='!rounded-xl w-full'
         cover={
           <div
-            className='relative h-30'
+            className='relative min-h-[13rem]'
             style={{
               '--palette-primary-darkerChannel': '37 99 235',
               backgroundImage: `linear-gradient(0deg, rgba(var(--palette-primary-darkerChannel) / 80%), rgba(var(--palette-primary-darkerChannel) / 80%)), url('/cover-4.webp')`,
@@ -138,7 +138,7 @@ const RechargeCard = ({
               </div>
 
               {/* 统计数据 */}
-              <div className='grid grid-cols-3 gap-6 mt-4'>
+              <div className='grid grid-cols-2 gap-4 mt-4 sm:grid-cols-4'>
                 {/* 当前余额 */}
                 <div className='text-center'>
                   <div
@@ -165,6 +165,30 @@ const RechargeCard = ({
                 </div>
 
                 {/* 历史消耗 */}
+                <div className='text-center'>
+                  <div
+                    className='text-base sm:text-2xl font-bold mb-2'
+                    style={{ color: 'white' }}
+                  >
+                    {renderQuota(userState?.user?.claude_quota || 0)}
+                  </div>
+                  <div className='flex items-center justify-center text-sm'>
+                    <Sparkles
+                      size={14}
+                      className='mr-1'
+                      style={{ color: 'rgba(255,255,255,0.8)' }}
+                    />
+                    <Text
+                      style={{
+                        color: 'rgba(255,255,255,0.8)',
+                        fontSize: '12px',
+                      }}
+                    >
+                      {t('Claude 额度')}
+                    </Text>
+                  </div>
+                </div>
+
                 <div className='text-center'>
                   <div
                     className='text-base sm:text-2xl font-bold mb-2'
