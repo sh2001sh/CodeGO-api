@@ -63,6 +63,10 @@ const (
 	// It is not returned to end users, but can be persisted into consume/error logs for debugging.
 	ContextKeyAdminRejectReason ContextKey = "admin_reject_reason"
 
+	// ContextKeyResponseBodyDelivered indicates at least one business response payload
+	// has been successfully written to the downstream client for the current request.
+	ContextKeyResponseBodyDelivered ContextKey = "response_body_delivered"
+
 	// ContextKeyLanguage stores the user's language preference for i18n
 	ContextKeyLanguage ContextKey = "language"
 	ContextKeyIsStream ContextKey = "is_stream"

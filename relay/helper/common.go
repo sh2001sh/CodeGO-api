@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	"github.com/QuantumNous/new-api/common"
+	"github.com/QuantumNous/new-api/constant"
 	"github.com/QuantumNous/new-api/dto"
 	"github.com/QuantumNous/new-api/logger"
 	"github.com/QuantumNous/new-api/types"
@@ -13,6 +14,13 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
+
+func markResponseBodyDelivered(c *gin.Context) {
+	if c == nil {
+		return
+	}
+	common.SetContextKey(c, constant.ContextKeyResponseBodyDelivered, true)
+}
 
 func FlushWriter(c *gin.Context) (err error) {
 	defer func() {
@@ -62,20 +70,31 @@ func ClaudeData(c *gin.Context, resp dto.ClaudeResponse) error {
 		c.Render(-1, common.CustomEvent{Data: fmt.Sprintf("event: %s\n", resp.Type)})
 		c.Render(-1, common.CustomEvent{Data: "data: " + string(jsonData)})
 	}
-	_ = FlushWriter(c)
-	return nil
+	err = FlushWriter(c)
+	if err == nil {
+		markResponseBodyDelivered(c)
+	}
+	return err
 }
 
-func ClaudeChunkData(c *gin.Context, resp dto.ClaudeResponse, data string) {
+func ClaudeChunkData(c *gin.Context, resp dto.ClaudeResponse, data string) error {
 	c.Render(-1, common.CustomEvent{Data: fmt.Sprintf("event: %s\n", resp.Type)})
 	c.Render(-1, common.CustomEvent{Data: fmt.Sprintf("data: %s\n", data)})
-	_ = FlushWriter(c)
+	err := FlushWriter(c)
+	if err == nil {
+		markResponseBodyDelivered(c)
+	}
+	return err
 }
 
-func ResponseChunkData(c *gin.Context, resp dto.ResponsesStreamResponse, data string) {
+func ResponseChunkData(c *gin.Context, resp dto.ResponsesStreamResponse, data string) error {
 	c.Render(-1, common.CustomEvent{Data: fmt.Sprintf("event: %s\n", resp.Type)})
 	c.Render(-1, common.CustomEvent{Data: fmt.Sprintf("data: %s", data)})
-	_ = FlushWriter(c)
+	err := FlushWriter(c)
+	if err == nil {
+		markResponseBodyDelivered(c)
+	}
+	return err
 }
 
 func StringData(c *gin.Context, str string) error {
@@ -88,7 +107,11 @@ func StringData(c *gin.Context, str string) error {
 	}
 
 	c.Render(-1, common.CustomEvent{Data: "data: " + str})
-	return FlushWriter(c)
+	err := FlushWriter(c)
+	if err == nil && str != "[DONE]" {
+		markResponseBodyDelivered(c)
+	}
+	return err
 }
 
 func PingData(c *gin.Context) error {

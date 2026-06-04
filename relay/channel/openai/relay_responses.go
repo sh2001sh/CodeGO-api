@@ -89,7 +89,11 @@ func OaiResponsesStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp
 			sr.Error(err)
 			return
 		}
-		sendResponsesStreamData(c, streamResponse, data)
+		if err := sendResponsesStreamData(c, streamResponse, data); err != nil {
+			logger.LogError(c, "failed to write responses stream response: "+err.Error())
+			sr.Stop(err)
+			return
+		}
 		switch streamResponse.Type {
 		case "response.completed":
 			if streamResponse.Response != nil {

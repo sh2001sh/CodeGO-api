@@ -1,7 +1,9 @@
 package claude
 
 import (
+	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -814,7 +816,17 @@ func HandleStreamResponseData(c *gin.Context, info *relaycommon.RelayInfo, claud
 				data = patchClaudeMessageDeltaUsageData(data, buildMessageDeltaPatchUsage(&claudeResponse, claudeInfo))
 			}
 		}
-		helper.ClaudeChunkData(c, claudeResponse, data)
+		err = helper.ClaudeChunkData(c, claudeResponse, data)
+		if err != nil {
+			logger.LogError(c, "send_stream_response_failed: "+err.Error())
+			if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) ||
+				strings.Contains(strings.ToLower(err.Error()), "context canceled") ||
+				strings.Contains(strings.ToLower(err.Error()), "request context done") ||
+				strings.Contains(strings.ToLower(err.Error()), "deadline exceeded") {
+				return nil
+			}
+			return types.NewError(err, types.ErrorCodeDoRequestFailed)
+		}
 	} else if info.RelayFormat == types.RelayFormatOpenAI {
 		response := StreamResponseClaude2OpenAI(&claudeResponse)
 
