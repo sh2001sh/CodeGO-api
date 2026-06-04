@@ -28,6 +28,11 @@ export const REDEMPTION_TYPES = {
   SUBSCRIPTION: 'subscription',
 };
 
+export const REDEMPTION_WALLET_TYPES = {
+  DEFAULT: 'default',
+  CLAUDE: 'claude',
+};
+
 // Redemption code status display mapping
 export const REDEMPTION_STATUS_MAP = {
   [REDEMPTION_STATUS.UNUSED]: {

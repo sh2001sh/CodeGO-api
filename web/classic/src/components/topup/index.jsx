@@ -157,15 +157,36 @@ const TopUp = () => {
       const { success, message, data } = res.data;
       if (success) {
         showSuccess(t('兑换成功！'));
+        const redeemResult =
+          typeof data === 'object' && data !== null
+            ? data
+            : { redeem_type: 'quota', quota: data };
+        const quotaValue = Number(redeemResult.quota || 0);
+        const walletType = redeemResult.wallet_type || 'default';
+        let content = t('成功兑换额度：') + renderQuota(quotaValue);
+        if (redeemResult.redeem_type === 'subscription') {
+          content = `${t('兑换成功！')} ${redeemResult.plan_title || t('Subscription')}`;
+        } else if (redeemResult.redeem_type === 'blind_box') {
+          content = `${t('兑换成功！')} ${t('Blind Box')} x${redeemResult.blind_box_quantity || 0}`;
+        } else if (walletType === 'claude') {
+          content = `${t('成功兑换额度：')}${t('Claude 额度')} ${renderQuota(quotaValue)}`;
+        }
         Modal.success({
           title: t('兑换成功！'),
-          content: t('成功兑换额度：') + renderQuota(data),
+          content,
           centered: true,
         });
         if (userState.user) {
           const updatedUser = {
             ...userState.user,
-            quota: userState.user.quota + data,
+            quota:
+              redeemResult.redeem_type !== 'quota' || walletType === 'claude'
+                ? userState.user.quota
+                : userState.user.quota + quotaValue,
+            claude_quota:
+              redeemResult.redeem_type === 'quota' && walletType === 'claude'
+                ? (userState.user.claude_quota || 0) + quotaValue
+                : userState.user.claude_quota,
           };
           userDispatch({ type: 'login', payload: updatedUser });
         }

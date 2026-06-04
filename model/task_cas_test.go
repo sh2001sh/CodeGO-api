@@ -293,3 +293,46 @@ func TestRedeem_BlindBoxCodeCreatesAvailableBlindBoxOrder(t *testing.T) {
 	assert.Equal(t, user.Id, saved.UsedUserId)
 	assert.NotZero(t, saved.RedeemedTime)
 }
+
+func TestRedeem_ClaudeQuotaCodeAddsClaudeQuotaOnly(t *testing.T) {
+	truncateTables(t)
+
+	user := &User{
+		Id:          8802,
+		Username:    "claude_quota_redeem_user",
+		Status:      common.UserStatusEnabled,
+		Quota:       1200,
+		ClaudeQuota: 300,
+	}
+	require.NoError(t, DB.Create(user).Error)
+
+	redemption := &Redemption{
+		Id:          9902,
+		Key:         "claude-quota-redeem-key",
+		Name:        "Claude Quota Pack",
+		Status:      common.RedemptionCodeStatusEnabled,
+		RedeemType:  RedemptionTypeQuota,
+		WalletType:  WalletTypeClaude,
+		Quota:       800,
+		CreatedTime: time.Now().Unix(),
+	}
+	require.NoError(t, DB.Create(redemption).Error)
+
+	result, err := Redeem(redemption.Key, user.Id)
+	require.NoError(t, err)
+	require.NotNil(t, result)
+	assert.Equal(t, RedemptionTypeQuota, result.RedeemType)
+	assert.Equal(t, WalletTypeClaude, result.WalletType)
+	assert.Equal(t, 800, result.Quota)
+
+	var savedUser User
+	require.NoError(t, DB.Where("id = ?", user.Id).First(&savedUser).Error)
+	assert.Equal(t, 1200, savedUser.Quota)
+	assert.Equal(t, 1100, savedUser.ClaudeQuota)
+
+	var saved Redemption
+	require.NoError(t, DB.Where("id = ?", redemption.Id).First(&saved).Error)
+	assert.Equal(t, common.RedemptionCodeStatusUsed, saved.Status)
+	assert.Equal(t, user.Id, saved.UsedUserId)
+	assert.NotZero(t, saved.RedeemedTime)
+}

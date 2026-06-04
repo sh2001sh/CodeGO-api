@@ -53,7 +53,10 @@ import {
   IconClose,
   IconGift,
 } from '@douyinfe/semi-icons';
-import { REDEMPTION_TYPES } from '../../../../constants/redemption.constants';
+import {
+  REDEMPTION_TYPES,
+  REDEMPTION_WALLET_TYPES,
+} from '../../../../constants/redemption.constants';
 
 const { Text, Title } = Typography;
 
@@ -72,6 +75,7 @@ const EditRedemptionModal = (props) => {
   const getInitValues = () => ({
     name: '',
     redeem_type: REDEMPTION_TYPES.QUOTA,
+    wallet_type: REDEMPTION_WALLET_TYPES.DEFAULT,
     plan_id: '',
     quota: DEFAULT_QUOTA,
     amount: Number(quotaToDisplayAmount(DEFAULT_QUOTA).toFixed(6)),
@@ -121,6 +125,10 @@ const EditRedemptionModal = (props) => {
         ...getInitValues(),
         ...data,
         redeem_type: data.redeem_type || REDEMPTION_TYPES.QUOTA,
+        wallet_type:
+          data.wallet_type === REDEMPTION_WALLET_TYPES.CLAUDE
+            ? REDEMPTION_WALLET_TYPES.CLAUDE
+            : REDEMPTION_WALLET_TYPES.DEFAULT,
         plan_id: data.plan_id > 0 ? String(data.plan_id) : '',
         expired_time:
           data.expired_time === 0 ? null : new Date(data.expired_time * 1000),
@@ -183,9 +191,15 @@ const EditRedemptionModal = (props) => {
           values.name ||
           (redeemType === REDEMPTION_TYPES.SUBSCRIPTION
             ? planTitleMap.get(planId) || t('Subscription')
-            : renderQuota(quota)),
+            : values.wallet_type === REDEMPTION_WALLET_TYPES.CLAUDE
+              ? `Claude ${renderQuota(quota)}`
+              : renderQuota(quota)),
         redeem_type: redeemType,
         quota,
+        wallet_type:
+          redeemType === REDEMPTION_TYPES.QUOTA
+            ? values.wallet_type || REDEMPTION_WALLET_TYPES.DEFAULT
+            : REDEMPTION_WALLET_TYPES.DEFAULT,
         plan_id: planId,
         count: parseInt(values.count, 10) || 1,
         expired_time: values.expired_time
@@ -319,6 +333,14 @@ const EditRedemptionModal = (props) => {
                         field='redeem_type'
                         label={t('Code Type')}
                         style={{ width: '100%' }}
+                        onChange={(value) => {
+                          if (value !== REDEMPTION_TYPES.QUOTA) {
+                            formApiRef.current?.setValue(
+                              'wallet_type',
+                              REDEMPTION_WALLET_TYPES.DEFAULT,
+                            );
+                          }
+                        }}
                       >
                         <Select.Option value={REDEMPTION_TYPES.QUOTA}>
                           {t('Quota')}
@@ -377,10 +399,34 @@ const EditRedemptionModal = (props) => {
                         </Form.Select>
                       </Col>
                     ) : (
-                      <Col span={24}>
-                        <Form.InputNumber
-                          field='amount'
-                          label={t('Amount')}
+                      <>
+                        <Col span={24}>
+                          <Form.Select
+                            field='wallet_type'
+                            label={t('Balance Pool')}
+                            style={{ width: '100%' }}
+                          >
+                            <Select.Option
+                              value={REDEMPTION_WALLET_TYPES.DEFAULT}
+                            >
+                              {t('Default Balance')}
+                            </Select.Option>
+                            <Select.Option
+                              value={REDEMPTION_WALLET_TYPES.CLAUDE}
+                            >
+                              {t('Claude Quota')}
+                            </Select.Option>
+                          </Form.Select>
+                        </Col>
+                        <Col span={24}>
+                          <Form.InputNumber
+                            field='amount'
+                            label={
+                              values.wallet_type ===
+                              REDEMPTION_WALLET_TYPES.CLAUDE
+                                ? t('Claude Quota Amount')
+                                : t('Amount')
+                            }
                           prefix={getCurrencyConfig().symbol}
                           precision={6}
                           min={0}
@@ -425,7 +471,8 @@ const EditRedemptionModal = (props) => {
                             showClear
                           />
                         </div>
-                      </Col>
+                        </Col>
+                      </>
                     )}
                     {!isEdit && (
                       <Col span={12}>

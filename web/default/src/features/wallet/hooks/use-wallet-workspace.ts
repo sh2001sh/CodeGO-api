@@ -24,7 +24,11 @@ import { useTopupInfo } from './use-topup-info'
 import { useWaffoPancakePayment } from './use-waffo-pancake-payment'
 import { useWaffoPayment } from './use-waffo-payment'
 
-export function useWalletWorkspace() {
+interface UseWalletWorkspaceOptions {
+  initialWalletType?: WalletType
+}
+
+export function useWalletWorkspace(options: UseWalletWorkspaceOptions = {}) {
   const [user, setUser] = useState<UserWalletData | null>(null)
   const [userLoading, setUserLoading] = useState(true)
   const [subscriptionData, setSubscriptionData] =
@@ -32,7 +36,7 @@ export function useWalletWorkspace() {
   const [subscriptionLoading, setSubscriptionLoading] = useState(true)
   const [topupAmount, setTopupAmount] = useState(0)
   const [selectedWalletType, setSelectedWalletType] =
-    useState<WalletType>('default')
+    useState<WalletType>(options.initialWalletType ?? 'default')
   const [selectedPreset, setSelectedPreset] = useState<number | null>(null)
   const [selectedPaymentMethod, setSelectedPaymentMethod] =
     useState<PaymentMethod>()
@@ -129,6 +133,11 @@ export function useWalletWorkspace() {
       calculatePaymentAmount(minTopup, defaultPaymentType, selectedWalletType)
     }
   }, [topupInfo, topupAmount, calculatePaymentAmount, selectedWalletType])
+
+  useEffect(() => {
+    if (!options.initialWalletType) return
+    setSelectedWalletType(options.initialWalletType)
+  }, [options.initialWalletType])
 
   const getCurrentPaymentType = useCallback(() => {
     return selectedPaymentMethod?.type || getDefaultPaymentType(topupInfo)

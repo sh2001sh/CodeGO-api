@@ -32,22 +32,38 @@ import {
   REDEMPTION_FILTER_EXPIRED,
   REDEMPTION_STATUSES,
   REDEMPTION_TYPES,
+  REDEMPTION_WALLET_TYPES,
 } from '../constants'
 import { isRedemptionExpired, isTimestampExpired } from '../lib'
 import { type Redemption } from '../types'
 import { DataTableRowActions } from './data-table-row-actions'
 
 function getRedemptionTypeLabel(
-  redeemType: string,
+  redemption: Redemption,
   t: (key: string, options?: Record<string, unknown>) => string
 ) {
+  const redeemType = redemption.redeem_type
   if (redeemType === REDEMPTION_TYPES.SUBSCRIPTION) {
     return t('Subscription')
   }
   if (redeemType === REDEMPTION_TYPES.BLIND_BOX) {
     return t('Blind Box')
   }
+  if (redemption.wallet_type === REDEMPTION_WALLET_TYPES.CLAUDE) {
+    return t('Claude Quota')
+  }
   return t('Quota')
+}
+
+function getQuotaBenefitLabel(
+  redemption: Redemption,
+  t: (key: string, options?: Record<string, unknown>) => string
+) {
+  const quotaLabel = formatQuota(redemption.quota)
+  if (redemption.wallet_type === REDEMPTION_WALLET_TYPES.CLAUDE) {
+    return `${t('Claude Quota')} · ${quotaLabel}`
+  }
+  return quotaLabel
 }
 
 export function useRedemptionsColumns(): ColumnDef<Redemption>[] {
@@ -103,15 +119,18 @@ export function useRedemptionsColumns(): ColumnDef<Redemption>[] {
         <DataTableColumnHeader column={column} title={t('Type')} />
       ),
       cell: ({ row }) => {
+        const redemption = row.original
         const redeemType = String(row.getValue('redeem_type') || 'quota')
         return (
           <StatusBadge
-            label={getRedemptionTypeLabel(redeemType, t)}
+            label={getRedemptionTypeLabel(redemption, t)}
             variant={
               redeemType === REDEMPTION_TYPES.SUBSCRIPTION
                 ? 'info'
                 : redeemType === REDEMPTION_TYPES.BLIND_BOX
                   ? 'warning'
+                  : redemption.wallet_type === REDEMPTION_WALLET_TYPES.CLAUDE
+                    ? 'info'
                   : 'neutral'
             }
             copyable={false}
@@ -238,12 +257,16 @@ export function useRedemptionsColumns(): ColumnDef<Redemption>[] {
         }
 
         return (
-          <StatusBadge
-            label={formatQuota(redemption.quota)}
-            variant='neutral'
-            copyable={false}
-          />
-        )
+            <StatusBadge
+              label={getQuotaBenefitLabel(redemption, t)}
+              variant={
+                redemption.wallet_type === REDEMPTION_WALLET_TYPES.CLAUDE
+                  ? 'info'
+                  : 'neutral'
+              }
+              copyable={false}
+            />
+          )
       },
     },
     {

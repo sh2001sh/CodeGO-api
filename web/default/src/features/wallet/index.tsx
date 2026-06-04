@@ -7,13 +7,17 @@ import { RechargeFormCard } from './components/recharge-form-card'
 import { WalletStatsCard } from './components/wallet-stats-card'
 import { WalletWorkspaceShell } from './components/wallet-workspace-shell'
 import { useWalletWorkspace } from './hooks/use-wallet-workspace'
+import type { WalletType } from './types'
 
 interface WalletProps {
   initialShowHistory?: boolean
+  initialWalletType?: WalletType
 }
 
 export function Wallet(props: WalletProps) {
-  const workspace = useWalletWorkspace()
+  const workspace = useWalletWorkspace({
+    initialWalletType: props.initialWalletType,
+  })
   const setBillingDialogOpen = workspace.setBillingDialogOpen
 
   useEffect(() => {

@@ -26,6 +26,7 @@ type Redemption struct {
 	Name             string         `json:"name" gorm:"index"`
 	RedeemType       string         `json:"redeem_type" gorm:"type:varchar(32);not null;default:'quota';index"`
 	Quota            int            `json:"quota" gorm:"default:100"`
+	WalletType       string         `json:"wallet_type" gorm:"type:varchar(32);not null;default:'default';index"`
 	PlanId           int            `json:"plan_id" gorm:"default:0;index"`
 	PlanTitle        string         `json:"plan_title" gorm:"type:varchar(128);default:''"`
 	BlindBoxQuantity int            `json:"blind_box_quantity" gorm:"type:int;not null;default:0"`
@@ -40,11 +41,22 @@ type Redemption struct {
 type RedemptionResult struct {
 	RedeemType         string `json:"redeem_type"`
 	Quota              int    `json:"quota,omitempty"`
+	WalletType         string `json:"wallet_type,omitempty"`
 	PlanId             int    `json:"plan_id,omitempty"`
 	PlanTitle          string `json:"plan_title,omitempty"`
 	BlindBoxQuantity   int    `json:"blind_box_quantity,omitempty"`
 	BlindBoxOrderId    int    `json:"blind_box_order_id,omitempty"`
 	UserSubscriptionId int    `json:"user_subscription_id,omitempty"`
+}
+
+func (redemption *Redemption) BeforeCreate(tx *gorm.DB) error {
+	redemption.WalletType = NormalizeWalletType(redemption.WalletType)
+	return nil
+}
+
+func (redemption *Redemption) BeforeUpdate(tx *gorm.DB) error {
+	redemption.WalletType = NormalizeWalletType(redemption.WalletType)
+	return nil
 }
 
 func NormalizeRedemptionType(value string) string {
@@ -224,11 +236,17 @@ func Redeem(key string, userId int) (*RedemptionResult, error) {
 			result.BlindBoxQuantity = redemption.BlindBoxQuantity
 			result.BlindBoxOrderId = order.Id
 		default:
-			err = tx.Model(&User{}).Where("id = ?", userId).Update("quota", gorm.Expr("quota + ?", redemption.Quota)).Error
+			walletType := NormalizeWalletType(redemption.WalletType)
+			field := "quota"
+			if walletType == WalletTypeClaude {
+				field = "claude_quota"
+			}
+			err = tx.Model(&User{}).Where("id = ?", userId).Update(field, gorm.Expr(field+" + ?", redemption.Quota)).Error
 			if err != nil {
 				return err
 			}
 			result.Quota = redemption.Quota
+			result.WalletType = walletType
 		}
 
 		redemption.RedeemType = redeemType
@@ -252,7 +270,11 @@ func Redeem(key string, userId int) (*RedemptionResult, error) {
 	case RedemptionTypeBlindBox:
 		RecordLog(userId, LogTypeTopup, fmt.Sprintf("Redeemed blind box code for %d blind box(es), redemption ID %d", result.BlindBoxQuantity, redemption.Id))
 	default:
-		RecordLog(userId, LogTypeTopup, fmt.Sprintf("Redeemed quota code for %s, redemption ID %d", logger.LogQuota(redemption.Quota), redemption.Id))
+		if result.WalletType == WalletTypeClaude {
+			RecordLog(userId, LogTypeTopup, fmt.Sprintf("Redeemed Claude quota code for %s, redemption ID %d", logger.LogQuota(redemption.Quota), redemption.Id))
+		} else {
+			RecordLog(userId, LogTypeTopup, fmt.Sprintf("Redeemed quota code for %s, redemption ID %d", logger.LogQuota(redemption.Quota), redemption.Id))
+		}
 	}
 
 	return result, nil
@@ -272,6 +294,7 @@ func (redemption *Redemption) Update() error {
 		"status",
 		"redeem_type",
 		"quota",
+		"wallet_type",
 		"plan_id",
 		"plan_title",
 		"blind_box_quantity",

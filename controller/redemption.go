@@ -99,6 +99,7 @@ func AddRedemption(c *gin.Context) {
 			CreatedTime:      common.GetTimestamp(),
 			RedeemType:       redemption.RedeemType,
 			Quota:            redemption.Quota,
+			WalletType:       redemption.WalletType,
 			PlanId:           redemption.PlanId,
 			PlanTitle:        redemption.PlanTitle,
 			BlindBoxQuantity: redemption.BlindBoxQuantity,
@@ -162,6 +163,7 @@ func UpdateRedemption(c *gin.Context) {
 		cleanRedemption.Name = redemption.Name
 		cleanRedemption.RedeemType = redemption.RedeemType
 		cleanRedemption.Quota = redemption.Quota
+		cleanRedemption.WalletType = redemption.WalletType
 		cleanRedemption.PlanId = redemption.PlanId
 		cleanRedemption.BlindBoxQuantity = redemption.BlindBoxQuantity
 		cleanRedemption.ExpiredTime = redemption.ExpiredTime
@@ -228,15 +230,21 @@ func prepareRedemptionForWrite(redemption *model.Redemption) error {
 			return errors.New("blind box redemption requires quantity greater than 0")
 		}
 		redemption.Quota = 0
+		redemption.WalletType = model.WalletTypeDefault
 		redemption.PlanId = 0
 		redemption.PlanTitle = ""
 	default:
 		if redemption.Quota <= 0 {
 			return errors.New("quota redemption requires quota greater than 0")
 		}
+		redemption.WalletType = model.NormalizeWalletType(redemption.WalletType)
 		redemption.PlanId = 0
 		redemption.PlanTitle = ""
 		redemption.BlindBoxQuantity = 0
+	}
+
+	if redemption.RedeemType == model.RedemptionTypeSubscription {
+		redemption.WalletType = model.WalletTypeDefault
 	}
 
 	return nil

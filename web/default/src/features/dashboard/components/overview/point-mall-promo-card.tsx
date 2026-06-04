@@ -24,6 +24,7 @@ import {
   ChevronRight,
   Gift,
   Handshake,
+  PackageOpen,
   ShoppingBag,
   Sparkles,
   Trophy,
@@ -54,7 +55,7 @@ type ActivityPromoItem = {
   description: string
   sideTitle: string
   sideDescription: string
-  to: '/people-plan' | '/point-mall'
+  to: '/blind-box' | '/people-plan' | '/point-mall'
   ctaLabel: string
   icon: LucideIcon
   tags: Array<{
@@ -95,6 +96,36 @@ const PROMO_ITEMS: ActivityPromoItem[] = [
       cta: 'bg-cyan-700 text-white shadow-[0_18px_38px_rgba(14,116,144,0.2)] hover:bg-cyan-600 dark:bg-cyan-500 dark:text-slate-950 dark:hover:bg-cyan-400',
       glow: 'bg-cyan-200/45 dark:bg-cyan-300/10',
       rail: 'bg-cyan-600 dark:bg-cyan-300',
+    },
+  },
+  {
+    id: 'blind-box',
+    eyebrow: '盲盒活动',
+    title: '低门槛开盒，直接拿额度和订阅大奖',
+    description:
+      '盲盒活动把短期额度、保底机制和订阅大奖放在同一页处理，适合想快速补额度、顺手搏一次高奖励的用户。',
+    sideTitle: '付款、开奖、保底进度都在同一入口',
+    sideDescription:
+      '进入盲盒页后可以直接选数量、看奖池、查最近掉落和当前保底推进，不需要再跳转钱包里的其他模块。',
+    to: '/blind-box',
+    ctaLabel: '去开盲盒',
+    icon: PackageOpen,
+    tags: [
+      { label: '额度掉落', icon: Sparkles },
+      { label: '保底机制', icon: Trophy },
+      { label: '订阅大奖', icon: Gift },
+    ],
+    theme: {
+      frame:
+        'border-rose-200 bg-[radial-gradient(circle_at_top_left,rgba(244,63,94,0.16),transparent_30%),radial-gradient(circle_at_top_right,rgba(251,146,60,0.18),transparent_24%),linear-gradient(145deg,rgba(255,241,242,0.98),rgba(255,247,237,0.98),rgba(255,255,255,0.98))] dark:border-rose-500/20 dark:bg-[radial-gradient(circle_at_top_left,rgba(244,63,94,0.16),transparent_30%),radial-gradient(circle_at_top_right,rgba(251,146,60,0.14),transparent_24%),linear-gradient(145deg,rgba(76,5,25,0.76),rgba(67,20,7,0.72),rgba(15,23,42,0.96))]',
+      eyebrow: 'text-rose-700 dark:text-rose-200',
+      title: 'text-slate-950 dark:text-white',
+      body: 'text-slate-700 dark:text-slate-200',
+      chip: 'border-white/60 bg-white/78 text-slate-800 dark:border-white/10 dark:bg-slate-950/40 dark:text-slate-100',
+      iconTile: 'text-rose-700 dark:text-rose-200',
+      cta: 'bg-rose-600 text-white shadow-[0_18px_38px_rgba(190,24,93,0.22)] hover:bg-rose-500 dark:bg-rose-500 dark:text-white dark:hover:bg-rose-400',
+      glow: 'bg-rose-200/45 dark:bg-rose-300/10',
+      rail: 'bg-rose-600 dark:bg-rose-300',
     },
   },
   {

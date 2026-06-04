@@ -26,6 +26,7 @@ import {
   REDEMPTION_STATUS,
   REDEMPTION_STATUS_MAP,
   REDEMPTION_TYPES,
+  REDEMPTION_WALLET_TYPES,
 } from '../../../constants/redemption.constants';
 
 export const isExpired = (record) => {
@@ -76,7 +77,9 @@ const renderRedeemType = (record, t) => {
 
   return (
     <Tag color='grey' shape='circle'>
-      {t('Quota')}
+      {record.wallet_type === REDEMPTION_WALLET_TYPES.CLAUDE
+        ? t('Claude Quota')
+        : t('Quota')}
     </Tag>
   );
 };
@@ -94,8 +97,17 @@ const renderBenefit = (record, t) => {
 
   return (
     <div>
-      <Tag color='grey' shape='circle'>
-        {renderQuota(parseInt(record.quota || 0, 10))}
+      <Tag
+        color={
+          record.wallet_type === REDEMPTION_WALLET_TYPES.CLAUDE
+            ? 'blue'
+            : 'grey'
+        }
+        shape='circle'
+      >
+        {record.wallet_type === REDEMPTION_WALLET_TYPES.CLAUDE
+          ? `${t('Claude Quota')} · ${renderQuota(parseInt(record.quota || 0, 10))}`
+          : renderQuota(parseInt(record.quota || 0, 10))}
       </Tag>
     </div>
   );

@@ -30,6 +30,7 @@ export const redemptionSchema = z.object({
   status: z.number(), // 1: enabled, 2: disabled, 3: used
   redeem_type: z.string().default('quota'),
   quota: z.number(),
+  wallet_type: z.string().default('default'),
   plan_id: z.number().default(0),
   plan_title: z.string().default(''),
   blind_box_quantity: z.number().default(0),
@@ -78,6 +79,7 @@ export interface RedemptionFormData {
   name: string
   redeem_type: RedemptionType
   quota: number
+  wallet_type: RedemptionWalletType
   plan_id: number
   blind_box_quantity: number
   expired_time: number
@@ -86,6 +88,7 @@ export interface RedemptionFormData {
 }
 
 export type RedemptionType = 'quota' | 'subscription' | 'blind_box'
+export type RedemptionWalletType = 'default' | 'claude'
 
 // ============================================================================
 // Dialog Types

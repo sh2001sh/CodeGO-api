@@ -32,6 +32,7 @@ export interface ApiResponse<T = unknown> {
 export interface RedemptionResult {
   redeem_type: 'quota' | 'subscription' | 'blind_box' | string
   quota?: number
+  wallet_type?: WalletType
   plan_id?: number
   plan_title?: string
   blind_box_quantity?: number
