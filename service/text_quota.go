@@ -1,6 +1,8 @@
 package service
 
 import (
+	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -528,15 +530,29 @@ func shouldFallbackBillUpstreamFailure(err *types.NewAPIError) bool {
 	if err == nil {
 		return false
 	}
+	if isContextTerminationError(err) {
+		return false
+	}
 	switch err.GetErrorCode() {
-	case types.ErrorCodeDoRequestFailed,
-		types.ErrorCodeReadResponseBodyFailed,
+	case types.ErrorCodeReadResponseBodyFailed,
 		types.ErrorCodeBadResponse,
 		types.ErrorCodeBadResponseBody,
-		types.ErrorCodeEmptyResponse,
-		types.ErrorCodeChannelResponseTimeExceeded:
+		types.ErrorCodeEmptyResponse:
 		return true
 	default:
 		return false
 	}
+}
+
+func isContextTerminationError(err error) bool {
+	if err == nil {
+		return false
+	}
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return true
+	}
+	message := strings.ToLower(err.Error())
+	return strings.Contains(message, "context canceled") ||
+		strings.Contains(message, "deadline exceeded") ||
+		strings.Contains(message, "request context done")
 }

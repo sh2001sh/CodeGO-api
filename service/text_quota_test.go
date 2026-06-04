@@ -1,7 +1,9 @@
 package service
 
 import (
+	"context"
 	"errors"
+	"fmt"
 	"net/http/httptest"
 	"testing"
 	"time"
@@ -162,15 +164,30 @@ func TestCalculateTextQuotaSummaryFallbackKeepsClaudeSemantic(t *testing.T) {
 }
 
 func TestShouldFallbackBillUpstreamFailureOnlyForUpstreamErrors(t *testing.T) {
-	require.True(t, shouldFallbackBillUpstreamFailure(types.NewOpenAIError(
+	require.False(t, shouldFallbackBillUpstreamFailure(types.NewOpenAIError(
 		errors.New("upstream timeout"),
 		types.ErrorCodeDoRequestFailed,
 		500,
+	)))
+	require.False(t, shouldFallbackBillUpstreamFailure(types.NewOpenAIError(
+		errors.New("channel response timeout exceeded"),
+		types.ErrorCodeChannelResponseTimeExceeded,
+		408,
 	)))
 	require.True(t, shouldFallbackBillUpstreamFailure(types.NewOpenAIError(
 		errors.New("bad upstream body"),
 		types.ErrorCodeBadResponseBody,
 		500,
+	)))
+	require.False(t, shouldFallbackBillUpstreamFailure(types.NewOpenAIError(
+		fmt.Errorf("request context done: %w", context.Canceled),
+		types.ErrorCodeReadResponseBodyFailed,
+		499,
+	)))
+	require.False(t, shouldFallbackBillUpstreamFailure(types.NewOpenAIError(
+		fmt.Errorf("upstream deadline: %w", context.DeadlineExceeded),
+		types.ErrorCodeBadResponseBody,
+		504,
 	)))
 	require.False(t, shouldFallbackBillUpstreamFailure(types.NewError(
 		errors.New("invalid request"),
