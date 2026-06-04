@@ -275,6 +275,8 @@ export function RechargeFormCard({
                           : preset.discount ||
                             topupInfo?.discount?.[preset.value] ||
                             1.0
+                      const effectivePriceRatio =
+                        selectedWalletType === 'claude' ? 1 : priceRatio
                       const {
                         displayValue,
                         actualPrice,
@@ -282,7 +284,7 @@ export function RechargeFormCard({
                         hasDiscount,
                       } = calculatePresetPricing(
                         preset.value,
-                        priceRatio,
+                        effectivePriceRatio,
                         discount,
                         usdExchangeRate
                       )
