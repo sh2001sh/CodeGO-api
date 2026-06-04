@@ -16,6 +16,7 @@ import {
   getSubscriptionPlanDetailText,
   getSubscriptionPlanSubtitle,
   isDayPassPlan,
+  isMonthlyCardPlan,
 } from '@/features/subscriptions/lib'
 import type { PlanRecord } from '@/features/subscriptions/types'
 import { useHomePagePackagesContent } from '../../hooks/use-home-page-packages-content'
@@ -95,6 +96,7 @@ export function Packages({
     const plan = record.plan
     const totalAmount = Number(plan.total_amount || 0)
     const periodAmount = Number(plan.period_amount || 0)
+    const isMonthlyPlan = isMonthlyCardPlan(plan)
     const priceAmount = Number(record.amount_due ?? (plan.price_amount || 0))
     const summary = getSubscriptionPlanDescription(
       plan,
@@ -111,13 +113,15 @@ export function Packages({
     const resetText = formatResetPeriod(plan, passthroughT)
     const benefits = [
       `有效期：${formatDuration(plan, passthroughT)}`,
-      resetText !== 'No Reset' ? `额度重置：${resetText}` : null,
-      periodAmount > 0
+      !isMonthlyPlan && resetText !== 'No Reset'
+        ? `额度重置：${resetText}`
+        : null,
+      !isMonthlyPlan && periodAmount > 0
         ? `周额度：${formatSubscriptionQuotaAmount(periodAmount)}`
         : null,
       totalAmount > 0
-        ? `总额度：${formatSubscriptionQuotaAmount(totalAmount)}`
-        : '总额度：不限',
+        ? `${isMonthlyPlan ? '本月可用额度' : '总额度'}：${formatSubscriptionQuotaAmount(totalAmount)}`
+        : `${isMonthlyPlan ? '本月可用额度' : '总额度'}：不限`,
     ].filter(Boolean) as string[]
 
     return (
@@ -240,7 +244,7 @@ export function Packages({
                   月卡套餐
                 </p>
                 <h3 className='mt-2 text-2xl font-semibold text-slate-950 dark:text-white'>
-                  适合长期 Code Go 使用，周额度会按周期刷新
+                  适合长期 Code Go 使用，一个月内自由使用
                 </h3>
               </div>
               <div className='grid gap-5 lg:grid-cols-2'>

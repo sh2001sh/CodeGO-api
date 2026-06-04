@@ -1,6 +1,7 @@
 package service
 
 import (
+	"errors"
 	"net/http/httptest"
 	"testing"
 	"time"
@@ -105,6 +106,80 @@ func TestCalculateTextQuotaSummaryUsesSplitClaudeCacheCreationRatios(t *testing.
 
 	// 100 + remaining(5)*1 + 2*2 + 3*3 = 118
 	require.Equal(t, 118, summary.Quota)
+}
+
+func TestCalculateTextQuotaSummaryFallbackChargesEstimatedPromptTokens(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+
+	relayInfo := &relaycommon.RelayInfo{
+		OriginModelName: "gpt-4.1",
+		PriceData: types.PriceData{
+			ModelRatio:      2,
+			CompletionRatio: 10,
+			GroupRatioInfo:  types.GroupRatioInfo{GroupRatio: 1.5},
+		},
+		StartTime: time.Now(),
+	}
+	relayInfo.SetEstimatePromptTokens(100)
+
+	nilUsageSummary := calculateTextQuotaSummary(ctx, relayInfo, nil)
+	zeroUsageSummary := calculateTextQuotaSummary(ctx, relayInfo, &dto.Usage{})
+
+	require.Equal(t, 100, nilUsageSummary.PromptTokens)
+	require.Equal(t, 0, nilUsageSummary.CompletionTokens)
+	require.Equal(t, 100, nilUsageSummary.TotalTokens)
+	require.Equal(t, 300, nilUsageSummary.Quota)
+	require.Equal(t, nilUsageSummary, zeroUsageSummary)
+}
+
+func TestCalculateTextQuotaSummaryFallbackKeepsClaudeSemantic(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+
+	relayInfo := &relaycommon.RelayInfo{
+		RelayFormat:             types.RelayFormatClaude,
+		FinalRequestRelayFormat: types.RelayFormatClaude,
+		OriginModelName:         "claude-3-7-sonnet",
+		PriceData: types.PriceData{
+			ModelRatio:      1,
+			CompletionRatio: 5,
+			GroupRatioInfo:  types.GroupRatioInfo{GroupRatio: 1},
+		},
+		StartTime: time.Now(),
+	}
+	relayInfo.SetEstimatePromptTokens(120)
+
+	summary := calculateTextQuotaSummary(ctx, relayInfo, nil)
+
+	require.True(t, summary.IsClaudeUsageSemantic)
+	require.Equal(t, "anthropic", summary.UsageSemantic)
+	require.Equal(t, 120, summary.PromptTokens)
+	require.Equal(t, 120, summary.TotalTokens)
+	require.Equal(t, 120, summary.Quota)
+}
+
+func TestShouldFallbackBillUpstreamFailureOnlyForUpstreamErrors(t *testing.T) {
+	require.True(t, shouldFallbackBillUpstreamFailure(types.NewOpenAIError(
+		errors.New("upstream timeout"),
+		types.ErrorCodeDoRequestFailed,
+		500,
+	)))
+	require.True(t, shouldFallbackBillUpstreamFailure(types.NewOpenAIError(
+		errors.New("bad upstream body"),
+		types.ErrorCodeBadResponseBody,
+		500,
+	)))
+	require.False(t, shouldFallbackBillUpstreamFailure(types.NewError(
+		errors.New("invalid request"),
+		types.ErrorCodeInvalidRequest,
+	)))
+	require.False(t, shouldFallbackBillUpstreamFailure(types.NewError(
+		errors.New("sensitive words"),
+		types.ErrorCodeSensitiveWordsDetected,
+	)))
 }
 
 func TestCalculateTextQuotaSummaryUsesAnthropicUsageSemanticFromUpstreamUsage(t *testing.T) {

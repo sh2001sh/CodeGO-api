@@ -46,9 +46,11 @@ import {
 import {
   formatSubscriptionQuotaAmount,
   getSubscriptionPlanSubtitle,
+  isMonthlyCardPlan,
 } from '@/features/subscriptions/lib'
 import type {
   FundingSource,
+  PlanRecord,
   SelfSubscriptionData,
   UserSubscriptionRecord,
 } from '@/features/subscriptions/types'
@@ -100,7 +102,10 @@ function getOrderedSubscriptions(
   return ordered
 }
 
-function getSubscriptionUsageStatus(record: UserSubscriptionRecord): {
+function getSubscriptionUsageStatus(
+  record: UserSubscriptionRecord,
+  isMonthlyPlan = false
+): {
   label: string
   note: string | null
 } {
@@ -130,7 +135,7 @@ function getSubscriptionUsageStatus(record: UserSubscriptionRecord): {
       note: '总额度用完后，系统会自动跳过这份订阅。',
     }
   }
-  if (periodAmount > 0 && periodRemain <= 0) {
+  if (!isMonthlyPlan && periodAmount > 0 && periodRemain <= 0) {
     return {
       label: '待重置',
       note: '本期额度已用完，重置后会继续参与扣费。',
@@ -199,12 +204,16 @@ export function SubscriptionUsagePanel() {
   }, [activeSubscriptions, subscriptionData])
 
   const planMetaMap = useMemo(() => {
-    const map = new Map<number, { title: string; subtitle: string }>()
+    const map = new Map<
+      number,
+      { title: string; subtitle: string; plan: PlanRecord['plan'] }
+    >()
     for (const item of plansQuery.data ?? []) {
       if (!item?.plan?.id) continue
       map.set(item.plan.id, {
         title: item.plan.title || '',
         subtitle: getSubscriptionPlanSubtitle(item.plan),
+        plan: item.plan,
       })
     }
     return map
@@ -473,7 +482,10 @@ export function SubscriptionUsagePanel() {
                     const subscription = record.subscription
                     const meta = planMetaMap.get(subscription.plan_id)
                     const remainDays = getRemainingDays(subscription.end_time)
-                    const usageStatus = getSubscriptionUsageStatus(record)
+                  const usageStatus = getSubscriptionUsageStatus(
+                    record,
+                    isMonthlyCardPlan(meta?.plan)
+                  )
                     return (
                       <div
                         key={subscription.id}
@@ -560,7 +572,7 @@ export function SubscriptionUsagePanel() {
             <div>
               <div className='font-medium'>暂无生效订阅</div>
               <p className='text-muted-foreground mt-1 text-sm'>
-                购买套餐后，这里会显示每份订阅的额度和重置时间。
+                购买套餐后，这里会显示每份订阅的额度进度和到期时间。
               </p>
             </div>
             <Button size='sm' render={<Link to='/wallet' />}>
@@ -571,10 +583,12 @@ export function SubscriptionUsagePanel() {
           <div className='grid gap-3 xl:grid-cols-2'>
             {orderedSubscriptions.map((record) => {
               const subscription = record.subscription
+              const planMeta = planMetaMap.get(subscription?.plan_id)
               const totalAmount = Number(subscription?.amount_total || 0)
               const usedAmount = Number(subscription?.amount_used || 0)
               const periodAmount = Number(subscription?.period_amount || 0)
               const periodUsed = Number(subscription?.period_used || 0)
+              const isMonthlyPlan = isMonthlyCardPlan(planMeta?.plan)
               const totalRemain =
                 totalAmount > 0 ? Math.max(0, totalAmount - usedAmount) : 0
               const periodRemain =
@@ -582,7 +596,6 @@ export function SubscriptionUsagePanel() {
               const totalPercent = clampPercent(usedAmount, totalAmount)
               const periodPercent = clampPercent(periodUsed, periodAmount)
               const remainDays = getRemainingDays(subscription?.end_time)
-              const planMeta = planMetaMap.get(subscription?.plan_id)
 
               return (
                 <SubscriptionCard
@@ -599,6 +612,7 @@ export function SubscriptionUsagePanel() {
                   periodUsed={periodUsed}
                   periodRemain={periodRemain}
                   periodPercent={periodPercent}
+                  isMonthlyPlan={isMonthlyPlan}
                 />
               )
             })}
@@ -622,9 +636,14 @@ function SubscriptionCard(props: {
   periodUsed: number
   periodRemain: number
   periodPercent: number
+  isMonthlyPlan: boolean
 }) {
   const subscription = props.record.subscription
-  const usageStatus = getSubscriptionUsageStatus(props.record)
+  const usageStatus = getSubscriptionUsageStatus(
+    props.record,
+    props.isMonthlyPlan
+  )
+  const showPeriodQuota = !props.isMonthlyPlan && props.periodAmount > 0
 
   return (
     <div className='bg-background/60 rounded-xl border p-4'>
@@ -649,7 +668,7 @@ function SubscriptionCard(props: {
       ) : null}
 
       <div className='mt-4 space-y-3'>
-        {props.periodAmount > 0 && (
+        {showPeriodQuota && (
           <QuotaProgressBlock
             title='本期额度'
             current={props.periodUsed}
@@ -661,7 +680,7 @@ function SubscriptionCard(props: {
         )}
 
         <QuotaProgressBlock
-          title='总额度'
+          title={props.isMonthlyPlan ? '本月可用额度' : '总额度'}
           current={props.usedAmount}
           total={props.totalAmount}
           remain={props.totalRemain}
@@ -672,14 +691,16 @@ function SubscriptionCard(props: {
       </div>
 
       <div className='mt-4 grid gap-2 text-xs sm:grid-cols-2'>
-        <InfoItem
-          label='下次重置'
-          value={
-            (subscription?.next_reset_time ?? 0) > 0
-              ? formatDateTime(subscription?.next_reset_time)
-              : '--'
-          }
-        />
+        {!props.isMonthlyPlan ? (
+          <InfoItem
+            label='下次重置'
+            value={
+              (subscription?.next_reset_time ?? 0) > 0
+                ? formatDateTime(subscription?.next_reset_time)
+                : '--'
+            }
+          />
+        ) : null}
         <InfoItem
           label='到期时间'
           value={formatDateTime(subscription?.end_time)}

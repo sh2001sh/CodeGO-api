@@ -272,11 +272,6 @@ export function SubscriptionPurchaseDialog(props: Props) {
     '当前已有更高等级的有效套餐，暂不支持降级订阅。'
   const disablePurchase =
     paying || limitReached || blockedByRule || paymentTracker.stage === 'pending'
-  const resetText =
-    formatResetPeriod(plan, t) === t('No Reset')
-      ? '不重置'
-      : formatResetPeriod(plan, t)
-
   const summaryItems = [
     { label: '购买方式', value: actionLabel },
     {
@@ -290,15 +285,15 @@ export function SubscriptionPurchaseDialog(props: Props) {
     },
     {
       label: isMonthlyPlan
-        ? '月度额度'
+        ? '本月可用额度'
         : periodAmount > 0
           ? '周期额度'
           : '总额度',
       value: formatSubscriptionQuotaAmount(
-        periodAmount > 0 ? periodAmount : totalAmount
+        !isMonthlyPlan && periodAmount > 0 ? periodAmount : totalAmount
       ),
     },
-    ...(periodAmount > 0
+    ...(!isMonthlyPlan && periodAmount > 0
       ? [
           {
             label: '总额度',
@@ -309,10 +304,17 @@ export function SubscriptionPurchaseDialog(props: Props) {
           },
         ]
       : []),
-    {
-      label: '额度重置',
-      value: resetText,
-    },
+    ...(!isMonthlyPlan
+      ? [
+          {
+            label: '额度重置',
+            value:
+              formatResetPeriod(plan, t) === t('No Reset')
+                ? '不重置'
+                : formatResetPeriod(plan, t),
+          },
+        ]
+      : []),
     {
       label: '支付价格',
       value: formatSubscriptionPlanPrice(effectiveAmount, plan.currency),

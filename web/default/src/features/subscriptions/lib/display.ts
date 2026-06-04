@@ -163,10 +163,7 @@ export function getSubscriptionPlanDescription(
   if (isMonthlyCardPlan(plan)) {
     const totalText =
       totalAmount > 0 ? formatSubscriptionQuotaAmount(totalAmount) : '不限'
-    if (periodAmount > 0) {
-      return `有效期 ${formatDuration(plan, t)}，月度额度 ${formatSubscriptionQuotaAmount(periodAmount)}，总额度 ${totalText}。`
-    }
-    return `有效期 ${formatDuration(plan, t)}，月度额度 ${totalText}，按月统计，额度到期后结束。`
+    return `有效期 ${formatDuration(plan, t)}，本月可用额度 ${totalText}，一个月内可自由使用，用完或到期后结束。`
   }
 
   if (periodAmount > 0) {
@@ -198,6 +195,17 @@ export function getSubscriptionPlanDetailText(
         : '总额度不限'
     )
     detailParts.push('日卡额度独立结算，扣费时默认优先于月卡')
+    return detailParts.join('；')
+  }
+
+  if (isMonthlyCardPlan(plan)) {
+    if (totalAmount > 0) {
+      detailParts.push(`本月可用额度 ${formatSubscriptionQuotaAmount(totalAmount)}`)
+    } else {
+      detailParts.push('本月可用额度不限')
+    }
+    detailParts.push('月卡不设置周刷新或周期额度')
+    detailParts.push('适合持续使用 Code Go 与相关模型')
     return detailParts.join('；')
   }
 

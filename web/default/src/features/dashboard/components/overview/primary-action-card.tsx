@@ -159,9 +159,9 @@ export function PrimaryActionCard() {
           eyebrow: activeSubscription ? '套餐续费提醒' : '推荐开通套餐',
           title: activeSubscription
             ? `当前套餐将在 ${remainingDays} 天后到期`
-            : '开通套餐，锁定更稳定的总额度和周额度',
+            : '开通套餐，锁定更稳定的月度可用额度',
           description: activeSubscription
-            ? '提前续费可以避免周额度或总额度在高频使用时中断。'
+            ? '提前续费可以避免月度额度在高频使用时中断。'
             : '如果你已经开始稳定使用，套餐比纯余额模式更容易管理成本。',
           primaryLabel: activeSubscription ? '查看套餐并续费' : '去看套餐',
           primaryTo: '/wallet' as PrimaryActionPath,

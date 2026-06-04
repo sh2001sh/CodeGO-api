@@ -26,6 +26,7 @@ import {
   formatDuration,
   formatResetPeriod,
   formatSubscriptionQuotaAmount,
+  isMonthlyCardPlan,
 } from '../lib'
 import type { PlanRecord } from '../types'
 import { DataTableRowActions } from './data-table-row-actions'
@@ -193,12 +194,13 @@ export function useSubscriptionsColumns(): ColumnDef<PlanRecord>[] {
         cell: ({ row }) => {
           const total = Number(row.original.plan.total_amount || 0)
           const period = Number(row.original.plan.period_amount || 0)
+          const isMonthlyPlan = isMonthlyCardPlan(row.original.plan)
           return (
             <div className='text-muted-foreground text-xs'>
               <div>
                 {total > 0 ? formatSubscriptionQuotaAmount(total) : t('Unlimited')}
               </div>
-              {period > 0 && (
+              {!isMonthlyPlan && period > 0 && (
                 <div>
                   {t('Period')}: {formatSubscriptionQuotaAmount(period)}
                 </div>

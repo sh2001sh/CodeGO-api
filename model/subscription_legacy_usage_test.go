@@ -138,7 +138,9 @@ func TestSeedDefaultSubscriptionPlans_RepairsCollapsedMonthlyQuotaSnapshot(t *te
 	assert.Equal(t, monthPlan.TotalAmount, reloadedSub.AmountTotal)
 	assert.Equal(t, quotaUnitsFromUSD(20), reloadedSub.AmountUsed)
 	assert.Equal(t, monthPlan.PeriodAmount, reloadedSub.PeriodAmount)
-	assert.Equal(t, quotaUnitsFromUSD(20), reloadedSub.PeriodUsed)
+	assert.Zero(t, reloadedSub.PeriodUsed)
+	assert.Zero(t, reloadedSub.LastResetTime)
+	assert.Zero(t, reloadedSub.NextResetTime)
 }
 
 func TestPreConsumeUserSubscription_KeepsExhaustedDayPassVisibleButSkipsBilling(t *testing.T) {

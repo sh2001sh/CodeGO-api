@@ -326,25 +326,29 @@ export function SubscriptionPlansCard({
             <MetricCard
               label={
                 isMonthlyPlan
-                  ? '月度额度'
+                  ? '本月可用额度'
                   : periodAmount > 0
                     ? '周期额度'
                     : '套餐额度'
               }
               value={
-                periodAmount > 0
+                !isMonthlyPlan && periodAmount > 0
                   ? formatSubscriptionQuotaAmount(periodAmount)
                   : totalAmount > 0
                     ? formatSubscriptionQuotaAmount(totalAmount)
                     : '不限'
               }
             />
-            <MetricCard
-              label='总额度'
-              value={
-                totalAmount > 0 ? formatSubscriptionQuotaAmount(totalAmount) : '不限'
-              }
-            />
+            {!isMonthlyPlan ? (
+              <MetricCard
+                label='总额度'
+                value={
+                  totalAmount > 0
+                    ? formatSubscriptionQuotaAmount(totalAmount)
+                    : '不限'
+                }
+              />
+            ) : null}
             <MetricCard
               label='套餐类型'
               value={isDayPassPlan(plan) ? '独立日卡' : '月卡'}
@@ -414,7 +418,7 @@ export function SubscriptionPlansCard({
         >
           <PlanSection
             title='月卡套餐'
-            description='适合长期使用 Code Go。月卡有效期 1 个月，额度按月统计，到达月度额度或套餐到期后结束。'
+            description='适合长期使用 Code Go。月卡有效期 1 个月，购买的总额度就是本月可用额度，一个月内可自由使用。'
             loading={loadingPlans}
             emptyText='当前没有可购买的月卡套餐。'
           >
@@ -441,7 +445,7 @@ export function SubscriptionPlansCard({
                   已购套餐使用情况
                 </div>
                 <p className='text-muted-foreground mt-1 text-sm'>
-                  在这里查看每一份订阅的剩余天数、月度额度或套餐额度进度，以及总额度消耗。
+                  在这里查看每一份订阅的剩余天数和额度使用进度。月卡只展示本月可用额度，不展示周期重置。
                 </p>
               </div>
 
@@ -489,6 +493,7 @@ export function SubscriptionPlansCard({
                     const totalExhausted =
                       totalAmount > 0 && totalRemain <= 0
                     const periodExhausted =
+                      !isMonthlyPlan &&
                       periodAmount > 0 &&
                       periodRemain <= 0 &&
                       totalRemain > 0
@@ -502,12 +507,10 @@ export function SubscriptionPlansCard({
                         ? '已取消'
                         : '已过期'
                     const scopedUsageLabel = isMonthlyPlan
-                      ? '本月额度'
+                      ? '本月可用额度'
                       : '周期额度'
                     const totalUsageLabel = isMonthlyPlan
-                      ? periodAmount > 0
-                        ? '总额度'
-                        : '本月额度'
+                      ? '本月可用额度'
                       : isDayPass
                         ? '日卡额度'
                         : '总额度'
@@ -537,7 +540,7 @@ export function SubscriptionPlansCard({
                             </div>
                           </div>
 
-                          {periodAmount > 0 ? (
+                          {!isMonthlyPlan && periodAmount > 0 ? (
                             <UsageBlock
                               label={scopedUsageLabel}
                               used={periodUsed}
@@ -558,16 +561,18 @@ export function SubscriptionPlansCard({
                           />
 
                           <div className='grid gap-2 sm:grid-cols-2'>
-                            <InfoItem
-                              label='下一次重置'
-                              value={
-                                subscription.next_reset_time
-                                  ? new Date(
-                                      subscription.next_reset_time * 1000
-                                    ).toLocaleString()
-                                  : '--'
-                              }
-                            />
+                            {!isMonthlyPlan ? (
+                              <InfoItem
+                                label='下一次重置'
+                                value={
+                                  subscription.next_reset_time
+                                    ? new Date(
+                                        subscription.next_reset_time * 1000
+                                      ).toLocaleString()
+                                    : '--'
+                                }
+                              />
+                            ) : null}
                             <InfoItem
                               label='订阅状态'
                               value={

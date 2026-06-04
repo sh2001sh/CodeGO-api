@@ -109,8 +109,8 @@ export function SubscriptionsMutateDrawer({
     durationUnit === 'month' && Number(durationValue || 0) === 1
 
   useEffect(() => {
-    if (isMonthlyCard && resetPeriod === 'weekly') {
-      form.setValue('quota_reset_period', 'monthly', { shouldDirty: true })
+    if (isMonthlyCard && resetPeriod !== 'never') {
+      form.setValue('quota_reset_period', 'never', { shouldDirty: true })
     }
   }, [form, isMonthlyCard, resetPeriod])
 
@@ -142,9 +142,7 @@ export function SubscriptionsMutateDrawer({
 
   const durationUnitOpts = getDurationUnitOptions(t)
   const resetPeriodOpts = isMonthlyCard
-    ? getResetPeriodOptions(t).filter((option) =>
-        ['never', 'monthly', 'custom'].includes(option.value)
-      )
+    ? getResetPeriodOptions(t).filter((option) => option.value === 'never')
     : getResetPeriodOptions(t)
 
   return (
@@ -577,7 +575,7 @@ export function SubscriptionsMutateDrawer({
                       </Select>
                       {isMonthlyCard && (
                         <FormDescription>
-                          {t('Monthly cards only support monthly reset or no reset.')}
+                          {t('Monthly cards do not reset. Total quota is usable for the whole month.')}
                         </FormDescription>
                       )}
                       <FormMessage />

@@ -25,7 +25,10 @@ import {
   getFundingSourceLabel,
   normalizeFundingSourceOrder,
 } from '@/features/subscriptions/billing'
-import { getSubscriptionPlanSubtitle } from '@/features/subscriptions/lib'
+import {
+  getSubscriptionPlanSubtitle,
+  isMonthlyCardPlan,
+} from '@/features/subscriptions/lib'
 import type {
   FundingSource,
   PlanRecord,
@@ -89,7 +92,10 @@ function getOrderedSubscriptions(
   return ordered
 }
 
-function getSubscriptionUsageStatus(record: UserSubscriptionRecord): {
+function getSubscriptionUsageStatus(
+  record: UserSubscriptionRecord,
+  isMonthlyPlan = false
+): {
   label: string
   note: string | null
 } {
@@ -119,7 +125,7 @@ function getSubscriptionUsageStatus(record: UserSubscriptionRecord): {
       note: '总额度用完后，系统会自动跳过这份订阅。',
     }
   }
-  if (periodAmount > 0 && periodRemain <= 0) {
+  if (!isMonthlyPlan && periodAmount > 0 && periodRemain <= 0) {
     return {
       label: '待重置',
       note: '本期额度已用完，重置后会继续参与扣费。',
@@ -180,12 +186,16 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
   }, [activeSubscriptions, props.subscriptionData])
 
   const planMetaMap = useMemo(() => {
-    const map = new Map<number, { title: string; subtitle: string }>()
+    const map = new Map<
+      number,
+      { title: string; subtitle: string; plan: PlanRecord['plan'] }
+    >()
     for (const item of planRecords) {
       if (!item?.plan?.id) continue
       map.set(item.plan.id, {
         title: item.plan.title || '',
         subtitle: getSubscriptionPlanSubtitle(item.plan),
+        plan: item.plan,
       })
     }
     return map
@@ -495,7 +505,10 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
                 {orderedSubscriptions.map((record, index) => {
                   const subscription = record.subscription
                   const meta = planMetaMap.get(subscription.plan_id)
-                  const usageStatus = getSubscriptionUsageStatus(record)
+                  const usageStatus = getSubscriptionUsageStatus(
+                    record,
+                    isMonthlyCardPlan(meta?.plan)
+                  )
                   return (
                     <div
                       key={subscription.id}

@@ -156,6 +156,29 @@ func composeTieredTextQuota(relayInfo *relaycommon.RelayInfo, summary textQuotaS
 	return tieredQuota + int(summary.ToolCallSurchargeQuota.Round(0).IntPart())
 }
 
+func fallbackPromptOnlyUsage(relayInfo *relaycommon.RelayInfo, usage *dto.Usage) (*dto.Usage, bool) {
+	if usage != nil && (usage.PromptTokens != 0 || usage.CompletionTokens != 0 || usage.TotalTokens != 0) {
+		return usage, false
+	}
+	if relayInfo == nil {
+		return usage, false
+	}
+	promptTokens := relayInfo.GetEstimatePromptTokens()
+	if promptTokens <= 0 {
+		return usage, false
+	}
+	fallback := &dto.Usage{
+		PromptTokens:     promptTokens,
+		CompletionTokens: 0,
+		TotalTokens:      promptTokens,
+		UsageSource:      "fallback_prompt_tokens",
+	}
+	if relayInfo.GetFinalRequestRelayFormat() == types.RelayFormatClaude {
+		fallback.UsageSemantic = "anthropic"
+	}
+	return fallback, true
+}
+
 func calculateTextQuotaSummary(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *dto.Usage) textQuotaSummary {
 	summary := textQuotaSummary{
 		ModelName:            relayInfo.OriginModelName,
@@ -174,12 +197,11 @@ func calculateTextQuotaSummary(ctx *gin.Context, relayInfo *relaycommon.RelayInf
 	}
 	summary.IsClaudeUsageSemantic = summary.UsageSemantic == "anthropic"
 
+	if fallback, ok := fallbackPromptOnlyUsage(relayInfo, usage); ok {
+		usage = fallback
+	}
 	if usage == nil {
-		usage = &dto.Usage{
-			PromptTokens:     relayInfo.GetEstimatePromptTokens(),
-			CompletionTokens: 0,
-			TotalTokens:      relayInfo.GetEstimatePromptTokens(),
-		}
+		usage = &dto.Usage{}
 	}
 
 	summary.PromptTokens = usage.PromptTokens
@@ -321,8 +343,10 @@ func usageSemanticFromUsage(relayInfo *relaycommon.RelayInfo, usage *dto.Usage) 
 
 func PostTextConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *dto.Usage, extraContent []string) {
 	originUsage := usage
-	if usage == nil {
-		extraContent = append(extraContent, "上游无计费信息")
+	usedFallbackUsage := false
+	if fallback, ok := fallbackPromptOnlyUsage(relayInfo, usage); ok {
+		usage = fallback
+		usedFallbackUsage = true
 	}
 	if originUsage != nil {
 		ObserveChannelAffinityUsageCacheByRelayFormat(ctx, usage, relayInfo.GetFinalRequestRelayFormat())
@@ -333,7 +357,7 @@ func PostTextConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, us
 
 	var tieredResult *billingexpr.TieredResult
 	tieredBillingApplied := false
-	if originUsage != nil {
+	if originUsage != nil || usedFallbackUsage {
 		var tieredUsedVars map[string]bool
 		if snap := relayInfo.TieredBillingSnapshot; snap != nil {
 			tieredUsedVars = billingexpr.UsedVars(snap.ExprString)
@@ -480,4 +504,39 @@ func PostTextConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, us
 	gopool.Go(func() {
 		perfmetrics.RecordRelaySample(relayInfo, true, int64(summary.CompletionTokens))
 	})
+}
+
+func ConsumePromptOnlyFallbackOnUpstreamFailure(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, err *types.NewAPIError) bool {
+	if ctx == nil || relayInfo == nil || err == nil {
+		return false
+	}
+	if relayInfo.Billing == nil {
+		return false
+	}
+	if !shouldFallbackBillUpstreamFailure(err) {
+		return false
+	}
+	usage, ok := fallbackPromptOnlyUsage(relayInfo, nil)
+	if !ok {
+		return false
+	}
+	PostTextConsumeQuota(ctx, relayInfo, usage, nil)
+	return true
+}
+
+func shouldFallbackBillUpstreamFailure(err *types.NewAPIError) bool {
+	if err == nil {
+		return false
+	}
+	switch err.GetErrorCode() {
+	case types.ErrorCodeDoRequestFailed,
+		types.ErrorCodeReadResponseBodyFailed,
+		types.ErrorCodeBadResponse,
+		types.ErrorCodeBadResponseBody,
+		types.ErrorCodeEmptyResponse,
+		types.ErrorCodeChannelResponseTimeExceeded:
+		return true
+	default:
+		return false
+	}
 }

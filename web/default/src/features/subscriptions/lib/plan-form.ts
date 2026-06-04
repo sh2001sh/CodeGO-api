@@ -118,10 +118,9 @@ export function formValuesToPlanPayload(values: PlanFormValues): PlanPayload {
   const totalAmountUSD = Number(values.total_amount || 0)
   const periodAmount = parseSubscriptionQuotaUSDToUnits(periodAmountUSD)
   const totalAmount = parseSubscriptionQuotaUSDToUnits(totalAmountUSD)
-  const quotaResetPeriod =
-    isMonthlyCard && values.quota_reset_period === 'weekly'
-      ? 'monthly'
-      : values.quota_reset_period || 'never'
+  const quotaResetPeriod = isMonthlyCard
+    ? 'never'
+    : values.quota_reset_period || 'never'
 
   return {
     plan: {

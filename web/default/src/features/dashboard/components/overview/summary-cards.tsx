@@ -17,6 +17,7 @@ import {
 import {
   formatSubscriptionQuotaAmount,
   getSubscriptionPlanSubtitle,
+  isMonthlyCardPlan,
 } from '@/features/subscriptions/lib'
 import type {
   PlanRecord,
@@ -205,6 +206,8 @@ export function SummaryCards() {
   const periodUsed = Number(subscription?.period_used || 0)
   const periodRemain =
     periodAmount > 0 ? Math.max(0, periodAmount - periodUsed) : 0
+  const isMonthlyPlan = isMonthlyCardPlan(primaryPlanMeta?.plan)
+  const showPeriodQuota = !isMonthlyPlan && periodAmount > 0
 
   return (
     <div className='overflow-hidden rounded-[30px] border border-slate-200 bg-card shadow-[0_28px_90px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:shadow-[0_24px_80px_rgba(2,6,23,0.42)]'>
@@ -300,14 +303,20 @@ export function SummaryCards() {
               )}`}
             />
             <DataMetric
-              label='周期剩余'
+              label={isMonthlyPlan ? '本月剩余' : '周期剩余'}
               value={
-                periodAmount > 0
+                isMonthlyPlan && totalAmount > 0
+                  ? formatSubscriptionQuotaAmount(totalRemain)
+                  : showPeriodQuota
                   ? formatSubscriptionQuotaAmount(periodRemain)
                   : '--'
               }
               hint={
-                periodAmount > 0
+                isMonthlyPlan
+                  ? subscription
+                    ? `到期时间：${formatDateTime(subscription.end_time)}`
+                    : '当前没有生效月卡'
+                  : showPeriodQuota
                   ? `下次重置：${formatDateTime(
                       Number(subscription?.next_reset_time || 0)
                     )}`
@@ -352,7 +361,7 @@ export function SummaryCards() {
               </div>
 
               <ProgressBlock
-                label='总额度'
+                label={isMonthlyPlan ? '本月可用额度' : '总额度'}
                 used={totalUsed}
                 total={totalAmount}
                 remainingLabel={
@@ -364,7 +373,7 @@ export function SummaryCards() {
                 className='[&_[data-slot=progress-indicator]]:bg-sky-500'
               />
 
-              {periodAmount > 0 ? (
+              {showPeriodQuota ? (
                 <ProgressBlock
                   label='周期额度'
                   used={periodUsed}
@@ -377,7 +386,7 @@ export function SummaryCards() {
             </div>
           ) : (
             <div className='rounded-2xl border border-dashed border-slate-300 px-4 py-6 text-sm text-slate-500 dark:border-slate-700 dark:text-slate-400'>
-              当前没有生效套餐。购买后这里会展示总额度和周期额度进度。
+              当前没有生效套餐。购买后这里会展示额度使用进度。
             </div>
           )}
 

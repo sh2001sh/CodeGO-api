@@ -1974,8 +1974,8 @@ func defaultSubscriptionPlans() []SubscriptionPlan {
 			InternalOnly:       false,
 			SortOrder:          60,
 			TotalAmount:        quotaUnitsFromUSD(300),
-			PeriodAmount:       quotaUnitsFromUSD(75),
-			QuotaResetPeriod:   SubscriptionResetWeekly,
+			PeriodAmount:       0,
+			QuotaResetPeriod:   SubscriptionResetNever,
 			ModelLimits:        "",
 			UpgradeGroup:       "",
 			MaxPurchasePerUser: 0,
@@ -1991,8 +1991,8 @@ func defaultSubscriptionPlans() []SubscriptionPlan {
 			InternalOnly:     false,
 			SortOrder:        50,
 			TotalAmount:      quotaUnitsFromUSD(600),
-			PeriodAmount:     quotaUnitsFromUSD(150),
-			QuotaResetPeriod: SubscriptionResetWeekly,
+			PeriodAmount:     0,
+			QuotaResetPeriod: SubscriptionResetNever,
 		},
 		{
 			Title:            "Pro月卡",
@@ -2005,8 +2005,8 @@ func defaultSubscriptionPlans() []SubscriptionPlan {
 			InternalOnly:     false,
 			SortOrder:        40,
 			TotalAmount:      quotaUnitsFromUSD(1200),
-			PeriodAmount:     quotaUnitsFromUSD(300),
-			QuotaResetPeriod: SubscriptionResetWeekly,
+			PeriodAmount:     0,
+			QuotaResetPeriod: SubscriptionResetNever,
 		},
 		{
 			Title:            "Ultra月卡",
@@ -2019,8 +2019,8 @@ func defaultSubscriptionPlans() []SubscriptionPlan {
 			InternalOnly:     false,
 			SortOrder:        30,
 			TotalAmount:      quotaUnitsFromUSD(2200),
-			PeriodAmount:     quotaUnitsFromUSD(550),
-			QuotaResetPeriod: SubscriptionResetWeekly,
+			PeriodAmount:     0,
+			QuotaResetPeriod: SubscriptionResetNever,
 		},
 		{
 			Title:            "50刀日卡",
@@ -2238,6 +2238,8 @@ func migratePresetUserSubscriptions(plan *SubscriptionPlan) error {
 				shouldFixTotal = true
 			case isCollapsedPresetPeriodicQuota(plan, sub):
 				shouldFixTotal = true
+			case plan.PeriodAmount == 0 && sub.PeriodAmount > 0 && sub.AmountTotal <= sub.PeriodAmount:
+				shouldFixTotal = true
 			}
 			if shouldFixTotal && sub.AmountTotal != plan.TotalAmount {
 				updateMap["amount_total"] = plan.TotalAmount
@@ -2324,7 +2326,9 @@ func SeedDefaultSubscriptionPlans() error {
 				}
 				InvalidateSubscriptionPlanCache(existing.Id)
 			}
-			if err := migratePresetUserSubscriptions(existing); err != nil {
+			migrationPlan := plans[index]
+			migrationPlan.Id = existing.Id
+			if err := migratePresetUserSubscriptions(&migrationPlan); err != nil {
 				return err
 			}
 			continue
