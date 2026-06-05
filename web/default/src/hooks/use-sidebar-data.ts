@@ -49,14 +49,20 @@ export function useSidebarData(): SidebarData {
             icon: FlaskConical,
           },
           {
-            title: t('Images'),
-            url: '/images',
-            icon: Image,
-          },
-          {
             title: t('Chat'),
             icon: MessageSquare,
             type: 'chat-presets',
+          },
+        ],
+      },
+      {
+        id: 'image-generation',
+        title: '生图',
+        items: [
+          {
+            title: '生图',
+            url: '/images',
+            icon: Image,
           },
         ],
       },
