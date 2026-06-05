@@ -78,13 +78,7 @@ func jimengImageHandler(c *gin.Context, resp *http.Response, info *relaycommon.R
 	if err != nil {
 		return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
 	}
-
-	c.Writer.Header().Set("Content-Type", "application/json")
-	c.Writer.WriteHeader(resp.StatusCode)
-	_, err = c.Writer.Write(jsonResponse)
-	if err != nil {
-		return nil, types.NewError(err, types.ErrorCodeBadResponseBody)
-	}
+	service.IOCopyBytesGracefully(c, resp, jsonResponse)
 
 	return &dto.Usage{}, nil
 }

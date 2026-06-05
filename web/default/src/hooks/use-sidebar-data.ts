@@ -9,6 +9,7 @@ import {
   FileText,
   FlaskConical,
   Gem,
+  Image,
   MessageSquare,
   Radio,
   Rocket,
@@ -46,6 +47,11 @@ export function useSidebarData(): SidebarData {
             title: t('Playground'),
             url: '/playground',
             icon: FlaskConical,
+          },
+          {
+            title: t('Images'),
+            url: '/images',
+            icon: Image,
           },
           {
             title: t('Chat'),

@@ -67,6 +67,11 @@ const (
 	// has been successfully written to the downstream client for the current request.
 	ContextKeyResponseBodyDelivered ContextKey = "response_body_delivered"
 
+	// ContextKeyImageWorkspaceCaptureResponse indicates the current request should
+	// capture the JSON response body for image workspace persistence.
+	ContextKeyImageWorkspaceCaptureResponse ContextKey = "image_workspace_capture_response"
+	ContextKeyImageWorkspaceResponseBody    ContextKey = "image_workspace_response_body"
+
 	// ContextKeyLanguage stores the user's language preference for i18n
 	ContextKeyLanguage ContextKey = "language"
 	ContextKeyIsStream ContextKey = "is_stream"
