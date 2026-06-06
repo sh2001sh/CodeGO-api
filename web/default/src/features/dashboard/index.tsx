@@ -139,8 +139,8 @@ const SECTION_META: Record<
   { titleKey: string; descriptionKey: string }
 > = {
   overview: {
-    titleKey: 'Overview',
-    descriptionKey: 'View dashboard overview and statistics',
+    titleKey: '概览',
+    descriptionKey: '用中文对话方式查看当前账户状态与常用入口',
   },
   models: {
     titleKey: 'Model Call Analytics',

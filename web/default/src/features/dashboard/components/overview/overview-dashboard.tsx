@@ -1,467 +1,154 @@
-/*
-Copyright (C) 2023-2026 QuantumNous
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as
-published by the Free Software Foundation, either version 3 of the
-License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU Affero General Public License for more details.
-
-You should have received a copy of the GNU Affero General Public License
-along with this program. If not, see <https://www.gnu.org/licenses/>.
-
-For commercial licensing, please contact support@quantumnous.com
-*/
-import { useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import {
-  ArrowRight,
-  BookOpen,
-  Check,
-  ChevronDown,
-  ChevronUp,
-  Circle,
+  Bot,
   CreditCard,
   FileText,
+  Image as ImageIcon,
   KeyRound,
-  ListChecks,
-  Play,
-  RadioTower,
-  ShieldCheck,
-  TerminalSquare,
-  Timer,
-  type LucideIcon,
+  MessageSquare,
+  Sparkles,
+  Ticket,
+  UserRound,
+  Wallet,
 } from 'lucide-react'
-import { motion, useReducedMotion } from 'motion/react'
 import { useAuthStore } from '@/stores/auth-store'
 import { getUserModels } from '@/lib/api'
-import { MOTION_TRANSITION } from '@/lib/motion'
-import { ROLE } from '@/lib/roles'
-import { cn } from '@/lib/utils'
+import {
+  formatNumber,
+  formatQuota,
+  formatTimestampToDate,
+} from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import { CopyButton } from '@/components/copy-button'
-import {
-  CardStaggerContainer,
-  CardStaggerItem,
-} from '@/components/page-transition'
-import { WorkshopOverviewSidebar } from '@/features/gamification'
-import { fetchTokenKey, getApiKeys } from '@/features/keys/api'
+import { getApiKeys, fetchTokenKey } from '@/features/keys/api'
 import type { ApiKey } from '@/features/keys/types'
-import { useApiInfo } from '../../hooks/use-status-data'
-import { AnnouncementsPanel } from './announcements-panel'
-import { ApiInfoPanel } from './api-info-panel'
-import { FAQPanel } from './faq-panel'
-import { PerformanceHealthPanel } from './performance-health-panel'
-import { PrimaryActionCard } from './primary-action-card'
-import { PointMallPromoCard } from './point-mall-promo-card'
-import { SubscriptionUsagePanel } from './subscription-usage-panel'
-import { SummaryCards } from './summary-cards'
-import { UptimePanel } from './uptime-panel'
+import { getSelfSubscriptionFull } from '@/features/subscriptions/api'
+import type {
+  SelfSubscriptionData,
+  UserSubscription,
+} from '@/features/subscriptions/types'
+import { getBlindBoxSelf } from '@/features/wallet/api'
 
-const SETUP_GUIDE_VISIBILITY_STORAGE_KEY =
-  'dashboard_overview_setup_guide_expanded'
-
-const SETUP_GUIDE_CODE_PATTERN = [
-  'const request = await client.responses.create({',
-  "  model: 'gpt-4.1-mini',",
-  "  input: 'Start routing traffic',",
-  '})',
-  '',
-  'if (request.output_text) {',
-  '  console.log(request.output_text)',
-  '}',
-].join('\n')
-
-type DashboardActionPath =
-  | '/keys'
-  | '/wallet'
-  | '/playground'
-  | '/channels'
-  | '/usage-logs'
-  | '/pricing'
-
-interface StartStep {
-  title: string
-  description: string
-  to: DashboardActionPath
-  icon: LucideIcon
-  completed: boolean
-}
-
-interface QuickAction {
-  title: string
-  description: string
-  to: DashboardActionPath
-  icon: LucideIcon
-  adminOnly?: boolean
-}
-
-interface RequestExample {
-  endpoint: string
-  model: string
-  keyName: string
-  displayKey: string
-  curl: string
-  ready: boolean
-}
-
-interface HeroSignal {
-  label: string
-  value: string
-  icon: LucideIcon
-}
-
-function getSavedSetupGuideExpanded(): boolean | null {
-  if (typeof window === 'undefined') return null
-  const saved = window.localStorage.getItem(SETUP_GUIDE_VISIBILITY_STORAGE_KEY)
-  if (saved === 'expanded') return true
-  if (saved === 'collapsed') return false
-  return null
-}
-
-function saveSetupGuideExpanded(expanded: boolean): void {
-  if (typeof window === 'undefined') return
-  window.localStorage.setItem(
-    SETUP_GUIDE_VISIBILITY_STORAGE_KEY,
-    expanded ? 'expanded' : 'collapsed'
-  )
-}
-
-function getCurrentOrigin(): string {
-  if (typeof window === 'undefined') return ''
-  return window.location.origin
-}
-
-function normalizeEndpoint(sourceUrl?: string): string {
-  const fallback = `${getCurrentOrigin()}/v1/chat/completions`
-  const trimmed = sourceUrl?.trim()
-  if (!trimmed) return fallback
-
-  const withoutTrailingSlash = trimmed.replace(/\/+$/, '')
-  if (withoutTrailingSlash.endsWith('/v1/chat/completions')) {
-    return withoutTrailingSlash
-  }
-  if (withoutTrailingSlash.endsWith('/v1')) {
-    return `${withoutTrailingSlash}/chat/completions`
-  }
-  return `${withoutTrailingSlash}/v1/chat/completions`
+const EMPTY_SUBSCRIPTIONS: SelfSubscriptionData = {
+  billing_preference: 'subscription_first',
+  funding_source_order: ['blind_box', 'subscription', 'wallet'],
+  subscription_order_ids: [],
+  subscriptions: [],
+  all_subscriptions: [],
 }
 
 function getPreferredKey(keys: ApiKey[]): ApiKey | null {
   return keys.find((item) => item.status === 1) ?? keys[0] ?? null
 }
 
-function formatDisplayKey(key?: string): string {
-  if (!key) return 'sk-...'
-  if (key.length <= 14) return key
-  return `${key.slice(0, 7)}...${key.slice(-4)}`
+function getPrimarySubscription(
+  data?: SelfSubscriptionData
+): UserSubscription | null {
+  return data?.subscriptions?.[0]?.subscription ?? null
 }
 
-function buildCurlCommand(args: {
-  endpoint: string
-  apiKey: string
-  model: string
-}): string {
-  return [
-    `curl ${args.endpoint} \\`,
-    '  -H "Content-Type: application/json" \\',
-    `  -H "Authorization: Bearer ${args.apiKey}" \\`,
-    `  -d '{"model":"${args.model}","messages":[{"role":"user","content":"Say hello in one sentence."}]}'`,
-  ].join('\n')
+function getRemainingDays(endTime?: number): number | null {
+  if (!endTime) return null
+  const diff = endTime - Math.floor(Date.now() / 1000)
+  return diff > 0 ? Math.ceil(diff / 86400) : 0
 }
 
-function SetupGuideBackdrop(props: { compact?: boolean }) {
-  return (
-    <>
-      <div
-        className={cn(
-          'pointer-events-none absolute inset-0 bg-[linear-gradient(112deg,oklch(0.97_0.04_250/.92)_0%,oklch(0.95_0.08_315/.82)_38%,oklch(0.96_0.12_92/.78)_74%,oklch(0.94_0.1_132/.62)_100%)] dark:opacity-25',
-          props.compact
-            ? '[mask-image:linear-gradient(90deg,black_0%,black_48%,transparent_74%)] opacity-55'
-            : 'opacity-85'
-        )}
-        aria-hidden='true'
-      />
-      <div
-        className={cn(
-          'pointer-events-none absolute inset-y-0 right-0 hidden overflow-hidden font-mono text-lime-100/75 sm:block dark:text-lime-200/25',
-          props.compact ? 'w-1/2 opacity-45' : 'w-[58%] opacity-75'
-        )}
-        aria-hidden='true'
-      >
-        <pre
-          className={cn(
-            'absolute right-3 [mask-image:linear-gradient(90deg,transparent_0%,black_30%,black_82%,transparent_100%)] text-right tracking-[0.38em] whitespace-pre',
-            props.compact
-              ? '-top-6 text-[9px] leading-4'
-              : 'top-1 text-[11px] leading-5'
-          )}
-        >
-          {SETUP_GUIDE_CODE_PATTERN}
-        </pre>
-      </div>
-      <div
-        className='from-background/35 to-background/70 dark:from-background/20 dark:to-background/80 pointer-events-none absolute inset-0 bg-linear-to-b via-transparent'
-        aria-hidden='true'
-      />
-    </>
-  )
+function formatMaskedKey(key?: string): string {
+  if (!key) return '尚未创建'
+  if (key.length <= 16) return key
+  return `${key.slice(0, 8)}...${key.slice(-4)}`
 }
 
-function StartStepItem(props: {
-  step: StartStep
-  index: number
-  isLast: boolean
+function ConversationBubble(props: {
+  role: 'assistant' | 'user'
+  title: string
+  children: React.ReactNode
 }) {
-  const Icon = props.step.icon
-  const StatusIcon = props.step.completed ? Check : Circle
+  const isAssistant = props.role === 'assistant'
+  const Icon = isAssistant ? Bot : UserRound
 
   return (
-    <li className='relative flex gap-3 pb-2.5 last:pb-0'>
-      {!props.isLast && (
-        <span
-          className='bg-border absolute top-9 bottom-0 left-4 w-px'
-          aria-hidden='true'
-        />
-      )}
-      <span
-        className={cn(
-          'bg-background relative z-10 flex size-8 shrink-0 items-center justify-center rounded-lg border shadow-xs',
-          props.step.completed && 'border-success/30 bg-success/10'
-        )}
-      >
-        <StatusIcon
-          className={props.step.completed ? 'text-success size-4' : 'size-4'}
-          aria-hidden='true'
-        />
-      </span>
-
-      <Link
-        to={props.step.to}
-        className='bg-background/70 hover:bg-muted/50 focus-visible:ring-ring flex min-w-0 flex-1 items-center justify-between gap-3 rounded-xl border px-3 py-2.5 text-left shadow-xs transition-colors outline-none focus-visible:ring-2'
-      >
-        <span className='flex min-w-0 items-start gap-2.5'>
-          <span className='bg-muted mt-0.5 flex size-7 shrink-0 items-center justify-center rounded-lg'>
-            <Icon className='size-3.5' aria-hidden='true' />
-          </span>
-          <span className='flex min-w-0 flex-col gap-0.5'>
-            <span className='flex items-center gap-2 text-sm font-medium'>
-              <span className='text-muted-foreground font-mono text-xs tabular-nums'>
-                {props.index + 1}.
-              </span>
-              <span className='truncate'>{props.step.title}</span>
-            </span>
-            <span className='text-muted-foreground line-clamp-1 text-xs'>
-              {props.step.description}
-            </span>
-          </span>
-        </span>
-        <ArrowRight
-          className='text-muted-foreground size-4 shrink-0'
-          aria-hidden='true'
-        />
-      </Link>
-    </li>
-  )
-}
-
-function RequestPreview(props: {
-  example: RequestExample
-  signals: HeroSignal[]
-}) {
-  const shouldReduceMotion = useReducedMotion()
-  const previewLines = props.example.curl.split('\n').map((line) => {
-    if (line.includes('Authorization: Bearer')) {
-      return `  -H "Authorization: Bearer ${props.example.displayKey}" \\`
-    }
-    return line
-  })
-
-  return (
-    <motion.div
-      initial={shouldReduceMotion ? false : { opacity: 0, y: 10, scale: 0.98 }}
-      animate={shouldReduceMotion ? undefined : { opacity: 1, y: 0, scale: 1 }}
-      transition={MOTION_TRANSITION.slow}
-      className='bg-background/75 relative overflow-hidden rounded-2xl border p-3 shadow-sm backdrop-blur'
+    <div
+      className={`flex gap-3 ${isAssistant ? 'justify-start' : 'justify-end'}`}
     >
-      {!shouldReduceMotion && (
-        <motion.div
-          className='via-foreground/30 pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent to-transparent'
-          animate={{ x: ['-100%', '100%'] }}
-          transition={{ duration: 3.2, repeat: Infinity, ease: 'easeInOut' }}
-          aria-hidden='true'
-        />
-      )}
+      {isAssistant ? (
+        <span className='bg-slate-900 text-white flex size-10 shrink-0 items-center justify-center rounded-2xl shadow-sm dark:bg-slate-100 dark:text-slate-900'>
+          <Icon className='size-4' />
+        </span>
+      ) : null}
 
-      <div className='flex items-center justify-between gap-3 border-b pb-3'>
-        <div className='flex min-w-0 items-center gap-2'>
-          <span className='bg-muted flex size-8 shrink-0 items-center justify-center rounded-lg'>
-            <TerminalSquare className='size-4' aria-hidden='true' />
-          </span>
-          <div className='min-w-0'>
-            <div className='truncate text-sm font-medium'>第一条 API 请求</div>
-            <div className='text-muted-foreground truncate text-xs'>
-              {props.example.ready
-                ? props.example.keyName
-                : '先创建 API Key 才能拿到真实请求示例'}
-            </div>
-          </div>
+      <div
+        className={`max-w-3xl rounded-[24px] border px-5 py-4 shadow-sm ${
+          isAssistant
+            ? 'border-slate-200 bg-white text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100'
+            : 'border-emerald-200 bg-emerald-50 text-slate-900 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-slate-100'
+        }`}
+      >
+        <div className='mb-2 flex items-center gap-2 text-sm font-semibold'>
+          <Icon className='size-4' />
+          <span>{props.title}</span>
         </div>
-        {props.example.ready ? (
-          <CopyButton
-            value={props.example.curl}
-            variant='outline'
-            size='sm'
-            className='h-7 gap-1.5 px-2 text-xs'
-            tooltip='复制可直接运行的 curl'
-            successTooltip='已复制'
-            aria-label='复制可直接运行的 curl'
-          >
-            复制
-          </CopyButton>
-        ) : (
-          <Button size='sm' variant='outline' render={<Link to='/keys' />}>
-            创建 API Key
-          </Button>
-        )}
+        <div className='space-y-3 text-sm leading-7'>{props.children}</div>
       </div>
 
-      <div className='bg-foreground/[0.035] my-3 rounded-xl p-3 font-mono text-xs'>
-        <div className='mb-2 flex items-center gap-1.5'>
-          <span className='bg-destructive size-2 rounded-full' />
-          <span className='bg-warning size-2 rounded-full' />
-          <span className='bg-success size-2 rounded-full' />
-        </div>
-        <div className='flex flex-col gap-1 overflow-hidden'>
-          {previewLines.map((line, index) => (
-            <code
-              key={`${line}-${index}`}
-              className='text-muted-foreground truncate'
-              title={line}
-            >
-              {line}
-            </code>
-          ))}
-        </div>
-      </div>
-
-      <div className='grid gap-2'>
-        {props.signals.map((signal) => {
-          const Icon = signal.icon
-
-          return (
-            <div
-              key={signal.label}
-              className='bg-muted/40 flex items-center justify-between gap-3 rounded-xl px-3 py-2'
-            >
-              <span className='flex min-w-0 items-center gap-2'>
-                <Icon
-                  className='text-muted-foreground size-3.5 shrink-0'
-                  aria-hidden='true'
-                />
-                <span className='truncate text-xs font-medium'>
-                  {signal.label}
-                </span>
-              </span>
-              <span className='text-muted-foreground shrink-0 text-xs'>
-                {signal.value}
-              </span>
-            </div>
-          )
-        })}
-      </div>
-    </motion.div>
+      {!isAssistant ? (
+        <span className='bg-emerald-500 text-white flex size-10 shrink-0 items-center justify-center rounded-2xl shadow-sm'>
+          <Icon className='size-4' />
+        </span>
+      ) : null}
+    </div>
   )
 }
 
-function QuickActionItem(props: { action: QuickAction }) {
-  const Icon = props.action.icon
-
+function InfoChip(props: { label: string; value: string }) {
   return (
-    <Button
-      variant='outline'
-      className='h-auto justify-start rounded-xl px-3 py-3 text-left'
-      render={<Link to={props.action.to} />}
-    >
-      <span className='bg-muted flex size-9 shrink-0 items-center justify-center rounded-lg'>
-        <Icon className='size-4' aria-hidden='true' />
-      </span>
-      <span className='flex min-w-0 flex-1 flex-col gap-0.5'>
-        <span className='truncate text-sm font-medium'>
-          {props.action.title}
-        </span>
-        <span className='text-muted-foreground line-clamp-2 text-xs leading-relaxed'>
-          {props.action.description}
-        </span>
-      </span>
-    </Button>
+    <div className='rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/70'>
+      <div className='text-xs text-slate-500 dark:text-slate-400'>
+        {props.label}
+      </div>
+      <div className='mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100'>
+        {props.value}
+      </div>
+    </div>
   )
 }
 
-function CompactSetupStrip(props: {
-  completedStepCount: number
-  totalStepCount: number
-  nextStep: StartStep
-  onExpand: () => void
+function ActionLink(props: {
+  to: string
+  title: string
+  description: string
+  icon: React.ComponentType<{ className?: string }>
 }) {
-  const Icon = props.nextStep.icon
+  const Icon = props.icon
 
   return (
-    <CardStaggerContainer>
-      <CardStaggerItem className='bg-card overflow-hidden rounded-2xl border shadow-xs'>
-        <div className='flex flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5'>
-          <div className='flex min-w-0 items-center gap-3'>
-            <span className='bg-primary/10 text-primary flex size-9 shrink-0 items-center justify-center rounded-xl'>
-              <ListChecks className='size-4' aria-hidden='true' />
-            </span>
-            <div className='min-w-0'>
-              <div className='flex flex-wrap items-center gap-2'>
-                <div className='text-sm font-semibold text-slate-950 dark:text-slate-50'>
-                  快速接入进度
-                </div>
-                <span className='rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-xs text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'>
-                  已完成 {props.completedStepCount}/{props.totalStepCount}
-                </span>
-              </div>
-              <div className='mt-1 text-sm text-slate-600 dark:text-slate-300'>
-                下一步：{props.nextStep.title}。{props.nextStep.description}
-              </div>
-            </div>
-          </div>
-
-          <div className='flex flex-wrap items-center gap-2'>
-            <Button size='sm' render={<Link to={props.nextStep.to} />}>
-              <Icon data-icon='inline-start' />
-              {props.nextStep.title}
-            </Button>
-            <Button variant='outline' size='sm' onClick={props.onExpand}>
-              <ChevronDown data-icon='inline-start' />
-              展开接入引导
-            </Button>
-          </div>
-        </div>
-      </CardStaggerItem>
-    </CardStaggerContainer>
+    <Link
+      to={props.to}
+      className='group rounded-3xl border border-slate-200 bg-white p-4 transition hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-md dark:border-slate-800 dark:bg-slate-950 dark:hover:border-slate-700'
+    >
+      <div className='bg-slate-100 text-slate-700 flex size-11 items-center justify-center rounded-2xl dark:bg-slate-900 dark:text-slate-200'>
+        <Icon className='size-5' />
+      </div>
+      <div className='mt-4 text-sm font-semibold text-slate-900 dark:text-slate-100'>
+        {props.title}
+      </div>
+      <div className='mt-1 text-xs leading-6 text-slate-500 dark:text-slate-400'>
+        {props.description}
+      </div>
+    </Link>
   )
 }
 
 export function OverviewDashboard() {
   const user = useAuthStore((state) => state.auth.user)
-  const { items: apiInfoItems } = useApiInfo()
-  const [manualSetupGuideExpanded, setManualSetupGuideExpanded] = useState<
-    boolean | null
-  >(() => getSavedSetupGuideExpanded())
 
-  const requestCount = Number(user?.request_count ?? 0)
   const remainQuota = Number(user?.quota ?? 0)
   const claudeQuota = Number(user?.claude_quota ?? 0)
   const usedQuota = Number(user?.used_quota ?? 0)
-  const isAdmin = Boolean(user?.role && user.role >= ROLE.ADMIN)
+  const requestCount = Number(user?.request_count ?? 0)
+  const inviteCount = Number(user?.aff_count ?? 0)
 
   const apiKeysQuery = useQuery({
     queryKey: ['dashboard', 'overview', 'api-keys'],
@@ -473,7 +160,7 @@ export function OverviewDashboard() {
   })
 
   const modelsQuery = useQuery({
-    queryKey: ['dashboard', 'overview', 'user-models'],
+    queryKey: ['dashboard', 'overview', 'models'],
     queryFn: async () => {
       const result = await getUserModels()
       return result.success ? (result.data ?? []) : []
@@ -481,12 +168,32 @@ export function OverviewDashboard() {
     staleTime: 5 * 60 * 1000,
   })
 
+  const subscriptionsQuery = useQuery({
+    queryKey: ['dashboard', 'overview', 'subscriptions'],
+    queryFn: async () => {
+      const result = await getSelfSubscriptionFull()
+      return result.success
+        ? (result.data ?? EMPTY_SUBSCRIPTIONS)
+        : EMPTY_SUBSCRIPTIONS
+    },
+    staleTime: 60 * 1000,
+  })
+
+  const blindBoxQuery = useQuery({
+    queryKey: ['dashboard', 'overview', 'blind-box'],
+    queryFn: async () => {
+      const result = await getBlindBoxSelf()
+      return result.success ? result.data : null
+    },
+    staleTime: 60 * 1000,
+  })
+
   const preferredKey = useMemo(
     () => getPreferredKey(apiKeysQuery.data ?? []),
     [apiKeysQuery.data]
   )
 
-  const realKeyQuery = useQuery({
+  const tokenKeyQuery = useQuery({
     queryKey: ['dashboard', 'overview', 'token-key', preferredKey?.id],
     queryFn: async () => {
       if (!preferredKey?.id) return ''
@@ -497,253 +204,245 @@ export function OverviewDashboard() {
     staleTime: 5 * 60 * 1000,
   })
 
-  const startSteps = useMemo<StartStep[]>(
-    () => [
-      {
-        title: '创建 API Key',
-        description: '先生成一把可用密钥，后续请求和脚本都靠它接入。',
+  const availableModels = modelsQuery.data ?? []
+  const primaryModel = availableModels[0] ?? '暂未获取到模型'
+  const blindBoxOverview = blindBoxQuery.data?.overview
+  const blindBoxQuota = Number(blindBoxOverview?.remaining_quota ?? 0)
+  const blindBoxCount = Number(blindBoxOverview?.available_boxes ?? 0)
+  const totalUsableQuota = remainQuota + blindBoxQuota
+  const primarySubscription = getPrimarySubscription(subscriptionsQuery.data)
+  const subscriptionRemainingDays = getRemainingDays(primarySubscription?.end_time)
+  const tokenKey = tokenKeyQuery.data ?? ''
+
+  const nextAction = useMemo(() => {
+    if (!preferredKey) {
+      return {
+        title: '先创建 API 密钥',
+        description: '没有可用密钥时，外部程序和脚本都无法调用。',
         to: '/keys',
-        icon: KeyRound,
-        completed: Boolean(preferredKey),
-      },
-      {
-        title: '补充额度',
-        description: '先准备余额或套餐额度，避免请求测试到一半中断。',
-        to: '/wallet',
-        icon: CreditCard,
-        completed: remainQuota > 0 || claudeQuota > 0 || usedQuota > 0,
-      },
-      {
-        title: '发起请求',
-        description: '用 Playground 或客户端先跑通一条真实请求。',
-        to: '/playground',
-        icon: TerminalSquare,
-        completed: requestCount > 0,
-      },
-    ],
-    [claudeQuota, preferredKey, remainQuota, requestCount, usedQuota]
-  )
-
-  const quickActions = useMemo<QuickAction[]>(
-    () => [
-      {
-        title: 'Playground',
-        description: '先在浏览器里直接试模型和提示词。',
-        to: '/playground',
-        icon: Play,
-      },
-      {
-        title: '使用日志',
-        description: '看请求、扣费和报错记录，排查最直接。',
-        to: '/usage-logs',
-        icon: FileText,
-      },
-      {
-        title: '价格总览',
-        description: '先确认模型价格，再决定用余额还是套餐。',
-        to: '/pricing',
-        icon: BookOpen,
-      },
-      {
-        title: '渠道管理',
-        description: '配置上游和路由策略，仅管理员可见。',
-        to: '/channels',
-        icon: RadioTower,
-        adminOnly: true,
-      },
-    ],
-    []
-  )
-
-  const visibleQuickActions = useMemo(
-    () => quickActions.filter((action) => !action.adminOnly || isAdmin),
-    [isAdmin, quickActions]
-  )
-
-  const heroSignals = useMemo<HeroSignal[]>(
-    () => [
-      {
-        label: '路由状态',
-        value: apiInfoItems.length > 0 ? '在线' : '使用当前域名',
-        icon: RadioTower,
-      },
-      {
-        label: '鉴权状态',
-        value: preferredKey ? '已就绪' : '缺少 API Key',
-        icon: ShieldCheck,
-      },
-      {
-        label: '默认模型',
-        value: modelsQuery.data?.[0] ?? '加载中',
-        icon: Timer,
-      },
-    ],
-    [apiInfoItems.length, modelsQuery.data, preferredKey]
-  )
-
-  const requestExample = useMemo<RequestExample>(() => {
-    const endpoint = normalizeEndpoint(apiInfoItems[0]?.url)
-    const model = modelsQuery.data?.[0] ?? 'gpt-4o-mini'
-    const apiKey = realKeyQuery.data ?? ''
-    const keyName = preferredKey?.name ?? '还没有 API Key'
-    const ready = Boolean(apiKey && model)
-
-    return {
-      endpoint,
-      model,
-      keyName,
-      displayKey: formatDisplayKey(apiKey),
-      ready,
-      curl: buildCurlCommand({
-        endpoint,
-        apiKey: apiKey || 'sk-...',
-        model,
-      }),
+      }
     }
-  }, [apiInfoItems, modelsQuery.data, preferredKey, realKeyQuery.data])
-
-  const completedStepCount = startSteps.filter((step) => step.completed).length
-  const setupComplete = completedStepCount === startSteps.length
-  const setupGuideExpanded = manualSetupGuideExpanded ?? false
-  const nextSetupStep =
-    startSteps.find((step) => !step.completed) ??
-    startSteps[startSteps.length - 1]
-
-  const handleSetupGuideToggle = () => {
-    const nextExpanded = !setupGuideExpanded
-    setManualSetupGuideExpanded(nextExpanded)
-    saveSetupGuideExpanded(nextExpanded)
-  }
+    if (totalUsableQuota <= 0 && claudeQuota <= 0) {
+      return {
+        title: '先补充额度',
+        description: '当前没有可用余额，先去钱包充值或购买套餐。',
+        to: '/wallet',
+      }
+    }
+    if (requestCount <= 0) {
+      return {
+        title: '先发起第一条请求',
+        description: '建议先去 Playground 跑通一次文本调用，再进入生图。',
+        to: '/playground',
+      }
+    }
+    return {
+      title: '可以直接开始使用',
+      description: '你已经具备调用条件，可以继续对话、生图或查看日志。',
+      to: '/images',
+    }
+  }, [claudeQuota, preferredKey, requestCount, totalUsableQuota])
 
   return (
-    <div className='flex flex-col gap-4'>
-      {setupGuideExpanded ? (
-        <CardStaggerContainer className='grid items-stretch gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]'>
-          <CardStaggerItem className='bg-card h-full overflow-hidden rounded-2xl border shadow-xs'>
-            <div className='relative h-full overflow-hidden p-4 sm:p-5'>
-              <SetupGuideBackdrop />
-              <div className='relative grid gap-5 lg:grid-cols-[minmax(0,1fr)_21rem]'>
-                <div className='flex min-w-0 flex-col gap-5'>
-                  <div className='flex flex-wrap items-start justify-between gap-3'>
-                    <div className='flex max-w-2xl flex-col gap-1'>
-                      <div className='text-muted-foreground flex items-center gap-2 text-xs font-medium uppercase tracking-wider'>
-                        <ListChecks className='size-3.5' aria-hidden='true' />
-                        快速接入
-                      </div>
-                      <h3 className='text-xl font-semibold tracking-tight sm:text-2xl'>
-                        三步跑通调用，剩下的交给概览页帮你管理
-                      </h3>
-                      <p className='text-muted-foreground max-w-xl text-sm leading-relaxed'>
-                        这里保留完整接入引导，但默认不再占据首页主体。你可以随时展开查看。
-                      </p>
-                    </div>
-                    <div className='flex flex-wrap items-center gap-2'>
-                      <Button
-                        variant='outline'
-                        size='sm'
-                        onClick={handleSetupGuideToggle}
-                      >
-                        <ChevronUp data-icon='inline-start' />
-                        收起引导
-                      </Button>
-                      <Button size='sm' render={<Link to='/keys' />}>
-                        <KeyRound data-icon='inline-start' />
-                        创建 API Key
-                      </Button>
-                    </div>
-                  </div>
-
-                  <ol className='bg-background/45 rounded-2xl border p-2 backdrop-blur'>
-                    {startSteps.map((step, index) => (
-                      <StartStepItem
-                        key={step.title}
-                        step={step}
-                        index={index}
-                        isLast={index === startSteps.length - 1}
-                      />
-                    ))}
-                  </ol>
-                </div>
-
-                <RequestPreview
-                  example={requestExample}
-                  signals={heroSignals}
-                />
-              </div>
+    <div className='space-y-5'>
+      <div className='rounded-[32px] border border-slate-200 bg-[linear-gradient(135deg,#fffef7_0%,#f8fafc_42%,#eefbf4_100%)] p-5 shadow-[0_20px_60px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.98)_0%,rgba(2,6,23,0.98)_46%,rgba(6,78,59,0.24)_100%)]'>
+        <div className='mb-4 flex flex-wrap items-center justify-between gap-3'>
+          <div>
+            <div className='text-xs font-medium tracking-[0.28em] text-slate-500 dark:text-slate-400'>
+              对话式概览
             </div>
-          </CardStaggerItem>
-
-          <CardStaggerItem className='bg-card h-full rounded-2xl border p-4 shadow-xs sm:p-5'>
-            <div className='flex h-full flex-col gap-4'>
-              <div className='flex flex-col gap-1'>
-                <div className='text-muted-foreground text-xs font-medium uppercase tracking-wider'>
-                  常用入口
-                </div>
-                <h3 className='text-lg font-semibold tracking-tight'>
-                  从这里快速进入高频操作
-                </h3>
-              </div>
-              <div className='grid gap-2'>
-                {visibleQuickActions.map((action) => (
-                  <QuickActionItem key={action.title} action={action} />
-                ))}
-              </div>
-            </div>
-          </CardStaggerItem>
-        </CardStaggerContainer>
-      ) : !setupComplete ? (
-        <CompactSetupStrip
-          completedStepCount={completedStepCount}
-          totalStepCount={startSteps.length}
-          nextStep={nextSetupStep}
-          onExpand={handleSetupGuideToggle}
-        />
-      ) : null}
-
-      <SummaryCards />
-
-      <CardStaggerContainer>
-        <CardStaggerItem>
-          <PointMallPromoCard />
-        </CardStaggerItem>
-      </CardStaggerContainer>
-
-      <CardStaggerContainer>
-        <CardStaggerItem>
-          <PrimaryActionCard />
-        </CardStaggerItem>
-      </CardStaggerContainer>
-
-      <CardStaggerContainer className='grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_24rem]'>
-        <CardStaggerItem>
-          <SubscriptionUsagePanel />
-        </CardStaggerItem>
-        <CardStaggerItem>
-          <WorkshopOverviewSidebar />
-        </CardStaggerItem>
-      </CardStaggerContainer>
-
-      <CardStaggerContainer className='grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]'>
-        <div className='grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2'>
-          {isAdmin && (
-            <CardStaggerItem className='lg:col-span-2'>
-              <PerformanceHealthPanel />
-            </CardStaggerItem>
-          )}
-          <CardStaggerItem>
-            <ApiInfoPanel />
-          </CardStaggerItem>
-          <CardStaggerItem>
-            <AnnouncementsPanel />
-          </CardStaggerItem>
-          <CardStaggerItem>
-            <FAQPanel />
-          </CardStaggerItem>
+            <h2 className='mt-2 text-2xl font-semibold tracking-tight text-slate-950 dark:text-slate-50'>
+              今天的账户情况，我直接用中文告诉你
+            </h2>
+          </div>
+          <Button render={<Link to={nextAction.to} />}>
+            <Sparkles data-icon='inline-start' />
+            {nextAction.title}
+          </Button>
         </div>
-        <CardStaggerItem>
-          <UptimePanel />
-        </CardStaggerItem>
-      </CardStaggerContainer>
+
+        <div className='space-y-4'>
+          <ConversationBubble role='assistant' title='系统概览'>
+            <p>
+              你现在可直接使用的综合额度是
+              <span className='mx-1 font-semibold text-slate-950 dark:text-slate-50'>
+                {formatQuota(totalUsableQuota)}
+              </span>
+              ，其中 Claude 专属额度是
+              <span className='mx-1 font-semibold text-slate-950 dark:text-slate-50'>
+                {formatQuota(claudeQuota)}
+              </span>
+              。
+            </p>
+            <p>
+              当前累计请求
+              <span className='mx-1 font-semibold text-slate-950 dark:text-slate-50'>
+                {formatNumber(requestCount)}
+              </span>
+              次，累计消耗
+              <span className='mx-1 font-semibold text-slate-950 dark:text-slate-50'>
+                {formatQuota(usedQuota)}
+              </span>
+              ，默认可用模型从
+              <span className='mx-1 font-semibold text-slate-950 dark:text-slate-50'>
+                {primaryModel}
+              </span>
+              开始。
+            </p>
+          </ConversationBubble>
+
+          <ConversationBubble role='user' title='我的当前状态'>
+            <div className='grid gap-3 md:grid-cols-2 xl:grid-cols-4'>
+              <InfoChip label='主余额' value={formatQuota(remainQuota)} />
+              <InfoChip label='Claude 额度' value={formatQuota(claudeQuota)} />
+              <InfoChip label='盲盒可开数量' value={formatNumber(blindBoxCount)} />
+              <InfoChip label='已邀请人数' value={formatNumber(inviteCount)} />
+            </div>
+            <div className='grid gap-3 md:grid-cols-2 xl:grid-cols-4'>
+              <InfoChip
+                label='API 密钥状态'
+                value={preferredKey ? '已创建' : '尚未创建'}
+              />
+              <InfoChip
+                label='最近套餐状态'
+                value={
+                  primarySubscription
+                    ? `有效，剩余 ${formatNumber(subscriptionRemainingDays ?? 0)} 天`
+                    : '当前没有生效套餐'
+                }
+              />
+              <InfoChip
+                label='盲盒额度'
+                value={formatQuota(blindBoxQuota)}
+              />
+              <InfoChip
+                label='下次到期时间'
+                value={formatTimestampToDate(blindBoxOverview?.next_expire_at)}
+              />
+            </div>
+          </ConversationBubble>
+
+          <ConversationBubble role='assistant' title='下一步建议'>
+            <p>{nextAction.description}</p>
+            <div className='grid gap-3 md:grid-cols-2'>
+              <div className='rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/70'>
+                <div className='text-xs text-slate-500 dark:text-slate-400'>
+                  当前默认密钥
+                </div>
+                <div className='mt-2 break-all font-mono text-sm text-slate-900 dark:text-slate-100'>
+                  {formatMaskedKey(tokenKey || preferredKey?.name)}
+                </div>
+                {tokenKey ? (
+                  <div className='mt-3'>
+                    <CopyButton
+                      value={tokenKey}
+                      variant='outline'
+                      size='sm'
+                      tooltip='复制真实密钥'
+                      successTooltip='密钥已复制'
+                      aria-label='复制真实密钥'
+                    >
+                      复制密钥
+                    </CopyButton>
+                  </div>
+                ) : null}
+              </div>
+
+              <div className='rounded-2xl border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/70'>
+                <div className='text-xs text-slate-500 dark:text-slate-400'>
+                  套餐与盲盒提醒
+                </div>
+                <div className='mt-2 text-sm leading-7 text-slate-700 dark:text-slate-300'>
+                  {primarySubscription
+                    ? `当前套餐仍在生效，结束时间为 ${formatTimestampToDate(
+                        primarySubscription.end_time
+                      )}。`
+                    : '你当前没有生效套餐，如果后续要高频使用，建议先购买套餐。'}
+                  {blindBoxCount > 0
+                    ? ` 另外你还有 ${formatNumber(
+                        blindBoxCount
+                      )} 个盲盒可以立即开启。`
+                    : ' 当前没有待开启盲盒。'}
+                </div>
+              </div>
+            </div>
+          </ConversationBubble>
+        </div>
+      </div>
+
+      <div className='grid gap-4 lg:grid-cols-2 xl:grid-cols-3'>
+        <ActionLink
+          to='/playground'
+          title='去对话调试'
+          description='快速验证模型响应、提示词效果和路由情况。'
+          icon={MessageSquare}
+        />
+        <ActionLink
+          to='/images'
+          title='去生图'
+          description='直接进入生图工作台，生成和管理图片记录。'
+          icon={ImageIcon}
+        />
+        <ActionLink
+          to='/wallet'
+          title='去钱包'
+          description='充值主余额、查看 Claude 额度和资金使用情况。'
+          icon={Wallet}
+        />
+        <ActionLink
+          to='/keys'
+          title='管理 API 密钥'
+          description='创建、复制、禁用和检查当前可用密钥。'
+          icon={KeyRound}
+        />
+        <ActionLink
+          to='/packages'
+          title='查看套餐'
+          description='购买或续费套餐，注意套餐额度不能用于 Claude 模型。'
+          icon={CreditCard}
+        />
+        <ActionLink
+          to='/usage-logs/common'
+          title='查看使用日志'
+          description='排查扣费、请求结果、失败原因和调用明细。'
+          icon={FileText}
+        />
+      </div>
+
+      <div className='grid gap-4 xl:grid-cols-[1.2fr_0.8fr]'>
+        <div className='rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950'>
+          <div className='flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-slate-100'>
+            <Ticket className='size-4' />
+            今日重点
+          </div>
+          <div className='mt-4 grid gap-3 md:grid-cols-3'>
+            <InfoChip label='可用模型数量' value={formatNumber(availableModels.length)} />
+            <InfoChip
+              label='盲盒最近到期'
+              value={formatTimestampToDate(blindBoxOverview?.next_expire_at)}
+            />
+            <InfoChip
+              label='套餐结束时间'
+              value={formatTimestampToDate(primarySubscription?.end_time)}
+            />
+          </div>
+        </div>
+
+        <div className='rounded-[28px] border border-slate-200 bg-slate-50 p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900/70'>
+          <div className='text-sm font-semibold text-slate-900 dark:text-slate-100'>
+            当前最适合的动作
+          </div>
+          <div className='mt-3 text-sm leading-7 text-slate-600 dark:text-slate-300'>
+            {nextAction.description}
+          </div>
+          <div className='mt-4'>
+            <Button className='w-full justify-center' render={<Link to={nextAction.to} />}>
+              <Sparkles data-icon='inline-start' />
+              {nextAction.title}
+            </Button>
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

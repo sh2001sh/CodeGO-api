@@ -8,6 +8,7 @@ import {
   Egg,
   FileText,
   FlaskConical,
+  Footprints,
   Gem,
   Image,
   MessageSquare,
@@ -20,7 +21,6 @@ import {
   Ticket,
   User,
   Users,
-  Footprints,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { WORKSPACE_IDS } from '@/components/layout/lib/workspace-registry'
@@ -41,15 +41,15 @@ export function useSidebarData(): SidebarData {
     navGroups: [
       {
         id: 'chat',
-        title: t('Chat'),
+        title: '对话',
         items: [
           {
-            title: t('Playground'),
+            title: 'Playground',
             url: '/playground',
             icon: FlaskConical,
           },
           {
-            title: t('Chat'),
+            title: '聊天预设',
             icon: MessageSquare,
             type: 'chat-presets',
           },
@@ -68,15 +68,15 @@ export function useSidebarData(): SidebarData {
       },
       {
         id: 'general',
-        title: t('General'),
+        title: '常规',
         items: [
           {
-            title: t('Overview'),
+            title: '概览',
             url: '/dashboard/overview',
             icon: Activity,
           },
           {
-            title: t('Dashboard'),
+            title: '数据看板',
             url: '/dashboard/models',
             icon: Footprints,
           },
@@ -86,17 +86,17 @@ export function useSidebarData(): SidebarData {
             icon: BookMarked,
           },
           {
-            title: '荣誉榜',
+            title: '荣耀榜',
             url: '/dashboard/hall-of-fame',
             icon: Award,
           },
           {
-            title: t('API Keys'),
+            title: 'API 密钥',
             url: '/keys',
             icon: BadgeCheck,
           },
           {
-            title: t('Usage Logs'),
+            title: '使用日志',
             url: '/usage-logs/common',
             icon: FileText,
           },
@@ -104,10 +104,10 @@ export function useSidebarData(): SidebarData {
       },
       {
         id: 'personal',
-        title: t('Personal'),
+        title: '个人',
         items: [
           {
-            title: t('Wallet'),
+            title: '钱包',
             url: '/wallet',
             icon: Gem,
           },
@@ -132,12 +132,12 @@ export function useSidebarData(): SidebarData {
             icon: Rocket,
           },
           {
-            title: t('Invite Rewards'),
+            title: '邀请奖励',
             url: '/invite-rewards',
             icon: Share2,
           },
           {
-            title: t('Profile'),
+            title: '个人资料',
             url: '/profile',
             icon: User,
           },
@@ -145,7 +145,7 @@ export function useSidebarData(): SidebarData {
       },
       {
         id: 'admin',
-        title: t('Admin'),
+        title: '管理',
         items: [
           {
             title: t('Channels'),
@@ -163,24 +163,24 @@ export function useSidebarData(): SidebarData {
             icon: Users,
           },
           {
-            title: t('Redemption Codes'),
+            title: '兑换码',
             url: '/redemption-codes',
             icon: Ticket,
           },
           {
-            title: t('Package Management'),
+            title: '套餐管理',
             url: '/subscriptions',
             icon: ScrollText,
           },
           {
-            title: t('Blind Box Operations'),
+            title: '盲盒运营',
             url: '/subscriptions#blind-box-admin',
             activeUrls: ['/subscriptions'],
             configUrls: ['/blind-box-admin'],
             icon: Egg,
           },
           {
-            title: t('System Settings'),
+            title: '系统设置',
             url: '/system-settings/site',
             activeUrls: ['/system-settings'],
             icon: Settings,
