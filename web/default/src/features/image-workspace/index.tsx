@@ -1,27 +1,11 @@
-/*
-Copyright (C) 2023-2026 QuantumNous
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as
-published by the Free Software Foundation, either version 3 of the
-License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU Affero General Public License for more details.
-
-You should have received a copy of the GNU Affero General Public License
-along with this program. If not, see <https://www.gnu.org/licenses/>.
-
-For commercial licensing, please contact support@quantumnous.com
-*/
 import { useEffect, useState } from 'react'
+import { Link } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import dayjs from 'dayjs'
 import { nanoid } from 'nanoid'
 import {
   AlertCircle,
+  Bot,
   Clock3,
   Download,
   History,
@@ -30,19 +14,12 @@ import {
   PenSquare,
   RefreshCw,
   Sparkles,
+  UserRound,
   WandSparkles,
 } from 'lucide-react'
-import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card'
 import {
   Empty,
   EmptyDescription,
@@ -50,6 +27,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from '@/components/ui/empty'
+import { ImageDialog } from '@/features/usage-logs/components/dialogs/image-dialog'
 import { Label } from '@/components/ui/label'
 import {
   Select,
@@ -63,7 +41,6 @@ import { Separator } from '@/components/ui/separator'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
-import { ImageDialog } from '@/features/usage-logs/components/dialogs/image-dialog'
 import {
   fetchImageWorkspaceSourceFile,
   getImageWorkspaceGroups,
@@ -89,7 +66,11 @@ const SIZE_OPTIONS = [
   '1024x1792',
 ]
 
-const QUALITY_OPTIONS = ['standard', 'hd']
+const QUALITY_OPTIONS = [
+  { value: 'standard', label: '标准' },
+  { value: 'hd', label: '高清' },
+]
+
 const COUNT_OPTIONS = ['1', '2', '3', '4']
 
 function createSessionId() {
@@ -125,6 +106,12 @@ function getStatusVariant(status: ImageWorkspaceItem['status']) {
   return 'destructive'
 }
 
+function getStatusLabel(status: ImageWorkspaceItem['status']) {
+  if (status === 'ready') return '已完成'
+  if (status === 'expired') return '已过期'
+  return '生成失败'
+}
+
 function dedupeItems(items: ImageWorkspaceItem[]) {
   const seen = new Set<number>()
   return items.filter((item) => {
@@ -134,17 +121,70 @@ function dedupeItems(items: ImageWorkspaceItem[]) {
   })
 }
 
+function ConversationBubble(props: {
+  role: 'assistant' | 'user'
+  title: string
+  children: React.ReactNode
+}) {
+  const isAssistant = props.role === 'assistant'
+  const Icon = isAssistant ? Bot : UserRound
+
+  return (
+    <div
+      className={`flex items-start gap-3 ${isAssistant ? '' : 'justify-end'}`}
+    >
+      {isAssistant ? (
+        <div className='flex size-10 shrink-0 items-center justify-center rounded-2xl bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'>
+          <Icon className='size-4' />
+        </div>
+      ) : null}
+
+      <div
+        className={`max-w-3xl rounded-[28px] border px-5 py-4 shadow-sm ${
+          isAssistant
+            ? 'border-slate-200 bg-white text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100'
+            : 'border-emerald-200 bg-emerald-50 text-slate-900 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-slate-100'
+        }`}
+      >
+        <div className='mb-2 flex items-center gap-2 text-sm font-semibold'>
+          <Icon className='size-4' />
+          <span>{props.title}</span>
+        </div>
+        <div className='space-y-3 text-sm leading-7'>{props.children}</div>
+      </div>
+
+      {!isAssistant ? (
+        <div className='flex size-10 shrink-0 items-center justify-center rounded-2xl bg-emerald-500 text-white'>
+          <Icon className='size-4' />
+        </div>
+      ) : null}
+    </div>
+  )
+}
+
+function InfoPill(props: { label: string; value: string }) {
+  return (
+    <div className='rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/70'>
+      <div className='text-xs text-slate-500 dark:text-slate-400'>
+        {props.label}
+      </div>
+      <div className='mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100'>
+        {props.value}
+      </div>
+    </div>
+  )
+}
+
 function ImageWorkspaceSkeleton() {
   return (
-    <div className='grid gap-4 xl:grid-cols-[24rem_minmax(0,1fr)]'>
-      <Skeleton className='h-[38rem] rounded-3xl' />
-      <Skeleton className='h-[38rem] rounded-3xl' />
+    <div className='grid gap-4 xl:grid-cols-[minmax(0,1fr)_28rem]'>
+      <Skeleton className='h-[46rem] rounded-[32px]' />
+      <Skeleton className='h-[46rem] rounded-[32px]' />
     </div>
   )
 }
 
 export function ImageWorkspace() {
-  const { t } = useTranslation()
   const [sessionId, setSessionId] = useState(loadSessionId)
   const [galleryTab, setGalleryTab] = useState('session')
   const [selectedSourceId, setSelectedSourceId] = useState<number | null>(null)
@@ -156,7 +196,7 @@ export function ImageWorkspace() {
     group: '',
     prompt: '',
     size: SIZE_OPTIONS[0],
-    quality: QUALITY_OPTIONS[0],
+    quality: QUALITY_OPTIONS[0].value,
     count: COUNT_OPTIONS[0],
   })
 
@@ -218,6 +258,8 @@ export function ImageWorkspace() {
   )
   const selectedSource =
     readySourceItems.find((item) => item.id === selectedSourceId) ?? null
+  const selectedGroup =
+    (groupsQuery.data ?? []).find((item) => item.value === form.group) ?? null
 
   useEffect(() => {
     if (form.mode !== 'edit') return
@@ -244,20 +286,19 @@ export function ImageWorkspace() {
 
   const handleSubmit = async () => {
     if (!form.model) {
-      toast.error(t('Please choose a model'))
+      toast.error('请先选择模型')
       return
     }
     if (!form.group) {
-      toast.error(t('Please choose a group'))
+      toast.error('请先选择分组')
       return
     }
     if (!form.prompt.trim()) {
-      toast.error(t('Please enter a prompt'))
+      toast.error('请先输入提示词')
       return
     }
-
     if (form.mode === 'edit' && !selectedSource) {
-      toast.error(t('Please choose a source image'))
+      toast.error('改图模式需要先选择一张来源图片')
       return
     }
 
@@ -297,17 +338,13 @@ export function ImageWorkspace() {
         recentItemsQuery.refetch(),
       ])
       setGalleryTab('session')
-      toast.success(
-        form.mode === 'generate'
-          ? t('Image generation completed')
-          : t('Image edit completed')
-      )
+      toast.success(form.mode === 'generate' ? '图片生成完成' : '改图完成')
     } catch (error: any) {
       const message =
         error?.response?.data?.error?.message ||
         error?.response?.data?.message ||
         error?.message ||
-        t('Image request failed')
+        '图片请求失败'
       toast.error(message)
     } finally {
       setIsSubmitting(false)
@@ -331,6 +368,10 @@ export function ImageWorkspace() {
     }))
   }
 
+  const refreshGallery = async () => {
+    await Promise.all([sessionItemsQuery.refetch(), recentItemsQuery.refetch()])
+  }
+
   const isLoading =
     modelsQuery.isLoading ||
     groupsQuery.isLoading ||
@@ -346,87 +387,112 @@ export function ImageWorkspace() {
 
   return (
     <>
-      <div className='min-h-full bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.18),_transparent_28%),radial-gradient(circle_at_top_right,_rgba(245,158,11,0.16),_transparent_24%),linear-gradient(180deg,_rgba(15,23,42,0.04),_transparent_32%),var(--background)] p-4 md:p-6'>
-        <div className='mx-auto grid max-w-[1600px] gap-4 xl:grid-cols-[24rem_minmax(0,1fr)]'>
-          <Card className='border-border/70 overflow-hidden rounded-3xl xl:sticky xl:top-6 xl:h-fit'>
-            <CardHeader className='bg-muted/30 relative overflow-hidden border-b pb-5'>
-              <div className='absolute inset-x-0 top-0 h-24 bg-[linear-gradient(120deg,rgba(59,130,246,0.12),rgba(245,158,11,0.08),transparent)]' />
-              <div className='relative flex items-start justify-between gap-3'>
-                <div className='space-y-2'>
-                  <Badge variant='outline' className='rounded-full'>
-                    <Sparkles className='size-3.5' />
-                    {t('Image Workspace')}
-                  </Badge>
-                  <CardTitle className='text-xl'>
-                    {t('Generate and iterate on images')}
-                  </CardTitle>
-                  <CardDescription className='max-w-sm'>
-                    {t(
-                      'Use your own quota to create images, keep a temporary server-side history, and continue editing from saved results.'
-                    )}
-                  </CardDescription>
+      <div className='min-h-full bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.16),transparent_26%),radial-gradient(circle_at_top_right,rgba(245,158,11,0.12),transparent_22%),linear-gradient(180deg,rgba(15,23,42,0.03),transparent_30%),var(--background)] p-4 md:p-6'>
+        <div className='mx-auto max-w-[1580px] space-y-5'>
+          <div className='rounded-[34px] border border-slate-200 bg-[linear-gradient(135deg,#fffef7_0%,#f8fafc_44%,#eefbf7_100%)] p-5 shadow-[0_22px_70px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.98)_0%,rgba(2,6,23,0.98)_52%,rgba(6,95,70,0.2)_100%)]'>
+            <div className='mb-4 flex flex-wrap items-center justify-between gap-3'>
+              <div>
+                <div className='text-xs font-medium tracking-[0.28em] text-slate-500 dark:text-slate-400'>
+                  生图工作台
                 </div>
+                <h1 className='mt-2 text-2xl font-semibold tracking-tight text-slate-950 dark:text-slate-50'>
+                  直接用中文对话的方式生成、续改和管理图片
+                </h1>
+              </div>
+              <div className='flex flex-wrap gap-2'>
+                <Button variant='outline' onClick={handleNewSession}>
+                  <RefreshCw data-icon='inline-start' />
+                  新建会话
+                </Button>
                 <Button
-                  variant='outline'
-                  size='sm'
-                  onClick={handleNewSession}
-                  disabled={isSubmitting}
+                  render={
+                    <Link
+                      to='/usage-logs/$section'
+                      params={{ section: 'common' }}
+                    />
+                  }
                 >
-                  <RefreshCw className='size-4' />
-                  {t('New Session')}
+                  <Clock3 data-icon='inline-start' />
+                  查看日志
                 </Button>
               </div>
-            </CardHeader>
-            <CardContent className='space-y-5 pt-5'>
-              <div className='grid gap-3 rounded-2xl border border-dashed p-3'>
-                <div className='flex items-center gap-2 text-sm font-medium'>
-                  <Clock3 className='size-4 text-amber-500' />
-                  {t('Temporary retention')}
-                </div>
-                <p className='text-muted-foreground text-sm leading-6'>
-                  {t(
-                    'Generated images are stored on the server for a limited time and cleaned up automatically to save disk space.'
-                  )}
+            </div>
+
+            <div className='space-y-4'>
+              <ConversationBubble role='assistant' title='系统提示'>
+                <p>
+                  这里的图片生成和改图都会直接扣你自己的额度，扣费逻辑沿用现有计费链路。
                 </p>
-                <div className='text-muted-foreground truncate text-xs'>
-                  {t('Current session')}: {sessionId}
+                <p>
+                  服务器只会临时保存图片，过一段时间会自动清理，避免占满磁盘空间。
+                </p>
+              </ConversationBubble>
+
+              <ConversationBubble role='user' title='我这次准备这样生成'>
+                <div className='grid gap-3 md:grid-cols-2 xl:grid-cols-4'>
+                  <InfoPill label='当前模式' value={form.mode === 'generate' ? '直接生图' : '基于旧图改图'} />
+                  <InfoPill label='当前模型' value={form.model || '未选择'} />
+                  <InfoPill label='当前分组' value={selectedGroup?.label || '未选择'} />
+                  <InfoPill label='当前会话' value={sessionId} />
                 </div>
+              </ConversationBubble>
+
+              <ConversationBubble role='assistant' title='操作建议'>
+                <p>
+                  如果你是第一次尝试，建议先用一句完整中文描述把主体、风格、镜头、光线和材质都说清楚。
+                </p>
+                <p>
+                  如果你想延续已有图片，请切到“改图模式”，选择历史图片作为来源，再补充你要保留和修改的部分。
+                </p>
+              </ConversationBubble>
+            </div>
+          </div>
+
+          <div className='grid gap-4 xl:grid-cols-[minmax(0,1fr)_28rem]'>
+            <div className='rounded-[30px] border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950'>
+              <div className='flex items-center gap-2 text-base font-semibold text-slate-950 dark:text-slate-50'>
+                <Sparkles className='size-4' />
+                创作对话
+              </div>
+              <div className='mt-1 text-sm text-slate-500 dark:text-slate-400'>
+                用中文描述需求，系统会按你当前选择的模型、分组和参数发起生图。
               </div>
 
-              <Tabs
-                value={form.mode}
-                onValueChange={(value) =>
-                  updateForm('mode', value as ImageWorkspaceFormState['mode'])
-                }
-              >
-                <TabsList className='grid w-full grid-cols-2'>
-                  <TabsTrigger value='generate'>
-                    <WandSparkles className='size-4' />
-                    {t('Generate')}
-                  </TabsTrigger>
-                  <TabsTrigger value='edit'>
-                    <PenSquare className='size-4' />
-                    {t('Edit')}
-                  </TabsTrigger>
-                </TabsList>
-              </Tabs>
+              <div className='mt-5 space-y-5'>
+                <Tabs
+                  value={form.mode}
+                  onValueChange={(value) =>
+                    updateForm('mode', value as ImageWorkspaceFormState['mode'])
+                  }
+                >
+                  <TabsList className='grid w-full grid-cols-2'>
+                    <TabsTrigger value='generate'>
+                      <WandSparkles className='size-4' />
+                      生图模式
+                    </TabsTrigger>
+                    <TabsTrigger value='edit'>
+                      <PenSquare className='size-4' />
+                      改图模式
+                    </TabsTrigger>
+                  </TabsList>
+                </Tabs>
 
-              <div className='grid gap-4'>
                 <div className='grid gap-2'>
-                  <Label>{t('Prompt')}</Label>
+                  <Label>提示词</Label>
                   <Textarea
                     value={form.prompt}
                     onChange={(event) => updateForm('prompt', event.target.value)}
-                    placeholder={t(
-                      'Describe the scene, style, lighting, camera angle, and the visual details you want to preserve.'
-                    )}
-                    className='min-h-36'
+                    placeholder='例如：生成一张电影感的雨夜街头场景，主角撑着透明雨伞站在霓虹灯下，镜头低角度，反光地面细节丰富，整体偏青橙色调。'
+                    className='min-h-40 rounded-3xl'
                   />
+                  <div className='text-xs leading-6 text-slate-500 dark:text-slate-400'>
+                    写得越具体，结果越稳定。建议写清主体、环境、风格、镜头、构图和想保留的关键细节。
+                  </div>
                 </div>
 
-                <div className='grid gap-4 sm:grid-cols-2'>
+                <div className='grid gap-4 md:grid-cols-2'>
                   <div className='grid gap-2'>
-                    <Label>{t('Model')}</Label>
+                    <Label>模型</Label>
                     <Select
                       items={models.map((item: ModelOption) => ({
                         value: item.value,
@@ -435,8 +501,8 @@ export function ImageWorkspace() {
                       value={form.model}
                       onValueChange={(value) => updateForm('model', value ?? '')}
                     >
-                      <SelectTrigger className='w-full'>
-                        <SelectValue placeholder={t('Select model')} />
+                      <SelectTrigger className='w-full rounded-2xl'>
+                        <SelectValue placeholder='选择模型' />
                       </SelectTrigger>
                       <SelectContent alignItemWithTrigger={false}>
                         <SelectGroup>
@@ -451,7 +517,7 @@ export function ImageWorkspace() {
                   </div>
 
                   <div className='grid gap-2'>
-                    <Label>{t('Group')}</Label>
+                    <Label>分组</Label>
                     <Select
                       items={groups.map((item: GroupOption) => ({
                         value: item.value,
@@ -460,8 +526,8 @@ export function ImageWorkspace() {
                       value={form.group}
                       onValueChange={(value) => updateForm('group', value ?? '')}
                     >
-                      <SelectTrigger className='w-full'>
-                        <SelectValue placeholder={t('Select group')} />
+                      <SelectTrigger className='w-full rounded-2xl'>
+                        <SelectValue placeholder='选择分组' />
                       </SelectTrigger>
                       <SelectContent alignItemWithTrigger={false}>
                         <SelectGroup>
@@ -469,8 +535,8 @@ export function ImageWorkspace() {
                             <SelectItem key={item.value} value={item.value}>
                               <div className='flex items-center gap-2'>
                                 <span>{item.label}</span>
-                                <span className='text-muted-foreground text-xs'>
-                                  x{item.ratio}
+                                <span className='text-xs text-slate-500'>
+                                  倍率 x{item.ratio}
                                 </span>
                               </div>
                             </SelectItem>
@@ -478,21 +544,28 @@ export function ImageWorkspace() {
                         </SelectGroup>
                       </SelectContent>
                     </Select>
+                    {selectedGroup?.desc ? (
+                      <div className='text-xs leading-6 text-slate-500 dark:text-slate-400'>
+                        {selectedGroup.desc}
+                      </div>
+                    ) : null}
                   </div>
                 </div>
 
-                <div className='grid gap-4 sm:grid-cols-3'>
+                <div className='grid gap-4 md:grid-cols-3'>
                   <div className='grid gap-2'>
-                    <Label>{t('Size')}</Label>
+                    <Label>尺寸</Label>
                     <Select
                       items={SIZE_OPTIONS.map((value) => ({
                         value,
                         label: value,
                       }))}
                       value={form.size}
-                      onValueChange={(value) => updateForm('size', value ?? SIZE_OPTIONS[0])}
+                      onValueChange={(value) =>
+                        updateForm('size', value ?? SIZE_OPTIONS[0])
+                      }
                     >
-                      <SelectTrigger className='w-full'>
+                      <SelectTrigger className='w-full rounded-2xl'>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent alignItemWithTrigger={false}>
@@ -508,25 +581,22 @@ export function ImageWorkspace() {
                   </div>
 
                   <div className='grid gap-2'>
-                    <Label>{t('Quality')}</Label>
+                    <Label>清晰度</Label>
                     <Select
-                      items={QUALITY_OPTIONS.map((value) => ({
-                        value,
-                        label: value,
-                      }))}
+                      items={QUALITY_OPTIONS}
                       value={form.quality}
                       onValueChange={(value) =>
-                        updateForm('quality', value ?? QUALITY_OPTIONS[0])
+                        updateForm('quality', value ?? QUALITY_OPTIONS[0].value)
                       }
                     >
-                      <SelectTrigger className='w-full'>
+                      <SelectTrigger className='w-full rounded-2xl'>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent alignItemWithTrigger={false}>
                         <SelectGroup>
-                          {QUALITY_OPTIONS.map((value) => (
-                            <SelectItem key={value} value={value}>
-                              {value}
+                          {QUALITY_OPTIONS.map((item) => (
+                            <SelectItem key={item.value} value={item.value}>
+                              {item.label}
                             </SelectItem>
                           ))}
                         </SelectGroup>
@@ -535,7 +605,7 @@ export function ImageWorkspace() {
                   </div>
 
                   <div className='grid gap-2'>
-                    <Label>{t('Count')}</Label>
+                    <Label>生成张数</Label>
                     <Select
                       items={COUNT_OPTIONS.map((value) => ({
                         value,
@@ -546,7 +616,7 @@ export function ImageWorkspace() {
                         updateForm('count', value ?? COUNT_OPTIONS[0])
                       }
                     >
-                      <SelectTrigger className='w-full'>
+                      <SelectTrigger className='w-full rounded-2xl'>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent alignItemWithTrigger={false}>
@@ -563,82 +633,84 @@ export function ImageWorkspace() {
                 </div>
 
                 {form.mode === 'edit' && (
-                  <div className='grid gap-3 rounded-2xl border p-3'>
-                    <div className='flex items-center justify-between gap-2'>
+                  <div className='rounded-[28px] border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/60'>
+                    <div className='flex items-center justify-between gap-3'>
                       <div>
-                        <div className='text-sm font-medium'>
-                          {t('Source image')}
+                        <div className='text-sm font-semibold text-slate-900 dark:text-slate-100'>
+                          来源图片
                         </div>
-                        <p className='text-muted-foreground text-xs leading-5'>
-                          {t(
-                            'Choose a previously generated image to continue editing with the current prompt.'
-                          )}
-                        </p>
+                        <div className='text-xs leading-6 text-slate-500 dark:text-slate-400'>
+                          先从历史图片中选一张作为改图基础，再输入你要继续调整的方向。
+                        </div>
                       </div>
-                      <Badge variant='outline'>
-                        {readySourceItems.length} {t('available')}
-                      </Badge>
+                      <Badge variant='outline'>{readySourceItems.length} 张可选</Badge>
                     </div>
-                    {selectedSource ? (
-                      <div className='grid gap-3 sm:grid-cols-[7rem_minmax(0,1fr)]'>
-                        <img
-                          src={selectedSource.image_url}
-                          alt={selectedSource.prompt}
-                          className='h-28 w-full rounded-2xl border object-cover'
-                        />
-                        <div className='space-y-2'>
-                          <div className='line-clamp-3 text-sm leading-6'>
-                            {selectedSource.revised_prompt || selectedSource.prompt}
-                          </div>
-                          <div className='text-muted-foreground text-xs'>
-                            {selectedSource.model} ·{' '}
-                            {dayjs.unix(selectedSource.created_at).format('MM-DD HH:mm')}
-                          </div>
-                          <div className='flex flex-wrap gap-2'>
-                            <Button
-                              variant='outline'
-                              size='sm'
-                              onClick={() => setPreviewItem(selectedSource)}
-                            >
-                              {t('Preview')}
-                            </Button>
-                            <Button
-                              variant='outline'
-                              size='sm'
-                              onClick={() => applyItemPrompt(selectedSource)}
-                            >
-                              {t('Reuse Prompt')}
-                            </Button>
+
+                    <div className='mt-4 space-y-3'>
+                      {selectedSource ? (
+                        <div className='grid gap-3 md:grid-cols-[7.5rem_minmax(0,1fr)]'>
+                          <img
+                            src={selectedSource.image_url}
+                            alt={selectedSource.prompt}
+                            className='h-28 w-full rounded-2xl border object-cover'
+                          />
+                          <div className='space-y-2'>
+                            <div className='line-clamp-3 text-sm leading-6 text-slate-700 dark:text-slate-300'>
+                              {selectedSource.revised_prompt || selectedSource.prompt}
+                            </div>
+                            <div className='text-xs text-slate-500 dark:text-slate-400'>
+                              {selectedSource.model} ·{' '}
+                              {dayjs.unix(selectedSource.created_at).format(
+                                'MM-DD HH:mm'
+                              )}
+                            </div>
+                            <div className='flex flex-wrap gap-2'>
+                              <Button
+                                variant='outline'
+                                size='sm'
+                                onClick={() => setPreviewItem(selectedSource)}
+                              >
+                                预览
+                              </Button>
+                              <Button
+                                variant='outline'
+                                size='sm'
+                                onClick={() => applyItemPrompt(selectedSource)}
+                              >
+                                复用提示词
+                              </Button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ) : (
-                      <div className='text-muted-foreground text-sm'>
-                        {t('No available source image in your recent history yet.')}
-                      </div>
-                    )}
-                    {readySourceItems.length > 0 && (
-                      <div className='grid grid-cols-3 gap-2 md:grid-cols-4'>
-                        {readySourceItems.slice(0, 8).map((item) => (
-                          <button
-                            key={item.id}
-                            type='button'
-                            onClick={() => setSelectedSourceId(item.id)}
-                            className={`overflow-hidden rounded-2xl border text-left transition ${
-                              selectedSourceId === item.id
-                                ? 'border-primary ring-primary/20 ring-4'
-                                : 'hover:border-primary/40'
-                            }`}
-                          >
-                            <img
-                              src={item.image_url}
-                              alt={item.prompt}
-                              className='aspect-square w-full object-cover'
-                            />
-                          </button>
-                        ))}
-                      </div>
-                    )}
+                      ) : (
+                        <div className='text-sm text-slate-500 dark:text-slate-400'>
+                          暂时没有可用来源图片。你可以先生成一张，再回来做改图。
+                        </div>
+                      )}
+
+                      {readySourceItems.length > 0 ? (
+                        <div className='grid grid-cols-3 gap-2 md:grid-cols-4'>
+                          {readySourceItems.slice(0, 8).map((item) => (
+                            <button
+                              key={item.id}
+                              type='button'
+                              onClick={() => setSelectedSourceId(item.id)}
+                              className={`overflow-hidden rounded-2xl border text-left transition ${
+                                selectedSourceId === item.id
+                                  ? 'border-emerald-500 ring-4 ring-emerald-500/15'
+                                  : 'hover:border-slate-300'
+                              }`}
+                            >
+                              <img
+                                src={item.image_url}
+                                alt={item.prompt}
+                                className='aspect-square w-full object-cover'
+                              />
+                            </button>
+                          ))}
+                        </div>
+                      ) : null}
+                    </div>
                   </div>
                 )}
 
@@ -654,7 +726,7 @@ export function ImageWorkspace() {
                     {isSubmitting ? (
                       <>
                         <RefreshCw className='size-4 animate-spin' />
-                        {t('Processing')}
+                        正在处理
                       </>
                     ) : (
                       <>
@@ -663,102 +735,87 @@ export function ImageWorkspace() {
                         ) : (
                           <ImagePlus className='size-4' />
                         )}
-                        {form.mode === 'generate'
-                          ? t('Generate Images')
-                          : t('Create Edited Images')}
+                        {form.mode === 'generate' ? '开始生图' : '开始改图'}
                       </>
                     )}
                   </Button>
                   <Button
                     variant='outline'
                     size='lg'
-                    onClick={() =>
-                      setForm((prev) => ({
-                        ...prev,
-                        prompt: '',
-                      }))
-                    }
+                    onClick={() => updateForm('prompt', '')}
                     disabled={isSubmitting}
                   >
-                    {t('Clear Prompt')}
+                    清空提示词
                   </Button>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
 
-          <div className='grid gap-4'>
-            <Card className='rounded-3xl border-border/70 overflow-hidden'>
-              <CardHeader className='border-b bg-muted/20'>
-                <div className='flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between'>
-                  <div>
-                    <CardTitle>{t('Workspace gallery')}</CardTitle>
-                    <CardDescription>
-                      {t(
-                        'Review your current session or jump across recent image batches.'
-                      )}
-                    </CardDescription>
+            <div className='rounded-[30px] border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950'>
+              <div className='flex items-end justify-between gap-3'>
+                <div>
+                  <div className='flex items-center gap-2 text-base font-semibold text-slate-950 dark:text-slate-50'>
+                    <Images className='size-4' />
+                    作品记录
                   </div>
-                  <div className='flex items-center gap-2'>
-                    <Button
-                      variant='outline'
-                      size='sm'
-                      onClick={() =>
-                        Promise.all([
-                          sessionItemsQuery.refetch(),
-                          recentItemsQuery.refetch(),
-                        ])
-                      }
-                    >
-                      <RefreshCw className='size-4' />
-                      {t('Refresh')}
-                    </Button>
+                  <div className='mt-1 text-sm text-slate-500 dark:text-slate-400'>
+                    当前会话结果和最近历史都会保存在这里，直到自动清理为止。
                   </div>
                 </div>
-              </CardHeader>
-              <CardContent className='pt-5'>
-                <Tabs value={galleryTab} onValueChange={setGalleryTab}>
-                  <TabsList className='mb-4 grid w-full grid-cols-2 sm:w-auto'>
-                    <TabsTrigger value='session'>
-                      <Images className='size-4' />
-                      {t('Current Session')}
-                    </TabsTrigger>
-                    <TabsTrigger value='recent'>
-                      <History className='size-4' />
-                      {t('Recent History')}
-                    </TabsTrigger>
-                  </TabsList>
+                <Button variant='outline' size='sm' onClick={refreshGallery}>
+                  <RefreshCw className='size-4' />
+                  刷新
+                </Button>
+              </div>
 
-                  <TabsContent value='session'>
-                    <ImageGrid
-                      t={t}
-                      items={sessionItems}
-                      emptyTitle={t('No images in this session')}
-                      emptyDescription={t(
-                        'Start with a prompt on the left. New results will appear here as soon as they are stored.'
-                      )}
-                      onPreview={setPreviewItem}
-                      onReusePrompt={applyItemPrompt}
-                      onEditFromItem={startEditFromItem}
-                    />
-                  </TabsContent>
+              <Tabs value={galleryTab} onValueChange={setGalleryTab}>
+                <TabsList className='mt-5 grid w-full grid-cols-2'>
+                  <TabsTrigger value='session'>
+                    <Sparkles className='size-4' />
+                    当前会话
+                  </TabsTrigger>
+                  <TabsTrigger value='recent'>
+                    <History className='size-4' />
+                    最近历史
+                  </TabsTrigger>
+                </TabsList>
 
-                  <TabsContent value='recent'>
-                    <ImageGrid
-                      t={t}
-                      items={recentItems}
-                      emptyTitle={t('No recent image history')}
-                      emptyDescription={t(
-                        'Your recently generated images will be listed here until they expire and are cleaned up.'
-                      )}
-                      onPreview={setPreviewItem}
-                      onReusePrompt={applyItemPrompt}
-                      onEditFromItem={startEditFromItem}
-                    />
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
+                <TabsContent value='session' className='mt-4'>
+                  <ImageGrid
+                    items={sessionItems}
+                    emptyTitle='当前会话还没有图片'
+                    emptyDescription='左侧输入中文提示词后，新的结果会优先出现在这里。'
+                    onPreview={setPreviewItem}
+                    onReusePrompt={applyItemPrompt}
+                    onEditFromItem={startEditFromItem}
+                  />
+                </TabsContent>
+
+                <TabsContent value='recent' className='mt-4'>
+                  <ImageGrid
+                    items={recentItems}
+                    emptyTitle='最近还没有图片历史'
+                    emptyDescription='你最近生成的图片会暂时保存在这里，过期后会被自动清理。'
+                    onPreview={setPreviewItem}
+                    onReusePrompt={applyItemPrompt}
+                    onEditFromItem={startEditFromItem}
+                  />
+                </TabsContent>
+              </Tabs>
+
+              <div className='mt-5 grid gap-3'>
+                <InfoPill label='当前会话图片数' value={String(sessionItems.length)} />
+                <InfoPill label='最近历史图片数' value={String(recentItems.length)} />
+                <InfoPill
+                  label='当前浏览标签'
+                  value={galleryTab === 'session' ? '当前会话' : '最近历史'}
+                />
+                <InfoPill
+                  label='当前选中来源图'
+                  value={selectedSource ? `#${selectedSource.id}` : '未选择'}
+                />
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -777,16 +834,7 @@ export function ImageWorkspace() {
   )
 }
 
-function ImageGrid({
-  t,
-  items,
-  emptyTitle,
-  emptyDescription,
-  onPreview,
-  onReusePrompt,
-  onEditFromItem,
-}: {
-  t: (key: string) => string
+function ImageGrid(props: {
   items: ImageWorkspaceItem[]
   emptyTitle: string
   emptyDescription: string
@@ -794,118 +842,126 @@ function ImageGrid({
   onReusePrompt: (item: ImageWorkspaceItem) => void
   onEditFromItem: (item: ImageWorkspaceItem) => void
 }) {
-  if (items.length === 0) {
+  if (props.items.length === 0) {
     return (
-      <Empty className='min-h-72 rounded-3xl border'>
+      <Empty className='min-h-72 rounded-[28px] border'>
         <EmptyHeader>
           <EmptyMedia variant='icon'>
             <Images className='size-4' />
           </EmptyMedia>
-          <EmptyTitle>{emptyTitle}</EmptyTitle>
-          <EmptyDescription>{emptyDescription}</EmptyDescription>
+          <EmptyTitle>{props.emptyTitle}</EmptyTitle>
+          <EmptyDescription>{props.emptyDescription}</EmptyDescription>
         </EmptyHeader>
       </Empty>
     )
   }
 
   return (
-    <div className='grid gap-4 md:grid-cols-2 2xl:grid-cols-3'>
-      {items.map((item) => {
+    <div className='space-y-3'>
+      {props.items.map((item) => {
         const isReady = item.status === 'ready' && !!item.image_url
         const isExpired = item.status === 'expired'
+
         return (
-          <Card
+          <div
             key={item.id}
-            size='sm'
-            className='overflow-hidden rounded-3xl border-border/70'
+            className='rounded-[28px] border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/60'
           >
-            <CardContent className='space-y-3 pt-3'>
+            <div className='flex gap-4'>
               {isReady ? (
                 <button
                   type='button'
-                  onClick={() => onPreview(item)}
-                  className='group relative block overflow-hidden rounded-2xl border'
+                  onClick={() => props.onPreview(item)}
+                  className='overflow-hidden rounded-2xl border'
                 >
                   <img
                     src={item.image_url}
                     alt={item.prompt}
-                    className='aspect-[1/1] w-full object-cover transition duration-300 group-hover:scale-[1.02]'
+                    className='size-28 object-cover'
                   />
                 </button>
               ) : (
-                <div className='bg-muted flex aspect-square items-center justify-center rounded-2xl border'>
-                  <div className='text-muted-foreground flex items-center gap-2 text-sm'>
+                <div className='bg-muted flex size-28 items-center justify-center rounded-2xl border'>
+                  <div className='flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400'>
                     <AlertCircle className='size-4' />
-                    {isExpired ? t('Expired') : t('Unavailable')}
+                    {isExpired ? '已过期' : '不可用'}
                   </div>
                 </div>
               )}
 
-              <div className='flex items-start justify-between gap-3'>
-                <div className='space-y-2'>
-                  <div className='line-clamp-3 text-sm leading-6'>
-                    {item.revised_prompt || item.prompt}
+              <div className='min-w-0 flex-1 space-y-3'>
+                <div className='flex items-start justify-between gap-3'>
+                  <div className='min-w-0'>
+                    <div className='line-clamp-3 text-sm leading-6 text-slate-700 dark:text-slate-300'>
+                      {item.revised_prompt || item.prompt}
+                    </div>
+                    <div className='mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400'>
+                      <span>{item.model}</span>
+                      <span>·</span>
+                      <span>{dayjs.unix(item.created_at).format('MM-DD HH:mm')}</span>
+                      {item.expires_at > 0 && !isExpired ? (
+                        <>
+                          <span>·</span>
+                          <span>
+                            到期 {dayjs.unix(item.expires_at).format('MM-DD HH:mm')}
+                          </span>
+                        </>
+                      ) : null}
+                    </div>
                   </div>
-                  <div className='text-muted-foreground flex flex-wrap items-center gap-2 text-xs'>
-                    <span>{item.model}</span>
-                    <span>·</span>
-                    <span>{dayjs.unix(item.created_at).format('MM-DD HH:mm')}</span>
-                    {item.expires_at > 0 && !isExpired && (
-                      <>
-                        <span>·</span>
-                        <span>
-                          {t('Expires')} {dayjs.unix(item.expires_at).format('MM-DD HH:mm')}
-                        </span>
-                      </>
-                    )}
+                  <Badge variant={getStatusVariant(item.status)}>
+                    {getStatusLabel(item.status)}
+                  </Badge>
+                </div>
+
+                {item.error_message && item.status !== 'ready' ? (
+                  <div className='rounded-2xl border border-dashed border-red-200 px-3 py-2 text-xs leading-5 text-red-600 dark:border-red-500/20 dark:text-red-300'>
+                    {item.error_message}
                   </div>
-                </div>
-                <Badge variant={getStatusVariant(item.status)}>{item.status}</Badge>
-              </div>
+                ) : null}
 
-              {item.error_message && item.status !== 'ready' && (
-                <div className='text-destructive rounded-2xl border border-dashed px-3 py-2 text-xs leading-5'>
-                  {item.error_message}
-                </div>
-              )}
-
-              <div className='flex flex-wrap gap-2'>
-                {isReady && (
-                  <Button variant='outline' size='sm' onClick={() => onPreview(item)}>
-                    {t('Preview')}
-                  </Button>
-                )}
-                {isReady && item.download_url && (
+                <div className='flex flex-wrap gap-2'>
+                  {isReady ? (
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      onClick={() => props.onPreview(item)}
+                    >
+                      预览
+                    </Button>
+                  ) : null}
+                  {isReady && item.download_url ? (
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      render={
+                        <a href={item.download_url}>
+                          <Download className='size-4' />
+                          下载
+                        </a>
+                      }
+                    />
+                  ) : null}
                   <Button
                     variant='outline'
                     size='sm'
-                    render={
-                      <a href={item.download_url}>
-                        <Download className='size-4' />
-                        {t('Download')}
-                      </a>
-                    }
-                  />
-                )}
-                <Button
-                  variant='outline'
-                  size='sm'
-                  onClick={() => onReusePrompt(item)}
-                >
-                  {t('Reuse Prompt')}
-                </Button>
-                {isReady && (
-                  <Button
-                    variant='outline'
-                    size='sm'
-                    onClick={() => onEditFromItem(item)}
+                    onClick={() => props.onReusePrompt(item)}
                   >
-                    {t('Edit From This')}
+                    复用提示词
                   </Button>
-                )}
+                  {isReady ? (
+                    <Button
+                      variant='outline'
+                      size='sm'
+                      onClick={() => props.onEditFromItem(item)}
+                    >
+                      基于这张继续改
+                    </Button>
+                  ) : null}
+                </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         )
       })}
     </div>

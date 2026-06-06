@@ -56,17 +56,6 @@ export function useSidebarData(): SidebarData {
         ],
       },
       {
-        id: 'image-generation',
-        title: '生图',
-        items: [
-          {
-            title: '生图',
-            url: '/images',
-            icon: Image,
-          },
-        ],
-      },
-      {
         id: 'general',
         title: '常规',
         items: [
@@ -74,6 +63,11 @@ export function useSidebarData(): SidebarData {
             title: '概览',
             url: '/dashboard/overview',
             icon: Activity,
+          },
+          {
+            title: '生图',
+            url: '/images',
+            icon: Image,
           },
           {
             title: '数据看板',
