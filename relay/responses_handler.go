@@ -76,7 +76,11 @@ func ResponsesHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *
 		if err != nil {
 			return types.NewError(err, types.ErrorCodeReadRequestBodyFailed, types.ErrOptionWithSkipRetry())
 		}
-		requestBody = common.ReaderOnly(storage)
+		jsonData, err := forceResponsesStreamBody(storage)
+		if err != nil {
+			return types.NewError(err, types.ErrorCodeConvertRequestFailed, types.ErrOptionWithSkipRetry())
+		}
+		requestBody = bytes.NewBuffer(jsonData)
 	} else {
 		convertedRequest, err := adaptor.ConvertOpenAIResponsesRequest(c, info, *request)
 		if err != nil {
@@ -158,4 +162,17 @@ func ResponsesHelper(c *gin.Context, info *relaycommon.RelayInfo) (newAPIError *
 		service.PostTextConsumeQuota(c, info, usageDto, nil)
 	}
 	return nil
+}
+
+func forceResponsesStreamBody(storage common.BodyStorage) ([]byte, error) {
+	requestBody, err := storage.Bytes()
+	if err != nil {
+		return nil, err
+	}
+	var body map[string]interface{}
+	if err := common.Unmarshal(requestBody, &body); err != nil {
+		return nil, err
+	}
+	body["stream"] = true
+	return common.Marshal(body)
 }

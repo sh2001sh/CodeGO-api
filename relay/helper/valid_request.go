@@ -124,6 +124,7 @@ func GetAndValidateResponsesRequest(c *gin.Context) (*dto.OpenAIResponsesRequest
 	if request.Input == nil {
 		return nil, errors.New("input is required")
 	}
+	request.Stream = common.GetPointer(true)
 	return request, nil
 }
 

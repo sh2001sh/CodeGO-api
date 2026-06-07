@@ -1,8 +1,6 @@
 package service
 
 import (
-	"context"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -344,11 +342,6 @@ func usageSemanticFromUsage(relayInfo *relaycommon.RelayInfo, usage *dto.Usage) 
 }
 
 func PostTextConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usage *dto.Usage, extraContent []string) {
-	if !shouldSettleDeliveredRelayResponse(ctx, relayInfo) {
-		refundUndeliveredRelayResponse(ctx, relayInfo)
-		return
-	}
-
 	originUsage := usage
 	usedFallbackUsage := false
 	if fallback, ok := fallbackPromptOnlyUsage(relayInfo, usage); ok {
@@ -511,84 +504,4 @@ func PostTextConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, us
 	gopool.Go(func() {
 		perfmetrics.RecordRelaySample(relayInfo, true, int64(summary.CompletionTokens))
 	})
-}
-
-func shouldSettleDeliveredRelayResponse(ctx *gin.Context, relayInfo *relaycommon.RelayInfo) bool {
-	if ctx == nil || relayInfo == nil || !relayInfo.IsStream {
-		return true
-	}
-	if relayInfo.StreamStatus == nil {
-		return true
-	}
-	if relayInfo.StreamStatus.EndReason == relaycommon.StreamEndReasonClientGone {
-		return common.GetContextKeyBool(ctx, constant.ContextKeyResponseBodyDelivered)
-	}
-	if relayInfo.StreamStatus.EndReason == relaycommon.StreamEndReasonHandlerStop &&
-		isContextTerminationError(relayInfo.StreamStatus.EndError) {
-		return common.GetContextKeyBool(ctx, constant.ContextKeyResponseBodyDelivered)
-	}
-	return true
-}
-
-func refundUndeliveredRelayResponse(ctx *gin.Context, relayInfo *relaycommon.RelayInfo) {
-	if relayInfo == nil || relayInfo.Billing == nil {
-		return
-	}
-	logger.LogInfo(ctx, fmt.Sprintf(
-		"skip settle and refund pre-consume because downstream disconnected before any response body was delivered, userId=%d, channelId=%d, tokenId=%d, model=%s",
-		relayInfo.UserId,
-		relayInfo.ChannelId,
-		relayInfo.TokenId,
-		relayInfo.OriginModelName,
-	))
-	relayInfo.Billing.Refund(ctx)
-}
-
-func ConsumePromptOnlyFallbackOnUpstreamFailure(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, err *types.NewAPIError) bool {
-	if ctx == nil || relayInfo == nil || err == nil {
-		return false
-	}
-	if relayInfo.Billing == nil {
-		return false
-	}
-	if !shouldFallbackBillUpstreamFailure(err) {
-		return false
-	}
-	usage, ok := fallbackPromptOnlyUsage(relayInfo, nil)
-	if !ok {
-		return false
-	}
-	PostTextConsumeQuota(ctx, relayInfo, usage, nil)
-	return true
-}
-
-func shouldFallbackBillUpstreamFailure(err *types.NewAPIError) bool {
-	if err == nil {
-		return false
-	}
-	if isContextTerminationError(err) {
-		return false
-	}
-	switch err.GetErrorCode() {
-	case types.ErrorCodeReadResponseBodyFailed,
-		types.ErrorCodeBadResponse,
-		types.ErrorCodeBadResponseBody,
-		types.ErrorCodeEmptyResponse:
-		return true
-	default:
-		return false
-	}
-}
-
-func isContextTerminationError(err error) bool {
-	if err == nil {
-		return false
-	}
-	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
-		return true
-	}
-	message := strings.ToLower(err.Error())
-	return strings.Contains(message, "context canceled") ||
-		strings.Contains(message, "deadline exceeded") ||
-		strings.Contains(message, "request context done")
 }

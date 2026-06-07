@@ -167,9 +167,7 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 		if newAPIError != nil {
 			newAPIError = service.NormalizeViolationFeeError(newAPIError)
 			if relayInfo.Billing != nil {
-				if !service.ConsumePromptOnlyFallbackOnUpstreamFailure(c, relayInfo, newAPIError) {
-					relayInfo.Billing.Refund(c)
-				}
+				relayInfo.Billing.Refund(c)
 			}
 			service.ChargeViolationFeeIfNeeded(c, relayInfo, newAPIError)
 		}

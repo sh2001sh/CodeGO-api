@@ -1,9 +1,6 @@
 package service
 
 import (
-	"context"
-	"errors"
-	"fmt"
 	"net/http/httptest"
 	"testing"
 	"time"
@@ -161,105 +158,6 @@ func TestCalculateTextQuotaSummaryFallbackKeepsClaudeSemantic(t *testing.T) {
 	require.Equal(t, 120, summary.PromptTokens)
 	require.Equal(t, 120, summary.TotalTokens)
 	require.Equal(t, 120, summary.Quota)
-}
-
-func TestShouldFallbackBillUpstreamFailureOnlyForUpstreamErrors(t *testing.T) {
-	require.False(t, shouldFallbackBillUpstreamFailure(types.NewOpenAIError(
-		errors.New("upstream timeout"),
-		types.ErrorCodeDoRequestFailed,
-		500,
-	)))
-	require.False(t, shouldFallbackBillUpstreamFailure(types.NewOpenAIError(
-		errors.New("channel response timeout exceeded"),
-		types.ErrorCodeChannelResponseTimeExceeded,
-		408,
-	)))
-	require.True(t, shouldFallbackBillUpstreamFailure(types.NewOpenAIError(
-		errors.New("bad upstream body"),
-		types.ErrorCodeBadResponseBody,
-		500,
-	)))
-	require.False(t, shouldFallbackBillUpstreamFailure(types.NewOpenAIError(
-		fmt.Errorf("request context done: %w", context.Canceled),
-		types.ErrorCodeReadResponseBodyFailed,
-		499,
-	)))
-	require.False(t, shouldFallbackBillUpstreamFailure(types.NewOpenAIError(
-		fmt.Errorf("upstream deadline: %w", context.DeadlineExceeded),
-		types.ErrorCodeBadResponseBody,
-		504,
-	)))
-	require.False(t, shouldFallbackBillUpstreamFailure(types.NewError(
-		errors.New("invalid request"),
-		types.ErrorCodeInvalidRequest,
-	)))
-	require.False(t, shouldFallbackBillUpstreamFailure(types.NewError(
-		errors.New("sensitive words"),
-		types.ErrorCodeSensitiveWordsDetected,
-	)))
-}
-
-func TestShouldSettleDeliveredRelayResponse(t *testing.T) {
-	gin.SetMode(gin.TestMode)
-
-	t.Run("non stream remains billable", func(t *testing.T) {
-		w := httptest.NewRecorder()
-		ctx, _ := gin.CreateTestContext(w)
-		relayInfo := &relaycommon.RelayInfo{}
-		require.True(t, shouldSettleDeliveredRelayResponse(ctx, relayInfo))
-	})
-
-	t.Run("client gone before any payload delivered refunds", func(t *testing.T) {
-		w := httptest.NewRecorder()
-		ctx, _ := gin.CreateTestContext(w)
-		relayInfo := &relaycommon.RelayInfo{
-			IsStream: true,
-			StreamStatus: &relaycommon.StreamStatus{
-				EndReason: relaycommon.StreamEndReasonClientGone,
-			},
-		}
-		require.False(t, shouldSettleDeliveredRelayResponse(ctx, relayInfo))
-	})
-
-	t.Run("client gone after payload delivered still settles", func(t *testing.T) {
-		w := httptest.NewRecorder()
-		ctx, _ := gin.CreateTestContext(w)
-		ctx.Set(string(constant.ContextKeyResponseBodyDelivered), true)
-		relayInfo := &relaycommon.RelayInfo{
-			IsStream: true,
-			StreamStatus: &relaycommon.StreamStatus{
-				EndReason: relaycommon.StreamEndReasonClientGone,
-			},
-		}
-		require.True(t, shouldSettleDeliveredRelayResponse(ctx, relayInfo))
-	})
-
-	t.Run("handler stop from context cancel before payload delivered refunds", func(t *testing.T) {
-		w := httptest.NewRecorder()
-		ctx, _ := gin.CreateTestContext(w)
-		relayInfo := &relaycommon.RelayInfo{
-			IsStream: true,
-			StreamStatus: &relaycommon.StreamStatus{
-				EndReason: relaycommon.StreamEndReasonHandlerStop,
-				EndError:  context.Canceled,
-			},
-		}
-		require.False(t, shouldSettleDeliveredRelayResponse(ctx, relayInfo))
-	})
-
-	t.Run("handler stop from context cancel after payload delivered still settles", func(t *testing.T) {
-		w := httptest.NewRecorder()
-		ctx, _ := gin.CreateTestContext(w)
-		ctx.Set(string(constant.ContextKeyResponseBodyDelivered), true)
-		relayInfo := &relaycommon.RelayInfo{
-			IsStream: true,
-			StreamStatus: &relaycommon.StreamStatus{
-				EndReason: relaycommon.StreamEndReasonHandlerStop,
-				EndError:  context.Canceled,
-			},
-		}
-		require.True(t, shouldSettleDeliveredRelayResponse(ctx, relayInfo))
-	})
 }
 
 func TestCalculateTextQuotaSummaryUsesAnthropicUsageSemanticFromUpstreamUsage(t *testing.T) {
