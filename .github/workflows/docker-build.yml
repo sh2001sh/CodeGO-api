@@ -97,7 +97,9 @@ jobs:
           sbom: true
 
       - name: Install cosign
-        uses: sigstore/cosign-installer@v3
+        uses: sigstore/cosign-installer@v4.1.2
+        with:
+          cosign-release: 'v3.0.6'
 
       - name: Sign image with cosign
         run: cosign sign --yes ${{ env.PRIMARY_DOCKER_IMAGE }}@${{ steps.build.outputs.digest }}
