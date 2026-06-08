@@ -91,16 +91,6 @@ jobs:
           provenance: mode=max
           sbom: true
 
-      - name: Install cosign
-        uses: sigstore/cosign-installer@v4.1.2
-        with:
-          cosign-release: 'v3.0.6'
-
-      - name: Sign image with cosign
-        run: |
-          cosign sign --yes ${{ env.PRIMARY_DOCKER_IMAGE }}@${{ steps.build.outputs.digest }}
-          cosign sign --yes ghcr.io/${{ env.GHCR_REPOSITORY }}@${{ steps.build.outputs.digest }}
-
       - name: Output digest
         run: |
           echo "### Docker Image Digest (${{ matrix.arch }})" >> $GITHUB_STEP_SUMMARY
@@ -117,6 +107,7 @@ jobs:
     permissions:
       packages: write
       contents: read
+      id-token: write
     steps:
       - name: Check out (shallow)
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
@@ -173,6 +164,18 @@ jobs:
             -t ghcr.io/${GHCR_REPOSITORY}:${VERSION} \
             ghcr.io/${GHCR_REPOSITORY}:${VERSION}-amd64 \
             ghcr.io/${GHCR_REPOSITORY}:${VERSION}-arm64
+
+      - name: Install cosign
+        uses: sigstore/cosign-installer@v4.1.2
+        with:
+          cosign-release: 'v3.0.6'
+
+      - name: Sign multi-arch manifests with cosign
+        run: |
+          cosign sign --yes ${{ env.PRIMARY_DOCKER_IMAGE }}:alpha
+          cosign sign --yes ${{ env.PRIMARY_DOCKER_IMAGE }}:${VERSION}
+          cosign sign --yes ghcr.io/${GHCR_REPOSITORY}:alpha
+          cosign sign --yes ghcr.io/${GHCR_REPOSITORY}:${VERSION}
 
       - name: Output manifest digest
         run: |
