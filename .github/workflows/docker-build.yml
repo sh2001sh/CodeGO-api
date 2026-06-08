@@ -138,10 +138,16 @@ jobs:
             ${{ env.PRIMARY_DOCKER_IMAGE }}:latest-amd64 \
             ${{ env.PRIMARY_DOCKER_IMAGE }}:latest-arm64
 
-      - name: Install cosign
-        uses: sigstore/cosign-installer@v4.1.2
+      - name: Set up Go for cosign
+        uses: actions/setup-go@v5
         with:
-          cosign-release: 'v3.0.6'
+          go-version-file: go.mod
+          cache: false
+
+      - name: Install cosign from source
+        run: |
+          go install github.com/sigstore/cosign/v3/cmd/cosign@v3.0.6
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
       - name: Sign multi-arch manifests with cosign
         run: |
