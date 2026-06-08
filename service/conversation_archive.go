@@ -21,6 +21,8 @@ const (
 	defaultConversationArchivePath = "data/conversation_archive.txt"
 )
 
+var conversationArchiveMaxSize int64 = 1 << 30
+
 var conversationArchiveMu sync.Mutex
 
 type conversationArchiveMessage struct {
@@ -61,7 +63,12 @@ func appendConversationArchive(text string) error {
 	conversationArchiveMu.Lock()
 	defer conversationArchiveMu.Unlock()
 
-	file, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	targetPath, err := conversationArchiveWritePath(path, int64(len(text)))
+	if err != nil {
+		return err
+	}
+
+	file, err := os.OpenFile(targetPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return err
 	}

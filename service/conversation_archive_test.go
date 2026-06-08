@@ -65,3 +65,37 @@ func TestArchiveConversationWritesStandaloneTxt(t *testing.T) {
 		t.Fatalf("archive missing response content: %s", text)
 	}
 }
+
+func TestAppendConversationArchiveRotatesAtMaxSize(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "conversation_archive.txt")
+	t.Setenv(conversationArchivePathEnv, path)
+
+	originalMaxSize := conversationArchiveMaxSize
+	conversationArchiveMaxSize = 32
+	t.Cleanup(func() {
+		conversationArchiveMaxSize = originalMaxSize
+	})
+
+	if err := appendConversationArchive(strings.Repeat("a", 24)); err != nil {
+		t.Fatalf("write initial archive: %v", err)
+	}
+	if err := appendConversationArchive(strings.Repeat("b", 16)); err != nil {
+		t.Fatalf("write rotated archive: %v", err)
+	}
+
+	baseData, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read base archive: %v", err)
+	}
+	rotatedData, err := os.ReadFile(filepath.Join(dir, "conversation_archive_0001.txt"))
+	if err != nil {
+		t.Fatalf("read rotated archive: %v", err)
+	}
+	if string(baseData) != strings.Repeat("a", 24) {
+		t.Fatalf("base archive changed unexpectedly: %q", string(baseData))
+	}
+	if string(rotatedData) != strings.Repeat("b", 16) {
+		t.Fatalf("rotated archive mismatch: %q", string(rotatedData))
+	}
+}
