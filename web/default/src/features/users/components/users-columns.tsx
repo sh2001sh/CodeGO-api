@@ -21,7 +21,6 @@ import { useTranslation } from 'react-i18next'
 import { formatQuota, formatTimestamp } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Progress } from '@/components/ui/progress'
 import {
   Tooltip,
   TooltipContent,
@@ -34,12 +33,7 @@ import { StatusBadge, dotColorMap } from '@/components/status-badge'
 import { USER_STATUSES, USER_ROLES, isUserDeleted } from '../constants'
 import { type User } from '../types'
 import { DataTableRowActions } from './data-table-row-actions'
-
-function getQuotaProgressColor(percentage: number): string {
-  if (percentage <= 10) return '[&_[data-slot=progress-indicator]]:bg-rose-500'
-  if (percentage <= 30) return '[&_[data-slot=progress-indicator]]:bg-amber-500'
-  return '[&_[data-slot=progress-indicator]]:bg-emerald-500'
-}
+import { createUserQuotaColumns } from './user-quota-columns'
 
 export function useUsersColumns(): ColumnDef<User>[] {
   const { t } = useTranslation()
@@ -196,67 +190,7 @@ export function useUsersColumns(): ColumnDef<User>[] {
       enableSorting: false,
       meta: { label: '当前订阅' },
     },
-    {
-      id: 'quota',
-      accessorKey: 'quota',
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title={t('Quota')} />
-      ),
-      cell: ({ row }) => {
-        const user = row.original
-        const used = user.used_quota
-        const remaining = user.quota
-        const total = used + remaining
-        const remainingPercentage = total > 0 ? (remaining / total) * 100 : 0
-
-        if (total === 0) {
-          return (
-            <StatusBadge
-              label={t('No Quota')}
-              variant='neutral'
-              copyable={false}
-            />
-          )
-        }
-
-        return (
-          <Tooltip>
-            <TooltipTrigger
-              render={<div className='w-[150px] cursor-help space-y-1' />}
-            >
-              <div className='flex justify-between text-xs'>
-                <span className='font-medium tabular-nums'>
-                  {formatQuota(remaining)}
-                </span>
-                <span className='text-muted-foreground tabular-nums'>
-                  {formatQuota(total)}
-                </span>
-              </div>
-              <Progress
-                value={remainingPercentage}
-                className={cn(
-                  'h-1.5',
-                  getQuotaProgressColor(remainingPercentage)
-                )}
-              />
-            </TooltipTrigger>
-            <TooltipContent>
-              <div className='space-y-1 text-xs'>
-                <div>
-                  {t('Used:')} {formatQuota(used)}
-                </div>
-                <div>
-                  {t('Remaining:')} {formatQuota(remaining)} (
-                  {remainingPercentage.toFixed(1)}%)
-                </div>
-                <div>{t('Total:')} {formatQuota(total)}</div>
-              </div>
-            </TooltipContent>
-          </Tooltip>
-        )
-      },
-      meta: { label: t('Quota') },
-    },
+    ...createUserQuotaColumns(t),
     {
       accessorKey: 'group',
       header: ({ column }) => (

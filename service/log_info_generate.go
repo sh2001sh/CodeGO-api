@@ -124,6 +124,15 @@ func appendBillingInfo(relayInfo *relaycommon.RelayInfo, other map[string]interf
 	if relayInfo.BillingSource != "" {
 		other["billing_source"] = relayInfo.BillingSource
 	}
+	switch relayInfo.BillingSource {
+	case BillingSourceClaudeWallet:
+		other["billing_quota_field"] = "claude_quota"
+		if relayInfo.FinalPreConsumedQuota > 0 {
+			other["claude_quota_pre_consumed"] = relayInfo.FinalPreConsumedQuota
+		}
+	case BillingSourceWallet:
+		other["billing_quota_field"] = "quota"
+	}
 	if relayInfo.UserSetting.BillingPreference != "" {
 		other["billing_preference"] = relayInfo.UserSetting.BillingPreference
 	}
@@ -174,6 +183,17 @@ func appendBillingInfo(relayInfo *relaycommon.RelayInfo, other map[string]interf
 		}
 		other["wallet_quota_deducted"] = 0
 	}
+}
+
+func appendBillingContent(content string, relayInfo *relaycommon.RelayInfo) string {
+	if relayInfo == nil || relayInfo.BillingSource != BillingSourceClaudeWallet {
+		return content
+	}
+	note := "Billed from Claude quota"
+	if content == "" {
+		return note
+	}
+	return content + ", " + note
 }
 
 func appendRequestConversionChain(relayInfo *relaycommon.RelayInfo, other map[string]interface{}) {

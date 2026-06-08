@@ -31,6 +31,7 @@ export const userFormSchema = z.object({
   password: z.string().optional(),
   role: z.number().optional(),
   quota_dollars: z.number().min(0).optional(),
+  claude_quota_dollars: z.number().min(0).optional(),
   group: z.string().optional(),
   remark: z.string().optional(),
 })
@@ -47,6 +48,7 @@ export const USER_FORM_DEFAULT_VALUES: UserFormValues = {
   password: '',
   role: 1, // Default to common user
   quota_dollars: 0,
+  claude_quota_dollars: 0,
   group: DEFAULT_GROUP,
   remark: '',
 }
@@ -91,6 +93,7 @@ export function transformUserToFormDefaults(user: User): UserFormValues {
     password: '',
     role: user.role,
     quota_dollars: quotaUnitsToDollars(user.quota),
+    claude_quota_dollars: quotaUnitsToDollars(user.claude_quota || 0),
     group: user.group || DEFAULT_GROUP,
     remark: user.remark || '',
   }

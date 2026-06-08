@@ -20,11 +20,9 @@ import { useEffect, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useQuery } from '@tanstack/react-query'
-import { Pencil } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { getCurrencyDisplay, getCurrencyLabel } from '@/lib/currency'
-import { formatQuota, parseQuotaFromDollars } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import {
   Form,
@@ -36,7 +34,6 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import {
   Select,
   SelectContent,
@@ -56,7 +53,7 @@ import {
 } from '@/components/ui/sheet'
 import { Textarea } from '@/components/ui/textarea'
 import { createUser, updateUser, getUser, getGroups } from '../api'
-import { BINDING_FIELDS, ERROR_MESSAGES, SUCCESS_MESSAGES } from '../constants'
+import { ERROR_MESSAGES, SUCCESS_MESSAGES } from '../constants'
 import {
   userFormSchema,
   type UserFormValues,
@@ -65,7 +62,9 @@ import {
   transformUserToFormDefaults,
 } from '../lib'
 import { type User } from '../types'
-import { UserQuotaDialog } from './user-quota-dialog'
+import { UserBindingSection } from './user-binding-section'
+import { UserQuotaDialogs } from './user-quota-dialogs'
+import { UserQuotaSection } from './user-quota-section'
 import { useUsers } from './users-provider'
 
 type UsersMutateDrawerProps = {
@@ -84,6 +83,7 @@ export function UsersMutateDrawer({
   const { triggerRefresh } = useUsers()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [quotaDialogOpen, setQuotaDialogOpen] = useState(false)
+  const [claudeQuotaDialogOpen, setClaudeQuotaDialogOpen] = useState(false)
 
   // Fetch groups
   const { data: groupsData } = useQuery({
@@ -119,6 +119,7 @@ export function UsersMutateDrawer({
   const tokensOnly = currencyMeta.kind === 'tokens'
 
   const currentQuotaRaw = form.watch('quota_dollars') || 0
+  const currentClaudeQuotaRaw = form.watch('claude_quota_dollars') || 0
 
   const onSubmit = async (data: UserFormValues) => {
     setIsSubmitting(true)
@@ -336,43 +337,13 @@ export function UsersMutateDrawer({
                     )}
                   />
 
-                  <FormField
-                    control={form.control}
-                    name='quota_dollars'
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>
-                          {t('Remaining Quota ({{currency}})', {
-                            currency: currencyLabel,
-                          })}
-                        </FormLabel>
-                        <div className='flex gap-2'>
-                          <FormControl>
-                            <Input
-                              value={
-                                tokensOnly
-                                  ? String(field.value || 0)
-                                  : (field.value || 0).toFixed(6)
-                              }
-                              readOnly
-                              className='flex-1'
-                            />
-                          </FormControl>
-                          <Button
-                            type='button'
-                            variant='outline'
-                            onClick={() => setQuotaDialogOpen(true)}
-                          >
-                            <Pencil className='mr-1 h-4 w-4' />
-                            {t('Adjust Quota')}
-                          </Button>
-                        </div>
-                        <FormDescription>
-                          {formatQuota(parseQuotaFromDollars(field.value || 0))}
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                  <UserQuotaSection
+                    form={form}
+                    t={t}
+                    currencyLabel={currencyLabel}
+                    tokensOnly={tokensOnly}
+                    onAdjustQuota={() => setQuotaDialogOpen(true)}
+                    onAdjustClaudeQuota={() => setClaudeQuotaDialogOpen(true)}
                   />
 
                   <FormField
@@ -398,35 +369,7 @@ export function UsersMutateDrawer({
               )}
 
               {/* Binding Information (Read-only) */}
-              {isUpdate && (
-                <div className='space-y-4'>
-                  <h3 className='text-sm font-medium'>
-                    {t('Binding Information')}
-                  </h3>
-                  <p className='text-muted-foreground text-xs'>
-                    {t(
-                      'Third-party account bindings (read-only, managed by user in profile settings)'
-                    )}
-                  </p>
-
-                  <div className='space-y-3'>
-                    {BINDING_FIELDS.map(({ key, label }) => (
-                      <div key={key}>
-                        <Label className='text-muted-foreground text-xs'>
-                          {t(label)}
-                        </Label>
-                        <Input
-                          value={
-                            (currentRow?.[key as keyof User] as string) || '-'
-                          }
-                          disabled
-                          className='mt-1'
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
+              {isUpdate && <UserBindingSection currentRow={currentRow} t={t} />}
             </form>
           </Form>
           <SheetFooter className='grid grid-cols-2 gap-2 border-t px-4 py-3 sm:flex sm:px-6 sm:py-4'>
@@ -440,16 +383,17 @@ export function UsersMutateDrawer({
         </SheetContent>
       </Sheet>
 
-      {/* Adjust Quota Dialog */}
-      {currentRow && (
-        <UserQuotaDialog
-          open={quotaDialogOpen}
-          onOpenChange={setQuotaDialogOpen}
-          userId={currentRow.id}
-          currentQuota={parseQuotaFromDollars(currentQuotaRaw || 0)}
-          onSuccess={refreshUserData}
-        />
-      )}
+      <UserQuotaDialogs
+        currentRow={currentRow}
+        quotaDialogOpen={quotaDialogOpen}
+        claudeQuotaDialogOpen={claudeQuotaDialogOpen}
+        currentQuotaRaw={currentQuotaRaw}
+        currentClaudeQuotaRaw={currentClaudeQuotaRaw}
+        t={t}
+        onQuotaOpenChange={setQuotaDialogOpen}
+        onClaudeQuotaOpenChange={setClaudeQuotaDialogOpen}
+        onSuccess={refreshUserData}
+      />
     </>
   )
 }
