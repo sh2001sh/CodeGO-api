@@ -386,7 +386,11 @@ func (m *MediaContent) ToFileSource() types.FileSource {
 		if file == nil || file.FileData == "" {
 			return nil
 		}
-		return types.NewFileSourceFromData(file.FileData, "")
+		mimeType := ""
+		if dot := strings.LastIndex(file.FileName, "."); dot != -1 && dot+1 < len(file.FileName) {
+			mimeType = mimeTypeByFileExtension(file.FileName[dot+1:])
+		}
+		return types.NewFileSourceFromData(file.FileData, mimeType)
 	case ContentTypeVideoUrl:
 		video := m.GetVideoUrl()
 		if video == nil || video.Url == "" {
@@ -395,6 +399,29 @@ func (m *MediaContent) ToFileSource() types.FileSource {
 		return types.NewFileSourceFromData(video.Url, "")
 	}
 	return nil
+}
+
+func mimeTypeByFileExtension(ext string) string {
+	switch strings.ToLower(ext) {
+	case "txt", "md", "markdown", "csv", "json", "xml", "html", "htm":
+		return "text/plain"
+	case "jpg", "jpeg":
+		return "image/jpeg"
+	case "png":
+		return "image/png"
+	case "gif":
+		return "image/gif"
+	case "jfif":
+		return "image/jpeg"
+	case "heic":
+		return "image/heic"
+	case "heif":
+		return "image/heif"
+	case "pdf":
+		return "application/pdf"
+	default:
+		return ""
+	}
 }
 
 type MessageImageUrl struct {
