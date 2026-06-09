@@ -16,7 +16,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { memo, useCallback, useState } from 'react'
+import { memo, useCallback, useRef, useState } from 'react'
 import { type UseFormReturn } from 'react-hook-form'
 import { Code2, Eye } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
@@ -32,7 +32,10 @@ import {
 } from '@/components/ui/form'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
-import { ModelRatioVisualEditor } from './model-ratio-visual-editor'
+import {
+  ModelRatioVisualEditor,
+  type ModelRatioVisualEditorHandle,
+} from './model-ratio-visual-editor'
 
 type ModelFormValues = {
   ModelPrice: string
@@ -65,6 +68,7 @@ export const ModelRatioForm = memo(function ModelRatioForm({
 }: ModelRatioFormProps) {
   const { t } = useTranslation()
   const [editMode, setEditMode] = useState<'visual' | 'json'>('visual')
+  const visualEditorRef = useRef<ModelRatioVisualEditorHandle>(null)
 
   const handleFieldChange = useCallback(
     (field: keyof ModelFormValues, value: string) => {
@@ -79,6 +83,15 @@ export const ModelRatioForm = memo(function ModelRatioForm({
   const toggleEditMode = useCallback(() => {
     setEditMode((prev) => (prev === 'visual' ? 'json' : 'visual'))
   }, [])
+
+  const handleSave = useCallback(async () => {
+    if (editMode === 'visual') {
+      const committed = await visualEditorRef.current?.commitOpenEditor()
+      if (committed === false) return
+    }
+
+    await form.handleSubmit(onSave)()
+  }, [editMode, form, onSave])
 
   return (
     <div className='space-y-6'>
@@ -102,6 +115,7 @@ export const ModelRatioForm = memo(function ModelRatioForm({
         {editMode === 'visual' ? (
           <div className='space-y-6'>
             <ModelRatioVisualEditor
+              ref={visualEditorRef}
               modelPrice={form.watch('ModelPrice')}
               modelRatio={form.watch('ModelRatio')}
               cacheRatio={form.watch('CacheRatio')}
@@ -149,7 +163,7 @@ export const ModelRatioForm = memo(function ModelRatioForm({
             />
 
             <div className='flex flex-wrap gap-4'>
-              <Button onClick={form.handleSubmit(onSave)} disabled={isSaving}>
+              <Button onClick={handleSave} disabled={isSaving}>
                 {isSaving ? t('Saving...') : t('Save model prices')}
               </Button>
               <Button

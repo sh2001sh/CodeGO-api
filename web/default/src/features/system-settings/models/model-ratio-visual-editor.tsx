@@ -16,7 +16,16 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useState, useMemo, memo, useCallback, useEffect } from 'react'
+import {
+  forwardRef,
+  memo,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import {
   type ColumnDef,
   type ColumnFiltersState,
@@ -62,6 +71,7 @@ import {
 import { safeJsonParse } from '../utils/json-parser'
 import {
   ModelPricingEditorPanel,
+  type ModelPricingEditorPanelHandle,
   ModelPricingSheet,
   type ModelRatioData,
 } from './model-pricing-sheet'
@@ -94,6 +104,10 @@ type ModelRow = {
   billingExpr?: string
   requestRuleExpr?: string
   hasConflict: boolean
+}
+
+export type ModelRatioVisualEditorHandle = {
+  commitOpenEditor: () => Promise<boolean>
 }
 
 const STORAGE_KEY = 'model-ratio-column-visibility'
@@ -195,8 +209,11 @@ const getPriceDetail = (row: ModelRow, t: (key: string) => string) => {
   return details.length > 0 ? details.join(' · ') : t('Base input price only')
 }
 
-export const ModelRatioVisualEditor = memo(
-  function ModelRatioVisualEditor({
+const ModelRatioVisualEditorComponent = forwardRef<
+  ModelRatioVisualEditorHandle,
+  ModelRatioVisualEditorProps
+>(function ModelRatioVisualEditor(
+  {
     modelPrice,
     modelRatio,
     cacheRatio,
@@ -208,7 +225,9 @@ export const ModelRatioVisualEditor = memo(
     billingMode,
     billingExpr,
     onChange,
-  }: ModelRatioVisualEditorProps) {
+  },
+  ref
+) {
     const { t } = useTranslation()
     const isMobile = useMediaQuery('(max-width: 767px)')
     const [sheetOpen, setSheetOpen] = useState(false)
@@ -218,6 +237,7 @@ export const ModelRatioVisualEditor = memo(
     const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
     const [globalFilter, setGlobalFilter] = useState('')
     const [rowSelection, setRowSelection] = useState<RowSelectionState>({})
+    const editorPanelRef = useRef<ModelPricingEditorPanelHandle>(null)
     const [pagination, setPagination] = useState<PaginationState>({
       pageIndex: 0,
       pageSize: 20,
@@ -873,6 +893,21 @@ export const ModelRatioVisualEditor = memo(
       )
     }, [editData, persistPricingData, t, table])
 
+    useImperativeHandle(
+      ref,
+      () => ({
+        commitOpenEditor: async () => {
+          if (!editorOpen || !editorPanelRef.current) return true
+          const data = await editorPanelRef.current.commitDraft()
+          if (!data) return false
+          persistPricingData(data)
+          setEditData(data)
+          return true
+        },
+      }),
+      [editorOpen, persistPricingData]
+    )
+
     const selectedTargetCount = table.getFilteredSelectedRowModel().rows.length
 
     return (
@@ -980,6 +1015,7 @@ export const ModelRatioVisualEditor = memo(
           <div className='hidden min-w-0 md:block'>
             {editorOpen ? (
               <ModelPricingEditorPanel
+                ref={editorPanelRef}
                 onSave={handleSave}
                 onCancel={handleCancel}
                 editData={editData}
@@ -1016,6 +1052,7 @@ export const ModelRatioVisualEditor = memo(
 
         {isMobile && (
           <ModelPricingSheet
+            ref={editorPanelRef}
             open={sheetOpen}
             onOpenChange={setSheetOpen}
             onSave={handleSave}
@@ -1026,7 +1063,10 @@ export const ModelRatioVisualEditor = memo(
         )}
       </div>
     )
-  },
+  })
+
+export const ModelRatioVisualEditor = memo(
+  ModelRatioVisualEditorComponent,
   // Custom equality check - only re-render if JSON props actually changed
   (prevProps, nextProps) => {
     return (
