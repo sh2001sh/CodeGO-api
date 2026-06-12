@@ -339,21 +339,6 @@ export type OperationsSettings = {
   'perf_metrics_setting.retention_days': number
 }
 
-export type PeoplePlanAdminSettings = {
-  'people_plan_setting.enabled': boolean
-  'people_plan_setting.entry_title': string
-  'people_plan_setting.entry_subtitle': string
-  'people_plan_setting.hero_title': string
-  'people_plan_setting.hero_subtitle': string
-  'people_plan_setting.hero_description': string
-  'people_plan_setting.team_rules': string
-  'people_plan_setting.achievements': string
-  'people_plan_setting.monthly': string
-  'people_plan_setting.popup': string
-  'people_plan_setting.submissions': string
-  'people_plan_setting.risk': string
-}
-
 export type SecuritySettings = {
   ModelRequestRateLimitEnabled: boolean
   ModelRequestRateLimitCount: number

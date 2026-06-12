@@ -47,7 +47,6 @@ import { Route as AuthenticatedRedemptionCodesIndexRouteImport } from './routes/
 import { Route as AuthenticatedProfileIndexRouteImport } from './routes/_authenticated/profile/index'
 import { Route as AuthenticatedPointMallIndexRouteImport } from './routes/_authenticated/point-mall/index'
 import { Route as AuthenticatedPlaygroundIndexRouteImport } from './routes/_authenticated/playground/index'
-import { Route as AuthenticatedPeoplePlanIndexRouteImport } from './routes/_authenticated/people-plan/index'
 import { Route as AuthenticatedPackagesIndexRouteImport } from './routes/_authenticated/packages/index'
 import { Route as AuthenticatedModelsIndexRouteImport } from './routes/_authenticated/models/index'
 import { Route as AuthenticatedKeysIndexRouteImport } from './routes/_authenticated/keys/index'
@@ -65,7 +64,6 @@ import { Route as authUserResetRouteImport } from './routes/(auth)/user/reset'
 import { Route as AuthenticatedSystemSettingsSiteIndexRouteImport } from './routes/_authenticated/system-settings/site/index'
 import { Route as AuthenticatedSystemSettingsSecurityIndexRouteImport } from './routes/_authenticated/system-settings/security/index'
 import { Route as AuthenticatedSystemSettingsPointMallIndexRouteImport } from './routes/_authenticated/system-settings/point-mall/index'
-import { Route as AuthenticatedSystemSettingsPeoplePlanIndexRouteImport } from './routes/_authenticated/system-settings/people-plan/index'
 import { Route as AuthenticatedSystemSettingsOperationsIndexRouteImport } from './routes/_authenticated/system-settings/operations/index'
 import { Route as AuthenticatedSystemSettingsModelsIndexRouteImport } from './routes/_authenticated/system-settings/models/index'
 import { Route as AuthenticatedSystemSettingsContentIndexRouteImport } from './routes/_authenticated/system-settings/content/index'
@@ -73,7 +71,6 @@ import { Route as AuthenticatedSystemSettingsBillingIndexRouteImport } from './r
 import { Route as AuthenticatedSystemSettingsAuthIndexRouteImport } from './routes/_authenticated/system-settings/auth/index'
 import { Route as AuthenticatedSystemSettingsSiteSectionRouteImport } from './routes/_authenticated/system-settings/site/$section'
 import { Route as AuthenticatedSystemSettingsSecuritySectionRouteImport } from './routes/_authenticated/system-settings/security/$section'
-import { Route as AuthenticatedSystemSettingsPeoplePlanSectionRouteImport } from './routes/_authenticated/system-settings/people-plan/$section'
 import { Route as AuthenticatedSystemSettingsOperationsSectionRouteImport } from './routes/_authenticated/system-settings/operations/$section'
 import { Route as AuthenticatedSystemSettingsModelsSectionRouteImport } from './routes/_authenticated/system-settings/models/$section'
 import { Route as AuthenticatedSystemSettingsContentSectionRouteImport } from './routes/_authenticated/system-settings/content/$section'
@@ -277,12 +274,6 @@ const AuthenticatedPlaygroundIndexRoute =
     path: '/playground/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
-const AuthenticatedPeoplePlanIndexRoute =
-  AuthenticatedPeoplePlanIndexRouteImport.update({
-    id: '/people-plan/',
-    path: '/people-plan/',
-    getParentRoute: () => AuthenticatedRouteRoute,
-  } as any)
 const AuthenticatedPackagesIndexRoute =
   AuthenticatedPackagesIndexRouteImport.update({
     id: '/packages/',
@@ -382,12 +373,6 @@ const AuthenticatedSystemSettingsPointMallIndexRoute =
     path: '/point-mall/',
     getParentRoute: () => AuthenticatedSystemSettingsRouteRoute,
   } as any)
-const AuthenticatedSystemSettingsPeoplePlanIndexRoute =
-  AuthenticatedSystemSettingsPeoplePlanIndexRouteImport.update({
-    id: '/people-plan/',
-    path: '/people-plan/',
-    getParentRoute: () => AuthenticatedSystemSettingsRouteRoute,
-  } as any)
 const AuthenticatedSystemSettingsOperationsIndexRoute =
   AuthenticatedSystemSettingsOperationsIndexRouteImport.update({
     id: '/operations/',
@@ -428,12 +413,6 @@ const AuthenticatedSystemSettingsSecuritySectionRoute =
   AuthenticatedSystemSettingsSecuritySectionRouteImport.update({
     id: '/security/$section',
     path: '/security/$section',
-    getParentRoute: () => AuthenticatedSystemSettingsRouteRoute,
-  } as any)
-const AuthenticatedSystemSettingsPeoplePlanSectionRoute =
-  AuthenticatedSystemSettingsPeoplePlanSectionRouteImport.update({
-    id: '/people-plan/$section',
-    path: '/people-plan/$section',
     getParentRoute: () => AuthenticatedSystemSettingsRouteRoute,
   } as any)
 const AuthenticatedSystemSettingsOperationsSectionRoute =
@@ -508,7 +487,6 @@ export interface FileRoutesByFullPath {
   '/keys/': typeof AuthenticatedKeysIndexRoute
   '/models/': typeof AuthenticatedModelsIndexRoute
   '/packages/': typeof AuthenticatedPackagesIndexRoute
-  '/people-plan/': typeof AuthenticatedPeoplePlanIndexRoute
   '/playground/': typeof AuthenticatedPlaygroundIndexRoute
   '/point-mall/': typeof AuthenticatedPointMallIndexRoute
   '/profile/': typeof AuthenticatedProfileIndexRoute
@@ -524,7 +502,6 @@ export interface FileRoutesByFullPath {
   '/system-settings/content/$section': typeof AuthenticatedSystemSettingsContentSectionRoute
   '/system-settings/models/$section': typeof AuthenticatedSystemSettingsModelsSectionRoute
   '/system-settings/operations/$section': typeof AuthenticatedSystemSettingsOperationsSectionRoute
-  '/system-settings/people-plan/$section': typeof AuthenticatedSystemSettingsPeoplePlanSectionRoute
   '/system-settings/security/$section': typeof AuthenticatedSystemSettingsSecuritySectionRoute
   '/system-settings/site/$section': typeof AuthenticatedSystemSettingsSiteSectionRoute
   '/system-settings/auth/': typeof AuthenticatedSystemSettingsAuthIndexRoute
@@ -532,7 +509,6 @@ export interface FileRoutesByFullPath {
   '/system-settings/content/': typeof AuthenticatedSystemSettingsContentIndexRoute
   '/system-settings/models/': typeof AuthenticatedSystemSettingsModelsIndexRoute
   '/system-settings/operations/': typeof AuthenticatedSystemSettingsOperationsIndexRoute
-  '/system-settings/people-plan/': typeof AuthenticatedSystemSettingsPeoplePlanIndexRoute
   '/system-settings/point-mall/': typeof AuthenticatedSystemSettingsPointMallIndexRoute
   '/system-settings/security/': typeof AuthenticatedSystemSettingsSecurityIndexRoute
   '/system-settings/site/': typeof AuthenticatedSystemSettingsSiteIndexRoute
@@ -577,7 +553,6 @@ export interface FileRoutesByTo {
   '/keys': typeof AuthenticatedKeysIndexRoute
   '/models': typeof AuthenticatedModelsIndexRoute
   '/packages': typeof AuthenticatedPackagesIndexRoute
-  '/people-plan': typeof AuthenticatedPeoplePlanIndexRoute
   '/playground': typeof AuthenticatedPlaygroundIndexRoute
   '/point-mall': typeof AuthenticatedPointMallIndexRoute
   '/profile': typeof AuthenticatedProfileIndexRoute
@@ -593,7 +568,6 @@ export interface FileRoutesByTo {
   '/system-settings/content/$section': typeof AuthenticatedSystemSettingsContentSectionRoute
   '/system-settings/models/$section': typeof AuthenticatedSystemSettingsModelsSectionRoute
   '/system-settings/operations/$section': typeof AuthenticatedSystemSettingsOperationsSectionRoute
-  '/system-settings/people-plan/$section': typeof AuthenticatedSystemSettingsPeoplePlanSectionRoute
   '/system-settings/security/$section': typeof AuthenticatedSystemSettingsSecuritySectionRoute
   '/system-settings/site/$section': typeof AuthenticatedSystemSettingsSiteSectionRoute
   '/system-settings/auth': typeof AuthenticatedSystemSettingsAuthIndexRoute
@@ -601,7 +575,6 @@ export interface FileRoutesByTo {
   '/system-settings/content': typeof AuthenticatedSystemSettingsContentIndexRoute
   '/system-settings/models': typeof AuthenticatedSystemSettingsModelsIndexRoute
   '/system-settings/operations': typeof AuthenticatedSystemSettingsOperationsIndexRoute
-  '/system-settings/people-plan': typeof AuthenticatedSystemSettingsPeoplePlanIndexRoute
   '/system-settings/point-mall': typeof AuthenticatedSystemSettingsPointMallIndexRoute
   '/system-settings/security': typeof AuthenticatedSystemSettingsSecurityIndexRoute
   '/system-settings/site': typeof AuthenticatedSystemSettingsSiteIndexRoute
@@ -650,7 +623,6 @@ export interface FileRoutesById {
   '/_authenticated/keys/': typeof AuthenticatedKeysIndexRoute
   '/_authenticated/models/': typeof AuthenticatedModelsIndexRoute
   '/_authenticated/packages/': typeof AuthenticatedPackagesIndexRoute
-  '/_authenticated/people-plan/': typeof AuthenticatedPeoplePlanIndexRoute
   '/_authenticated/playground/': typeof AuthenticatedPlaygroundIndexRoute
   '/_authenticated/point-mall/': typeof AuthenticatedPointMallIndexRoute
   '/_authenticated/profile/': typeof AuthenticatedProfileIndexRoute
@@ -666,7 +638,6 @@ export interface FileRoutesById {
   '/_authenticated/system-settings/content/$section': typeof AuthenticatedSystemSettingsContentSectionRoute
   '/_authenticated/system-settings/models/$section': typeof AuthenticatedSystemSettingsModelsSectionRoute
   '/_authenticated/system-settings/operations/$section': typeof AuthenticatedSystemSettingsOperationsSectionRoute
-  '/_authenticated/system-settings/people-plan/$section': typeof AuthenticatedSystemSettingsPeoplePlanSectionRoute
   '/_authenticated/system-settings/security/$section': typeof AuthenticatedSystemSettingsSecuritySectionRoute
   '/_authenticated/system-settings/site/$section': typeof AuthenticatedSystemSettingsSiteSectionRoute
   '/_authenticated/system-settings/auth/': typeof AuthenticatedSystemSettingsAuthIndexRoute
@@ -674,7 +645,6 @@ export interface FileRoutesById {
   '/_authenticated/system-settings/content/': typeof AuthenticatedSystemSettingsContentIndexRoute
   '/_authenticated/system-settings/models/': typeof AuthenticatedSystemSettingsModelsIndexRoute
   '/_authenticated/system-settings/operations/': typeof AuthenticatedSystemSettingsOperationsIndexRoute
-  '/_authenticated/system-settings/people-plan/': typeof AuthenticatedSystemSettingsPeoplePlanIndexRoute
   '/_authenticated/system-settings/point-mall/': typeof AuthenticatedSystemSettingsPointMallIndexRoute
   '/_authenticated/system-settings/security/': typeof AuthenticatedSystemSettingsSecurityIndexRoute
   '/_authenticated/system-settings/site/': typeof AuthenticatedSystemSettingsSiteIndexRoute
@@ -722,7 +692,6 @@ export interface FileRouteTypes {
     | '/keys/'
     | '/models/'
     | '/packages/'
-    | '/people-plan/'
     | '/playground/'
     | '/point-mall/'
     | '/profile/'
@@ -738,7 +707,6 @@ export interface FileRouteTypes {
     | '/system-settings/content/$section'
     | '/system-settings/models/$section'
     | '/system-settings/operations/$section'
-    | '/system-settings/people-plan/$section'
     | '/system-settings/security/$section'
     | '/system-settings/site/$section'
     | '/system-settings/auth/'
@@ -746,7 +714,6 @@ export interface FileRouteTypes {
     | '/system-settings/content/'
     | '/system-settings/models/'
     | '/system-settings/operations/'
-    | '/system-settings/people-plan/'
     | '/system-settings/point-mall/'
     | '/system-settings/security/'
     | '/system-settings/site/'
@@ -791,7 +758,6 @@ export interface FileRouteTypes {
     | '/keys'
     | '/models'
     | '/packages'
-    | '/people-plan'
     | '/playground'
     | '/point-mall'
     | '/profile'
@@ -807,7 +773,6 @@ export interface FileRouteTypes {
     | '/system-settings/content/$section'
     | '/system-settings/models/$section'
     | '/system-settings/operations/$section'
-    | '/system-settings/people-plan/$section'
     | '/system-settings/security/$section'
     | '/system-settings/site/$section'
     | '/system-settings/auth'
@@ -815,7 +780,6 @@ export interface FileRouteTypes {
     | '/system-settings/content'
     | '/system-settings/models'
     | '/system-settings/operations'
-    | '/system-settings/people-plan'
     | '/system-settings/point-mall'
     | '/system-settings/security'
     | '/system-settings/site'
@@ -863,7 +827,6 @@ export interface FileRouteTypes {
     | '/_authenticated/keys/'
     | '/_authenticated/models/'
     | '/_authenticated/packages/'
-    | '/_authenticated/people-plan/'
     | '/_authenticated/playground/'
     | '/_authenticated/point-mall/'
     | '/_authenticated/profile/'
@@ -879,7 +842,6 @@ export interface FileRouteTypes {
     | '/_authenticated/system-settings/content/$section'
     | '/_authenticated/system-settings/models/$section'
     | '/_authenticated/system-settings/operations/$section'
-    | '/_authenticated/system-settings/people-plan/$section'
     | '/_authenticated/system-settings/security/$section'
     | '/_authenticated/system-settings/site/$section'
     | '/_authenticated/system-settings/auth/'
@@ -887,7 +849,6 @@ export interface FileRouteTypes {
     | '/_authenticated/system-settings/content/'
     | '/_authenticated/system-settings/models/'
     | '/_authenticated/system-settings/operations/'
-    | '/_authenticated/system-settings/people-plan/'
     | '/_authenticated/system-settings/point-mall/'
     | '/_authenticated/system-settings/security/'
     | '/_authenticated/system-settings/site/'
@@ -1185,13 +1146,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPlaygroundIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/_authenticated/people-plan/': {
-      id: '/_authenticated/people-plan/'
-      path: '/people-plan'
-      fullPath: '/people-plan/'
-      preLoaderRoute: typeof AuthenticatedPeoplePlanIndexRouteImport
-      parentRoute: typeof AuthenticatedRouteRoute
-    }
     '/_authenticated/packages/': {
       id: '/_authenticated/packages/'
       path: '/packages'
@@ -1311,13 +1265,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSystemSettingsPointMallIndexRouteImport
       parentRoute: typeof AuthenticatedSystemSettingsRouteRoute
     }
-    '/_authenticated/system-settings/people-plan/': {
-      id: '/_authenticated/system-settings/people-plan/'
-      path: '/people-plan'
-      fullPath: '/system-settings/people-plan/'
-      preLoaderRoute: typeof AuthenticatedSystemSettingsPeoplePlanIndexRouteImport
-      parentRoute: typeof AuthenticatedSystemSettingsRouteRoute
-    }
     '/_authenticated/system-settings/operations/': {
       id: '/_authenticated/system-settings/operations/'
       path: '/operations'
@@ -1365,13 +1312,6 @@ declare module '@tanstack/react-router' {
       path: '/security/$section'
       fullPath: '/system-settings/security/$section'
       preLoaderRoute: typeof AuthenticatedSystemSettingsSecuritySectionRouteImport
-      parentRoute: typeof AuthenticatedSystemSettingsRouteRoute
-    }
-    '/_authenticated/system-settings/people-plan/$section': {
-      id: '/_authenticated/system-settings/people-plan/$section'
-      path: '/people-plan/$section'
-      fullPath: '/system-settings/people-plan/$section'
-      preLoaderRoute: typeof AuthenticatedSystemSettingsPeoplePlanSectionRouteImport
       parentRoute: typeof AuthenticatedSystemSettingsRouteRoute
     }
     '/_authenticated/system-settings/operations/$section': {
@@ -1443,7 +1383,6 @@ interface AuthenticatedSystemSettingsRouteRouteChildren {
   AuthenticatedSystemSettingsContentSectionRoute: typeof AuthenticatedSystemSettingsContentSectionRoute
   AuthenticatedSystemSettingsModelsSectionRoute: typeof AuthenticatedSystemSettingsModelsSectionRoute
   AuthenticatedSystemSettingsOperationsSectionRoute: typeof AuthenticatedSystemSettingsOperationsSectionRoute
-  AuthenticatedSystemSettingsPeoplePlanSectionRoute: typeof AuthenticatedSystemSettingsPeoplePlanSectionRoute
   AuthenticatedSystemSettingsSecuritySectionRoute: typeof AuthenticatedSystemSettingsSecuritySectionRoute
   AuthenticatedSystemSettingsSiteSectionRoute: typeof AuthenticatedSystemSettingsSiteSectionRoute
   AuthenticatedSystemSettingsAuthIndexRoute: typeof AuthenticatedSystemSettingsAuthIndexRoute
@@ -1451,7 +1390,6 @@ interface AuthenticatedSystemSettingsRouteRouteChildren {
   AuthenticatedSystemSettingsContentIndexRoute: typeof AuthenticatedSystemSettingsContentIndexRoute
   AuthenticatedSystemSettingsModelsIndexRoute: typeof AuthenticatedSystemSettingsModelsIndexRoute
   AuthenticatedSystemSettingsOperationsIndexRoute: typeof AuthenticatedSystemSettingsOperationsIndexRoute
-  AuthenticatedSystemSettingsPeoplePlanIndexRoute: typeof AuthenticatedSystemSettingsPeoplePlanIndexRoute
   AuthenticatedSystemSettingsPointMallIndexRoute: typeof AuthenticatedSystemSettingsPointMallIndexRoute
   AuthenticatedSystemSettingsSecurityIndexRoute: typeof AuthenticatedSystemSettingsSecurityIndexRoute
   AuthenticatedSystemSettingsSiteIndexRoute: typeof AuthenticatedSystemSettingsSiteIndexRoute
@@ -1471,8 +1409,6 @@ const AuthenticatedSystemSettingsRouteRouteChildren: AuthenticatedSystemSettings
       AuthenticatedSystemSettingsModelsSectionRoute,
     AuthenticatedSystemSettingsOperationsSectionRoute:
       AuthenticatedSystemSettingsOperationsSectionRoute,
-    AuthenticatedSystemSettingsPeoplePlanSectionRoute:
-      AuthenticatedSystemSettingsPeoplePlanSectionRoute,
     AuthenticatedSystemSettingsSecuritySectionRoute:
       AuthenticatedSystemSettingsSecuritySectionRoute,
     AuthenticatedSystemSettingsSiteSectionRoute:
@@ -1487,8 +1423,6 @@ const AuthenticatedSystemSettingsRouteRouteChildren: AuthenticatedSystemSettings
       AuthenticatedSystemSettingsModelsIndexRoute,
     AuthenticatedSystemSettingsOperationsIndexRoute:
       AuthenticatedSystemSettingsOperationsIndexRoute,
-    AuthenticatedSystemSettingsPeoplePlanIndexRoute:
-      AuthenticatedSystemSettingsPeoplePlanIndexRoute,
     AuthenticatedSystemSettingsPointMallIndexRoute:
       AuthenticatedSystemSettingsPointMallIndexRoute,
     AuthenticatedSystemSettingsSecurityIndexRoute:
@@ -1518,7 +1452,6 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedKeysIndexRoute: typeof AuthenticatedKeysIndexRoute
   AuthenticatedModelsIndexRoute: typeof AuthenticatedModelsIndexRoute
   AuthenticatedPackagesIndexRoute: typeof AuthenticatedPackagesIndexRoute
-  AuthenticatedPeoplePlanIndexRoute: typeof AuthenticatedPeoplePlanIndexRoute
   AuthenticatedPlaygroundIndexRoute: typeof AuthenticatedPlaygroundIndexRoute
   AuthenticatedPointMallIndexRoute: typeof AuthenticatedPointMallIndexRoute
   AuthenticatedProfileIndexRoute: typeof AuthenticatedProfileIndexRoute
@@ -1546,7 +1479,6 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedKeysIndexRoute: AuthenticatedKeysIndexRoute,
   AuthenticatedModelsIndexRoute: AuthenticatedModelsIndexRoute,
   AuthenticatedPackagesIndexRoute: AuthenticatedPackagesIndexRoute,
-  AuthenticatedPeoplePlanIndexRoute: AuthenticatedPeoplePlanIndexRoute,
   AuthenticatedPlaygroundIndexRoute: AuthenticatedPlaygroundIndexRoute,
   AuthenticatedPointMallIndexRoute: AuthenticatedPointMallIndexRoute,
   AuthenticatedProfileIndexRoute: AuthenticatedProfileIndexRoute,

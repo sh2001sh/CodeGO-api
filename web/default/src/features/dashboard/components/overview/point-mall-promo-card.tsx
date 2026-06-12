@@ -23,12 +23,10 @@ import {
   ChevronLeft,
   ChevronRight,
   Gift,
-  Handshake,
   PackageOpen,
   ShoppingBag,
   Sparkles,
   Trophy,
-  UsersRound,
   type LucideIcon,
 } from 'lucide-react'
 import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
@@ -55,7 +53,7 @@ type ActivityPromoItem = {
   description: string
   sideTitle: string
   sideDescription: string
-  to: '/blind-box' | '/people-plan' | '/point-mall'
+  to: '/blind-box' | '/point-mall'
   ctaLabel: string
   icon: LucideIcon
   tags: Array<{
@@ -69,44 +67,14 @@ const AUTO_ROTATE_MS = 5000
 
 const PROMO_ITEMS: ActivityPromoItem[] = [
   {
-    id: 'people-plan',
-    eyebrow: '人海计划',
-    title: '组队冲刺，把活跃转成奖励',
-    description:
-      '邀请伙伴组建小队，参与组队任务和投稿活动，让调用、消费和社区共创都变成可结算的额度奖励。',
-    sideTitle: '适合拉新和共创的团队活动',
-    sideDescription:
-      '进入人海计划后可以创建或加入队伍，查看成团进度、投稿任务和奖励记录。',
-    to: '/people-plan',
-    ctaLabel: '去人海计划',
-    icon: UsersRound,
-    tags: [
-      { label: '组队任务', icon: UsersRound },
-      { label: '投稿共创', icon: Handshake },
-      { label: '额度奖励', icon: Trophy },
-    ],
-    theme: {
-      frame:
-        'border-cyan-200 bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.2),transparent_30%),radial-gradient(circle_at_top_right,rgba(16,185,129,0.18),transparent_25%),linear-gradient(145deg,rgba(236,254,255,0.98),rgba(240,253,250,0.98),rgba(255,255,255,0.98))] dark:border-cyan-400/20 dark:bg-[radial-gradient(circle_at_top_left,rgba(34,211,238,0.18),transparent_30%),radial-gradient(circle_at_top_right,rgba(16,185,129,0.14),transparent_25%),linear-gradient(145deg,rgba(8,47,73,0.82),rgba(6,78,59,0.68),rgba(15,23,42,0.96))]',
-      eyebrow: 'text-cyan-700 dark:text-cyan-200',
-      title: 'text-slate-950 dark:text-white',
-      body: 'text-slate-700 dark:text-slate-200',
-      chip: 'border-white/60 bg-white/78 text-slate-800 dark:border-white/10 dark:bg-slate-950/40 dark:text-slate-100',
-      iconTile: 'text-cyan-700 dark:text-cyan-200',
-      cta: 'bg-cyan-700 text-white shadow-[0_18px_38px_rgba(14,116,144,0.2)] hover:bg-cyan-600 dark:bg-cyan-500 dark:text-slate-950 dark:hover:bg-cyan-400',
-      glow: 'bg-cyan-200/45 dark:bg-cyan-300/10',
-      rail: 'bg-cyan-600 dark:bg-cyan-300',
-    },
-  },
-  {
     id: 'blind-box',
     eyebrow: '盲盒活动',
-    title: '低门槛开盒，直接拿额度和订阅大奖',
+    title: '低门槛开盲盒，直接拿额度和订阅大奖',
     description:
-      '盲盒活动把短期额度、保底机制和订阅大奖放在同一页处理，适合想快速补额度、顺手搏一次高奖励的用户。',
-    sideTitle: '付款、开奖、保底进度都在同一入口',
+      '盲盒活动把短期额度、保底机制和订阅大奖放在同一个入口处理，适合想快速补充额度、顺手搏一次高奖池的用户。',
+    sideTitle: '付款、开奖、保底进度都在同一个入口',
     sideDescription:
-      '进入盲盒页后可以直接选数量、看奖池、查最近掉落和当前保底推进，不需要再跳转钱包里的其他模块。',
+      '进入盲盒页后可以直接选择数量、查看奖池、查询最近掉落和当前保底进度，不需要再跳转到钱包里的其他模块。',
     to: '/blind-box',
     ctaLabel: '去开盲盒',
     icon: PackageOpen,
@@ -131,12 +99,12 @@ const PROMO_ITEMS: ActivityPromoItem[] = [
   {
     id: 'point-mall',
     eyebrow: '积分商城',
-    title: '积分换京东卡、月卡等实用礼品',
+    title: '积分兑换京东卡、月卡等实用奖品',
     description:
-      '把积分直接换成最实用的礼品和权益，京东卡、月卡与其他可兑商品都集中在积分商城里查看。',
+      '把积分直接换成最实用的礼品和权益，京东卡、月卡与其他可兑换商品都集中在积分商城里查看。',
     sideTitle: '从积分到权益的直达入口',
     sideDescription:
-      '直接查看当前可兑礼品和权益，按积分余额挑选最合适的兑换项。',
+      '直接查看当前可兑换礼品和权益，按积分余额挑选最合适的兑换项。',
     to: '/point-mall',
     ctaLabel: '去积分商城',
     icon: Gift,

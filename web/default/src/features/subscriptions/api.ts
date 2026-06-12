@@ -28,6 +28,7 @@ import type {
   SubscriptionPayResponse,
   SubscriptionPayRequest,
   SelfSubscriptionData,
+  SubscriptionResetOpportunityUseResult,
   SubscriptionOrderStatus,
 } from './types'
 
@@ -204,6 +205,13 @@ export async function updateBillingPreference(payload: {
     funding_source_order: payload.fundingSourceOrder,
     subscription_order_ids: payload.subscriptionOrderIds,
   })
+  return res.data
+}
+
+export async function consumeSubscriptionResetOpportunity(): Promise<
+  ApiResponse<SubscriptionResetOpportunityUseResult>
+> {
+  const res = await api.post('/api/subscription/self/reset-opportunity/use')
   return res.data
 }
 

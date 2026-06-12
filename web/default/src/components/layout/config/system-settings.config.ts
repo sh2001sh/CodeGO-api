@@ -21,7 +21,6 @@ import {
   Box,
   CreditCard,
   Layout,
-  Rocket,
   Settings,
   Shield,
   ShieldAlert,
@@ -33,7 +32,6 @@ import { getBillingSectionNavItems } from '@/features/system-settings/billing/se
 import { getContentSectionNavItems } from '@/features/system-settings/content/section-registry.tsx'
 import { getModelsSectionNavItems } from '@/features/system-settings/models/section-registry.tsx'
 import { getOperationsSectionNavItems } from '@/features/system-settings/operations/section-registry.tsx'
-import { getPeoplePlanSectionNavItems } from '@/features/system-settings/people-plan/section-registry.tsx'
 import { getSecuritySectionNavItems } from '@/features/system-settings/security/section-registry.tsx'
 import { getSiteSectionNavItems } from '@/features/system-settings/site/section-registry.tsx'
 import { type NavGroup } from '../types'
@@ -84,11 +82,6 @@ export function getSystemSettingsNavGroups(t: TFunction): NavGroup[] {
           title: t('Operations'),
           icon: Wrench,
           items: getOperationsSectionNavItems(t),
-        },
-        {
-          title: t('People Plan'),
-          icon: Rocket,
-          items: getPeoplePlanSectionNavItems(t),
         },
         {
           title: '积分商城',

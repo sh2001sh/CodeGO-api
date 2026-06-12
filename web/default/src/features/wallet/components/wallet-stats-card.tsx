@@ -1,4 +1,5 @@
 import { type ReactNode, useEffect, useMemo, useState } from 'react'
+import { Link } from '@tanstack/react-router'
 import {
   Activity,
   ArrowDown,
@@ -7,6 +8,7 @@ import {
   Loader2,
   RefreshCw,
   Save,
+  Sparkles,
   WalletCards,
 } from 'lucide-react'
 import { toast } from 'sonner'
@@ -16,6 +18,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
+  consumeSubscriptionResetOpportunity,
   getPublicPlans,
   updateBillingPreference,
 } from '@/features/subscriptions/api'
@@ -140,6 +143,7 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
   >(['blind_box', 'subscription', 'wallet'])
   const [draftOrderIds, setDraftOrderIds] = useState<number[]>([])
   const [saving, setSaving] = useState(false)
+  const [usingResetOpportunity, setUsingResetOpportunity] = useState(false)
   const [planRecords, setPlanRecords] = useState<PlanRecord[]>([])
   const [loadingPlans, setLoadingPlans] = useState(true)
 
@@ -205,6 +209,18 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
     () => getOrderedSubscriptions(activeSubscriptions, draftOrderIds),
     [activeSubscriptions, draftOrderIds]
   )
+  const currentSubscription = orderedSubscriptions[0]?.subscription
+  const currentSubscriptionPlanMeta = currentSubscription
+    ? planMetaMap.get(currentSubscription.plan_id)
+    : undefined
+  const resetOpportunity = props.subscriptionData?.reset_opportunity ?? {
+    available_count: 0,
+    earned_total: 0,
+    used_total: 0,
+    used_this_month: false,
+    current_month: '',
+    last_used_month: '',
+  }
 
   const disabledFundingSources = ALL_FUNDING_SOURCES.filter(
     (source) => !draftFundingSourceOrder.includes(source)
@@ -213,6 +229,10 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
     draftFundingSourceOrder.includes('subscription')
   const isLoadingSidebar =
     props.loading || props.subscriptionLoading || loadingPlans
+  const canUseResetOpportunity =
+    resetOpportunity.available_count > 0 &&
+    !resetOpportunity.used_this_month &&
+    !!currentSubscription
 
   const moveFundingSource = (source: FundingSource, direction: -1 | 1) => {
     setDraftFundingSourceOrder((current) => {
@@ -287,6 +307,29 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
       toast.error('保存扣费顺序失败')
     } finally {
       setSaving(false)
+    }
+  }
+
+  const handleUseResetOpportunity = async () => {
+    if (!canUseResetOpportunity || usingResetOpportunity) return
+    setUsingResetOpportunity(true)
+    try {
+      const response = await consumeSubscriptionResetOpportunity()
+      if (!response.success || !response.data) {
+        toast.error(response.message || '使用额度重置机会失败')
+        return
+      }
+      toast.success(
+        `已清空${currentSubscriptionPlanMeta?.title || '当前订阅'}已用额度`
+      )
+      await props.onSubscriptionRefresh?.()
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('subscription:changed'))
+      }
+    } catch {
+      toast.error('使用额度重置机会失败')
+    } finally {
+      setUsingResetOpportunity(false)
     }
   }
 
@@ -372,6 +415,66 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
             }
           />
           <StatItem label='生效订阅' value={`${activeSubscriptions.length}`} />
+        </div>
+      </div>
+
+      <div className='rounded-[22px] border border-amber-200 bg-[linear-gradient(135deg,rgba(255,251,235,0.98),rgba(255,255,255,0.98))] p-4 shadow-[0_16px_36px_rgba(180,120,32,0.08)] dark:border-amber-500/20 dark:bg-[linear-gradient(135deg,rgba(36,26,8,0.94),rgba(15,23,42,0.92))]'>
+        <div className='flex items-start justify-between gap-3'>
+          <div>
+            <div className='text-foreground flex items-center gap-2 text-sm font-semibold'>
+              <Sparkles className='h-4 w-4 text-amber-500' />
+              额度重置机会
+            </div>
+            <div className='text-muted-foreground mt-1 text-xs leading-5'>
+              邀请新用户首购月卡后获得，机会可长期保存，每个自然月最多使用 1 次。
+            </div>
+          </div>
+          <div className='rounded-full border border-amber-200 bg-white px-3 py-1 text-xs font-semibold text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200'>
+            可用 {resetOpportunity.available_count} 次
+          </div>
+        </div>
+
+        <div className='mt-3 grid gap-2'>
+          <StatItem label='累计获得' value={`${resetOpportunity.earned_total}`} />
+          <StatItem label='累计使用' value={`${resetOpportunity.used_total}`} />
+          <StatItem
+            label='本月状态'
+            value={resetOpportunity.used_this_month ? '已使用' : '可使用'}
+          />
+        </div>
+
+        <div className='mt-3 rounded-2xl border border-amber-200 bg-white/80 px-3 py-3 text-xs text-slate-700 dark:border-amber-500/20 dark:bg-slate-950/50 dark:text-slate-300'>
+          <div className='font-medium text-slate-900 dark:text-slate-100'>
+            当前会作用于：{currentSubscriptionPlanMeta?.title || '暂无生效订阅'}
+          </div>
+          <div className='mt-1 leading-5'>
+            只清空当前排序第 1 个生效订阅的已用额度，不会延长到期时间，也不会修改订阅权益。
+          </div>
+          {resetOpportunity.used_this_month ? (
+            <div className='mt-2 text-amber-700 dark:text-amber-200'>
+              本月已经使用过一次，请下个月再使用。
+            </div>
+          ) : null}
+        </div>
+
+        <div className='mt-3 flex flex-wrap gap-2'>
+          <Button
+            className='flex-1'
+            onClick={() => void handleUseResetOpportunity()}
+            disabled={!canUseResetOpportunity || usingResetOpportunity}
+          >
+            {usingResetOpportunity ? (
+              <Loader2 className='mr-1 h-4 w-4 animate-spin' />
+            ) : null}
+            立即重置当前订阅额度
+          </Button>
+          <Button
+            variant='outline'
+            className='flex-1'
+            render={<Link to='/invite-rewards' />}
+          >
+            去邀请页拉新
+          </Button>
         </div>
       </div>
 

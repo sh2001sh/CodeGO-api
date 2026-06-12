@@ -162,6 +162,14 @@ export function SubscriptionUsagePanel() {
             subscription_order_ids: [],
             subscriptions: [],
             all_subscriptions: [],
+            reset_opportunity: {
+              available_count: 0,
+              earned_total: 0,
+              used_total: 0,
+              used_this_month: false,
+              current_month: '',
+              last_used_month: '',
+            },
           })
         : ({
             billing_preference: 'subscription_first',
@@ -169,6 +177,14 @@ export function SubscriptionUsagePanel() {
             subscription_order_ids: [],
             subscriptions: [],
             all_subscriptions: [],
+            reset_opportunity: {
+              available_count: 0,
+              earned_total: 0,
+              used_total: 0,
+              used_this_month: false,
+              current_month: '',
+              last_used_month: '',
+            },
           } satisfies SelfSubscriptionData)
     },
     staleTime: 60 * 1000,

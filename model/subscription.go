@@ -1060,6 +1060,9 @@ func CompleteSubscriptionOrder(tradeNo string, providerPayload string, expectedP
 		if err := AwardReferralFirstPurchaseBonusTx(tx, order.UserId, purchaseType, "subscription_order", order.TradeNo); err != nil {
 			return err
 		}
+		if err := AwardReferralSubscriptionResetOpportunityTx(tx, order.UserId, purchaseType, "subscription_order", order.TradeNo); err != nil {
+			return err
+		}
 		order.Status = common.TopUpStatusSuccess
 		order.CompleteTime = common.GetTimestamp()
 		if providerPayload != "" {
@@ -1240,15 +1243,18 @@ func buildSubscriptionSummaries(subs []UserSubscription) []SubscriptionSummary {
 }
 
 func orderActiveUserSubscriptionsTx(tx *gorm.DB, userId int, subs []UserSubscription) ([]UserSubscription, []int, error) {
-	if len(subs) == 0 {
-		return []UserSubscription{}, []int{}, nil
-	}
-
 	setting, err := GetUserSetting(userId, false)
 	if err != nil {
 		setting = dto.UserSetting{}
 	}
-	explicitOrder := common.NormalizePositiveIntSlice(setting.SubscriptionOrderIds)
+	return orderActiveUserSubscriptionsWithExplicitOrderTx(tx, subs, common.NormalizePositiveIntSlice(setting.SubscriptionOrderIds))
+}
+
+func orderActiveUserSubscriptionsWithExplicitOrderTx(tx *gorm.DB, subs []UserSubscription, explicitOrder []int) ([]UserSubscription, []int, error) {
+	if len(subs) == 0 {
+		return []UserSubscription{}, []int{}, nil
+	}
+
 	explicitRank := make(map[int]int, len(explicitOrder))
 	for index, id := range explicitOrder {
 		explicitRank[id] = index

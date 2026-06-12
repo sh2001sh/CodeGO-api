@@ -214,7 +214,7 @@ function CarouselPrevious({
       {...props}
     >
       <HugeiconsIcon icon={ArrowLeft01Icon} strokeWidth={2} />
-      <span className='sr-only'>Previous slide</span>
+      <span className='sr-only'>上一张幻灯片</span>
     </Button>
   )
 }
@@ -244,7 +244,7 @@ function CarouselNext({
       {...props}
     >
       <HugeiconsIcon icon={ArrowRight01Icon} strokeWidth={2} />
-      <span className='sr-only'>Next slide</span>
+      <span className='sr-only'>下一张幻灯片</span>
     </Button>
   )
 }

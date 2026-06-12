@@ -1,8 +1,8 @@
 import {
   Activity,
   Award,
-  BookMarked,
   BadgeCheck,
+  BookMarked,
   Box,
   Command,
   Egg,
@@ -13,11 +13,10 @@ import {
   Image,
   MessageSquare,
   Radio,
-  Rocket,
   ScrollText,
-  ShoppingBag,
   Settings,
   Share2,
+  ShoppingBag,
   Ticket,
   User,
   Users,
@@ -27,7 +26,7 @@ import { WORKSPACE_IDS } from '@/components/layout/lib/workspace-registry'
 import { type SidebarData } from '@/components/layout/types'
 
 export function useSidebarData(): SidebarData {
-  const { t } = useTranslation()
+  useTranslation()
 
   return {
     workspaces: [
@@ -41,15 +40,15 @@ export function useSidebarData(): SidebarData {
     navGroups: [
       {
         id: 'chat',
-        title: '对话',
+        title: '聊天',
         items: [
           {
-            title: 'Playground',
+            title: '游乐场',
             url: '/playground',
             icon: FlaskConical,
           },
           {
-            title: '聊天预设',
+            title: '预设',
             icon: MessageSquare,
             type: 'chat-presets',
           },
@@ -65,22 +64,22 @@ export function useSidebarData(): SidebarData {
             icon: Activity,
           },
           {
-            title: '生图',
+            title: '绘图',
             url: '/images',
             icon: Image,
           },
           {
-            title: '数据看板',
+            title: '模型',
             url: '/dashboard/models',
             icon: Footprints,
           },
           {
-            title: '精灵图鉴',
+            title: '成就',
             url: '/dashboard/achievements',
             icon: BookMarked,
           },
           {
-            title: '荣耀榜',
+            title: '名人堂',
             url: '/dashboard/hall-of-fame',
             icon: Award,
           },
@@ -106,7 +105,7 @@ export function useSidebarData(): SidebarData {
             icon: Gem,
           },
           {
-            title: '套餐购买',
+            title: '套餐',
             url: '/packages',
             icon: ScrollText,
           },
@@ -116,14 +115,9 @@ export function useSidebarData(): SidebarData {
             icon: ShoppingBag,
           },
           {
-            title: '盲盒活动',
+            title: '盲盒',
             url: '/blind-box',
             icon: Egg,
-          },
-          {
-            title: '人海计划',
-            url: '/people-plan',
-            icon: Rocket,
           },
           {
             title: '邀请奖励',
@@ -142,17 +136,17 @@ export function useSidebarData(): SidebarData {
         title: '管理',
         items: [
           {
-            title: t('Channels'),
+            title: '渠道',
             url: '/channels',
             icon: Radio,
           },
           {
-            title: t('Models'),
+            title: '模型',
             url: '/models/metadata',
             icon: Box,
           },
           {
-            title: t('Users'),
+            title: '用户',
             url: '/users',
             icon: Users,
           },
@@ -162,12 +156,12 @@ export function useSidebarData(): SidebarData {
             icon: Ticket,
           },
           {
-            title: '套餐管理',
+            title: '订阅',
             url: '/subscriptions',
             icon: ScrollText,
           },
           {
-            title: '盲盒运营',
+            title: '盲盒管理',
             url: '/subscriptions#blind-box-admin',
             activeUrls: ['/subscriptions'],
             configUrls: ['/blind-box-admin'],

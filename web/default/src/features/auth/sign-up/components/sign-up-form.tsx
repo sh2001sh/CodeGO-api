@@ -53,11 +53,7 @@ import { registerFormSchema } from '@/features/auth/constants'
 import { useAuthRedirect } from '@/features/auth/hooks/use-auth-redirect'
 import { useEmailVerification } from '@/features/auth/hooks/use-email-verification'
 import { useTurnstile } from '@/features/auth/hooks/use-turnstile'
-import {
-  getAffiliateCode,
-  getPeoplePlanInviteCode,
-  removePeoplePlanInviteCode,
-} from '@/features/auth/lib/storage'
+import { getAffiliateCode } from '@/features/auth/lib/storage'
 
 export function SignUpForm({
   className,
@@ -111,7 +107,6 @@ export function SignUpForm({
     status?.data?.oauth_register_enabled ??
     true
   const hasWeChatLogin = Boolean(status?.wechat_login)
-  const peoplePlanInviteCode = getPeoplePlanInviteCode()
 
   const wechatQrCodeUrl = useMemo(() => {
     return (
@@ -141,7 +136,6 @@ export function SignUpForm({
       return
     }
 
-    // Validate email verification if required
     if (emailVerificationRequired) {
       if (!data.email) {
         toast.error(t('Please enter your email'))
@@ -161,14 +155,10 @@ export function SignUpForm({
         email: data.email || undefined,
         verification_code: verificationCode || undefined,
         aff: getAffiliateCode(),
-        people_plan_invite_code: peoplePlanInviteCode || undefined,
         turnstile: turnstileToken,
       })
 
       if (res?.success) {
-        if (peoplePlanInviteCode) {
-          removePeoplePlanInviteCode()
-        }
         toast.success(t('Account created! Please sign in'))
         redirectToLogin()
       }
@@ -230,14 +220,6 @@ export function SignUpForm({
         className={cn('grid gap-4', className)}
         {...props}
       >
-        {/* Username Field */}
-        {peoplePlanInviteCode ? (
-          <div className='rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-muted-foreground'>
-            当前通过人海计划邀请链接注册。注册成功后将自动尝试加入邀请码为{' '}
-            <span className='font-medium text-foreground'>{peoplePlanInviteCode}</span> 的小队。
-          </div>
-        ) : null}
-
         <FormField
           control={form.control}
           name='username'
@@ -252,7 +234,6 @@ export function SignUpForm({
           )}
         />
 
-        {/* Password Field */}
         <FormField
           control={form.control}
           name='password'
@@ -270,7 +251,6 @@ export function SignUpForm({
           )}
         />
 
-        {/* Confirm Password Field */}
         <FormField
           control={form.control}
           name='confirmPassword'
@@ -285,10 +265,8 @@ export function SignUpForm({
           )}
         />
 
-        {/* Email Verification Section */}
         {emailVerificationRequired && (
           <>
-            {/* Email Field */}
             <FormField
               control={form.control}
               name='email'
@@ -309,7 +287,6 @@ export function SignUpForm({
               )}
             />
 
-            {/* Verification Code Field */}
             <div className='flex items-end gap-2'>
               <div className='flex-1'>
                 <Input
@@ -334,7 +311,6 @@ export function SignUpForm({
               </Button>
             </div>
 
-            {/* Turnstile */}
             {isTurnstileEnabled && (
               <div className='mt-2'>
                 <Turnstile
@@ -353,7 +329,6 @@ export function SignUpForm({
           className='mt-1'
         />
 
-        {/* Submit Button */}
         <Button
           type='submit'
           className='mt-2 w-full justify-center gap-2'
@@ -383,9 +358,7 @@ export function SignUpForm({
             <DialogHeader className='text-left'>
               <DialogTitle>{t('WeChat sign in')}</DialogTitle>
               <DialogDescription>
-                {t(
-                  'Scan the QR code to follow the official account and reply with “验证码” to receive your verification code.'
-                )}
+                扫描二维码关注公众号，回复“验证码”获取登录验证码。
               </DialogDescription>
             </DialogHeader>
 

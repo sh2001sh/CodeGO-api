@@ -81,6 +81,25 @@ export interface UserSubscriptionRecord {
   subscription: UserSubscription
 }
 
+export interface SubscriptionResetOpportunitySummary {
+  available_count: number
+  earned_total: number
+  used_total: number
+  used_this_month: boolean
+  current_month: string
+  last_used_month: string
+}
+
+export interface SubscriptionResetOpportunityUseResult {
+  reset_opportunity: SubscriptionResetOpportunitySummary
+  subscription_id: number
+  amount_used_before: number
+  amount_used_after: number
+  period_used_before: number
+  period_used_after: number
+  cleared_used_amount: number
+}
+
 // ============================================================================
 // API Request/Response Types
 // ============================================================================
@@ -153,6 +172,7 @@ export interface SelfSubscriptionData {
   subscription_order_ids: number[]
   subscriptions: UserSubscriptionRecord[]
   all_subscriptions: UserSubscriptionRecord[]
+  reset_opportunity: SubscriptionResetOpportunitySummary
 }
 
 export type FundingSource = 'blind_box' | 'subscription' | 'wallet'

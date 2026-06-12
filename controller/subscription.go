@@ -202,6 +202,11 @@ func GetSubscriptionSelf(c *gin.Context) {
 	if err != nil {
 		activeSubscriptions = []model.SubscriptionSummary{}
 	}
+	resetOpportunity, err := model.GetUserSubscriptionResetOpportunity(userId)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
 	activeSubscriptionIds := make([]int, 0, len(activeSubscriptions))
 	activeSubscriptionSet := make(map[int]struct{}, len(activeSubscriptions))
 	for _, item := range activeSubscriptions {
@@ -232,6 +237,25 @@ func GetSubscriptionSelf(c *gin.Context) {
 		"subscription_order_ids": orderedIds,
 		"subscriptions":          activeSubscriptions,
 		"all_subscriptions":      allSubscriptions,
+		"reset_opportunity":      resetOpportunity,
+	})
+}
+
+func UseSubscriptionResetOpportunity(c *gin.Context) {
+	userId := c.GetInt("id")
+	result, err := model.UseUserSubscriptionResetOpportunity(userId)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	common.ApiSuccess(c, gin.H{
+		"reset_opportunity":   result.ResetOpportunity,
+		"subscription_id":     result.UserSubscriptionId,
+		"amount_used_before":  result.AmountUsedBefore,
+		"amount_used_after":   result.AmountUsedAfter,
+		"period_used_before":  result.PeriodUsedBefore,
+		"period_used_after":   result.PeriodUsedAfter,
+		"cleared_used_amount": result.ClearedUsedAmount,
 	})
 }
 

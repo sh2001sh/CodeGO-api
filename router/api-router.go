@@ -114,16 +114,6 @@ func SetApiRouter(router *gin.Engine) {
 				//selfRoute.POST("/waffo-pancake/pay", middleware.CriticalRateLimit(), controller.RequestWaffoPancakePay)
 				selfRoute.POST("/aff_transfer", controller.TransferAffQuota)
 				selfRoute.PUT("/setting", controller.UpdateUserSetting)
-				selfRoute.GET("/people-plan/overview", controller.GetPeoplePlanOverview)
-				selfRoute.GET("/people-plan/team", controller.GetPeoplePlanTeam)
-				selfRoute.POST("/people-plan/team", controller.CreatePeoplePlanTeam)
-				selfRoute.POST("/people-plan/team/join", controller.JoinPeoplePlanTeam)
-				selfRoute.POST("/people-plan/team/leave", controller.LeavePeoplePlanTeam)
-				selfRoute.POST("/people-plan/team/remove-member", controller.RemovePeoplePlanMember)
-				selfRoute.GET("/people-plan/rewards", controller.GetPeoplePlanRewards)
-				selfRoute.POST("/people-plan/rewards/:id/claim", controller.ClaimPeoplePlanReward)
-				selfRoute.GET("/people-plan/submissions", controller.GetPeoplePlanSubmissions)
-				selfRoute.POST("/people-plan/submissions", controller.CreatePeoplePlanSubmission)
 
 				// 2FA routes
 				selfRoute.GET("/2fa/status", controller.Get2FAStatus)
@@ -185,23 +175,6 @@ func SetApiRouter(router *gin.Engine) {
 			}
 		}
 
-		legacyPeoplePlanRoute := apiRouter.Group("/people-plan")
-		legacyPeoplePlanRoute.Use(middleware.UserAuth())
-		{
-			// Backward-compatible aliases for older frontend bundles.
-			legacyPeoplePlanRoute.GET("/overview", controller.GetPeoplePlanOverview)
-			legacyPeoplePlanRoute.GET("/summary", controller.GetPeoplePlanOverview)
-			legacyPeoplePlanRoute.GET("/team", controller.GetPeoplePlanTeam)
-			legacyPeoplePlanRoute.POST("/team", controller.CreatePeoplePlanTeam)
-			legacyPeoplePlanRoute.POST("/team/join", controller.JoinPeoplePlanTeam)
-			legacyPeoplePlanRoute.POST("/team/leave", controller.LeavePeoplePlanTeam)
-			legacyPeoplePlanRoute.POST("/team/remove-member", controller.RemovePeoplePlanMember)
-			legacyPeoplePlanRoute.GET("/rewards", controller.GetPeoplePlanRewards)
-			legacyPeoplePlanRoute.POST("/rewards/:id/claim", controller.ClaimPeoplePlanReward)
-			legacyPeoplePlanRoute.GET("/submissions", controller.GetPeoplePlanSubmissions)
-			legacyPeoplePlanRoute.POST("/submissions", controller.CreatePeoplePlanSubmission)
-		}
-
 		// Subscription billing (plans, purchase, admin management)
 		subscriptionRoute := apiRouter.Group("/subscription")
 		subscriptionRoute.Use(middleware.UserAuth())
@@ -210,6 +183,7 @@ func SetApiRouter(router *gin.Engine) {
 			subscriptionRoute.GET("/self", controller.GetSubscriptionSelf)
 			subscriptionRoute.GET("/orders/:trade_no", controller.GetSubscriptionOrderStatus)
 			subscriptionRoute.PUT("/self/preference", controller.UpdateSubscriptionPreference)
+			subscriptionRoute.POST("/self/reset-opportunity/use", middleware.CriticalRateLimit(), controller.UseSubscriptionResetOpportunity)
 			subscriptionRoute.POST("/epay/pay", middleware.CriticalRateLimit(), controller.SubscriptionRequestEpay)
 			subscriptionRoute.POST("/xunhu/pay", middleware.CriticalRateLimit(), controller.SubscriptionRequestXunhuPay)
 			subscriptionRoute.POST("/stripe/pay", middleware.CriticalRateLimit(), controller.SubscriptionRequestStripePay)
@@ -278,16 +252,6 @@ func SetApiRouter(router *gin.Engine) {
 			pointMallAdminRoute.GET("/points", controller.AdminGetPointMallPoints)
 			pointMallAdminRoute.GET("/rules", controller.AdminGetPointMallRules)
 			pointMallAdminRoute.PUT("/rules", controller.AdminUpdatePointMallRules)
-		}
-		peoplePlanAdminRoute := apiRouter.Group("/people-plan/admin")
-		peoplePlanAdminRoute.Use(middleware.AdminAuth())
-		{
-			peoplePlanAdminRoute.GET("/stats", controller.GetPeoplePlanAdminStats)
-			peoplePlanAdminRoute.GET("/teams", controller.GetPeoplePlanAdminTeams)
-			peoplePlanAdminRoute.GET("/rewards", controller.GetPeoplePlanAdminRewards)
-			peoplePlanAdminRoute.POST("/rewards/:id/review", controller.ReviewPeoplePlanReward)
-			peoplePlanAdminRoute.GET("/submissions", controller.GetPeoplePlanAdminSubmissions)
-			peoplePlanAdminRoute.POST("/submissions/:id/review", controller.ReviewPeoplePlanSubmission)
 		}
 		apiRouter.POST("/blind-box/epay/notify", anonymousRequestBodyLimit, controller.BlindBoxEpayNotify)
 		apiRouter.GET("/blind-box/epay/notify", controller.BlindBoxEpayNotify)

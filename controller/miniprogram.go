@@ -79,6 +79,7 @@ func buildMiniProgramWebsiteLinks() gin.H {
 		"guide_url":    link("/guide"),
 		"pricing_url":  link("/pricing"),
 		"profile_url":  link("/profile"),
+		"packages_url": link("/packages"),
 		"support_hint": "Use the website for account actions, purchases, and support requests.",
 	}
 }
@@ -374,6 +375,25 @@ func GetMiniProgramDashboard(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	resetOpportunity, err := model.GetUserSubscriptionResetOpportunity(userId)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+
+	website := buildMiniProgramWebsiteLinks()
+	campaigns := []gin.H{
+		{
+			"id":              "invite-month-card-reset",
+			"title":           "邀请新用户购买月卡，送 1 次额度重置机会",
+			"subtitle":        "机会可长期保存，每个自然月最多使用 1 次，去官网订阅页执行。",
+			"badge":           "拉新活动",
+			"page_path":       "/pages/campaign-reset/index",
+			"website_url":     website["packages_url"],
+			"available_count": resetOpportunity.AvailableCount,
+			"used_this_month": resetOpportunity.UsedThisMonth,
+		},
+	}
 
 	common.ApiSuccess(c, gin.H{
 		"user": gin.H{
@@ -394,6 +414,15 @@ func GetMiniProgramDashboard(c *gin.Context) {
 		},
 		"subscriptions": subscriptions,
 		"blind_box":     blindBoxOverview,
+		"reset_opportunity": gin.H{
+			"available_count": resetOpportunity.AvailableCount,
+			"earned_total":    resetOpportunity.EarnedTotal,
+			"used_total":      resetOpportunity.UsedTotal,
+			"used_this_month": resetOpportunity.UsedThisMonth,
+			"current_month":   resetOpportunity.CurrentMonth,
+			"last_used_month": resetOpportunity.LastUsedMonth,
+		},
+		"campaigns": campaigns,
 	})
 }
 
