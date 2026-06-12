@@ -132,6 +132,17 @@ docker pull s2644752646/new-api:latest
 docker-compose down && docker-compose up -d
 ```
 
+### Q5：虎皮椒支付成功后订单仍然是 pending？
+
+如果你启用了 HTTPS，并且 Nginx 会把 80 端口统一跳转到 HTTPS，请额外检查：
+
+1. 系统设置中的 `CustomCallbackAddress` 或 `ServerAddress` 是否使用了 `https://`
+2. 是否为旧的 HTTP 虎皮椒回调路径保留了 Nginx 兼容入口
+
+说明与示例配置见：
+
+- [虎皮椒支付回调与 Nginx 反向代理配置](./xunhu-callback-nginx.zh-CN.md)
+
 ***
 
 ## 相关链接

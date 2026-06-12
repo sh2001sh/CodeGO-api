@@ -395,6 +395,15 @@ docker run --name new-api -d --restart always \
 
 </details>
 
+### 💳 支付回调与 HTTPS
+
+如果你启用了 HTTPS，并通过 Nginx/宝塔反向代理对外提供服务，支付回调地址建议显式使用 HTTPS。  
+以虎皮椒支付为例，若回调地址仍是 `http://...`，而 80 端口被统一 `301` 到 HTTPS，异步通知可能无法正常进入后端。
+
+部署说明见：
+
+- [虎皮椒支付回调与 Nginx 反向代理配置](./docs/installation/xunhu-callback-nginx.zh-CN.md)
+
 ### ⚠️ 多机部署注意事项
 
 > [!WARNING]
