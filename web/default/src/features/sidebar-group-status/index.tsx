@@ -31,7 +31,11 @@ import {
 import { Skeleton } from '@/components/ui/skeleton'
 import { cn } from '@/lib/utils'
 import { GroupStatusMonitorCard } from './group-status-monitor-card'
-import { sortItems, summarizeGroups } from './presentation'
+import {
+  formatSampleWindowLabel,
+  sortItems,
+  summarizeGroups,
+} from './presentation'
 import { useSidebarGroupStatus } from './use-sidebar-group-status'
 
 export function SidebarGroupStatusPage() {
@@ -44,7 +48,7 @@ export function SidebarGroupStatusPage() {
     <SectionPageLayout>
       <SectionPageLayout.Title>{t('Group status')}</SectionPageLayout.Title>
       <SectionPageLayout.Description>
-        每个业务分组下直接展示模型状态卡，按模型观察当前可用性和最近请求成功率。
+        查看各分组下模型的可用状态、最近请求成功率和对应时间段表现。
       </SectionPageLayout.Description>
       <SectionPageLayout.Actions>
         <Button
@@ -77,11 +81,11 @@ export function SidebarGroupStatusPage() {
           ) : items.length === 0 ? (
             <EmptyPanel />
           ) : (
-            <div className='grid gap-5 xl:grid-cols-3 2xl:grid-cols-4'>
+            <div className='flex flex-col gap-5'>
               {items.map((group) => (
                 <section
                   key={group.group}
-                  className='rounded-[30px] border border-border/70 bg-card/55 p-4 shadow-[0_10px_28px_rgba(15,23,42,0.05)] backdrop-blur-sm dark:bg-card/40 dark:shadow-[0_14px_28px_rgba(0,0,0,0.18)]'
+                  className='rounded-[28px] border border-border/70 bg-card/55 p-4 shadow-[0_10px_28px_rgba(15,23,42,0.05)] backdrop-blur-sm dark:bg-card/40 dark:shadow-[0_14px_28px_rgba(0,0,0,0.18)]'
                 >
                   <div className='mb-4 flex items-end justify-between gap-3'>
                     <div className='space-y-1'>
@@ -94,7 +98,7 @@ export function SidebarGroupStatusPage() {
                     </div>
                   </div>
 
-                  <div className='grid gap-3'>
+                  <div className='grid gap-3 md:grid-cols-2 2xl:grid-cols-3'>
                     {group.models.length === 0 ? (
                       <div className='text-muted-foreground rounded-2xl border border-dashed px-4 py-6 text-sm'>
                         当前分组下暂无可展示模型。
@@ -126,7 +130,7 @@ function OverviewPanel(props: {
     {
       label: '业务分组',
       value: String(props.summary.groups),
-      hint: '当前可监测分组总数',
+      hint: '当前可查看的分组数',
       icon: Layers3,
       tone: 'text-sky-600 dark:text-sky-400',
     },
@@ -143,14 +147,14 @@ function OverviewPanel(props: {
       hint:
         props.summary.sampleWindow == null
           ? '暂无采样窗口'
-          : `${props.summary.sampleWindow}h 成功率窗口`,
+          : `${formatSampleWindowLabel(props.summary.sampleWindow)} 成功率窗口`,
       icon: AlertTriangle,
       tone: 'text-rose-600 dark:text-rose-400',
     },
     {
       label: '观测中模型',
       value: String(props.summary.unknownModels),
-      hint: '状态数据不足或暂无请求样本',
+      hint: '暂无足够请求样本',
       icon: Rows3,
       tone: 'text-slate-600 dark:text-slate-300',
     },
@@ -161,10 +165,10 @@ function OverviewPanel(props: {
       <CardHeader className='border-b border-border/70'>
         <CardTitle className='flex items-center gap-2'>
           <Layers3 className='text-primary size-4' />
-          分组模型状态看板
+          分组模型状态
         </CardTitle>
         <CardDescription className='max-w-[72ch] leading-6'>
-          页面以业务分组为列容器，每个模型单独成卡，风格对齐你给的监控图：分组标题在上，模型状态卡在下，底部用分段条表达最近请求成功率。
+          快速查看哪些模型稳定可用，哪些模型最近出现波动，并定位问题出现的大致时间段。
         </CardDescription>
       </CardHeader>
       <CardContent className='grid gap-3 pt-4 md:grid-cols-2 xl:grid-cols-4'>
@@ -211,7 +215,7 @@ function OverviewPanel(props: {
 
 function BoardSkeleton() {
   return (
-    <div className='grid gap-5 xl:grid-cols-3 2xl:grid-cols-4'>
+    <div className='flex flex-col gap-5'>
       {Array.from({ length: 4 }).map((_, groupIndex) => (
         <Card key={groupIndex} className='bg-card/50 py-0'>
           <CardContent className='space-y-4 px-4 py-4'>
@@ -219,7 +223,7 @@ function BoardSkeleton() {
               <Skeleton className='h-6 w-36 rounded-md' />
               <Skeleton className='h-4 w-24 rounded-md' />
             </div>
-            <div className='space-y-3'>
+            <div className='grid gap-3 md:grid-cols-2 2xl:grid-cols-3'>
               {Array.from({ length: 3 }).map((__, cardIndex) => (
                 <Skeleton
                   key={cardIndex}

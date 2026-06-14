@@ -1,16 +1,16 @@
 {
-  "updatedAt": "2026-06-14T08:57:33.724Z",
+  "updatedAt": "2026-06-14T09:01:48.158Z",
   "commands": [
     "npm run lint",
     "npm run typecheck",
     "npm run build"
   ],
-  "fastOnly": false,
-  "source": "stop",
+  "fastOnly": true,
+  "source": "subagent",
   "fingerprint": {
     "available": true,
-    "unstaged": ".../.helloagents/replay/2026-06-14T07-44-02-305Z-claude-4inoxf.jsonl    | 1 +\n web/default/src/features/home/components/sections/hero.tsx              | 2 +-\n 2 files changed, 2 insertions(+), 1 deletion(-)",
-    "staged": "",
-    "combined": ".../.helloagents/replay/2026-06-14T07-44-02-305Z-claude-4inoxf.jsonl    | 1 +\n web/default/src/features/home/components/sections/hero.tsx              | 2 +-\n 2 files changed, 2 insertions(+), 1 deletion(-)\n---"
+    "unstaged": "web/default/.helloagents/.ralph-verify.json                         | 6 +++---\n .../replay/2026-06-14T04-35-19-578Z-unknown-8996c6.jsonl            | 1 +\n .../replay/2026-06-14T07-44-02-305Z-claude-4inoxf.jsonl             | 1 +\n web/default/src/features/home/components/sections/hero.tsx          | 2 +-\n 4 files changed, 6 insertions(+), 4 deletions(-)",
+    "staged": "web/default/.helloagents/.ralph-verify.json                         | 6 +++---\n .../replay/2026-06-14T04-35-19-578Z-unknown-8996c6.jsonl            | 1 +\n .../replay/2026-06-14T07-44-02-305Z-claude-4inoxf.jsonl             | 1 +\n web/default/src/features/home/components/sections/hero.tsx          | 2 +-\n 4 files changed, 6 insertions(+), 4 deletions(-)",
+    "combined": "web/default/.helloagents/.ralph-verify.json                         | 6 +++---\n .../replay/2026-06-14T04-35-19-578Z-unknown-8996c6.jsonl            | 1 +\n .../replay/2026-06-14T07-44-02-305Z-claude-4inoxf.jsonl             | 1 +\n web/default/src/features/home/components/sections/hero.tsx          | 2 +-\n 4 files changed, 6 insertions(+), 4 deletions(-)\n---\nweb/default/.helloagents/.ralph-verify.json                         | 6 +++---\n .../replay/2026-06-14T04-35-19-578Z-unknown-8996c6.jsonl            | 1 +\n .../replay/2026-06-14T07-44-02-305Z-claude-4inoxf.jsonl             | 1 +\n web/default/src/features/home/components/sections/hero.tsx          | 2 +-\n 4 files changed, 6 insertions(+), 4 deletions(-)"
   }
 }

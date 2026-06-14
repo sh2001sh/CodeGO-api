@@ -20,13 +20,14 @@ import { Card, CardContent } from '@/components/ui/card'
 import { formatUptimePct } from '@/features/performance-metrics/lib/format'
 import { cn } from '@/lib/utils'
 import { HealthStrip } from './health-strip'
-import { getStatusMeta } from './presentation'
+import { formatSampleWindowLabel, getStatusMeta } from './presentation'
 import type { SidebarGroupModelStatusItem } from './types'
 
 export function GroupStatusMonitorCard(props: {
   item: SidebarGroupModelStatusItem
 }) {
   const meta = getStatusMeta(props.item.status)
+  const sampleWindowLabel = formatSampleWindowLabel(props.item.sample_window)
 
   return (
     <Card
@@ -47,7 +48,7 @@ export function GroupStatusMonitorCard(props: {
                   {props.item.model}
                 </div>
                 <div className='text-muted-foreground text-xs tabular-nums'>
-                  {props.item.sample_window}h 窗口
+                  {sampleWindowLabel}
                 </div>
               </div>
             </div>
@@ -58,7 +59,9 @@ export function GroupStatusMonitorCard(props: {
           </div>
 
           <div className='flex items-end justify-between gap-4'>
-            <div className='text-muted-foreground text-xs'>最近请求成功率</div>
+            <div className='text-muted-foreground text-xs'>
+              {sampleWindowLabel}请求成功率
+            </div>
             <div className='font-mono text-sm font-semibold tabular-nums text-foreground'>
               {props.item.success_rate == null
                 ? '--'

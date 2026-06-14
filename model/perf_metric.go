@@ -110,6 +110,19 @@ func GetPerfMetricsSummaryByGroupModels(startTs int64, endTs int64, groups []str
 	return summaries, err
 }
 
+func GetPerfMetricsBucketsByGroups(startTs int64, endTs int64, groups []string) ([]PerfMetric, error) {
+	var metrics []PerfMetric
+	query := DB.Model(&PerfMetric{}).
+		Where("bucket_ts >= ? AND bucket_ts <= ?", startTs, endTs)
+	if len(groups) > 0 {
+		query = query.Where(commonGroupCol+" IN ?", groups)
+	}
+	err := query.
+		Order(commonGroupCol + " ASC, model_name ASC, bucket_ts ASC").
+		Find(&metrics).Error
+	return metrics, err
+}
+
 func DeletePerfMetricsBefore(cutoffTs int64) error {
 	if cutoffTs <= 0 {
 		return nil

@@ -1,49 +1,102 @@
-/*
-Copyright (C) 2023-2026 QuantumNous
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as
-published by the Free Software Foundation, either version 3 of the
-License, or (at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU Affero General Public License for more details.
-
-You should have received a copy of the GNU Affero General Public License
-along with this program. If not, see <https://www.gnu.org/licenses/>.
-
-For commercial licensing, please contact support@quantumnous.com
-*/
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip'
 import { cn } from '@/lib/utils'
-import type { SidebarGroupModelStatusItem } from './types'
+import type { SidebarGroupModelStatusItem, SidebarGroupStatusBucket } from './types'
 import { buildHealthSegments } from './presentation'
 
 const SEGMENT_CLASS = {
-  healthy: 'bg-emerald-400 dark:bg-emerald-500',
-  warning: 'bg-amber-400 dark:bg-amber-500',
-  critical: 'bg-rose-400 dark:bg-rose-500',
-  muted: 'bg-emerald-100 dark:bg-emerald-950/70',
-  unknown: 'bg-slate-200 dark:bg-slate-800',
+  healthy: 'bg-emerald-500 dark:bg-emerald-400',
+  warning: 'bg-amber-500 dark:bg-amber-400',
+  critical: 'bg-rose-500 dark:bg-rose-400',
+  unknown: 'bg-slate-300 dark:bg-slate-700',
 } as const
 
 export function HealthStrip(props: { item: SidebarGroupModelStatusItem }) {
   const segments = buildHealthSegments(props.item)
+  const showCurrentMarker = segments.length > 0
 
   return (
     <div className='space-y-2'>
-      <div className='grid grid-cols-20 gap-1'>
-        {segments.map((segment, index) => (
-          <span
-            key={`${props.item.model}-${index}`}
-            className={cn(
-              'h-5 rounded-full transition-colors',
-              SEGMENT_CLASS[segment]
-            )}
-          />
-        ))}
+      <div className='flex items-center justify-between gap-3'>
+        <div className='text-muted-foreground text-[11px]'>开始</div>
+        <div className='text-muted-foreground text-[11px]'>现在</div>
+      </div>
+
+      <div className='relative'>
+        <div className='grid auto-cols-fr grid-flow-col gap-1'>
+          {segments.map(({ bucket, tone }, index) => (
+            <Tooltip key={`${props.item.model}-${bucket.ts}-${index}`}>
+              <TooltipTrigger
+                render={
+                  <button
+                    type='button'
+                    aria-label={buildBucketLabel(bucket, props.item.bucket_seconds)}
+                    className={cn(
+                      'h-5 rounded-md transition-transform hover:-translate-y-0.5 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
+                      SEGMENT_CLASS[tone]
+                    )}
+                  />
+                }
+              />
+              <TooltipContent side='top' className='max-w-none'>
+                <div className='space-y-1'>
+                  <div className='font-medium'>
+                    {formatBucketRange(bucket.ts, props.item.bucket_seconds)}
+                  </div>
+                  <div className='text-background/80'>
+                    {bucket.request_count > 0 && bucket.success_rate != null
+                      ? `成功率 ${bucket.success_rate.toFixed(1)}% · ${bucket.request_count} 次请求`
+                      : '该时间段暂无请求样本'}
+                  </div>
+                </div>
+              </TooltipContent>
+            </Tooltip>
+          ))}
+        </div>
+
+        {showCurrentMarker ? (
+          <div className='pointer-events-none absolute inset-y-[-6px] right-0 flex items-start'>
+            <div className='bg-foreground/80 h-[calc(100%+12px)] w-px' />
+          </div>
+        ) : null}
+      </div>
+
+      <div className='flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground'>
+        <LegendSwatch className={SEGMENT_CLASS.healthy} label='稳定成功' />
+        <LegendSwatch className={SEGMENT_CLASS.warning} label='有少量失败' />
+        <LegendSwatch className={SEGMENT_CLASS.critical} label='失败明显' />
+        <LegendSwatch className={SEGMENT_CLASS.unknown} label='暂无样本' />
       </div>
     </div>
   )
+}
+
+function LegendSwatch(props: { className: string; label: string }) {
+  return (
+    <div className='flex items-center gap-1.5'>
+      <span className={cn('h-2.5 w-2.5 rounded-full', props.className)} />
+      <span>{props.label}</span>
+    </div>
+  )
+}
+
+function formatBucketRange(ts: number, bucketSeconds: number) {
+  const start = new Date(ts * 1000)
+  const end = new Date((ts + bucketSeconds) * 1000)
+  return `${formatTime(start)} - ${formatTime(end)}`
+}
+
+function formatTime(date: Date) {
+  return new Intl.DateTimeFormat('zh-CN', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(date)
+}
+
+function buildBucketLabel(bucket: SidebarGroupStatusBucket, bucketSeconds: number) {
+  const range = formatBucketRange(bucket.ts, bucketSeconds)
+  if (bucket.request_count <= 0 || bucket.success_rate == null) {
+    return `${range}，暂无请求样本`
+  }
+  return `${range}，成功率 ${bucket.success_rate.toFixed(1)}%，共 ${bucket.request_count} 次请求`
 }

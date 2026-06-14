@@ -18,6 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import type {
   SidebarGroupAvailabilityStatus,
+  SidebarGroupStatusBucket,
   SidebarGroupModelStatusItem,
   SidebarGroupStatusItem,
 } from './types'
@@ -82,31 +83,10 @@ function sortModels(models: SidebarGroupModelStatusItem[]) {
 }
 
 export function buildHealthSegments(item: SidebarGroupModelStatusItem) {
-  const total = 20
-  const successRate = item.success_rate
-
-  if (successRate == null) {
-    return Array.from({ length: total }, () => 'unknown' as const)
-  }
-
-  const filled = Math.max(
-    0,
-    Math.min(total, Math.round((successRate / 100) * total))
-  )
-
-  return Array.from({ length: total }, (_, index) => {
-    if (index < filled) {
-      if (successRate < 90 && index >= Math.max(0, filled - 2)) {
-        return 'warning' as const
-      }
-      return 'healthy' as const
-    }
-
-    if (item.status === 'healthy') return 'muted' as const
-    if (item.status === 'unknown') return 'unknown' as const
-    if (successRate >= 85 && index < filled + 2) return 'warning' as const
-    return 'critical' as const
-  })
+  return item.series.map((bucket) => ({
+    bucket,
+    tone: bucketTone(bucket),
+  }))
 }
 
 export function summarizeGroups(items: SidebarGroupStatusItem[]) {
@@ -119,4 +99,25 @@ export function summarizeGroups(items: SidebarGroupStatusItem[]) {
     unknownModels: models.filter((item) => item.status === 'unknown').length,
     sampleWindow: models[0]?.sample_window ?? null,
   }
+}
+
+function bucketTone(bucket: SidebarGroupStatusBucket) {
+  if (bucket.request_count <= 0 || bucket.success_rate == null) {
+    return 'unknown' as const
+  }
+  if (bucket.success_rate >= 99.5) {
+    return 'healthy' as const
+  }
+  if (bucket.success_rate >= 95) {
+    return 'warning' as const
+  }
+  return 'critical' as const
+}
+
+export function formatSampleWindowLabel(hours: number | null) {
+  if (hours == null || hours <= 0) return '暂无采样窗口'
+  const minutes = Math.round(hours * 60)
+  if (minutes < 60) return `最近 ${minutes} 分钟`
+  if (minutes % 60 === 0) return `最近 ${minutes / 60} 小时`
+  return `最近 ${minutes} 分钟`
 }

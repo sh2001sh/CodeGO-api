@@ -30,6 +30,7 @@ type BucketPoint struct {
 	AvgLatencyMs int64   `json:"avg_latency_ms"`
 	SuccessRate  float64 `json:"success_rate"`
 	AvgTps       float64 `json:"avg_tps"`
+	RequestCount int64   `json:"request_count"`
 }
 
 type GroupResult struct {
@@ -70,6 +71,14 @@ type GroupModelSummary struct {
 	ModelName    string  `json:"model_name"`
 	SuccessRate  float64 `json:"success_rate"`
 	RequestCount int64   `json:"-"`
+}
+
+type GroupModelSeries struct {
+	Group        string        `json:"group"`
+	ModelName    string        `json:"model_name"`
+	SuccessRate  float64       `json:"success_rate"`
+	RequestCount int64         `json:"request_count"`
+	Series       []BucketPoint `json:"series"`
 }
 
 type bucketKey struct {
