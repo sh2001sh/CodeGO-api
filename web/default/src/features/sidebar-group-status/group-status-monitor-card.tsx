@@ -28,6 +28,7 @@ export function GroupStatusMonitorCard(props: {
 }) {
   const meta = getStatusMeta(props.item.status)
   const sampleWindowLabel = formatSampleWindowLabel(props.item.sample_window)
+  const seriesWindowLabel = formatSampleWindowLabel(props.item.series_window ?? props.item.sample_window)
 
   return (
     <Card
@@ -67,6 +68,10 @@ export function GroupStatusMonitorCard(props: {
                 ? '--'
                 : formatUptimePct(props.item.success_rate)}
             </div>
+          </div>
+
+          <div className='text-muted-foreground text-[11px]'>
+            请求时间分布：{seriesWindowLabel}
           </div>
 
           <HealthStrip item={props.item} />

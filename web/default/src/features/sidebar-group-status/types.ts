@@ -23,6 +23,7 @@ export type SidebarGroupModelStatusItem = {
   status: SidebarGroupAvailabilityStatus
   success_rate: number | null
   sample_window: number
+  series_window?: number
   bucket_seconds?: number
   request_count?: number
   series?: SidebarGroupStatusBucket[]

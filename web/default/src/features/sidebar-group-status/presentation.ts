@@ -138,7 +138,8 @@ export function formatSampleWindowLabel(hours: number | null) {
 function buildFallbackSegments(item: SidebarGroupModelStatusItem) {
   const total = 20
   const successRate = item.success_rate
-  const bucketSeconds = item.bucket_seconds ?? inferBucketSeconds(item.sample_window, total)
+  const bucketSeconds =
+    item.bucket_seconds ?? inferBucketSeconds(item.series_window ?? item.sample_window, total)
   const endTs = Math.floor(Date.now() / 1000)
   const startTs = endTs - bucketSeconds * total
 

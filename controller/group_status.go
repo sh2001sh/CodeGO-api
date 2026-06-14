@@ -15,6 +15,7 @@ type userGroupModelStatusItem struct {
 	Status        string                  `json:"status"`
 	SuccessRate   *float64                `json:"success_rate"`
 	SampleHours   float64                 `json:"sample_window"`
+	SeriesWindow  float64                 `json:"series_window"`
 	BucketSeconds int64                   `json:"bucket_seconds"`
 	RequestCount  int64                   `json:"request_count"`
 	Series        []userGroupStatusBucket `json:"series"`
@@ -34,8 +35,10 @@ type userGroupStatusBucket struct {
 }
 
 func GetUserGroupStatus(c *gin.Context) {
-	const sampleMinutes = 30
-	const segmentCount = 20
+	const successSampleMinutes = 60
+	const successSegmentCount = 1
+	const timelineSampleMinutes = 24 * 60
+	const timelineSegmentCount = 24
 	groupNames, err := model.ListGroupStatusGroups()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -54,7 +57,8 @@ func GetUserGroupStatus(c *gin.Context) {
 		return
 	}
 
-	successRates, seriesByModel, requestCounts, sampleWindowHours, bucketSeconds := queryGroupModelRecentHealth(groupNames, sampleMinutes, segmentCount)
+	successRates, _, requestCounts, sampleWindowHours, _ := queryGroupModelRecentHealth(groupNames, successSampleMinutes, successSegmentCount)
+	_, seriesByModel, _, seriesWindowHours, bucketSeconds := queryGroupModelRecentHealth(groupNames, timelineSampleMinutes, timelineSegmentCount)
 	result := make([]userGroupStatusItem, 0, len(groupNames))
 	for _, groupName := range groupNames {
 		modelSummaries := groupSummaries[groupName]
@@ -82,13 +86,14 @@ func GetUserGroupStatus(c *gin.Context) {
 			groupRequestCount += modelRequestCount
 			series := seriesByModel[key]
 			if len(series) == 0 {
-				series = emptyStatusSeries(sampleMinutes, segmentCount, bucketSeconds)
+				series = emptyStatusSeries(timelineSampleMinutes, timelineSegmentCount, bucketSeconds)
 			}
 			modelItems = append(modelItems, userGroupModelStatusItem{
 				Model:         summary.Model,
 				Status:        modelStatus,
 				SuccessRate:   modelRate,
 				SampleHours:   sampleWindowHours,
+				SeriesWindow:  seriesWindowHours,
 				BucketSeconds: bucketSeconds,
 				RequestCount:  modelRequestCount,
 				Series:        series,

@@ -15,7 +15,7 @@ export function HealthStrip(props: { item: SidebarGroupModelStatusItem }) {
   const showCurrentMarker = segments.length > 0
   const bucketSeconds =
     props.item.bucket_seconds ??
-    inferBucketSeconds(props.item.sample_window, segments.length || 20)
+    inferBucketSeconds(props.item.series_window ?? props.item.sample_window, segments.length || 20)
 
   return (
     <div className='space-y-2'>
