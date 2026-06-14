@@ -13,13 +13,13 @@ export function CTA(props: CTAProps) {
         <div className='max-w-3xl'>
           <div className='inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold text-white/90'>
             <Sparkles className='h-3.5 w-3.5' />
-            成就与奖励
+            开始使用
           </div>
           <h2 className='mt-4 text-3xl font-semibold tracking-tight md:text-4xl'>
-            购买套餐、点亮成就、再去开盲盒
+            选好套餐，开盒拿额度，立刻调用模型
           </h2>
           <p className='mt-4 max-w-2xl text-sm leading-7 text-white/78 md:text-base'>
-            Code Go 的奖励系统现在是闭环的。图鉴点亮后会直接发放奖励，盲盒保底规则清晰，整个站点会更像一个可成长的编码基地。
+            注册即可领取受邀积分，首购盲盒享保底额度。统一 API 接入主流模型，额度怎么扣由你决定。
           </p>
         </div>
 
@@ -36,9 +36,9 @@ export function CTA(props: CTAProps) {
               <Button
                 variant='outline'
                 className='rounded-full border-white/30 bg-transparent text-white hover:bg-white/10'
-                render={<a href='/dashboard/achievements' />}
+                render={<a href='/packages' />}
               >
-                查看图鉴
+                查看套餐
               </Button>
             </>
           ) : (
