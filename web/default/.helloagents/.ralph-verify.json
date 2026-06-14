@@ -1,5 +1,5 @@
 {
-  "updatedAt": "2026-06-14T08:52:06.018Z",
+  "updatedAt": "2026-06-14T08:57:33.724Z",
   "commands": [
     "npm run lint",
     "npm run typecheck",
@@ -9,8 +9,8 @@
   "source": "stop",
   "fingerprint": {
     "available": true,
-    "unstaged": "web/default/.helloagents/.ralph-verify.json        |  10 +-\n .../2026-06-14T04-35-19-578Z-unknown-8996c6.jsonl  |   1 +\n .../2026-06-14T07-44-02-305Z-claude-4inoxf.jsonl   |   3 +\n .../src/features/home/components/sections/cta.tsx  |  10 +-\n .../features/home/components/sections/features.tsx | 157 ++++++------\n .../src/features/home/components/sections/hero.tsx | 266 +++++++++++++--------\n 6 files changed, 255 insertions(+), 192 deletions(-)",
+    "unstaged": ".../.helloagents/replay/2026-06-14T07-44-02-305Z-claude-4inoxf.jsonl    | 1 +\n web/default/src/features/home/components/sections/hero.tsx              | 2 +-\n 2 files changed, 2 insertions(+), 1 deletion(-)",
     "staged": "",
-    "combined": "web/default/.helloagents/.ralph-verify.json        |  10 +-\n .../2026-06-14T04-35-19-578Z-unknown-8996c6.jsonl  |   1 +\n .../2026-06-14T07-44-02-305Z-claude-4inoxf.jsonl   |   3 +\n .../src/features/home/components/sections/cta.tsx  |  10 +-\n .../features/home/components/sections/features.tsx | 157 ++++++------\n .../src/features/home/components/sections/hero.tsx | 266 +++++++++++++--------\n 6 files changed, 255 insertions(+), 192 deletions(-)\n---"
+    "combined": ".../.helloagents/replay/2026-06-14T07-44-02-305Z-claude-4inoxf.jsonl    | 1 +\n web/default/src/features/home/components/sections/hero.tsx              | 2 +-\n 2 files changed, 2 insertions(+), 1 deletion(-)\n---"
   }
 }

@@ -89,7 +89,7 @@ export function Hero(props: HeroProps) {
               接入主流大模型
             </h1>
             <p className='mt-5 max-w-xl text-lg leading-8 text-slate-600 dark:text-slate-300'>
-              面向开发者的多模型 AI 接入平台。人民币付费、美元额度计费，再用盲盒、积分和邀请福利，把每一分钱用得更久。
+              面向开发者的多模型 AI 接入平台。盲盒开额度、积分兑权益、邀请换刷新，多重活动福利让你的额度越用越多。
             </p>
 
             <div className='mt-7'>
