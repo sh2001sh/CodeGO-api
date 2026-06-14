@@ -83,6 +83,26 @@ func TestAwardReferralSubscriptionResetOpportunityTx_MonthCardAwardedOnce(t *tes
 	assert.Equal(t, 1, summary.EarnedTotal)
 }
 
+func TestAwardReferralRegisterFrozenPointsTx_InviteeGetsSmallPointsOnly(t *testing.T) {
+	truncateTables(t)
+
+	insertSubscriptionResetTestUser(t, 8101, 0)
+	insertSubscriptionResetTestUser(t, 8102, 8101)
+
+	err := DB.Transaction(func(tx *gorm.DB) error {
+		return AwardReferralRegisterFrozenPointsTx(tx, 8101, 8102)
+	})
+	require.NoError(t, err)
+
+	inviteeAccount, err := GetOrCreatePointAccountTx(DB, 8102)
+	require.NoError(t, err)
+	assert.EqualValues(t, referralInviteeRegisterRewardPoints, inviteeAccount.Balance)
+
+	inviterAccount, err := GetOrCreatePointAccountTx(DB, 8101)
+	require.NoError(t, err)
+	assert.Zero(t, inviterAccount.Balance)
+}
+
 func TestUseUserSubscriptionResetOpportunity_ClearsCurrentSubscriptionAndLimitsMonthlyUsage(t *testing.T) {
 	truncateTables(t)
 

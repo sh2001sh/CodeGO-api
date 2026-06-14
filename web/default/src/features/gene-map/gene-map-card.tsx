@@ -22,11 +22,11 @@ function clampWidth(percent: number) {
 
 function Metric(props: { label: string; value: string }) {
   return (
-    <div className='rounded-2xl border border-white/55 bg-white/75 px-3 py-2.5 backdrop-blur dark:border-slate-800 dark:bg-slate-950/50'>
-      <div className='text-[11px] font-medium uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400'>
+    <div className='rounded-2xl border border-white/55 bg-white/75 px-3 py-2.5 backdrop-blur dark:border-border dark:bg-card/50'>
+      <div className='text-[11px] font-medium uppercase tracking-[0.22em] text-slate-500 dark:text-muted-foreground'>
         {props.label}
       </div>
-      <div className='mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100'>
+      <div className='mt-1 text-sm font-semibold text-slate-900 dark:text-foreground'>
         {props.value}
       </div>
     </div>
@@ -46,7 +46,7 @@ export function GeneMapCard(props: {
   return (
     <div
       className={cn(
-        'relative overflow-hidden rounded-[28px] border border-emerald-100 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.18),transparent_32%),radial-gradient(circle_at_top_right,rgba(14,165,233,0.22),transparent_30%),linear-gradient(145deg,rgba(247,254,231,0.96),rgba(255,255,255,0.98)_38%,rgba(240,249,255,0.98))] p-4 shadow-[0_28px_90px_rgba(15,23,42,0.10)] dark:border-slate-800 dark:bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.18),transparent_30%),radial-gradient(circle_at_top_right,rgba(56,189,248,0.18),transparent_26%),linear-gradient(145deg,rgba(2,6,23,0.98),rgba(15,23,42,0.96),rgba(17,24,39,0.96))]',
+        'relative overflow-hidden rounded-[28px] border border-emerald-100 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.18),transparent_32%),radial-gradient(circle_at_top_right,rgba(14,165,233,0.22),transparent_30%),linear-gradient(145deg,rgba(247,254,231,0.96),rgba(255,255,255,0.98)_38%,rgba(240,249,255,0.98))] p-4 shadow-[0_28px_90px_rgba(15,23,42,0.10)] dark:border-border dark:bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.18),transparent_30%),radial-gradient(circle_at_top_right,rgba(56,189,248,0.18),transparent_26%),linear-gradient(145deg,rgba(23,19,30,0.98),rgba(34,27,43,0.96),rgba(34,27,43,0.96))]',
         props.className
       )}
     >
@@ -60,19 +60,19 @@ export function GeneMapCard(props: {
                 <Dna className='size-5' />
               </div>
               <div>
-                <div className='text-[11px] font-medium uppercase tracking-[0.26em] text-slate-500 dark:text-slate-400'>
+                <div className='text-[11px] font-medium uppercase tracking-[0.26em] text-slate-500 dark:text-muted-foreground'>
                   API 调用基因图
                 </div>
-                <h3 className='text-lg font-semibold tracking-tight text-slate-950 dark:text-slate-50'>
+                <h3 className='text-lg font-semibold tracking-tight text-slate-950 dark:text-foreground'>
                   {props.title || snapshot.owner_label}
                 </h3>
               </div>
             </div>
             <div>
-              <div className='text-xl font-semibold tracking-tight text-slate-950 dark:text-white'>
+              <div className='text-xl font-semibold tracking-tight text-slate-950 dark:text-foreground'>
                 {snapshot.archetype}
               </div>
-              <p className='mt-1 max-w-2xl text-sm leading-6 text-slate-600 dark:text-slate-300'>
+              <p className='mt-1 max-w-2xl text-sm leading-6 text-slate-600 dark:text-muted-foreground'>
                 {snapshot.tagline}
               </p>
             </div>
@@ -94,22 +94,22 @@ export function GeneMapCard(props: {
         </div>
 
         <div className='grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(0,0.9fr)]'>
-          <div className='rounded-[24px] border border-white/60 bg-white/78 p-4 backdrop-blur dark:border-slate-800 dark:bg-slate-950/52'>
+          <div className='rounded-[24px] border border-white/60 bg-white/78 p-4 backdrop-blur dark:border-border dark:bg-card/55'>
             <div className='flex items-center justify-between gap-3'>
               <div>
-                <div className='text-sm font-semibold text-slate-950 dark:text-slate-50'>
+                <div className='text-sm font-semibold text-slate-950 dark:text-foreground'>
                   模型构成
                 </div>
-                <div className='text-xs text-slate-500 dark:text-slate-400'>
+                <div className='text-xs text-slate-500 dark:text-muted-foreground'>
                   不同颜色表示模型占比，条带越长说明调用占比越高。
                 </div>
               </div>
-              <div className='text-xs text-slate-500 dark:text-slate-400'>
+              <div className='text-xs text-slate-500 dark:text-muted-foreground'>
                 {snapshot.models.length} 个模型
               </div>
             </div>
 
-            <div className='mt-4 flex h-5 overflow-hidden rounded-full bg-slate-200 dark:bg-slate-800'>
+            <div className='mt-4 flex h-5 overflow-hidden rounded-full bg-slate-200 dark:bg-muted'>
               {topModels.length > 0 ? (
                 topModels.map((model, index) => (
                   <div
@@ -120,7 +120,7 @@ export function GeneMapCard(props: {
                   />
                 ))
               ) : (
-                <div className='h-full w-full bg-slate-300 dark:bg-slate-700' />
+                <div className='h-full w-full bg-slate-300 dark:bg-muted/60' />
               )}
             </div>
 
@@ -138,20 +138,20 @@ export function GeneMapCard(props: {
                       )}
                     />
                     <div className='min-w-0'>
-                      <div className='truncate text-sm font-medium text-slate-900 dark:text-slate-100'>
+                      <div className='truncate text-sm font-medium text-slate-900 dark:text-foreground'>
                         {model.model}
                       </div>
-                      <div className='text-xs text-slate-500 dark:text-slate-400'>
+                      <div className='text-xs text-slate-500 dark:text-muted-foreground'>
                         {formatNumber(model.requests)} 次请求
                       </div>
                     </div>
-                    <div className='text-sm font-semibold text-slate-700 dark:text-slate-200'>
+                    <div className='text-sm font-semibold text-slate-700 dark:text-foreground'>
                       {(model.share * 100).toFixed(1)}%
                     </div>
                   </div>
                 ))
               ) : (
-                <div className='rounded-2xl border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-500 dark:border-slate-800 dark:text-slate-400'>
+                <div className='rounded-2xl border border-dashed border-slate-200 px-4 py-6 text-center text-sm text-slate-500 dark:border-border dark:text-muted-foreground'>
                   这个时间窗口里还没有最近调用记录。
                 </div>
               )}
@@ -159,11 +159,11 @@ export function GeneMapCard(props: {
           </div>
 
           <div className='space-y-4'>
-            <div className='rounded-[24px] border border-white/60 bg-white/78 p-4 backdrop-blur dark:border-slate-800 dark:bg-slate-950/52'>
-              <div className='text-sm font-semibold text-slate-950 dark:text-slate-50'>
+            <div className='rounded-[24px] border border-white/60 bg-white/78 p-4 backdrop-blur dark:border-border dark:bg-card/55'>
+              <div className='text-sm font-semibold text-slate-950 dark:text-foreground'>
                 时段活跃度
               </div>
-              <div className='mt-1 text-xs text-slate-500 dark:text-slate-400'>
+              <div className='mt-1 text-xs text-slate-500 dark:text-muted-foreground'>
                 条带越宽表示该时段请求越密集，高峰时段会自动高亮。
               </div>
 
@@ -173,10 +173,10 @@ export function GeneMapCard(props: {
                     key={band.key}
                     className='grid grid-cols-[82px_minmax(0,1fr)_48px] items-center gap-3'
                   >
-                    <div className='text-xs font-medium text-slate-600 dark:text-slate-300'>
+                    <div className='text-xs font-medium text-slate-600 dark:text-muted-foreground'>
                       {band.label}
                     </div>
-                    <div className='relative h-8 overflow-hidden rounded-full bg-slate-200/90 dark:bg-slate-800'>
+                    <div className='relative h-8 overflow-hidden rounded-full bg-slate-200/90 dark:bg-muted'>
                       <div
                         className={cn(
                           'absolute inset-y-0 left-0 rounded-full bg-[linear-gradient(90deg,#0f172a,#0ea5e9)] transition-all dark:bg-[linear-gradient(90deg,#34d399,#38bdf8)]',
@@ -188,7 +188,7 @@ export function GeneMapCard(props: {
                         }}
                       />
                     </div>
-                    <div className='text-right text-xs font-semibold text-slate-700 dark:text-slate-200'>
+                    <div className='text-right text-xs font-semibold text-slate-700 dark:text-foreground'>
                       {formatNumber(band.requests)}
                     </div>
                   </div>
@@ -196,8 +196,8 @@ export function GeneMapCard(props: {
               </div>
             </div>
 
-            <div className='rounded-[24px] border border-white/60 bg-white/78 p-4 backdrop-blur dark:border-slate-800 dark:bg-slate-950/52'>
-              <div className='flex items-center gap-2 text-sm font-semibold text-slate-950 dark:text-slate-50'>
+            <div className='rounded-[24px] border border-white/60 bg-white/78 p-4 backdrop-blur dark:border-border dark:bg-card/55'>
+              <div className='flex items-center gap-2 text-sm font-semibold text-slate-950 dark:text-foreground'>
                 <Sparkles className='size-4 text-amber-500' />
                 稀有模型标记
               </div>

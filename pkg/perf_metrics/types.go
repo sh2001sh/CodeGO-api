@@ -59,6 +59,19 @@ type SummaryAllResult struct {
 	Models []ModelSummary `json:"models"`
 }
 
+type GroupSummary struct {
+	Group        string  `json:"group"`
+	SuccessRate  float64 `json:"success_rate"`
+	RequestCount int64   `json:"-"`
+}
+
+type GroupModelSummary struct {
+	Group        string  `json:"group"`
+	ModelName    string  `json:"model_name"`
+	SuccessRate  float64 `json:"success_rate"`
+	RequestCount int64   `json:"-"`
+}
+
 type bucketKey struct {
 	model    string
 	group    string

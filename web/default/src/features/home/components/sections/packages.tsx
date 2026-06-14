@@ -128,65 +128,71 @@ export function Packages({
       <Card
         key={plan.id}
         className={cn(
-          'overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-[0_20px_60px_rgba(15,23,42,0.08)] backdrop-blur',
+          'ios-floating-shell overflow-hidden',
           index === 0 && 'border-primary/40 ring-primary/10 ring-4'
         )}
       >
         <CardContent className='flex h-full flex-col p-0'>
-          <div className='flex items-start justify-between gap-3 bg-gradient-to-br from-emerald-100/80 via-sky-50 to-white px-6 pb-4 pt-6 dark:from-slate-900 dark:via-slate-950 dark:to-slate-950'>
-            <div className='min-w-0'>
-              <p className='text-muted-foreground text-xs font-semibold tracking-[0.22em] uppercase'>
-                {getSubscriptionPlanSubtitle(plan)}
-              </p>
-              <h3 className='mt-2 text-2xl font-semibold tracking-tight text-slate-950 dark:text-white'>
-                {plan.title}
-              </h3>
-              <p className='text-muted-foreground mt-2 text-sm leading-6'>
-                {summary}
-              </p>
-            </div>
-            {index === 0 && (
-              <StatusBadge variant='info' copyable={false} className='rounded-full'>
-                推荐
-              </StatusBadge>
-            )}
-          </div>
-
-          <div className='flex flex-1 flex-col px-6 pb-6 pt-2'>
-            <div className='flex items-end gap-2'>
-              <span className='text-4xl font-semibold tracking-tight text-slate-950 dark:text-white'>
-                {formatSubscriptionPlanPrice(priceAmount, plan.currency)}
-              </span>
-              <span className='text-muted-foreground pb-1 text-sm'>/ 套餐</span>
-            </div>
-
-            <div className='mt-5 space-y-2.5'>
-              {benefits.map((benefit) => (
-                <div
-                  key={benefit}
-                  className='text-muted-foreground flex items-center gap-2 text-sm'
+          <div className='bg-[radial-gradient(circle_at_top_right,rgba(240,138,88,0.14),transparent_38%),linear-gradient(135deg,rgba(255,255,255,0.92),rgba(237,243,250,0.88))] px-6 pb-4 pt-6 dark:bg-[radial-gradient(circle_at_top_right,rgba(240,138,88,0.16),transparent_38%),linear-gradient(135deg,rgba(18,24,33,0.92),rgba(23,29,40,0.88))]'>
+            <div className='flex items-start justify-between gap-3'>
+              <div className='min-w-0'>
+                <p className='text-muted-foreground text-xs font-semibold tracking-[0.16em]'>
+                  {getSubscriptionPlanSubtitle(plan)}
+                </p>
+                <h3 className='mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white'>
+                  {plan.title}
+                </h3>
+                <p className='text-muted-foreground mt-2 text-sm leading-6 dark:text-slate-300'>
+                  {summary}
+                </p>
+              </div>
+              {index === 0 && (
+                <StatusBadge
+                  variant='info'
+                  copyable={false}
+                  className='rounded-full'
                 >
-                  <Check className='text-primary h-4 w-4 shrink-0' />
-                  <span>{benefit}</span>
+                  推荐
+                </StatusBadge>
+              )}
+            </div>
+
+            <div className='flex flex-1 flex-col px-6 pb-6 pt-2'>
+              <div className='flex items-end gap-2'>
+                <span className='text-4xl font-semibold tracking-tight text-slate-950 dark:text-white'>
+                  {formatSubscriptionPlanPrice(priceAmount, plan.currency)}
+                </span>
+                <span className='text-muted-foreground pb-1 text-sm'>/ 套餐</span>
+              </div>
+
+              <div className='mt-5 space-y-2.5'>
+                {benefits.map((benefit) => (
+                  <div
+                    key={benefit}
+                    className='text-muted-foreground flex items-center gap-2 text-sm'
+                  >
+                    <Check className='text-primary h-4 w-4 shrink-0' />
+                    <span>{benefit}</span>
+                  </div>
+                ))}
+              </div>
+
+              <div className='mt-5 rounded-3xl border border-white/60 bg-white/55 p-4 dark:border-white/10 dark:bg-white/[0.05]'>
+                <div className='text-xs font-semibold tracking-[0.16em] text-slate-500 dark:text-slate-300'>
+                  套餐详情
                 </div>
-              ))}
-            </div>
-
-            <div className='mt-5 rounded-3xl border border-slate-200 bg-slate-50/85 p-4 dark:border-slate-800 dark:bg-slate-900/70'>
-              <div className='text-xs font-semibold tracking-[0.18em] text-slate-500 uppercase'>
-                套餐详情
+                <div className='mt-2 text-sm leading-6 text-slate-700 dark:text-slate-300'>
+                  {detailText}
+                </div>
               </div>
-              <div className='mt-2 text-sm leading-6 text-slate-700 dark:text-slate-300'>
-                {detailText}
-              </div>
-            </div>
 
-            <Button
-              className='mt-6 h-11 w-full rounded-full text-sm font-medium'
-              render={<a href={getPurchaseHref(isAuthenticated)} />}
-            >
-              {isAuthenticated ? '进入套餐页' : '登录后购买'}
-            </Button>
+              <Button
+                className='mt-6 h-11 w-full rounded-full text-sm font-medium'
+                render={<a href={getPurchaseHref(isAuthenticated)} />}
+              >
+                {isAuthenticated ? '进入套餐页' : '登录后购买'}
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -209,20 +215,20 @@ export function Packages({
 
       <div className='relative mx-auto max-w-7xl'>
         <div className='mx-auto max-w-3xl text-center'>
-          <div className='inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-white/85 px-3 py-1 text-xs font-semibold text-emerald-700 shadow-sm'>
+          <div className='ios-pill inline-flex items-center gap-2 px-3 py-1 text-xs font-semibold text-[#2f5ea3] dark:text-[#98c0ff]'>
             <Crown className='h-3.5 w-3.5' />
             套餐中心
           </div>
-          <h2 className='mt-4 text-[clamp(2rem,4.4vw,3.4rem)] font-semibold tracking-tight text-slate-950 dark:text-white'>
+          <h2 className='mt-4 text-[clamp(2rem,4.4vw,3.4rem)] font-semibold tracking-[-0.03em] text-slate-950 dark:text-white'>
             月卡适合稳定开发，日卡适合短时冲量
           </h2>
-          <p className='text-muted-foreground mt-4 text-base leading-7 md:text-lg'>
+          <p className='text-muted-foreground mt-4 text-base leading-7 md:text-lg dark:text-slate-300'>
             套餐价格按人民币支付，额度按美元信用值发放。可以根据长期主力使用或短时补量需求自由选择。
           </p>
         </div>
 
         {packageIntro ? (
-          <div className='mx-auto mt-8 max-w-4xl rounded-[28px] border border-sky-100 bg-white/88 p-6 shadow-[0_18px_50px_rgba(14,30,37,0.08)] backdrop-blur'>
+          <div className='ios-floating-shell mx-auto mt-8 max-w-4xl p-6'>
             <Markdown className='prose prose-slate max-w-none text-left prose-p:leading-7'>
               {packageIntro}
             </Markdown>
@@ -238,12 +244,12 @@ export function Packages({
           )}
         >
           {hasMonthPlans && (
-            <div className='rounded-[32px] border border-sky-100 bg-white/88 p-5 shadow-[0_24px_60px_rgba(14,30,37,0.08)] backdrop-blur md:p-6'>
+            <div className='ios-floating-shell p-5 md:p-6'>
               <div className='mb-6'>
-                <p className='text-slate-500 text-xs font-semibold tracking-[0.24em] uppercase'>
+                <p className='text-slate-500 text-xs font-semibold tracking-[0.16em]'>
                   月卡套餐
                 </p>
-                <h3 className='mt-2 text-2xl font-semibold text-slate-950 dark:text-white'>
+                <h3 className='mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white'>
                   适合长期 Code Go 使用，一个月内自由使用
                 </h3>
               </div>
@@ -254,12 +260,12 @@ export function Packages({
           )}
 
           {hasDayPlans && (
-            <div className='rounded-[32px] border border-sky-100 bg-white/88 p-5 shadow-[0_24px_60px_rgba(14,30,37,0.08)] backdrop-blur md:p-6'>
+            <div className='ios-floating-shell p-5 md:p-6'>
               <div className='mb-6'>
-                <p className='text-slate-500 text-xs font-semibold tracking-[0.24em] uppercase'>
+                <p className='text-slate-500 text-xs font-semibold tracking-[0.16em]'>
                   日卡套餐
                 </p>
-                <h3 className='mt-2 text-2xl font-semibold text-slate-950 dark:text-white'>
+                <h3 className='mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white'>
                   适合短时爆发使用，按天生效
                 </h3>
               </div>

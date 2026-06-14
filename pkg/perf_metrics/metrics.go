@@ -193,6 +193,165 @@ func QuerySummaryAll(hours int) (SummaryAllResult, error) {
 	return SummaryAllResult{Models: models}, nil
 }
 
+func QuerySummaryByGroups(hours int, groups []string) ([]GroupSummary, error) {
+	if hours <= 0 {
+		hours = 24
+	}
+	if hours > 24*30 {
+		hours = 24 * 30
+	}
+	endTs := time.Now().Unix()
+	startTs := endTs - int64(hours)*3600
+
+	rows, err := model.GetPerfMetricsSummaryByGroups(startTs, endTs, groups)
+	if err != nil {
+		return nil, err
+	}
+
+	totals := map[string]counters{}
+	for _, row := range rows {
+		totals[row.Group] = counters{
+			requestCount:   row.RequestCount,
+			successCount:   row.SuccessCount,
+			totalLatencyMs: row.TotalLatencyMs,
+			outputTokens:   row.OutputTokens,
+			generationMs:   row.GenerationMs,
+		}
+	}
+
+	allowedGroups := map[string]struct{}{}
+	for _, group := range groups {
+		allowedGroups[group] = struct{}{}
+	}
+
+	hotBuckets.Range(func(key, value any) bool {
+		k := key.(bucketKey)
+		if k.bucketTs < startTs || k.bucketTs > endTs {
+			return true
+		}
+		if len(allowedGroups) > 0 {
+			if _, ok := allowedGroups[k.group]; !ok {
+				return true
+			}
+		}
+		snap := value.(*atomicBucket).snapshot()
+		if snap.requestCount == 0 {
+			return true
+		}
+		cur := totals[k.group]
+		cur.requestCount += snap.requestCount
+		cur.successCount += snap.successCount
+		cur.totalLatencyMs += snap.totalLatencyMs
+		cur.outputTokens += snap.outputTokens
+		cur.generationMs += snap.generationMs
+		totals[k.group] = cur
+		return true
+	})
+
+	results := make([]GroupSummary, 0, len(totals))
+	for _, group := range groups {
+		total, ok := totals[group]
+		if !ok || total.requestCount == 0 {
+			continue
+		}
+		results = append(results, GroupSummary{
+			Group:        group,
+			SuccessRate:  math.Round(successRate(total)*100) / 100,
+			RequestCount: total.requestCount,
+		})
+	}
+
+	return results, nil
+}
+
+func QuerySummaryByGroupModels(hours int, groups []string) ([]GroupModelSummary, error) {
+	if hours <= 0 {
+		hours = 24
+	}
+	if hours > 24*30 {
+		hours = 24 * 30
+	}
+	endTs := time.Now().Unix()
+	startTs := endTs - int64(hours)*3600
+
+	rows, err := model.GetPerfMetricsSummaryByGroupModels(startTs, endTs, groups)
+	if err != nil {
+		return nil, err
+	}
+
+	type modelGroupKey struct {
+		group string
+		model string
+	}
+
+	totals := map[modelGroupKey]counters{}
+	for _, row := range rows {
+		key := modelGroupKey{group: row.Group, model: row.ModelName}
+		totals[key] = counters{
+			requestCount:   row.RequestCount,
+			successCount:   row.SuccessCount,
+			totalLatencyMs: row.TotalLatencyMs,
+			outputTokens:   row.OutputTokens,
+			generationMs:   row.GenerationMs,
+		}
+	}
+
+	allowedGroups := map[string]struct{}{}
+	for _, group := range groups {
+		allowedGroups[group] = struct{}{}
+	}
+
+	hotBuckets.Range(func(key, value any) bool {
+		k := key.(bucketKey)
+		if k.bucketTs < startTs || k.bucketTs > endTs {
+			return true
+		}
+		if len(allowedGroups) > 0 {
+			if _, ok := allowedGroups[k.group]; !ok {
+				return true
+			}
+		}
+		snap := value.(*atomicBucket).snapshot()
+		if snap.requestCount == 0 {
+			return true
+		}
+		bucketKey := modelGroupKey{group: k.group, model: k.model}
+		cur := totals[bucketKey]
+		cur.requestCount += snap.requestCount
+		cur.successCount += snap.successCount
+		cur.totalLatencyMs += snap.totalLatencyMs
+		cur.outputTokens += snap.outputTokens
+		cur.generationMs += snap.generationMs
+		totals[bucketKey] = cur
+		return true
+	})
+
+	results := make([]GroupModelSummary, 0, len(totals))
+	for key, total := range totals {
+		if total.requestCount == 0 {
+			continue
+		}
+		results = append(results, GroupModelSummary{
+			Group:        key.group,
+			ModelName:    key.model,
+			SuccessRate:  math.Round(successRate(total)*100) / 100,
+			RequestCount: total.requestCount,
+		})
+	}
+
+	sort.Slice(results, func(i, j int) bool {
+		if results[i].Group == results[j].Group {
+			if results[i].RequestCount == results[j].RequestCount {
+				return results[i].ModelName < results[j].ModelName
+			}
+			return results[i].RequestCount > results[j].RequestCount
+		}
+		return results[i].Group < results[j].Group
+	})
+
+	return results, nil
+}
+
 func bucketStart(ts int64) int64 {
 	bucketSeconds := perf_metrics_setting.GetBucketSeconds()
 	if bucketSeconds <= 0 {

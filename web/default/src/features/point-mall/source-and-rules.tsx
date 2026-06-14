@@ -11,7 +11,7 @@ export function SourceAndRules() {
             <h2 className='text-lg font-semibold'>积分获取来源</h2>
           </div>
           <p className='text-muted-foreground text-sm'>
-            现金购买套餐、邀请真实新用户，以及拉新首单消费奖励，都会进入同一套积分与额度规则。
+            现金购买套餐可获得积分，邀请新用户注册可让对方获得少量积分。积分可在下方兑换券、卡密与权益。
           </p>
         </div>
         <div className='overflow-auto'>
@@ -40,9 +40,9 @@ export function SourceAndRules() {
             </p>
           </div>
           <div>
-            <div className='font-medium'>拉新奖励说明</div>
+            <div className='font-medium'>邀请奖励说明</div>
             <p className='text-muted-foreground mt-1'>
-              拉新奖励分为积分和奖励额度两部分。积分来自注册、首调、首充；奖励额度来自新用户首次真实消费，盲盒 / 日卡 / 月卡分别发放 $2 / $5 / $10。
+              新用户通过你的链接注册可获得少量积分。当被邀请人首次购买月卡成功，你会获得 1 次订阅额度刷新机会。
             </p>
           </div>
           <div>

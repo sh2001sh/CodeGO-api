@@ -38,21 +38,21 @@ const NAVIGATION_ITEMS: NavigationCardItem[] = [
     eyebrow: '盲盒活动',
     title: '去开盲盒，直接处理额度和开奖',
     description:
-      '盲盒页集中展示购买数量、奖池、保底进度和最近掉落，适合快速补短期额度。',
+      '购买盲盒抽取随机额度，连续未开出高额时累积保底，适合快速补充短期额度。',
     note: '盲盒额度会优先于套餐和钱包余额消耗。',
     ctaLabel: '进入盲盒活动',
     to: '/blind-box',
     icon: Egg,
     theme: {
       frame:
-        'border-amber-200 bg-[radial-gradient(circle_at_top_left,rgba(250,204,21,0.2),transparent_28%),radial-gradient(circle_at_top_right,rgba(251,146,60,0.16),transparent_24%),linear-gradient(145deg,rgba(255,251,235,0.98),rgba(255,247,237,0.98),rgba(255,255,255,0.98))] dark:border-amber-500/20 dark:bg-[radial-gradient(circle_at_top_left,rgba(250,204,21,0.16),transparent_28%),radial-gradient(circle_at_top_right,rgba(249,115,22,0.14),transparent_24%),linear-gradient(145deg,rgba(41,24,8,0.94),rgba(15,23,42,0.95),rgba(17,24,39,0.94))]',
-      eyebrow: 'text-amber-700 dark:text-amber-200',
-      title: 'text-slate-950 dark:text-white',
-      body: 'text-slate-700 dark:text-slate-200',
-      note: 'border-amber-200/80 bg-white/72 text-amber-800 dark:border-amber-500/20 dark:bg-slate-950/45 dark:text-amber-100',
+        'border-border/70 bg-background/76',
+      eyebrow: 'text-muted-foreground',
+      title: 'text-foreground',
+      body: 'text-muted-foreground',
+      note: 'border-border/70 bg-background/72 text-muted-foreground',
       button:
-        'bg-amber-600 text-white hover:bg-amber-500 dark:bg-amber-500 dark:text-white dark:hover:bg-amber-400',
-      iconTile: 'bg-amber-500 text-white',
+        'bg-primary text-primary-foreground hover:bg-primary/90',
+      iconTile: 'bg-primary/12 text-primary',
     },
   },
   {
@@ -60,21 +60,21 @@ const NAVIGATION_ITEMS: NavigationCardItem[] = [
     eyebrow: '套餐购买',
     title: '去选月卡和日卡，适合稳定主力调用',
     description:
-      '套餐页单独展示可购买套餐和已购套餐进度，适合长期高频使用的常规模型消费。',
+      '购买月卡或日卡获得稳定额度，适合长期高频调用常规模型的日常消费。',
     note: '套餐额度不能用于 Claude 模型，请单独走 Claude 额度充值。',
     ctaLabel: '进入套餐购买',
     to: '/packages',
     icon: Crown,
     theme: {
       frame:
-        'border-sky-200 bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.18),transparent_28%),radial-gradient(circle_at_top_right,rgba(59,130,246,0.14),transparent_24%),linear-gradient(145deg,rgba(239,248,255,0.98),rgba(248,250,252,0.98),rgba(255,255,255,0.98))] dark:border-sky-500/20 dark:bg-[radial-gradient(circle_at_top_left,rgba(56,189,248,0.16),transparent_28%),radial-gradient(circle_at_top_right,rgba(59,130,246,0.14),transparent_24%),linear-gradient(145deg,rgba(8,47,73,0.78),rgba(15,23,42,0.95),rgba(17,24,39,0.94))]',
-      eyebrow: 'text-sky-700 dark:text-sky-200',
-      title: 'text-slate-950 dark:text-white',
-      body: 'text-slate-700 dark:text-slate-200',
-      note: 'border-sky-200/80 bg-white/72 text-sky-800 dark:border-sky-500/20 dark:bg-slate-950/45 dark:text-sky-100',
+        'border-border/70 bg-accent/16 dark:bg-accent/10',
+      eyebrow: 'text-muted-foreground',
+      title: 'text-foreground',
+      body: 'text-muted-foreground',
+      note: 'border-border/70 bg-background/72 text-muted-foreground',
       button:
-        'bg-sky-600 text-white hover:bg-sky-500 dark:bg-sky-500 dark:text-white dark:hover:bg-sky-400',
-      iconTile: 'bg-sky-500 text-white',
+        'bg-primary text-primary-foreground hover:bg-primary/90',
+      iconTile: 'bg-accent text-accent-foreground',
     },
   },
   {
@@ -82,7 +82,7 @@ const NAVIGATION_ITEMS: NavigationCardItem[] = [
     eyebrow: 'Claude 额度充值',
     title: '直达 Claude 专用余额池',
     description:
-      '进入钱包后默认切到 Claude 额度模式，适合需要单独给 Claude 模型充值和管理余额的场景。',
+      '为 Claude 模型单独充值和管理专用余额，进入钱包后默认切到 Claude 额度模式。',
     note: 'Claude 额度仅用于 Claude 模型，按 1:1 充值，不走普通余额折扣。',
     ctaLabel: '进入 Claude 充值',
     to: '/wallet',
@@ -90,14 +90,14 @@ const NAVIGATION_ITEMS: NavigationCardItem[] = [
     icon: Sparkles,
     theme: {
       frame:
-        'border-rose-200 bg-[radial-gradient(circle_at_top_left,rgba(244,63,94,0.18),transparent_28%),radial-gradient(circle_at_top_right,rgba(251,146,60,0.14),transparent_24%),linear-gradient(145deg,rgba(255,241,242,0.98),rgba(255,247,237,0.98),rgba(255,255,255,0.98))] dark:border-rose-500/20 dark:bg-[radial-gradient(circle_at_top_left,rgba(244,63,94,0.16),transparent_28%),radial-gradient(circle_at_top_right,rgba(251,146,60,0.14),transparent_24%),linear-gradient(145deg,rgba(76,5,25,0.78),rgba(15,23,42,0.95),rgba(17,24,39,0.94))]',
-      eyebrow: 'text-rose-700 dark:text-rose-200',
-      title: 'text-slate-950 dark:text-white',
-      body: 'text-slate-700 dark:text-slate-200',
-      note: 'border-rose-200/80 bg-white/72 text-rose-800 dark:border-rose-500/20 dark:bg-slate-950/45 dark:text-rose-100',
+        'border-border/70 bg-muted/34',
+      eyebrow: 'text-muted-foreground',
+      title: 'text-foreground',
+      body: 'text-muted-foreground',
+      note: 'border-border/70 bg-background/72 text-muted-foreground',
       button:
-        'bg-rose-600 text-white hover:bg-rose-500 dark:bg-rose-500 dark:text-white dark:hover:bg-rose-400',
-      iconTile: 'bg-rose-500 text-white',
+        'bg-primary text-primary-foreground hover:bg-primary/90',
+      iconTile: 'bg-primary/12 text-primary',
     },
   },
 ]
@@ -108,7 +108,7 @@ function NavigationCard(props: { item: NavigationCardItem }) {
   return (
     <div
       className={cn(
-        'flex h-full flex-col rounded-[28px] border p-5 shadow-[0_24px_72px_rgba(15,23,42,0.08)]',
+        'app-subtle-panel flex h-full flex-col p-4',
         props.item.theme.frame
       )}
     >
@@ -116,7 +116,7 @@ function NavigationCard(props: { item: NavigationCardItem }) {
         <div>
           <div
             className={cn(
-              'text-[11px] font-semibold uppercase tracking-[0.24em]',
+              'text-[11px] font-medium',
               props.item.theme.eyebrow
             )}
           >
@@ -124,7 +124,7 @@ function NavigationCard(props: { item: NavigationCardItem }) {
           </div>
           <h3
             className={cn(
-              'mt-3 text-xl font-semibold tracking-tight',
+              'mt-2 text-lg font-semibold tracking-tight',
               props.item.theme.title
             )}
           >
@@ -133,7 +133,7 @@ function NavigationCard(props: { item: NavigationCardItem }) {
         </div>
         <div
           className={cn(
-            'flex size-11 shrink-0 items-center justify-center rounded-2xl shadow-sm',
+            'flex size-11 shrink-0 items-center justify-center rounded-2xl',
             props.item.theme.iconTile
           )}
         >
@@ -141,7 +141,7 @@ function NavigationCard(props: { item: NavigationCardItem }) {
         </div>
       </div>
 
-      <p className={cn('mt-3 text-sm leading-7', props.item.theme.body)}>
+      <p className={cn('mt-2.5 text-sm leading-6', props.item.theme.body)}>
         {props.item.description}
       </p>
 
@@ -157,7 +157,7 @@ function NavigationCard(props: { item: NavigationCardItem }) {
       <Button
         size='lg'
         className={cn(
-          'mt-5 h-12 justify-between rounded-full px-5 shadow-[0_18px_38px_rgba(15,23,42,0.18)]',
+          'mt-4 h-11 justify-between rounded-full px-5',
           props.item.theme.button
         )}
         render={
@@ -180,10 +180,23 @@ function NavigationCard(props: { item: NavigationCardItem }) {
 
 export function PrimaryActionCard() {
   return (
-    <section className='grid gap-4 xl:grid-cols-3'>
-      {NAVIGATION_ITEMS.map((item) => (
-        <NavigationCard key={item.id} item={item} />
-      ))}
+    <section className='app-page-shell p-4 sm:p-5'>
+      <div className='app-section-kicker'>常用入口</div>
+      <div className='mt-2 flex items-center justify-between gap-3'>
+        <div>
+          <div className='text-foreground text-lg font-semibold tracking-tight'>
+            额度、套餐与 Claude 充值
+          </div>
+          <div className='text-muted-foreground mt-1 text-sm leading-6'>
+            按使用场景选择补充额度的方式，进入对应页面完成购买与管理。
+          </div>
+        </div>
+      </div>
+      <div className='mt-4 grid gap-4 xl:grid-cols-3'>
+        {NAVIGATION_ITEMS.map((item) => (
+          <NavigationCard key={item.id} item={item} />
+        ))}
+      </div>
     </section>
   )
 }

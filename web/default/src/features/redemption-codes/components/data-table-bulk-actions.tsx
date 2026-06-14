@@ -77,7 +77,7 @@ export function DataTableBulkActions<TData>({
   const fetchAllRowsForCurrentFilter = async () => {
     const pageSize = 200
     let page = 1
-    let total = 0
+    let total: number
     const items: Redemption[] = []
 
     do {

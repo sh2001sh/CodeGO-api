@@ -166,7 +166,7 @@ export function QuotaSettingsSection({
             name='QuotaForInviter'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('Inviter Reward')}</FormLabel>
+                <FormLabel>{t('Legacy Inviter Reward')}</FormLabel>
                 <FormControl>
                   <Input
                     type='number'
@@ -178,7 +178,7 @@ export function QuotaSettingsSection({
                   />
                 </FormControl>
                 <FormDescription>
-                  {t('Quota given to users who invite others')}
+                  {t('Deprecated legacy setting. The current invite system grants refresh chances instead of wallet quota.')}
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -190,7 +190,7 @@ export function QuotaSettingsSection({
             name='QuotaForInvitee'
             render={({ field }) => (
               <FormItem>
-                <FormLabel>{t('Invitee Reward')}</FormLabel>
+                <FormLabel>{t('Legacy Invitee Reward')}</FormLabel>
                 <FormControl>
                   <Input
                     type='number'
@@ -202,7 +202,7 @@ export function QuotaSettingsSection({
                   />
                 </FormControl>
                 <FormDescription>
-                  {t('Quota given to invited users')}
+                  {t('Deprecated legacy setting. New invitees no longer receive extra wallet quota through invitation rewards.')}
                 </FormDescription>
                 <FormMessage />
               </FormItem>

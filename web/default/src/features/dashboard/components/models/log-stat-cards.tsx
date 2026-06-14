@@ -122,7 +122,7 @@ export function LogStatCards(props: LogStatCardsProps) {
             >
               <div className='flex items-center gap-2'>
                 <Icon className='text-muted-foreground/60 size-3.5 shrink-0' />
-                <div className='text-muted-foreground truncate text-xs font-medium tracking-wider uppercase'>
+                <div className='text-muted-foreground truncate text-xs font-medium'>
                   {it.title}
                 </div>
               </div>

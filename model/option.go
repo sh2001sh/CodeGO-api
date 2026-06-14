@@ -156,6 +156,10 @@ func InitOptionMap() {
 	common.OptionMap["CreateCacheRatio"] = ratio_setting.CreateCacheRatio2JSONString()
 	common.OptionMap["GroupRatio"] = ratio_setting.GroupRatio2JSONString()
 	common.OptionMap["GroupGroupRatio"] = ratio_setting.GroupGroupRatio2JSONString()
+	common.OptionMap[SubscriptionClaudeConversionEnabledOptionKey] = strconv.FormatBool(SubscriptionClaudeConversionEnabled)
+	common.OptionMap[SubscriptionClaudeConversionRatioNumeratorOptionKey] = strconv.Itoa(SubscriptionClaudeConversionRatioNumerator)
+	common.OptionMap[SubscriptionClaudeConversionRatioDenominatorOptionKey] = strconv.Itoa(SubscriptionClaudeConversionRatioDenominator)
+	common.OptionMap[SubscriptionClaudeConversionExcludeDayPassOptionKey] = strconv.FormatBool(SubscriptionClaudeConversionExcludeDayPass)
 	common.OptionMap["UserUsableGroups"] = setting.UserUsableGroups2JSONString()
 	common.OptionMap["CompletionRatio"] = ratio_setting.CompletionRatio2JSONString()
 	common.OptionMap["ImageRatio"] = ratio_setting.ImageRatio2JSONString()
@@ -546,6 +550,14 @@ func updateOptionMap(key string, value string) (err error) {
 		err = ratio_setting.UpdateGroupRatioByJSONString(value)
 	case "GroupGroupRatio":
 		err = ratio_setting.UpdateGroupGroupRatioByJSONString(value)
+	case SubscriptionClaudeConversionEnabledOptionKey:
+		SubscriptionClaudeConversionEnabled = value == "true"
+	case SubscriptionClaudeConversionRatioNumeratorOptionKey:
+		SubscriptionClaudeConversionRatioNumerator, _ = strconv.Atoi(value)
+	case SubscriptionClaudeConversionRatioDenominatorOptionKey:
+		SubscriptionClaudeConversionRatioDenominator, _ = strconv.Atoi(value)
+	case SubscriptionClaudeConversionExcludeDayPassOptionKey:
+		SubscriptionClaudeConversionExcludeDayPass = value == "true"
 	case "UserUsableGroups":
 		err = setting.UpdateUserUsableGroupsByJSONString(value)
 	case "CompletionRatio":

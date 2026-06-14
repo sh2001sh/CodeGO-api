@@ -30,6 +30,8 @@ import type {
   SelfSubscriptionData,
   SubscriptionResetOpportunityUseResult,
   SubscriptionOrderStatus,
+  SubscriptionClaudeConversionRecord,
+  SubscriptionClaudeConversionResult,
 } from './types'
 
 // ============================================================================
@@ -212,6 +214,28 @@ export async function consumeSubscriptionResetOpportunity(): Promise<
   ApiResponse<SubscriptionResetOpportunityUseResult>
 > {
   const res = await api.post('/api/subscription/self/reset-opportunity/use')
+  return res.data
+}
+
+export async function createSubscriptionClaudeConversion(payload: {
+  subscriptionId: number
+  sourceQuota: number
+  requestId: string
+}): Promise<ApiResponse<SubscriptionClaudeConversionResult>> {
+  const res = await api.post('/api/subscription/self/claude-conversions', {
+    subscription_id: payload.subscriptionId,
+    source_quota: payload.sourceQuota,
+    request_id: payload.requestId,
+  })
+  return res.data
+}
+
+export async function getSubscriptionClaudeConversions(): Promise<
+  ApiResponse<{
+    items: SubscriptionClaudeConversionRecord[]
+  }>
+> {
+  const res = await api.get('/api/subscription/self/claude-conversions')
   return res.data
 }
 

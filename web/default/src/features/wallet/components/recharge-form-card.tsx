@@ -82,6 +82,7 @@ interface RechargeFormCardProps {
   onWaffoMethodSelect?: (method: WaffoPayMethod, index: number) => void
   enableWaffoPancakeTopup?: boolean
   showRedemptionSection?: boolean
+  compact?: boolean
 }
 
 export function RechargeFormCard({
@@ -115,9 +116,11 @@ export function RechargeFormCard({
   onWaffoMethodSelect,
   enableWaffoPancakeTopup,
   showRedemptionSection = true,
+  compact = false,
 }: RechargeFormCardProps) {
   const { t } = useTranslation()
   const [localAmount, setLocalAmount] = useState(topupAmount.toString())
+  const sectionLabelClassName = 'text-muted-foreground text-xs font-medium'
 
   useEffect(() => {
     setLocalAmount(topupAmount.toString())
@@ -213,15 +216,16 @@ export function RechargeFormCard({
           </Button>
         ) : null
       }
-      contentClassName='space-y-4 sm:space-y-6'
+      className={compact ? 'rounded-[20px]' : undefined}
+      contentClassName={compact ? 'space-y-3 sm:space-y-4' : 'space-y-4 sm:space-y-6'}
     >
       {/* Online Topup Section */}
       {hasAnyTopup ? (
-        <div className='space-y-4 sm:space-y-6'>
+        <div className={compact ? 'space-y-3 sm:space-y-4' : 'space-y-4 sm:space-y-6'}>
           {hasConfigurableTopup && (
             <>
               <div className='space-y-2.5 sm:space-y-3'>
-                <Label className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>
+                <Label className={sectionLabelClassName}>
                   充值余额池
                 </Label>
                 <div className='grid grid-cols-1 gap-2 sm:grid-cols-2'>
@@ -245,7 +249,9 @@ export function RechargeFormCard({
                       variant='outline'
                       onClick={() => onWalletTypeChange(item.value)}
                       className={cn(
-                        'h-auto min-h-20 flex-col items-start justify-start gap-1 rounded-xl p-3 text-left whitespace-normal',
+                        compact
+                          ? 'h-auto min-h-16 flex-col items-start justify-start gap-1 rounded-xl px-3 py-2.5 text-left whitespace-normal'
+                          : 'h-auto min-h-20 flex-col items-start justify-start gap-1 rounded-xl p-3 text-left whitespace-normal',
                         selectedWalletType === item.value
                           ? 'border-foreground bg-foreground/5'
                           : 'border-muted'
@@ -254,7 +260,12 @@ export function RechargeFormCard({
                       <span className='text-sm font-semibold'>
                         {item.title}
                       </span>
-                      <span className='text-muted-foreground text-xs leading-relaxed'>
+                      <span
+                        className={cn(
+                          'text-muted-foreground text-xs leading-relaxed',
+                          compact && 'line-clamp-2'
+                        )}
+                      >
                         {item.description}
                       </span>
                     </Button>
@@ -264,10 +275,17 @@ export function RechargeFormCard({
 
               {presetAmounts.length > 0 && (
                 <div className='space-y-2.5 sm:space-y-3'>
-                  <Label className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>
+                  <Label className={sectionLabelClassName}>
                     {t('Amount')}
                   </Label>
-                  <div className='grid grid-cols-2 gap-1.5 sm:gap-3 md:grid-cols-4'>
+                  <div
+                    className={cn(
+                      'grid gap-1.5 sm:gap-3',
+                      compact
+                        ? 'grid-cols-2 md:grid-cols-3 xl:grid-cols-5'
+                        : 'grid-cols-2 md:grid-cols-4'
+                    )}
+                  >
                     {presetAmounts.map((preset, index) => {
                       const discount =
                         selectedWalletType === 'claude'
@@ -293,7 +311,9 @@ export function RechargeFormCard({
                           key={index}
                           variant='outline'
                           className={cn(
-                            'hover:border-foreground flex min-h-16 flex-col items-start rounded-lg px-3 py-2.5 text-left whitespace-normal sm:min-h-[72px] sm:p-4',
+                            compact
+                              ? 'hover:border-foreground flex min-h-14 flex-col items-start rounded-lg px-3 py-2.5 text-left whitespace-normal sm:min-h-16'
+                              : 'hover:border-foreground flex min-h-16 flex-col items-start rounded-lg px-3 py-2.5 text-left whitespace-normal sm:min-h-[72px] sm:p-4',
                             selectedPreset === preset.value
                               ? 'border-foreground bg-foreground/5'
                               : 'border-muted'
@@ -305,7 +325,7 @@ export function RechargeFormCard({
                               {formatNumber(displayValue)}
                             </div>
                             {hasDiscount && (
-                              <div className='text-xs font-medium text-green-600'>
+                              <div className='text-success text-xs font-medium'>
                                 {getDiscountLabel(discount)}
                               </div>
                             )}
@@ -313,7 +333,7 @@ export function RechargeFormCard({
                           <div className='text-muted-foreground mt-1.5 w-full text-xs sm:mt-2'>
                             实付 {formatCurrency(actualPrice)}
                             {hasDiscount && savedAmount > 0 && (
-                              <span className='text-green-600'>
+                              <span className='text-success'>
                                 {' '}
                                 省 {formatCurrency(savedAmount)}
                               </span>
@@ -329,11 +349,18 @@ export function RechargeFormCard({
               <div className='space-y-2.5 sm:space-y-3'>
                 <Label
                   htmlFor='topup-amount'
-                  className='text-muted-foreground text-xs font-medium tracking-wider uppercase'
+                  className={sectionLabelClassName}
                 >
                   {t('Custom Amount')}
                 </Label>
-                <div className='grid grid-cols-[minmax(0,1fr)_minmax(110px,0.55fr)] gap-2 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center'>
+                <div
+                  className={cn(
+                    'grid gap-2',
+                    compact
+                      ? 'grid-cols-[minmax(0,1fr)_minmax(118px,0.42fr)]'
+                      : 'grid-cols-[minmax(0,1fr)_minmax(110px,0.55fr)] lg:grid-cols-[minmax(0,1fr)_auto] lg:items-center'
+                  )}
+                >
                   <Input
                     id='topup-amount'
                     type='number'
@@ -341,7 +368,10 @@ export function RechargeFormCard({
                     onChange={(e) => handleAmountChange(e.target.value)}
                     min={effectiveMinTopup}
                     placeholder={`最低 ${effectiveMinTopup}`}
-                    className='h-9 text-base sm:h-10 sm:text-lg'
+                    className={cn(
+                      'text-base',
+                      compact ? 'h-10 sm:text-base' : 'h-9 sm:h-10 sm:text-lg'
+                    )}
                   />
                   <div className='bg-muted/30 flex min-h-9 items-center justify-between gap-2 rounded-md border px-3 lg:min-w-52'>
                     <span className='text-muted-foreground truncate text-xs'>
@@ -359,11 +389,16 @@ export function RechargeFormCard({
               </div>
 
               <div className='space-y-2.5 sm:space-y-3'>
-                <Label className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>
+                <Label className={sectionLabelClassName}>
                   {t('Payment Method')}
                 </Label>
                 {hasStandardPaymentMethods ? (
-                  <div className='grid grid-cols-2 gap-1.5 sm:gap-3 lg:grid-cols-3'>
+                  <div
+                    className={cn(
+                      'grid grid-cols-2 gap-1.5 sm:gap-3',
+                      compact ? 'lg:grid-cols-4' : 'lg:grid-cols-3'
+                    )}
+                  >
                     {topupInfo?.pay_methods?.map((method) => {
                       const minTopup =
                         selectedWalletType === 'claude'
@@ -424,10 +459,15 @@ export function RechargeFormCard({
                 hasWaffoPaymentMethods &&
                 onWaffoMethodSelect && (
                   <div className='space-y-2.5 sm:space-y-3'>
-                    <Label className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>
+                    <Label className={sectionLabelClassName}>
                       {t('Waffo Payment')}
                     </Label>
-                    <div className='grid grid-cols-2 gap-1.5 sm:gap-3 lg:grid-cols-3'>
+                    <div
+                      className={cn(
+                        'grid grid-cols-2 gap-1.5 sm:gap-3',
+                        compact ? 'lg:grid-cols-4' : 'lg:grid-cols-3'
+                      )}
+                    >
                       {waffoPayMethods?.map((method, index) => {
                         const loadingKey = `waffo-${index}`
                         const waffoMin =
@@ -496,7 +536,7 @@ export function RechargeFormCard({
         creemProducts.length > 0 &&
         onCreemProductSelect && (
           <div className='space-y-2.5 border-t pt-4 sm:space-y-3 sm:pt-6'>
-            <Label className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>
+            <Label className={sectionLabelClassName}>
               {t('Creem Payment')}
             </Label>
             <CreemProductsSection
@@ -508,12 +548,17 @@ export function RechargeFormCard({
 
       {/* Redemption Code Section */}
       {showRedemptionSection && redemptionEnabled ? (
-        <div className='space-y-2.5 border-t pt-4 sm:space-y-3 sm:pt-6'>
+        <div
+          className={cn(
+            'space-y-2.5 border-t pt-4 sm:space-y-3 sm:pt-6',
+            compact && 'pt-3 sm:pt-4'
+          )}
+        >
           <div className='flex items-center gap-2'>
             <Gift className='text-muted-foreground h-4 w-4' />
             <Label
               htmlFor='redemption-code'
-              className='text-muted-foreground text-xs font-medium tracking-wider uppercase'
+              className={sectionLabelClassName}
             >
               {t('Have a Code?')}
             </Label>

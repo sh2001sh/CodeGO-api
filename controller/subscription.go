@@ -26,6 +26,12 @@ type BillingPreferenceRequest struct {
 	SubscriptionOrderIds []int    `json:"subscription_order_ids"`
 }
 
+type SubscriptionClaudeConversionRequest struct {
+	SubscriptionId int    `json:"subscription_id"`
+	SourceQuota    int64  `json:"source_quota"`
+	RequestId      string `json:"request_id"`
+}
+
 type AdminUpsertSubscriptionPlanRequest struct {
 	Plan model.SubscriptionPlan `json:"plan"`
 }
@@ -207,10 +213,26 @@ func GetSubscriptionSelf(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	claudeQuota, err := model.GetUserClaudeQuota(userId, false)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	conversionConfig := model.GetSubscriptionClaudeConversionConfig()
+	recentConversions, err := model.ListRecentSubscriptionClaudeConversions(userId, 10)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
 	activeSubscriptionIds := make([]int, 0, len(activeSubscriptions))
 	activeSubscriptionSet := make(map[int]struct{}, len(activeSubscriptions))
 	for _, item := range activeSubscriptions {
 		if item.Subscription != nil && item.Subscription.Id > 0 {
+			plan, planErr := model.GetSubscriptionPlanById(item.Subscription.PlanId)
+			if planErr == nil && plan != nil {
+				preview := model.BuildSubscriptionClaudeConversionPreview(plan, item.Subscription)
+				item.Subscription.ConversionPreview = &preview
+			}
 			activeSubscriptionIds = append(activeSubscriptionIds, item.Subscription.Id)
 			activeSubscriptionSet[item.Subscription.Id] = struct{}{}
 		}
@@ -238,6 +260,9 @@ func GetSubscriptionSelf(c *gin.Context) {
 		"subscriptions":          activeSubscriptions,
 		"all_subscriptions":      allSubscriptions,
 		"reset_opportunity":      resetOpportunity,
+		"claude_quota":           claudeQuota,
+		"conversion_config":      conversionConfig,
+		"recent_conversions":     recentConversions,
 	})
 }
 
@@ -256,6 +281,46 @@ func UseSubscriptionResetOpportunity(c *gin.Context) {
 		"period_used_before":  result.PeriodUsedBefore,
 		"period_used_after":   result.PeriodUsedAfter,
 		"cleared_used_amount": result.ClearedUsedAmount,
+	})
+}
+
+func ListSubscriptionClaudeConversions(c *gin.Context) {
+	userId := c.GetInt("id")
+	items, err := model.ListRecentSubscriptionClaudeConversions(userId, 20)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	common.ApiSuccess(c, gin.H{
+		"items":  items,
+		"config": model.GetSubscriptionClaudeConversionConfig(),
+	})
+}
+
+func CreateSubscriptionClaudeConversion(c *gin.Context) {
+	userId := c.GetInt("id")
+	var req SubscriptionClaudeConversionRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		common.ApiErrorMsg(c, "invalid request")
+		return
+	}
+	result, err := model.ConvertSubscriptionQuotaToClaudeQuota(req.RequestId, userId, req.SubscriptionId, req.SourceQuota)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	if planInfo, planErr := model.GetSubscriptionPlanInfoByUserSubscriptionId(req.SubscriptionId); planErr == nil && planInfo != nil {
+		model.RecordLog(userId, model.LogTypeTopup, model.BuildSubscriptionClaudeConversionLog(planInfo.PlanTitle, result.SourceQuota, result.TargetClaudeQuota))
+	}
+	common.ApiSuccess(c, gin.H{
+		"subscription_id":      result.SubscriptionId,
+		"source_quota":         result.SourceQuota,
+		"target_claude_quota":  result.TargetClaudeQuota,
+		"claude_quota_after":   result.ClaudeQuotaAfter,
+		"amount_used_after":    result.AmountUsedAfter,
+		"period_used_after":    result.PeriodUsedAfter,
+		"conversion":           result.Conversion,
+		"config":               result.Config,
 	})
 }
 

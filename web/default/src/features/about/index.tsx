@@ -26,7 +26,7 @@ import { getAboutContent } from './api'
 
 function SupportGroupCard() {
   return (
-    <div className='overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950'>
+    <div className='overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-sm dark:border-border dark:bg-card'>
       <div className='grid gap-6 p-6 md:grid-cols-[minmax(0,1fr)_240px] md:items-center'>
         <div className='space-y-3'>
           <div className='text-xs font-semibold uppercase tracking-[0.24em] text-sky-600 dark:text-sky-300'>

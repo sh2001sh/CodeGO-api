@@ -23,7 +23,6 @@ import {
   createContext,
   type ReactNode,
   useContext,
-  useEffect,
   useState,
 } from 'react'
 import { ChevronDownIcon } from 'lucide-react'
@@ -163,11 +162,15 @@ export const WebPreviewUrl = ({
   const { t } = useTranslation()
   const { url, setUrl } = useWebPreview()
   const [inputValue, setInputValue] = useState(url)
+  const [syncedUrl, setSyncedUrl] = useState(url)
 
-  // Sync input value with context URL when it changes externally
-  useEffect(() => {
+  // Sync input value with context URL when it changes externally.
+  // Adjusting state during render (instead of in an effect) avoids the
+  // extra commit + cascading re-render that setState-in-effect causes.
+  if (url !== syncedUrl) {
+    setSyncedUrl(url)
     setInputValue(url)
-  }, [url])
+  }
 
   const handleChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setInputValue(event.target.value)

@@ -73,6 +73,13 @@ export const userSubscriptionSchema = z.object({
   model_limits: z.string().optional(),
   model_usage: z.string().optional(),
   next_reset_time: z.number().optional(),
+  conversion_preview: z
+    .object({
+      eligible: z.boolean(),
+      max_source_quota: z.number(),
+      preview_claude_quota: z.number(),
+    })
+    .optional(),
 })
 
 export type UserSubscription = z.infer<typeof userSubscriptionSchema>
@@ -98,6 +105,38 @@ export interface SubscriptionResetOpportunityUseResult {
   period_used_before: number
   period_used_after: number
   cleared_used_amount: number
+}
+
+export interface SubscriptionClaudeConversionConfig {
+  enabled: boolean
+  ratio_numerator: number
+  ratio_denominator: number
+  exclude_day_pass: boolean
+}
+
+export interface SubscriptionClaudeConversionRecord {
+  id: number
+  user_id: number
+  user_subscription_id: number
+  request_id: string
+  status: string
+  source_quota: number
+  target_claude_quota: number
+  ratio_numerator: number
+  ratio_denominator: number
+  created_at: number
+  updated_at: number
+}
+
+export interface SubscriptionClaudeConversionResult {
+  subscription_id: number
+  source_quota: number
+  target_claude_quota: number
+  claude_quota_after: number
+  amount_used_after: number
+  period_used_after: number
+  conversion: SubscriptionClaudeConversionRecord
+  config: SubscriptionClaudeConversionConfig
 }
 
 // ============================================================================
@@ -173,6 +212,9 @@ export interface SelfSubscriptionData {
   subscriptions: UserSubscriptionRecord[]
   all_subscriptions: UserSubscriptionRecord[]
   reset_opportunity: SubscriptionResetOpportunitySummary
+  claude_quota: number
+  conversion_config: SubscriptionClaudeConversionConfig
+  recent_conversions: SubscriptionClaudeConversionRecord[]
 }
 
 export type FundingSource = 'blind_box' | 'subscription' | 'wallet'

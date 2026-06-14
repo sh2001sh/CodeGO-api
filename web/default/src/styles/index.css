@@ -44,7 +44,24 @@ For commercial licensing, please contact support@quantumnous.com
     @apply overflow-x-hidden font-sans;
   }
   body {
-    @apply bg-background text-foreground has-[div[data-variant='inset']]:bg-sidebar min-h-svh w-full font-sans;
+    @apply bg-background text-foreground has-[div[data-variant='inset']]:bg-sidebar min-h-svh w-full font-sans antialiased;
+    background-image:
+      radial-gradient(
+        circle at 12% 10%,
+        color-mix(in oklch, var(--primary) 10%, transparent) 0%,
+        transparent 24%
+      ),
+      radial-gradient(
+        circle at 88% 12%,
+        color-mix(in oklch, var(--accent) 16%, transparent) 0%,
+        transparent 22%
+      ),
+      radial-gradient(
+        circle at 50% 100%,
+        color-mix(in oklch, white 76%, var(--accent) 24%) 0%,
+        transparent 36%
+      );
+    background-attachment: fixed;
   }
 
   /* Keep sticky headers stable while primitives lock body scrolling. */
@@ -65,6 +82,132 @@ For commercial licensing, please contact support@quantumnous.com
     textarea {
       font-size: 16px !important;
     }
+  }
+}
+
+@layer components {
+  .app-page-shell {
+    @apply border border-white/65 bg-card text-card-foreground rounded-[24px] shadow-[0_18px_40px_rgba(24,32,43,0.08)] backdrop-blur-xl;
+    box-shadow:
+      0 1px 0 rgb(255 255 255 / 0.72) inset,
+      0 18px 40px rgb(24 32 43 / 0.08);
+  }
+
+  .dark .app-page-shell {
+    @apply border-white/10;
+    box-shadow:
+      0 1px 0 rgb(255 255 255 / 0.06) inset,
+      0 22px 52px rgb(0 0 0 / 0.3);
+  }
+
+  .app-subtle-panel {
+    @apply rounded-[20px] border border-white/55 bg-white/54 backdrop-blur-lg;
+    box-shadow:
+      0 1px 0 rgb(255 255 255 / 0.68) inset,
+      0 10px 28px rgb(24 32 43 / 0.05);
+  }
+
+  .dark .app-subtle-panel {
+    @apply border-white/10 bg-white/[0.045];
+    box-shadow:
+      0 1px 0 rgb(255 255 255 / 0.05) inset,
+      0 12px 30px rgb(0 0 0 / 0.22);
+  }
+
+  .app-section-kicker {
+    @apply text-muted-foreground text-[11px] font-semibold tracking-[0.16em];
+  }
+
+  .overview-glass-card {
+    @apply rounded-[24px] border border-white/70 bg-white/72 shadow-[0_22px_54px_rgba(24,32,43,0.08)] backdrop-blur-2xl;
+    box-shadow:
+      0 1px 0 rgb(255 255 255 / 0.75) inset,
+      0 22px 54px rgb(24 32 43 / 0.08);
+  }
+
+  .dark .overview-glass-card {
+    @apply border-white/10 bg-white/[0.05];
+    box-shadow:
+      0 1px 0 rgb(255 255 255 / 0.06) inset,
+      0 24px 58px rgb(0 0 0 / 0.3);
+  }
+
+  .overview-soft-card {
+    @apply rounded-[20px] border border-white/60 bg-white/56 backdrop-blur-xl;
+    box-shadow:
+      0 1px 0 rgb(255 255 255 / 0.65) inset,
+      0 12px 32px rgb(24 32 43 / 0.05);
+  }
+
+  .dark .overview-soft-card {
+    @apply border-white/10 bg-white/[0.04];
+    box-shadow:
+      0 1px 0 rgb(255 255 255 / 0.05) inset,
+      0 16px 40px rgb(0 0 0 / 0.24);
+  }
+
+  .overview-hero-card {
+    @apply relative overflow-hidden rounded-[26px] border border-white/72 bg-white/72 shadow-[0_24px_58px_rgba(24,32,43,0.08)] backdrop-blur-2xl;
+    background-image:
+      radial-gradient(circle at 12% 12%, rgb(255 255 255 / 0.92), transparent 26%),
+      radial-gradient(circle at 78% 18%, color-mix(in oklch, var(--accent) 30%, transparent), transparent 28%),
+      radial-gradient(circle at 90% 0%, color-mix(in oklch, var(--primary) 18%, transparent), transparent 22%),
+      linear-gradient(
+        140deg,
+        rgb(255 255 255 / 0.78) 0%,
+        color-mix(in oklch, white 90%, var(--accent) 10%) 44%,
+        color-mix(in oklch, white 94%, var(--primary) 6%) 100%
+      );
+    box-shadow:
+      0 1px 0 rgb(255 255 255 / 0.75) inset,
+      0 24px 58px rgb(24 32 43 / 0.08);
+  }
+
+  .dark .overview-hero-card {
+    @apply border-white/10 bg-white/[0.05];
+    background-image:
+      radial-gradient(circle at 18% 12%, rgb(255 255 255 / 0.08), transparent 24%),
+      radial-gradient(circle at 78% 16%, color-mix(in oklch, var(--accent) 18%, transparent), transparent 26%),
+      radial-gradient(circle at 92% 0%, color-mix(in oklch, var(--primary) 14%, transparent), transparent 20%),
+      linear-gradient(
+        140deg,
+        rgb(18 24 32 / 0.88) 0%,
+        rgb(22 28 38 / 0.84) 42%,
+        rgb(25 34 46 / 0.82) 100%
+      );
+    box-shadow:
+      0 1px 0 rgb(255 255 255 / 0.06) inset,
+      0 24px 58px rgb(0 0 0 / 0.3);
+  }
+
+  .overview-panel-backdrop {
+    background-image:
+      radial-gradient(circle at top left, color-mix(in oklch, var(--accent) 14%, transparent), transparent 24%),
+      radial-gradient(circle at bottom right, color-mix(in oklch, var(--primary) 12%, transparent), transparent 28%);
+  }
+
+  .ios-floating-shell {
+    @apply rounded-[28px] border border-white/65 bg-white/66 backdrop-blur-2xl;
+    box-shadow:
+      0 1px 0 rgb(255 255 255 / 0.72) inset,
+      0 28px 72px rgb(24 32 43 / 0.1);
+  }
+
+  .dark .ios-floating-shell {
+    @apply border-white/10 bg-white/[0.045];
+    box-shadow:
+      0 1px 0 rgb(255 255 255 / 0.06) inset,
+      0 28px 72px rgb(0 0 0 / 0.34);
+  }
+
+  .ios-pill {
+    @apply rounded-full border border-white/65 bg-white/62 backdrop-blur-xl;
+    box-shadow: 0 1px 0 rgb(255 255 255 / 0.7) inset;
+  }
+
+  .dark .ios-pill {
+    @apply border-white/10 bg-white/[0.04];
+    box-shadow: 0 1px 0 rgb(255 255 255 / 0.05) inset;
   }
 }
 
@@ -458,17 +601,18 @@ For commercial licensing, please contact support@quantumnous.com
   [data-slot='card'] {
     transition:
       transform 150ms ease,
-      box-shadow 150ms ease;
+      box-shadow 150ms ease,
+      border-color 150ms ease;
   }
 
   @media (min-width: 641px) {
     [data-slot='card']:hover {
       transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgb(0 0 0 / 0.06);
+      box-shadow: 0 10px 24px rgb(31 35 43 / 0.08);
     }
 
     .dark [data-slot='card']:hover {
-      box-shadow: 0 4px 12px rgb(0 0 0 / 0.3);
+      box-shadow: 0 12px 28px rgb(0 0 0 / 0.34);
     }
   }
 

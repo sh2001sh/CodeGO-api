@@ -16,20 +16,18 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import i18next from 'i18next'
 import { toast } from 'sonner'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 import { reportGamificationShareLink } from '@/features/gamification/api'
-import { getAffiliateRewardsOverview, transferAffiliateQuota } from '../api'
+import { getAffiliateRewardsOverview } from '../api'
 import { generateAffiliateLink } from '../lib'
 
 const AFFILIATE_OVERVIEW_QUERY_KEY = ['wallet', 'affiliate', 'overview'] as const
 
 export function useAffiliate() {
   const queryClient = useQueryClient()
-  const [transferring, setTransferring] = useState(false)
   const { copyToClipboard } = useCopyToClipboard()
 
   const overviewQuery = useQuery({
@@ -64,38 +62,12 @@ export function useAffiliate() {
     }
   }, [affiliateLink, copyToClipboard, queryClient])
 
-  const transferQuota = useCallback(async (quota: number): Promise<boolean> => {
-    try {
-      setTransferring(true)
-      const response = await transferAffiliateQuota({ quota })
-      if (response.success) {
-        toast.success(response.message || i18next.t('Transfer successful'))
-        await queryClient.invalidateQueries({
-          queryKey: AFFILIATE_OVERVIEW_QUERY_KEY,
-        })
-        await queryClient.invalidateQueries({
-          queryKey: ['dashboard', 'overview', 'affiliate'],
-        })
-        return true
-      }
-      toast.error(response.message || i18next.t('Transfer failed'))
-      return false
-    } catch {
-      toast.error(i18next.t('Transfer failed'))
-      return false
-    } finally {
-      setTransferring(false)
-    }
-  }, [queryClient])
-
   return {
     overview: overviewQuery.data,
     affiliateCode,
     affiliateLink,
     loading: overviewQuery.isLoading,
-    transferring,
     copyAffiliateLink,
-    transferQuota,
     refetch: overviewQuery.refetch,
   }
 }

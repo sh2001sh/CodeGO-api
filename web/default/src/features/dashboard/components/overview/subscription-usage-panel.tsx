@@ -54,12 +54,37 @@ import type {
   SelfSubscriptionData,
   UserSubscriptionRecord,
 } from '@/features/subscriptions/types'
+import { SubscriptionClaudeConversionCard } from '@/features/wallet/components/subscription-claude-conversion-card'
 
 const ALL_FUNDING_SOURCES: FundingSource[] = [
   'blind_box',
   'subscription',
   'wallet',
 ]
+
+const EMPTY_SUBSCRIPTION_DATA = {
+  billing_preference: 'subscription_first',
+  funding_source_order: ['blind_box', 'subscription', 'wallet'],
+  subscription_order_ids: [],
+  subscriptions: [],
+  all_subscriptions: [],
+  claude_quota: 0,
+  conversion_config: {
+    enabled: true,
+    ratio_numerator: 1,
+    ratio_denominator: 10,
+    exclude_day_pass: true,
+  },
+  recent_conversions: [],
+  reset_opportunity: {
+    available_count: 0,
+    earned_total: 0,
+    used_total: 0,
+    used_this_month: false,
+    current_month: '',
+    last_used_month: '',
+  },
+} satisfies SelfSubscriptionData
 
 function clampPercent(used: number, total: number): number {
   if (total <= 0) return 0
@@ -156,36 +181,8 @@ export function SubscriptionUsagePanel() {
     queryFn: async () => {
       const result = await getSelfSubscriptionFull()
       return result.success
-        ? (result.data ?? {
-            billing_preference: 'subscription_first',
-            funding_source_order: ['blind_box', 'subscription', 'wallet'],
-            subscription_order_ids: [],
-            subscriptions: [],
-            all_subscriptions: [],
-            reset_opportunity: {
-              available_count: 0,
-              earned_total: 0,
-              used_total: 0,
-              used_this_month: false,
-              current_month: '',
-              last_used_month: '',
-            },
-          })
-        : ({
-            billing_preference: 'subscription_first',
-            funding_source_order: ['blind_box', 'subscription', 'wallet'],
-            subscription_order_ids: [],
-            subscriptions: [],
-            all_subscriptions: [],
-            reset_opportunity: {
-              available_count: 0,
-              earned_total: 0,
-              used_total: 0,
-              used_this_month: false,
-              current_month: '',
-              last_used_month: '',
-            },
-          } satisfies SelfSubscriptionData)
+        ? (result.data ?? EMPTY_SUBSCRIPTION_DATA)
+        : EMPTY_SUBSCRIPTION_DATA
     },
     staleTime: 60 * 1000,
   })
@@ -324,7 +321,7 @@ export function SubscriptionUsagePanel() {
   }
 
   return (
-    <div className='bg-card overflow-hidden rounded-2xl border shadow-xs'>
+    <div className='app-page-shell overflow-hidden shadow-none'>
       <div className='flex flex-wrap items-start justify-between gap-3 border-b p-4 sm:p-5'>
         <div className='flex min-w-0 items-start gap-3'>
           <span className='bg-primary/10 text-primary flex size-10 shrink-0 items-center justify-center rounded-xl'>
@@ -358,11 +355,11 @@ export function SubscriptionUsagePanel() {
       </div>
 
       <div className='space-y-4 p-4 sm:p-5'>
-        <div className='rounded-2xl border bg-slate-50/70 p-4'>
+        <div className='app-subtle-panel p-4'>
           <div className='flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between'>
             <div className='space-y-2'>
-              <div className='flex items-center gap-2 text-sm font-semibold text-slate-950'>
-                <ListOrdered className='h-4 w-4 text-sky-600' />
+              <div className='text-foreground flex items-center gap-2 text-sm font-semibold'>
+                <ListOrdered className='text-primary h-4 w-4' />
                 扣费顺序
               </div>
               <p className='text-muted-foreground text-sm leading-6'>
@@ -394,17 +391,17 @@ export function SubscriptionUsagePanel() {
 
           <div className='mt-4 grid gap-4 xl:grid-cols-[320px_minmax(0,1fr)]'>
             <div className='space-y-3'>
-              <div className='text-sm font-medium text-slate-900'>
+              <div className='text-foreground text-sm font-medium'>
                 扣费来源顺序
               </div>
               <div className='space-y-2'>
                 {draftFundingSourceOrder.map((source, index) => (
                   <div
                     key={source}
-                    className='flex items-center justify-between gap-3 rounded-2xl border bg-white px-4 py-3'
+                    className='border-border bg-background/80 flex items-center justify-between gap-3 rounded-2xl border px-4 py-3'
                   >
                     <div className='min-w-0'>
-                      <div className='text-sm font-semibold text-slate-950'>
+                      <div className='text-foreground text-sm font-semibold'>
                         {index + 1}.{' '}
                         {getFundingSourceLabel(source, (value) =>
                           String(value)
@@ -418,7 +415,7 @@ export function SubscriptionUsagePanel() {
                     </div>
                     <div className='flex items-center gap-2'>
                       {source === 'blind_box' ? (
-                        <span className='rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] text-slate-600'>
+                        <span className='border-border bg-background text-muted-foreground rounded-full border px-2 py-0.5 text-[11px]'>
                           固定启用
                         </span>
                       ) : (
@@ -456,8 +453,8 @@ export function SubscriptionUsagePanel() {
                 ))}
               </div>
               {disabledFundingSources.length > 0 ? (
-                <div className='rounded-2xl border border-dashed px-4 py-3'>
-                  <div className='text-sm font-medium text-slate-900'>
+                <div className='border-border/70 bg-background/60 rounded-2xl border border-dashed px-4 py-3'>
+                  <div className='text-foreground text-sm font-medium'>
                     已停用来源
                   </div>
                   <div className='mt-3 flex flex-wrap gap-2'>
@@ -481,7 +478,7 @@ export function SubscriptionUsagePanel() {
             </div>
 
             <div className='space-y-3'>
-              <div className='text-sm font-medium text-slate-900'>
+              <div className='text-foreground text-sm font-medium'>
                 订阅扣费顺序
               </div>
               {!subscriptionModeEnabled ? (
@@ -505,15 +502,15 @@ export function SubscriptionUsagePanel() {
                     return (
                       <div
                         key={subscription.id}
-                        className='flex items-center justify-between gap-3 rounded-2xl border bg-white px-4 py-3'
+                        className='border-border bg-background/80 flex items-center justify-between gap-3 rounded-2xl border px-4 py-3'
                       >
                         <div className='min-w-0'>
                           <div className='flex flex-wrap items-center gap-2'>
-                            <span className='text-sm font-semibold text-slate-950'>
+                            <span className='text-foreground text-sm font-semibold'>
                               {index + 1}.{' '}
                               {meta?.title || `套餐 #${subscription.id}`}
                             </span>
-                            <span className='rounded-full border border-sky-200 bg-sky-50 px-2 py-0.5 text-[11px] text-sky-700'>
+                            <span className='border-border bg-background text-muted-foreground rounded-full border px-2 py-0.5 text-[11px]'>
                               {meta?.subtitle || '订阅'}
                             </span>
                           </div>
@@ -522,13 +519,13 @@ export function SubscriptionUsagePanel() {
                             {formatDateTime(subscription.end_time)}
                           </p>
                           {usageStatus.note ? (
-                            <p className='mt-1 text-xs text-amber-700'>
+                            <p className='text-warning mt-1 text-xs'>
                               {usageStatus.note}
                             </p>
                           ) : null}
                         </div>
                         <div className='flex items-center gap-2'>
-                          <span className='rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] text-slate-600'>
+                          <span className='border-border bg-background text-muted-foreground rounded-full border px-2 py-0.5 text-[11px]'>
                             {usageStatus.label}
                           </span>
                           <Button
@@ -567,7 +564,7 @@ export function SubscriptionUsagePanel() {
           </div>
         </div>
 
-        <div className='text-muted-foreground rounded-2xl border border-dashed px-4 py-3 text-sm'>
+        <div className='border-border/70 bg-background/60 text-muted-foreground rounded-2xl border border-dashed px-4 py-3 text-sm'>
           总消耗显示的是账号累计用量；下面的卡片显示的是每份订阅自己的额度进度。
         </div>
 
@@ -597,6 +594,16 @@ export function SubscriptionUsagePanel() {
           </div>
         ) : (
           <div className='grid gap-3 xl:grid-cols-2'>
+            <SubscriptionClaudeConversionCard
+              mode='dashboard'
+              subscriptionData={subscriptionData}
+              planTitles={Object.fromEntries(
+                Array.from(planMetaMap.entries()).map(([id, value]) => [
+                  id,
+                  { title: value.title || `套餐 #${id}`, subtitle: value.subtitle || '订阅' },
+                ])
+              )}
+            />
             {orderedSubscriptions.map((record) => {
               const subscription = record.subscription
               const planMeta = planMetaMap.get(subscription?.plan_id)
@@ -662,12 +669,12 @@ function SubscriptionCard(props: {
   const showPeriodQuota = !props.isMonthlyPlan && props.periodAmount > 0
 
   return (
-    <div className='bg-background/60 rounded-xl border p-4'>
+    <div className='app-subtle-panel p-4'>
       <div className='flex flex-wrap items-start justify-between gap-2'>
         <div>
           <div className='flex flex-wrap items-center gap-2'>
             <div className='font-medium'>{props.planTitle}</div>
-            <span className='rounded-full border border-slate-200 bg-white px-2 py-0.5 text-[11px] text-slate-600'>
+            <span className='border-border bg-background text-muted-foreground rounded-full border px-2 py-0.5 text-[11px]'>
               {props.planSubtitle}
             </span>
           </div>
@@ -675,12 +682,12 @@ function SubscriptionCard(props: {
             约剩 {props.remainDays} 天
           </div>
         </div>
-        <span className='rounded-full bg-emerald-50 px-2.5 py-1 text-xs font-medium text-emerald-700'>
+        <span className='border-border bg-background/80 text-foreground rounded-full border px-2.5 py-1 text-xs font-medium'>
           {usageStatus.label}
         </span>
       </div>
       {usageStatus.note ? (
-        <div className='mt-2 text-xs text-amber-700'>{usageStatus.note}</div>
+        <div className='text-warning mt-2 text-xs'>{usageStatus.note}</div>
       ) : null}
 
       <div className='mt-4 space-y-3'>
@@ -691,7 +698,7 @@ function SubscriptionCard(props: {
             total={props.periodAmount}
             remain={props.periodRemain}
             percent={props.periodPercent}
-            toneClass='[&_[data-slot=progress-indicator]]:bg-emerald-500'
+            toneClass='[&_[data-slot=progress-indicator]]:bg-chart-4'
           />
         )}
 
@@ -702,7 +709,7 @@ function SubscriptionCard(props: {
           remain={props.totalRemain}
           percent={props.totalPercent}
           unlimitedLabel='无限额度'
-          toneClass='[&_[data-slot=progress-indicator]]:bg-sky-500'
+          toneClass='[&_[data-slot=progress-indicator]]:bg-primary'
         />
       </div>
 
@@ -758,7 +765,7 @@ function QuotaProgressBlock(props: {
 
 function InfoItem(props: { label: string; value: string }) {
   return (
-    <div className='rounded-lg border px-3 py-2'>
+    <div className='border-border/70 bg-background/72 rounded-lg border px-3 py-2'>
       <div className='text-muted-foreground text-[11px] font-medium'>
         {props.label}
       </div>

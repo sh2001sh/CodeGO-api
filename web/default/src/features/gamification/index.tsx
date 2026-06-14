@@ -109,11 +109,11 @@ function CompactCompanionOverview(props: { companion: CompanionSummary }) {
     : `${props.companion.progress_current}/${props.companion.progress_target}`
 
   return (
-    <div className='rounded-2xl border bg-[linear-gradient(180deg,rgba(255,248,237,0.96),rgba(255,255,255,0.98))] shadow-xs dark:bg-[linear-gradient(180deg,rgba(42,26,18,0.9),rgba(17,24,39,0.96))]'>
+    <div className='rounded-[22px] border border-border/80 bg-card/92 shadow-[0_14px_36px_rgba(31,35,43,0.05)] dark:bg-card/92 dark:shadow-[0_16px_36px_rgba(0,0,0,0.24)]'>
       <div className='flex h-full flex-col gap-4 p-4 sm:p-5'>
         <div className='flex items-start justify-between gap-3'>
           <div>
-            <div className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>
+            <div className='text-muted-foreground text-xs font-medium tracking-[0.22em] uppercase'>
               {t('Companion dex')}
             </div>
             <div className='mt-1 text-lg font-semibold'>
@@ -131,7 +131,7 @@ function CompactCompanionOverview(props: { companion: CompanionSummary }) {
         </div>
 
         <div className='grid grid-cols-[88px_minmax(0,1fr)] gap-4'>
-          <div className='flex h-[88px] w-[88px] items-center justify-center rounded-[22px] bg-white/85 p-2 shadow-[0_10px_24px_rgba(15,23,42,0.08)] dark:bg-slate-950/50'>
+          <div className='app-subtle-panel flex h-[88px] w-[88px] items-center justify-center p-2'>
             {equippedProfile ? (
               <PixelPetSprite
                 id={equippedProfile.id}
@@ -156,7 +156,7 @@ function CompactCompanionOverview(props: { companion: CompanionSummary }) {
             </div>
 
             <div className='grid gap-2 sm:grid-cols-2'>
-              <div className='bg-background/70 rounded-xl border px-3 py-2.5'>
+              <div className='app-subtle-panel px-3 py-2.5'>
                 <div className='text-muted-foreground text-[11px] font-medium'>
                   {t('Current buff')}
                 </div>
@@ -166,7 +166,7 @@ function CompactCompanionOverview(props: { companion: CompanionSummary }) {
                     : t('No Active')}
                 </div>
               </div>
-              <div className='bg-background/70 rounded-xl border px-3 py-2.5'>
+              <div className='app-subtle-panel px-3 py-2.5'>
                 <div className='text-muted-foreground text-[11px] font-medium'>
                   {t('Dex progress')}
                 </div>

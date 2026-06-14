@@ -54,6 +54,17 @@ export function formatCurrencyUSD(value: number | null | undefined): string {
   return formatCurrencyFromUSD(value == null ? null : (value as number))
 }
 
+export function formatUsdAmount(value: number | null | undefined): string {
+  if (value == null || Number.isNaN(value as number)) return '-'
+  return new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency: 'USD',
+    currencyDisplay: 'narrowSymbol',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: Math.abs(value as number) >= 1 ? 2 : 4,
+  }).format(value as number)
+}
+
 // ============================================================================
 // Quota Formatting (500,000 units = $1)
 // ============================================================================
@@ -107,6 +118,11 @@ export function quotaUnitsToDollars(units: number): number {
     meta.kind === 'currency' || meta.kind === 'custom' ? meta.exchangeRate : 1
 
   return usdAmount * exchangeRate
+}
+
+export function quotaUnitsToUsd(units: number): number {
+  const { config } = getCurrencyDisplay()
+  return units / config.quotaPerUnit
 }
 
 // ============================================================================

@@ -1,8 +1,6 @@
 package model
 
 import (
-	"errors"
-	"fmt"
 	"strings"
 
 	"github.com/QuantumNous/new-api/common"
@@ -97,47 +95,5 @@ func countSuccessfulPaidPurchasesTx(tx *gorm.DB, userId int) (int64, error) {
 }
 
 func AwardReferralFirstPurchaseBonusTx(tx *gorm.DB, inviteeId int, purchaseType string, orderSourceType string, orderSourceId string) error {
-	if tx == nil {
-		tx = DB
-	}
-	if inviteeId <= 0 {
-		return nil
-	}
-	purchaseType = strings.TrimSpace(purchaseType)
-	rewardQuota := referralPurchaseRewardQuota(purchaseType)
-	if rewardQuota <= 0 {
-		return nil
-	}
-	inviterId, err := referralInviterIdTx(tx, inviteeId)
-	if err != nil || inviterId <= 0 {
-		return err
-	}
-	var existing ReferralPurchaseReward
-	if err := tx.Where("invitee_id = ?", inviteeId).First(&existing).Error; err == nil {
-		return nil
-	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
-		return err
-	}
-	previousPaidCount, err := countSuccessfulPaidPurchasesTx(tx, inviteeId)
-	if err != nil {
-		return err
-	}
-	if previousPaidCount > 0 {
-		return nil
-	}
-	reward := ReferralPurchaseReward{
-		InviterId:        inviterId,
-		InviteeId:        inviteeId,
-		PurchaseType:     purchaseType,
-		PurchaseLabel:    ReferralPurchaseRewardLabel(purchaseType),
-		BonusQuotaAmount: rewardQuota,
-		OrderSourceType:  strings.TrimSpace(orderSourceType),
-		OrderSourceId:    strings.TrimSpace(orderSourceId),
-	}
-	if err := tx.Create(&reward).Error; err != nil {
-		return err
-	}
-	key := fmt.Sprintf("referral-first-purchase-bonus:%d", inviteeId)
-	_, err = GrantBonusQuotaTx(tx, inviterId, rewardQuota, PointSourceReferralFirstPurchaseBonus, fmt.Sprintf("%d", inviteeId), key)
-	return err
+	return nil
 }

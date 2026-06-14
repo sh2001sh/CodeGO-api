@@ -6,6 +6,7 @@ interface WalletWorkspaceShellProps {
   description?: string
   main: ReactNode
   sidebar?: ReactNode
+  framedMain?: boolean
 }
 
 export function WalletWorkspaceShell(props: WalletWorkspaceShellProps) {
@@ -21,13 +22,17 @@ export function WalletWorkspaceShell(props: WalletWorkspaceShellProps) {
         <div
           className={
             props.sidebar
-              ? 'mx-auto grid w-full max-w-[1760px] items-start gap-4 xl:grid-cols-[minmax(0,1fr)_300px] 2xl:grid-cols-[minmax(0,1fr)_320px]'
-              : 'mx-auto w-full max-w-[1280px]'
+              ? 'mx-auto grid w-full max-w-[1600px] items-start gap-4 xl:grid-cols-[minmax(0,1fr)_320px]'
+              : 'mx-auto w-full max-w-[1360px]'
           }
         >
-          <div className='min-w-0 rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_18px_48px_rgba(15,23,42,0.06)] dark:border-slate-800 dark:bg-slate-950/70 dark:shadow-[0_18px_48px_rgba(2,6,23,0.45)] sm:p-5'>
-            {props.main}
-          </div>
+          {props.framedMain === false ? (
+            <div className='min-w-0'>{props.main}</div>
+          ) : (
+            <div className='app-page-shell min-w-0 p-4 sm:p-5'>
+              {props.main}
+            </div>
+          )}
           {props.sidebar ? props.sidebar : null}
         </div>
       </SectionPageLayout.Content>

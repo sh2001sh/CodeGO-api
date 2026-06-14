@@ -24,8 +24,8 @@ import {
   formatTime,
   getCardSecrets,
   parseDeliveryContent,
+  type DeliveryContent,
 } from './delivery-content'
-import type { DeliveryContent } from './delivery-content'
 
 function statusLabel(status: string) {
   const labels: Record<string, string> = {

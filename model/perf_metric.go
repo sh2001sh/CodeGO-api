@@ -61,6 +61,7 @@ func GetPerfMetrics(modelName string, group string, startTs int64, endTs int64) 
 
 type PerfMetricSummary struct {
 	ModelName      string `json:"model_name"`
+	Group          string `json:"group"`
 	RequestCount   int64  `json:"request_count"`
 	SuccessCount   int64  `json:"success_count"`
 	TotalLatencyMs int64  `json:"total_latency_ms"`
@@ -74,6 +75,36 @@ func GetPerfMetricsSummaryAll(startTs int64, endTs int64) ([]PerfMetricSummary, 
 		Select("model_name, SUM(request_count) as request_count, SUM(success_count) as success_count, SUM(total_latency_ms) as total_latency_ms, SUM(output_tokens) as output_tokens, SUM(generation_ms) as generation_ms").
 		Where("bucket_ts >= ? AND bucket_ts <= ?", startTs, endTs).
 		Group("model_name").
+		Having("SUM(request_count) > 0").
+		Find(&summaries).Error
+	return summaries, err
+}
+
+func GetPerfMetricsSummaryByGroups(startTs int64, endTs int64, groups []string) ([]PerfMetricSummary, error) {
+	var summaries []PerfMetricSummary
+	query := DB.Model(&PerfMetric{}).
+		Select(commonGroupCol+" as "+commonGroupCol+", SUM(request_count) as request_count, SUM(success_count) as success_count, SUM(total_latency_ms) as total_latency_ms, SUM(output_tokens) as output_tokens, SUM(generation_ms) as generation_ms").
+		Where("bucket_ts >= ? AND bucket_ts <= ?", startTs, endTs)
+	if len(groups) > 0 {
+		query = query.Where(commonGroupCol+" IN ?", groups)
+	}
+	err := query.
+		Group(commonGroupCol).
+		Having("SUM(request_count) > 0").
+		Find(&summaries).Error
+	return summaries, err
+}
+
+func GetPerfMetricsSummaryByGroupModels(startTs int64, endTs int64, groups []string) ([]PerfMetricSummary, error) {
+	var summaries []PerfMetricSummary
+	query := DB.Model(&PerfMetric{}).
+		Select("model_name, "+commonGroupCol+" as "+commonGroupCol+", SUM(request_count) as request_count, SUM(success_count) as success_count, SUM(total_latency_ms) as total_latency_ms, SUM(output_tokens) as output_tokens, SUM(generation_ms) as generation_ms").
+		Where("bucket_ts >= ? AND bucket_ts <= ?", startTs, endTs)
+	if len(groups) > 0 {
+		query = query.Where(commonGroupCol+" IN ?", groups)
+	}
+	err := query.
+		Group(commonGroupCol + ", model_name").
 		Having("SUM(request_count) > 0").
 		Find(&summaries).Error
 	return summaries, err

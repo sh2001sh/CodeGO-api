@@ -83,8 +83,9 @@ func SetApiRouter(router *gin.Engine) {
 			selfRoute := userRoute.Group("/")
 			selfRoute.Use(middleware.UserAuth())
 			{
-				selfRoute.GET("/self/groups", controller.GetUserGroups)
-				selfRoute.GET("/self", controller.GetSelf)
+			selfRoute.GET("/self/groups", controller.GetUserGroups)
+			selfRoute.GET("/self/group-status", controller.GetUserGroupStatus)
+			selfRoute.GET("/self", controller.GetSelf)
 				selfRoute.GET("/models", controller.GetUserModels)
 				selfRoute.GET("/image-workspace/models", controller.GetImageWorkspaceModels)
 				selfRoute.GET("/image-workspace/items", controller.GetImageWorkspaceItems)
@@ -181,8 +182,10 @@ func SetApiRouter(router *gin.Engine) {
 		{
 			subscriptionRoute.GET("/plans", controller.GetSubscriptionPlans)
 			subscriptionRoute.GET("/self", controller.GetSubscriptionSelf)
+			subscriptionRoute.GET("/self/claude-conversions", controller.ListSubscriptionClaudeConversions)
 			subscriptionRoute.GET("/orders/:trade_no", controller.GetSubscriptionOrderStatus)
 			subscriptionRoute.PUT("/self/preference", controller.UpdateSubscriptionPreference)
+			subscriptionRoute.POST("/self/claude-conversions", middleware.CriticalRateLimit(), controller.CreateSubscriptionClaudeConversion)
 			subscriptionRoute.POST("/self/reset-opportunity/use", middleware.CriticalRateLimit(), controller.UseSubscriptionResetOpportunity)
 			subscriptionRoute.POST("/epay/pay", middleware.CriticalRateLimit(), controller.SubscriptionRequestEpay)
 			subscriptionRoute.POST("/xunhu/pay", middleware.CriticalRateLimit(), controller.SubscriptionRequestXunhuPay)

@@ -50,6 +50,7 @@ export function TransferDialog({
 }: TransferDialogProps) {
   const { t } = useTranslation()
   const [amount, setAmount] = useState(QUOTA_PER_DOLLAR)
+  const sectionLabelClassName = 'text-muted-foreground text-xs font-medium'
 
   useEffect(() => {
     if (open) {
@@ -79,7 +80,7 @@ export function TransferDialog({
 
         <div className='space-y-4 py-3 sm:space-y-6 sm:py-4'>
           <div className='space-y-2'>
-            <Label className='text-muted-foreground text-xs font-medium tracking-wider uppercase'>
+            <Label className={sectionLabelClassName}>
               {t('Available Rewards')}
             </Label>
             <div className='text-2xl font-semibold'>
@@ -90,7 +91,7 @@ export function TransferDialog({
           <div className='space-y-3'>
             <Label
               htmlFor='transfer-amount'
-              className='text-muted-foreground text-xs font-medium tracking-wider uppercase'
+              className={sectionLabelClassName}
             >
               {t('Transfer Amount')}
             </Label>

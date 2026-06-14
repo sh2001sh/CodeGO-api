@@ -62,33 +62,76 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
 
   return (
     <div className='space-y-4'>
-      <div className='rounded-[30px] border border-slate-200 bg-card p-4 shadow-[0_20px_56px_rgba(15,23,42,0.06)] dark:border-slate-800 dark:bg-slate-950/70'>
-        <div className='flex flex-wrap items-center justify-between gap-3'>
+      <div className='overview-hero-card p-4 sm:p-5'>
+        <div className='grid gap-5 xl:grid-cols-[minmax(0,1.08fr)_minmax(280px,0.92fr)] xl:items-center'>
           <div>
-            <div className='flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400'>
+            <div className='flex flex-wrap items-center gap-2 text-[11px] font-medium text-muted-foreground'>
               <Sparkles className='size-4 text-amber-500' />
-              盲盒额度情况
+              <span>盲盒概览</span>
+              {firstPurchaseEligible ? (
+                <span className='ios-pill px-2.5 py-0.5 text-[11px] text-primary'>
+                  首购保底进行中
+                </span>
+              ) : null}
             </div>
-            <div className='mt-1 text-2xl font-semibold text-slate-950 dark:text-slate-50'>
-              {formatQuota(props.data?.overview?.remaining_quota || 0)}
+            <h3 className='mt-3 text-2xl font-semibold tracking-[-0.03em] text-foreground sm:text-3xl'>
+              {firstPurchaseEligible
+                ? `首次开盒至少拿 ${firstPurchaseStartUSD.toFixed(2)} 美元额度`
+                : '购买盲盒，抽取随机额度奖励'}
+            </h3>
+            <p className='mt-3 max-w-2xl text-sm leading-7 text-muted-foreground'>
+              {firstPurchaseEligible
+                ? '首购福利会直接抬高第一次开盒收益，奖励到账后优先用于 API 消耗扣费。处理完首购后，再根据保底进度安排后续开盒。'
+                : '开出的额度优先用于 API 消耗扣费，连续未开出高额奖励时会累积保底，到达门槛后保证最低收益。'}
+            </p>
+            <div className='mt-4 grid gap-3 md:grid-cols-4'>
+              <MetricCard
+                label='盲盒额度'
+                value={formatQuota(props.data?.overview?.remaining_quota || 0)}
+              />
+              <MetricCard
+                label='待开奖盲盒'
+                value={String(props.availableBoxes)}
+              />
+              <MetricCard
+                label='活跃额度份数'
+                value={String(props.data?.overview?.active_credit_count || 0)}
+              />
+              <MetricCard
+                label='保底进度'
+                value={`${props.pityProgress}/${props.effectivePityThreshold}`}
+              />
             </div>
           </div>
-          <div className='rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200'>
-            最近到期 {formatBlindBoxTimestamp(props.data?.overview?.next_expire_at)}
-          </div>
-        </div>
 
-        <div className='mt-4 grid gap-3 md:grid-cols-4'>
-          <MetricCard label='盲盒额度' value={formatQuota(props.data?.overview?.remaining_quota || 0)} />
-          <MetricCard label='待开奖盲盒' value={String(props.availableBoxes)} />
-          <MetricCard
-            label='活跃额度份数'
-            value={String(props.data?.overview?.active_credit_count || 0)}
-          />
-          <MetricCard
-            label='保底进度'
-            value={`${props.pityProgress}/${props.effectivePityThreshold}`}
-          />
+          <div className='space-y-3'>
+            <div className='app-subtle-panel p-4'>
+              <div className='text-muted-foreground text-[11px] font-medium'>
+                当前盲盒余额
+              </div>
+              <div className='mt-2 text-3xl font-semibold tracking-tight text-foreground'>
+                {formatQuota(props.data?.overview?.remaining_quota || 0)}
+              </div>
+              <div className='mt-2 text-xs leading-5 text-muted-foreground'>
+                最近到期 {formatBlindBoxTimestamp(props.data?.overview?.next_expire_at)}
+              </div>
+            </div>
+            <div className='app-subtle-panel p-4'>
+              <div className='text-muted-foreground text-[11px] font-medium'>
+                当前建议
+              </div>
+              <div className='mt-2 text-base font-semibold text-foreground'>
+                {firstPurchaseEligible
+                  ? '先完成首购福利，再看是否继续冲保底'
+                  : props.availableBoxes > 0
+                    ? `先处理 ${props.availableBoxes} 个待开奖盲盒`
+                    : '直接根据保底进度安排下一轮购买'}
+              </div>
+              <div className='mt-2 text-sm leading-6 text-muted-foreground'>
+                奖励到账后会优先用于 API 消耗扣费，建议及时开启待开奖盲盒。
+              </div>
+            </div>
+          </div>
         </div>
 
         <div className='mt-4'>
@@ -96,29 +139,29 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
         </div>
       </div>
 
-      <div className='overflow-hidden rounded-[30px] border border-slate-200 bg-[radial-gradient(circle_at_top_left,rgba(250,204,21,0.22),transparent_30%),radial-gradient(circle_at_top_right,rgba(251,146,60,0.18),transparent_24%),linear-gradient(145deg,rgba(255,255,255,0.98),rgba(255,247,237,0.98),rgba(248,250,252,0.98))] p-4 shadow-[0_26px_90px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-[radial-gradient(circle_at_top_left,rgba(250,204,21,0.18),transparent_28%),radial-gradient(circle_at_top_right,rgba(249,115,22,0.16),transparent_24%),linear-gradient(145deg,rgba(30,20,8,0.96),rgba(15,23,42,0.96),rgba(17,24,39,0.94))]'>
+      <div className='app-page-shell p-4'>
         <div className='flex flex-wrap items-start justify-between gap-3'>
           <div>
-            <div className='flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400'>
+            <div className='text-muted-foreground flex items-center gap-2 text-[11px] font-medium'>
               <Sparkles className='size-4 text-amber-500' />
               盲盒活动
             </div>
-            <h3 className='mt-2 text-3xl font-semibold tracking-tight text-slate-950 dark:text-slate-50'>
+            <h3 className='text-foreground mt-2 text-2xl font-semibold tracking-[-0.03em]'>
               盲盒购买与开奖
             </h3>
           </div>
-          <div className='rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-medium text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200'>
+          <div className='ios-pill px-3 py-1 text-xs font-medium text-foreground'>
             单盒 {props.data?.unit_price?.toFixed(1) || '0.0'} 元
           </div>
         </div>
 
-        <div className='mt-5 rounded-[28px] border border-slate-200 bg-white/82 p-4 dark:border-slate-800 dark:bg-slate-950/58'>
+        <div className='ios-floating-shell mt-5 p-4'>
           <div className='flex items-center justify-between gap-3'>
             <div>
-              <div className='text-base font-semibold text-slate-950 dark:text-slate-50'>
+              <div className='text-foreground text-base font-semibold'>
                 本轮购买设置
               </div>
-              <div className='text-sm text-slate-500 dark:text-slate-400'>
+              <div className='text-muted-foreground text-sm'>
                 今日已购 {props.data?.overview?.purchased_today || 0}/
                 {props.data?.daily_limit || 0}，本月已购{' '}
                 {props.data?.overview?.purchased_this_month || 0}/
@@ -132,12 +175,12 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
 
           <div className='mt-4 space-y-4'>
             <div>
-              <div className='text-sm font-medium text-slate-900 dark:text-slate-100'>
+              <div className='text-foreground text-sm font-medium'>
                 购买数量
               </div>
               {firstPurchaseEligible ? (
-                <div className='mt-3 rounded-2xl border border-rose-300 bg-rose-50 px-4 py-3 text-sm font-semibold text-rose-700 dark:border-rose-500/30 dark:bg-rose-500/10 dark:text-rose-200'>
-                  首次开盒保底开出 {firstPurchaseStartUSD.toFixed(2)} 美元额度
+                <div className='border-border/70 bg-background/72 text-foreground mt-3 rounded-2xl border px-4 py-3 text-sm font-semibold'>
+                  首购保底已生效，本次至少获得 {firstPurchaseStartUSD.toFixed(2)} 美元额度
                 </div>
               ) : null}
               <div className='mt-3 flex flex-wrap gap-2'>
@@ -164,14 +207,14 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
                   className='max-w-28'
                   disabled={!props.data?.enabled || props.loading}
                 />
-                <div className='text-sm text-slate-500 dark:text-slate-400'>
+                <div className='text-muted-foreground text-sm'>
                   自定义数量
                 </div>
               </div>
             </div>
 
             <div>
-              <div className='text-sm font-medium text-slate-900 dark:text-slate-100'>
+              <div className='text-foreground text-sm font-medium'>
                 支付方式
               </div>
               <PaymentMethodSelector
@@ -182,13 +225,13 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
               />
             </div>
 
-            <div className='rounded-[24px] border border-slate-200 bg-slate-50/90 p-4 dark:border-slate-800 dark:bg-slate-900/80'>
+            <div className='app-subtle-panel p-4'>
               <div className='flex flex-wrap items-center justify-between gap-3'>
                 <div>
-                  <div className='text-[11px] font-medium uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400'>
+                  <div className='text-muted-foreground text-[11px] font-medium'>
                     应付金额
                   </div>
-                  <div className='mt-1 text-2xl font-semibold text-slate-950 dark:text-slate-50'>
+                  <div className='text-foreground mt-1 text-2xl font-semibold'>
                     {props.amountDue.toFixed(2)} 元
                   </div>
                 </div>
@@ -225,7 +268,7 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
               </div>
             </div>
             {props.showPrizeNotice ? (
-              <div className='rounded-[24px] border border-amber-200 bg-amber-50/90 p-4 text-sm text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100'>
+              <div className='border-border/70 bg-background/72 text-foreground rounded-2xl border p-4 text-sm'>
                 <div className='flex items-start justify-between gap-3'>
                   <div className='space-y-3'>
                     {(props.data?.tiers || []).map((tier) => (
@@ -247,7 +290,7 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
                         %
                       </span>
                     </div>
-                    <div className='border-t border-amber-200/70 pt-3 dark:border-amber-500/20'>
+                    <div className='border-border/70 text-muted-foreground border-t pt-3'>
                       连续开出低于 {props.data?.low_reward_threshold_usd || 0} 美元的奖励达到门槛后，下一次至少获得 {props.data?.pity_guarantee_usd || 0} 美元奖励。
                     </div>
                   </div>
@@ -255,7 +298,7 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
                     type='button'
                     variant='ghost'
                     size='icon'
-                    className='h-8 w-8 shrink-0 text-amber-900 hover:bg-amber-100 dark:text-amber-100 dark:hover:bg-amber-500/10'
+                    className='text-muted-foreground hover:text-foreground h-8 w-8 shrink-0'
                     onClick={props.onClosePrizeNotice}
                   >
                     <X className='size-4' />
@@ -263,13 +306,13 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
                 </div>
               </div>
             ) : null}
-            <div className='rounded-[24px] border border-slate-200 bg-slate-50/90 p-4 dark:border-slate-800 dark:bg-slate-900/80'>
-              <div className='text-sm font-medium text-slate-900 dark:text-slate-100'>
+            <div className='app-subtle-panel p-4'>
+              <div className='text-foreground text-sm font-medium'>
                 {props.remainingPity > 0
                   ? `还差 ${props.remainingPity} 次低档奖励触发保底`
                   : '下一次低档奖励将直接进入保底结算'}
               </div>
-              <div className='mt-2 text-sm text-slate-500 dark:text-slate-400'>
+              <div className='text-muted-foreground mt-2 text-sm'>
                 当前进度 {props.pityProgress}/{props.effectivePityThreshold}
               </div>
             </div>
@@ -277,17 +320,17 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
         </div>
       </div>
 
-      <div className='rounded-[30px] border border-slate-200 bg-card p-4 shadow-[0_20px_56px_rgba(15,23,42,0.06)] dark:border-slate-800 dark:bg-slate-950/70'>
-        <div className='flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.24em] text-slate-500 dark:text-slate-400'>
+      <div className='app-page-shell p-4'>
+        <div className='text-muted-foreground flex items-center gap-2 text-[11px] font-medium'>
           当前出战宠物
         </div>
         <div className='mt-4 grid gap-4 md:grid-cols-[220px_minmax(0,1fr)]'>
-          <div className='rounded-[24px] border border-slate-200 bg-[linear-gradient(180deg,#fff7ed,#fffbeb)] p-4 dark:border-slate-800 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(30,41,59,0.88))]'>
-            <div className='aspect-square rounded-[20px] border border-slate-200 bg-white/90 p-3 dark:border-slate-700 dark:bg-slate-950/80'>
+          <div className='app-subtle-panel p-4'>
+            <div className='aspect-square rounded-[20px] border border-border/70 bg-background/80 p-3'>
               {props.petProfile ? (
                 <PixelPetSprite id={props.petProfile.id} label={petTitle} />
               ) : (
-                <div className='flex h-full items-center justify-center text-sm text-slate-500 dark:text-slate-400'>
+                <div className='text-muted-foreground flex h-full items-center justify-center text-sm'>
                   暂无宠物
                 </div>
               )}
@@ -295,35 +338,35 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
           </div>
           <div className='space-y-4'>
             <div>
-              <div className='text-2xl font-semibold text-slate-950 dark:text-slate-50'>
+              <div className='text-foreground text-2xl font-semibold'>
                 {petTitle}
               </div>
-              <div className='mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300'>
+              <div className='text-muted-foreground mt-2 text-sm leading-6'>
                 {petNote}
               </div>
             </div>
             <div className='grid gap-3 md:grid-cols-2'>
-              <div className='rounded-[22px] border border-slate-200 bg-white/84 p-4 dark:border-slate-800 dark:bg-slate-950/60'>
-                <div className='text-[11px] font-medium uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400'>
+              <div className='app-subtle-panel p-4'>
+                <div className='text-muted-foreground text-[11px] font-medium'>
                   技能效果
                 </div>
-                <div className='mt-2 text-base font-semibold text-slate-950 dark:text-slate-50'>
+                <div className='text-foreground mt-2 text-base font-semibold'>
                   {petSkillName}
                 </div>
-                <div className='mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300'>
+                <div className='text-muted-foreground mt-2 text-sm leading-6'>
                   {petSkillDescription}
                 </div>
               </div>
-              <div className='rounded-[22px] border border-slate-200 bg-white/84 p-4 dark:border-slate-800 dark:bg-slate-950/60'>
-                <div className='text-[11px] font-medium uppercase tracking-[0.22em] text-slate-500 dark:text-slate-400'>
+              <div className='app-subtle-panel p-4'>
+                <div className='text-muted-foreground text-[11px] font-medium'>
                   当前进度
                 </div>
-                <div className='mt-2 text-base font-semibold text-slate-950 dark:text-slate-50'>
+                <div className='text-foreground mt-2 text-base font-semibold'>
                   {props.remainingPity > 0
                     ? `距离保底还差 ${props.remainingPity} 次`
                     : '下一次低档奖励直接保底'}
                 </div>
-                <div className='mt-2 text-sm leading-6 text-slate-600 dark:text-slate-300'>
+                <div className='text-muted-foreground mt-2 text-sm leading-6'>
                   当前保底进度 {props.pityProgress}/{props.effectivePityThreshold}
                 </div>
               </div>
@@ -333,19 +376,19 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
       </div>
 
       {props.availableBoxes > 0 ? (
-        <div className='rounded-[30px] border border-amber-200 bg-amber-50/85 p-4 dark:border-amber-500/20 dark:bg-amber-500/10'>
-          <div className='flex items-center gap-2 text-base font-semibold text-amber-900 dark:text-amber-100'>
+        <div className='app-page-shell p-4'>
+          <div className='text-foreground flex items-center gap-2 text-base font-semibold'>
             <CircleAlert className='size-4' />
             待处理盲盒
           </div>
-          <div className='mt-1 text-sm leading-6 text-amber-700 dark:text-amber-200'>
+          <div className='text-muted-foreground mt-1 text-sm leading-6'>
             当前还有 {props.availableBoxes}{' '}
             个盲盒未处理，通常来自历史订单或支付回调延迟。你可以直接补开奖，不会重复扣费。
           </div>
           <Button
             type='button'
             variant='outline'
-            className='mt-4 border-amber-300 bg-white text-amber-800 hover:bg-amber-100 dark:border-amber-500/30 dark:bg-transparent dark:text-amber-200 dark:hover:bg-amber-500/10'
+            className='mt-4'
             onClick={() => props.onManualOpen(props.availableBoxes)}
             disabled={props.openingCount !== null}
           >
@@ -356,12 +399,12 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
         </div>
       ) : null}
 
-      <div className='rounded-[30px] border border-slate-200 bg-card p-4 shadow-xs dark:border-slate-800'>
+      <div className='app-page-shell p-4'>
         <div className='flex items-center justify-between gap-3'>
-          <div className='text-base font-semibold text-slate-950 dark:text-slate-50'>
+          <div className='text-foreground text-base font-semibold'>
             最近掉落
           </div>
-          <div className='rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-xs font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'>
+          <div className='ios-pill px-3 py-1 text-xs font-medium text-muted-foreground'>
             <WandSparkles className='mr-1 inline size-3.5' />
             实时同步
           </div>
@@ -388,8 +431,8 @@ function QuantityChip(props: {
       className={cn(
         'rounded-full border px-3 py-1.5 text-sm transition-colors',
         active
-          ? 'border-slate-950 bg-slate-950 text-white dark:border-emerald-400 dark:bg-emerald-400 dark:text-slate-950'
-          : 'border-slate-200 bg-white/80 text-slate-700 hover:border-slate-950 dark:border-slate-700 dark:bg-slate-950/50 dark:text-slate-200 dark:hover:border-emerald-400'
+          ? 'border-primary bg-primary text-primary-foreground'
+          : 'border-border bg-background/80 text-foreground hover:border-foreground'
       )}
     >
       x{props.value}

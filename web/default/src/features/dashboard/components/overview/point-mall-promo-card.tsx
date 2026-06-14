@@ -71,10 +71,10 @@ const PROMO_ITEMS: ActivityPromoItem[] = [
     eyebrow: '盲盒活动',
     title: '低门槛开盲盒，直接拿额度和订阅大奖',
     description:
-      '盲盒活动把短期额度、保底机制和订阅大奖放在同一个入口处理，适合想快速补充额度、顺手搏一次高奖池的用户。',
-    sideTitle: '付款、开奖、保底进度都在同一个入口',
+      '花小钱抽取随机额度奖励，连续未开出高额时累积保底，还有机会开出整份订阅大奖，适合想快速补额度、顺手搏一把的用户。',
+    sideTitle: '开出的额度优先用于扣费',
     sideDescription:
-      '进入盲盒页后可以直接选择数量、查看奖池、查询最近掉落和当前保底进度，不需要再跳转到钱包里的其他模块。',
+      '盲盒额度会优先于套餐和钱包余额参与 API 消耗，开出即可立即生效，无需额外操作。',
     to: '/blind-box',
     ctaLabel: '去开盲盒',
     icon: PackageOpen,
@@ -85,15 +85,15 @@ const PROMO_ITEMS: ActivityPromoItem[] = [
     ],
     theme: {
       frame:
-        'border-rose-200 bg-[radial-gradient(circle_at_top_left,rgba(244,63,94,0.16),transparent_30%),radial-gradient(circle_at_top_right,rgba(251,146,60,0.18),transparent_24%),linear-gradient(145deg,rgba(255,241,242,0.98),rgba(255,247,237,0.98),rgba(255,255,255,0.98))] dark:border-rose-500/20 dark:bg-[radial-gradient(circle_at_top_left,rgba(244,63,94,0.16),transparent_30%),radial-gradient(circle_at_top_right,rgba(251,146,60,0.14),transparent_24%),linear-gradient(145deg,rgba(76,5,25,0.76),rgba(67,20,7,0.72),rgba(15,23,42,0.96))]',
-      eyebrow: 'text-rose-700 dark:text-rose-200',
-      title: 'text-slate-950 dark:text-white',
-      body: 'text-slate-700 dark:text-slate-200',
-      chip: 'border-white/60 bg-white/78 text-slate-800 dark:border-white/10 dark:bg-slate-950/40 dark:text-slate-100',
-      iconTile: 'text-rose-700 dark:text-rose-200',
-      cta: 'bg-rose-600 text-white shadow-[0_18px_38px_rgba(190,24,93,0.22)] hover:bg-rose-500 dark:bg-rose-500 dark:text-white dark:hover:bg-rose-400',
-      glow: 'bg-rose-200/45 dark:bg-rose-300/10',
-      rail: 'bg-rose-600 dark:bg-rose-300',
+        'border-border/70 bg-background/78',
+      eyebrow: 'text-muted-foreground',
+      title: 'text-foreground',
+      body: 'text-muted-foreground',
+      chip: 'border-border/70 bg-background/72 text-foreground',
+      iconTile: 'text-primary',
+      cta: 'bg-primary text-primary-foreground hover:bg-primary/90',
+      glow: 'bg-primary/10 dark:bg-primary/8',
+      rail: 'bg-primary/55 dark:bg-primary/45',
     },
   },
   {
@@ -102,9 +102,9 @@ const PROMO_ITEMS: ActivityPromoItem[] = [
     title: '积分兑换京东卡、月卡等实用奖品',
     description:
       '把积分直接换成最实用的礼品和权益，京东卡、月卡与其他可兑换商品都集中在积分商城里查看。',
-    sideTitle: '从积分到权益的直达入口',
+    sideTitle: '积分直接兑换实用权益',
     sideDescription:
-      '直接查看当前可兑换礼品和权益，按积分余额挑选最合适的兑换项。',
+      '按当前积分余额挑选京东卡、月卡等可兑换权益，兑换后立即发放。',
     to: '/point-mall',
     ctaLabel: '去积分商城',
     icon: Gift,
@@ -115,15 +115,15 @@ const PROMO_ITEMS: ActivityPromoItem[] = [
     ],
     theme: {
       frame:
-        'border-amber-200 bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.22),transparent_28%),radial-gradient(circle_at_top_right,rgba(249,115,22,0.18),transparent_24%),linear-gradient(145deg,rgba(255,251,240,0.98),rgba(255,245,230,0.98),rgba(255,255,255,0.98))] dark:border-amber-500/20 dark:bg-[radial-gradient(circle_at_top_left,rgba(251,191,36,0.18),transparent_28%),radial-gradient(circle_at_top_right,rgba(249,115,22,0.14),transparent_24%),linear-gradient(145deg,rgba(69,26,3,0.78),rgba(37,25,8,0.9),rgba(15,23,42,0.96))]',
-      eyebrow: 'text-amber-700 dark:text-amber-200',
-      title: 'text-slate-950 dark:text-white',
-      body: 'text-slate-700 dark:text-slate-200',
-      chip: 'border-white/60 bg-white/78 text-slate-800 dark:border-white/10 dark:bg-slate-950/40 dark:text-slate-100',
-      iconTile: 'text-amber-700 dark:text-amber-200',
-      cta: 'bg-amber-600 text-white shadow-[0_18px_38px_rgba(180,83,9,0.22)] hover:bg-amber-500 dark:bg-amber-500 dark:text-white dark:hover:bg-amber-400',
-      glow: 'bg-white/35 dark:bg-white/5',
-      rail: 'bg-amber-600 dark:bg-amber-300',
+        'border-border/70 bg-accent/14 dark:bg-accent/10',
+      eyebrow: 'text-muted-foreground',
+      title: 'text-foreground',
+      body: 'text-muted-foreground',
+      chip: 'border-border/70 bg-background/72 text-foreground',
+      iconTile: 'text-accent-foreground',
+      cta: 'bg-primary text-primary-foreground hover:bg-primary/90',
+      glow: 'bg-accent/12 dark:bg-accent/10',
+      rail: 'bg-primary/55 dark:bg-primary/45',
     },
   },
 ]
@@ -164,7 +164,7 @@ function PromoSlide(props: {
       <div className='max-w-3xl'>
         <div
           className={cn(
-            'flex flex-wrap items-center gap-2 text-[11px] font-semibold tracking-[0.24em] uppercase',
+            'flex flex-wrap items-center gap-2 text-[11px] font-medium',
             props.item.theme.eyebrow
           )}
         >
@@ -194,11 +194,11 @@ function PromoSlide(props: {
       </div>
 
       <div className='flex w-full max-w-sm flex-col gap-3 lg:items-end'>
-        <div className='w-full rounded-[24px] border border-white/55 bg-white/78 p-4 text-sm shadow-[0_20px_40px_rgba(15,23,42,0.08)] backdrop-blur dark:border-white/10 dark:bg-slate-950/45 dark:shadow-[0_18px_42px_rgba(2,6,23,0.32)]'>
-          <div className='font-semibold text-slate-900 dark:text-slate-50'>
+        <div className='app-subtle-panel w-full p-4 text-sm'>
+          <div className='text-foreground font-semibold'>
             {props.item.sideTitle}
           </div>
-          <div className='mt-2 leading-6 text-slate-600 dark:text-slate-300'>
+          <div className='text-muted-foreground mt-2 leading-6'>
             {props.item.sideDescription}
           </div>
         </div>
@@ -251,10 +251,10 @@ function PromoControls(props: {
             key={item.id}
             type='button'
             className={cn(
-              'h-2.5 rounded-full transition-all focus-visible:ring-2 focus-visible:ring-slate-900 focus-visible:ring-offset-2 focus-visible:outline-none dark:focus-visible:ring-white',
+              'h-2.5 rounded-full transition-all focus-visible:ring-primary focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:outline-none',
               props.activeIndex === index
-                ? 'w-8 bg-slate-950 dark:bg-white'
-                : 'w-2.5 bg-slate-400/45 hover:bg-slate-500/70 dark:bg-white/35 dark:hover:bg-white/55'
+                ? 'bg-primary w-8'
+                : 'bg-muted-foreground/40 hover:bg-muted-foreground/70 w-2.5'
             )}
             aria-label={`切换到${item.eyebrow}`}
             aria-current={props.activeIndex === index ? 'true' : undefined}
@@ -268,7 +268,7 @@ function PromoControls(props: {
           type='button'
           variant='outline'
           size='icon'
-          className='size-9 rounded-full border-white/70 bg-white/72 backdrop-blur dark:border-white/10 dark:bg-slate-950/45'
+          className='bg-background/80 size-9 rounded-full'
           aria-label='上一个活动宣传'
           onClick={props.onPrevious}
         >
@@ -278,7 +278,7 @@ function PromoControls(props: {
           type='button'
           variant='outline'
           size='icon'
-          className='size-9 rounded-full border-white/70 bg-white/72 backdrop-blur dark:border-white/10 dark:bg-slate-950/45'
+          className='bg-background/80 size-9 rounded-full'
           aria-label='下一个活动宣传'
           onClick={props.onNext}
         >
@@ -317,7 +317,7 @@ export function PointMallPromoCard() {
   return (
     <section
       className={cn(
-        'relative overflow-hidden rounded-[30px] border p-5 shadow-[0_28px_90px_rgba(15,23,42,0.08)]',
+        'app-page-shell relative overflow-hidden p-4',
         activeItem.theme.frame
       )}
       aria-label='活动宣传'
@@ -342,6 +342,7 @@ export function PointMallPromoCard() {
       />
 
       <div className='relative'>
+        <div className='app-section-kicker mb-2'>活动中心</div>
         <AnimatePresence mode='wait' initial={false}>
           <PromoSlide
             key={activeItem.id}

@@ -32,6 +32,8 @@ const PLAN_DISCOUNT_TEXT_MAP: Array<{
 ]
 
 function trimText(value?: string | null): string {
+  // Strip NUL bytes that can leak in from upstream payloads before trimming.
+  // eslint-disable-next-line no-control-regex
   return String(value || '').replace(/\u0000/g, '').trim()
 }
 

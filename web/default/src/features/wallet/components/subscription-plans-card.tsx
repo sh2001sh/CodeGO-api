@@ -267,63 +267,59 @@ export function SubscriptionPlansCard({
       <Card
         key={plan.id}
         className={cn(
-          'overflow-hidden rounded-[22px] border border-slate-200 bg-white shadow-[0_16px_36px_rgba(15,23,42,0.06)] dark:border-slate-800 dark:bg-slate-950/70 dark:shadow-[0_16px_36px_rgba(2,6,23,0.4)]',
-          isRecommended &&
-            'border-sky-300 ring-2 ring-sky-100 dark:border-sky-500/80 dark:ring-sky-500/20'
+          'border-border bg-card flex h-full flex-col overflow-hidden rounded-[20px] shadow-none',
+          isRecommended && 'border-primary/50 ring-primary/15 ring-2'
         )}
       >
-        <CardContent className='space-y-4 p-4'>
+        <CardContent className='flex flex-1 flex-col gap-4 p-5'>
           <div className='flex items-start justify-between gap-3'>
             <div className='min-w-0'>
-              <p className='text-primary text-[11px] font-semibold tracking-[0.22em] uppercase'>
+              <p className='text-primary text-[11px] font-medium'>
                 {getSubscriptionPlanSubtitle(plan)}
               </p>
               <div className='mt-1.5 flex flex-wrap items-center gap-2'>
-                <span className='rounded-full bg-slate-900 px-2.5 py-1 text-[11px] font-semibold tracking-[0.18em] text-white dark:bg-slate-100 dark:text-slate-900'>
-                  套餐
-                </span>
-                <h4 className='truncate text-xl font-semibold tracking-tight text-foreground'>
+                <h4 className='text-foreground truncate text-xl font-semibold tracking-tight'>
                   {title}
                 </h4>
-                <span className='rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[11px] text-sky-700 dark:border-sky-500/40 dark:bg-sky-500/10 dark:text-sky-200'>
+                <span className='border-border bg-accent text-accent-foreground rounded-full border px-2.5 py-1 text-[11px]'>
                   {presentation.badge}
                 </span>
               </div>
-              {discountText ? (
-                <div className='mt-2 inline-flex rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[12px] font-semibold text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200'>
-                  {discountText}
-                </div>
-              ) : null}
-              <p className='mt-2 text-sm leading-6 text-slate-700 dark:text-slate-300'>
+              <p className='text-muted-foreground mt-2 text-sm leading-6'>
                 {presentation.summary}
               </p>
             </div>
 
-            <div className='text-right'>
+            <div className='shrink-0 text-right'>
               {isRecommended ? (
-                <div className='inline-flex items-center rounded-full bg-sky-50 px-3 py-1 text-xs font-medium text-sky-700 dark:bg-sky-500/10 dark:text-sky-200'>
+                <div className='bg-primary/10 text-primary mb-2 inline-flex items-center rounded-full px-3 py-1 text-xs font-medium'>
                   <Sparkles className='mr-1 h-3.5 w-3.5' />
                   推荐
                 </div>
               ) : null}
-              <div className='text-primary mt-2 text-2xl font-semibold tracking-tight'>
+              <div className='text-primary text-2xl font-semibold tracking-tight'>
                 {displayPrice}
               </div>
               <div className='text-muted-foreground mt-1 text-xs'>
                 人民币 / 套餐
               </div>
+              {effectiveAmount !== priceAmount ? (
+                <div className='text-muted-foreground mt-1 text-xs line-through'>
+                  {formatSubscriptionPlanPrice(priceAmount, plan.currency)}
+                </div>
+              ) : null}
             </div>
           </div>
 
-          {effectiveAmount !== priceAmount ? (
-            <div className='text-muted-foreground text-xs'>
-              原价 {formatSubscriptionPlanPrice(priceAmount, plan.currency)}
+          {discountText ? (
+            <div className='border-border bg-background/80 text-foreground inline-flex w-fit rounded-full border px-3 py-1 text-[12px] font-semibold'>
+              {discountText}
             </div>
           ) : null}
 
-          <div className='grid grid-cols-2 gap-2'>
-            <MetricCard label='有效期' value={formatDuration(plan, t)} />
-            <MetricCard
+          <div className='border-border bg-muted/40 divide-border divide-y rounded-2xl border'>
+            <SpecRow label='有效期' value={formatDuration(plan, t)} />
+            <SpecRow
               label={
                 isMonthlyPlan
                   ? '本月可用额度'
@@ -340,7 +336,7 @@ export function SubscriptionPlansCard({
               }
             />
             {!isMonthlyPlan ? (
-              <MetricCard
+              <SpecRow
                 label='总额度'
                 value={
                   totalAmount > 0
@@ -349,23 +345,22 @@ export function SubscriptionPlansCard({
                 }
               />
             ) : null}
-            <MetricCard
+            <SpecRow
               label='套餐类型'
               value={isDayPassPlan(plan) ? '独立日卡' : '月卡'}
             />
           </div>
 
-          <div className='rounded-2xl border border-slate-200 bg-slate-50/80 px-3.5 py-3 dark:border-slate-800 dark:bg-slate-900/70'>
-            <div className='text-sm font-semibold text-foreground'>套餐介绍</div>
-            <p className='text-muted-foreground mt-1.5 text-sm leading-6'>
+          <div className='space-y-1.5'>
+            <p className='text-muted-foreground text-sm leading-6'>
               {summaryText}
             </p>
-            <p className='text-muted-foreground mt-2 text-xs leading-5'>
+            <p className='text-muted-foreground text-xs leading-5'>
               {detailText}
             </p>
           </div>
 
-          <div className='space-y-2'>
+          <div className='mt-auto space-y-2 pt-1'>
             <Button
               className='w-full rounded-full'
               disabled={limitReached || record.action === 'disabled'}
@@ -380,12 +375,14 @@ export function SubscriptionPlansCard({
               ) : null}
             </Button>
             {limitReached ? (
-              <p className='text-xs text-amber-700'>
+              <p className='text-warning-foreground dark:text-warning text-xs'>
                 已达到该套餐购买上限（{count}/{limit}）。
               </p>
             ) : null}
             {record.action === 'disabled' ? (
-              <p className='text-xs text-amber-700'>{blockedReason}</p>
+              <p className='text-warning-foreground dark:text-warning text-xs'>
+                {blockedReason}
+              </p>
             ) : null}
           </div>
         </CardContent>
@@ -438,10 +435,10 @@ export function SubscriptionPlansCard({
             )}
           </PlanSection>
 
-          <Card className='rounded-[22px] border-slate-200 shadow-none dark:border-slate-800 dark:bg-slate-950/70'>
+          <Card className='border-border bg-card rounded-[20px] shadow-none'>
             <CardContent className='space-y-4 p-4'>
               <div>
-                <div className='text-base font-semibold text-foreground'>
+                <div className='text-foreground text-base font-semibold'>
                   已购套餐使用情况
                 </div>
                 <p className='text-muted-foreground mt-1 text-sm'>
@@ -456,7 +453,7 @@ export function SubscriptionPlansCard({
                   ))}
                 </div>
               ) : allSubscriptions.length === 0 ? (
-                <div className='rounded-2xl border border-dashed border-slate-300 px-4 py-6 text-sm text-slate-600 dark:border-slate-700 dark:text-slate-300'>
+                <div className='border-border text-muted-foreground rounded-2xl border border-dashed px-4 py-6 text-sm'>
                   当前还没有任何订阅记录。购买套餐后，这里会显示每一份套餐的额度使用进度。
                 </div>
               ) : (
@@ -518,16 +515,16 @@ export function SubscriptionPlansCard({
                     return (
                       <Card
                         key={subscription.id}
-                        className='rounded-2xl border-slate-200 shadow-none dark:border-slate-800 dark:bg-slate-950/50'
+                        className='app-subtle-panel shadow-none'
                       >
                         <CardContent className='space-y-3 p-4'>
                           <div className='flex flex-wrap items-start justify-between gap-2'>
                             <div>
                               <div className='flex flex-wrap items-center gap-2'>
-                                <div className='font-semibold text-foreground'>
+                                <div className='text-foreground font-semibold'>
                                   {title}
                                 </div>
-                                <span className='rounded-full border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300'>
+                                <span className='border-border bg-card text-muted-foreground rounded-full border px-2 py-0.5 text-[11px]'>
                                   {statusLabel}
                                 </span>
                               </div>
@@ -547,7 +544,7 @@ export function SubscriptionPlansCard({
                               total={periodAmount}
                               remain={periodRemain}
                               percent={periodPercent}
-                              toneClass='[&_[data-slot=progress-indicator]]:bg-emerald-500'
+                              toneClass='[&_[data-slot=progress-indicator]]:bg-chart-4'
                             />
                           ) : null}
 
@@ -557,7 +554,7 @@ export function SubscriptionPlansCard({
                             total={totalAmount}
                             remain={totalRemain}
                             percent={totalPercent}
-                            toneClass='[&_[data-slot=progress-indicator]]:bg-sky-500'
+                            toneClass='[&_[data-slot=progress-indicator]]:bg-primary'
                           />
 
                           <div className='grid gap-2 sm:grid-cols-2'>
@@ -636,17 +633,12 @@ function PlanSection(props: {
     : [props.children].filter(Boolean)
 
   return (
-    <section className='rounded-[24px] border border-sky-100 bg-[linear-gradient(180deg,rgba(248,251,255,0.98),rgba(255,255,255,0.94))] p-4 shadow-[0_20px_48px_rgba(15,23,42,0.05)] dark:border-slate-800 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(2,6,23,0.82))] dark:shadow-[0_20px_48px_rgba(2,6,23,0.4)]'>
+    <section className='app-subtle-panel p-4 shadow-none'>
       <div className='mb-4'>
-        <div className='flex flex-wrap items-center gap-2'>
-          <span className='rounded-full bg-slate-900 px-2.5 py-1 text-[11px] font-semibold tracking-[0.18em] text-white dark:bg-slate-100 dark:text-slate-900'>
-            套餐
-          </span>
-          <p className='text-primary text-[11px] font-semibold tracking-[0.24em] uppercase'>
-            {props.title}
-          </p>
-        </div>
-        <p className='text-muted-foreground mt-2 text-sm leading-6'>
+        <h3 className='text-foreground text-base font-semibold tracking-tight'>
+          {props.title}
+        </h3>
+        <p className='text-muted-foreground mt-1.5 text-sm leading-6'>
           {props.description}
         </p>
       </div>
@@ -654,7 +646,7 @@ function PlanSection(props: {
       {props.loading ? (
         <div className='grid grid-cols-1 gap-3 md:grid-cols-2 2xl:grid-cols-3'>
           {Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton key={index} className='h-[280px] w-full rounded-[22px]' />
+            <Skeleton key={index} className='h-[280px] w-full rounded-[20px]' />
           ))}
         </div>
       ) : childArray.length > 0 ? (
@@ -662,7 +654,7 @@ function PlanSection(props: {
           {childArray}
         </div>
       ) : (
-        <div className='rounded-2xl border border-dashed border-slate-300 px-4 py-8 text-sm text-slate-600 dark:border-slate-700 dark:text-slate-300'>
+        <div className='border-border text-muted-foreground rounded-2xl border border-dashed px-4 py-8 text-sm'>
           {props.emptyText}
         </div>
       )}
@@ -670,13 +662,13 @@ function PlanSection(props: {
   )
 }
 
-function MetricCard(props: { label: string; value: string }) {
+function SpecRow(props: { label: string; value: string }) {
   return (
-    <div className='rounded-2xl border bg-white px-3 py-3 shadow-[0_6px_20px_rgba(15,23,42,0.04)] dark:border-slate-800 dark:bg-slate-900/70 dark:shadow-[0_6px_20px_rgba(2,6,23,0.35)]'>
-      <div className='text-muted-foreground text-[11px] font-medium tracking-wide'>
+    <div className='flex items-center justify-between gap-3 px-3.5 py-2.5'>
+      <div className='text-muted-foreground text-xs font-medium tracking-wide'>
         {props.label}
       </div>
-      <div className='mt-1 text-sm font-semibold text-foreground'>
+      <div className='text-foreground text-sm font-semibold tabular-nums'>
         {props.value}
       </div>
     </div>
@@ -693,7 +685,7 @@ function UsageBlock(props: {
 }) {
   if (props.total <= 0) {
     return (
-      <div className='rounded-2xl border border-slate-200 bg-slate-50/70 p-3 text-sm text-slate-600 dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-300'>
+      <div className='app-subtle-panel text-muted-foreground p-3 text-sm'>
         {props.label}：不限
       </div>
     )
@@ -701,7 +693,7 @@ function UsageBlock(props: {
   return (
     <div className='space-y-2'>
       <div className='flex flex-wrap items-center justify-between gap-2 text-sm'>
-        <span className='font-medium text-foreground'>{props.label}</span>
+        <span className='text-foreground font-medium'>{props.label}</span>
         <span className='text-muted-foreground text-xs'>
           {formatSubscriptionQuotaAmount(props.used)}/
           {formatSubscriptionQuotaAmount(props.total)} · 剩余{' '}
@@ -715,11 +707,11 @@ function UsageBlock(props: {
 
 function InfoItem(props: { label: string; value: string }) {
   return (
-    <div className='rounded-xl border border-slate-200 bg-slate-50/70 px-3 py-2.5 dark:border-slate-800 dark:bg-slate-900/70'>
+    <div className='border-border bg-muted/50 rounded-xl border px-3 py-2.5'>
       <div className='text-muted-foreground text-[11px] font-medium'>
         {props.label}
       </div>
-      <div className='mt-1 text-xs font-medium text-foreground'>
+      <div className='text-foreground mt-1 text-xs font-medium'>
         {props.value}
       </div>
     </div>

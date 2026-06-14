@@ -8,6 +8,8 @@ import (
 	"gorm.io/gorm"
 )
 
+const referralInviteeRegisterRewardPoints int64 = 2
+
 func PackagePurchasePointReward(planTitle string) int64 {
 	title := strings.TrimSpace(planTitle)
 	cfg := GetPointMallRulesConfig()
@@ -48,17 +50,22 @@ func AwardReferralRegisterFrozenPointsTx(tx *gorm.DB, inviterId int, inviteeId i
 	if inviterId <= 0 || inviteeId <= 0 {
 		return nil
 	}
-	for _, item := range []struct {
-		userId int
-		role   string
-	}{
-		{userId: inviterId, role: "inviter"},
-		{userId: inviteeId, role: "invitee"},
-	} {
-		key := fmt.Sprintf("referral-register:%s:%d:%d", item.role, inviterId, inviteeId)
-		if _, _, err := AddPointLedgerTx(tx, item.userId, PointLedgerTypeFreeze, 2, PointSourceReferralRegister, fmt.Sprintf("%d", inviteeId), key, "邀请注册冻结积分"); err != nil {
-			return err
-		}
+	if DB == nil || !DB.Migrator().HasTable(&PointAccount{}) {
+		return nil
+	}
+	key := fmt.Sprintf("referral-register-invitee:%d:%d", inviterId, inviteeId)
+	_, _, err := AddPointLedgerTx(
+		tx,
+		inviteeId,
+		PointLedgerTypeEarn,
+		referralInviteeRegisterRewardPoints,
+		PointSourceReferralRegister,
+		fmt.Sprintf("%d", inviterId),
+		key,
+		"受邀注册赠送积分",
+	)
+	if err != nil {
+		return err
 	}
 	return nil
 }
@@ -73,53 +80,10 @@ func AwardReferralFirstCall(inviteeId int) {
 }
 
 func AwardReferralFirstCallTx(tx *gorm.DB, inviteeId int) error {
-	if tx == nil {
-		tx = DB
-	}
-	inviterId, err := referralInviterIdTx(tx, inviteeId)
-	if err != nil || inviterId <= 0 {
-		return err
-	}
-	for _, item := range []struct {
-		userId int
-		role   string
-	}{
-		{userId: inviterId, role: "inviter"},
-		{userId: inviteeId, role: "invitee"},
-	} {
-		if err := releaseReferralRegisterFrozenTx(tx, item.userId, item.role, inviterId, inviteeId); err != nil {
-			return err
-		}
-		key := fmt.Sprintf("referral-first-call:%s:%d:%d", item.role, inviterId, inviteeId)
-		if _, _, err := AddPointLedgerTx(tx, item.userId, PointLedgerTypeEarn, 5, PointSourceReferralCall, fmt.Sprintf("%d", inviteeId), key, "邀请首调赠送积分"); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 
 func AwardReferralFirstTopupTx(tx *gorm.DB, inviteeId int, _ string) error {
-	if tx == nil {
-		tx = DB
-	}
-	inviterId, err := referralInviterIdTx(tx, inviteeId)
-	if err != nil || inviterId <= 0 {
-		return err
-	}
-	awards := []struct {
-		userId int
-		role   string
-		points int64
-	}{
-		{userId: inviterId, role: "inviter", points: 12},
-		{userId: inviteeId, role: "invitee", points: 5},
-	}
-	for _, award := range awards {
-		key := fmt.Sprintf("referral-first-topup:%s:%d:%d", award.role, inviterId, inviteeId)
-		if _, _, err := AddPointLedgerTx(tx, award.userId, PointLedgerTypeEarn, award.points, PointSourceReferralTopup, fmt.Sprintf("%d", inviteeId), key, "邀请首充赠送积分"); err != nil {
-			return err
-		}
-	}
 	return nil
 }
 

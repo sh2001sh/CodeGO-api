@@ -339,11 +339,15 @@ export function ImageWorkspace() {
       ])
       setGalleryTab('session')
       toast.success(form.mode === 'generate' ? '图片生成完成' : '改图完成')
-    } catch (error: any) {
+    } catch (error) {
+      const err = error as {
+        response?: { data?: { error?: { message?: string }; message?: string } }
+        message?: string
+      }
       const message =
-        error?.response?.data?.error?.message ||
-        error?.response?.data?.message ||
-        error?.message ||
+        err?.response?.data?.error?.message ||
+        err?.response?.data?.message ||
+        err?.message ||
         '图片请求失败'
       toast.error(message)
     } finally {
