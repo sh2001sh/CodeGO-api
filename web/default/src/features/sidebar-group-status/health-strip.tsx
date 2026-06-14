@@ -64,9 +64,9 @@ export function HealthStrip(props: { item: SidebarGroupModelStatusItem }) {
       </div>
 
       <div className='flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground'>
-        <LegendSwatch className={SEGMENT_CLASS.healthy} label='稳定成功' />
-        <LegendSwatch className={SEGMENT_CLASS.warning} label='有少量失败' />
-        <LegendSwatch className={SEGMENT_CLASS.critical} label='失败明显' />
+        <LegendSwatch className={SEGMENT_CLASS.healthy} label='85% 以上' />
+        <LegendSwatch className={SEGMENT_CLASS.warning} label='30% - 84.9%' />
+        <LegendSwatch className={SEGMENT_CLASS.critical} label='30% 以下' />
         <LegendSwatch className={SEGMENT_CLASS.unknown} label='暂无样本' />
       </div>
     </div>

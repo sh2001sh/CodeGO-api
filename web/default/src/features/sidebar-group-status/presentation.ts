@@ -118,13 +118,7 @@ function bucketTone(bucket: SidebarGroupStatusBucket) {
   if (bucket.request_count <= 0 || bucket.success_rate == null) {
     return 'unknown' as const
   }
-  if (bucket.success_rate >= 99.5) {
-    return 'healthy' as const
-  }
-  if (bucket.success_rate >= 95) {
-    return 'warning' as const
-  }
-  return 'critical' as const
+  return successRateTone(bucket.success_rate)
 }
 
 export function formatSampleWindowLabel(hours: number | null) {
@@ -153,13 +147,7 @@ function buildFallbackSegments(item: SidebarGroupModelStatusItem) {
     if (successRate == null) {
       return { bucket, tone: 'unknown' as const }
     }
-    if (successRate >= 99.5) {
-      return { bucket, tone: 'healthy' as const }
-    }
-    if (successRate >= 95) {
-      return { bucket, tone: 'warning' as const }
-    }
-    return { bucket, tone: 'critical' as const }
+    return { bucket, tone: successRateTone(successRate) }
   })
 }
 
@@ -170,4 +158,14 @@ function inferBucketSeconds(sampleWindowHours: number, total: number) {
 
 function sumModelRequests(models: SidebarGroupModelStatusItem[]) {
   return models.reduce((sum, model) => sum + (model.request_count ?? 0), 0)
+}
+
+function successRateTone(successRate: number) {
+  if (successRate >= 85) {
+    return 'healthy' as const
+  }
+  if (successRate >= 30) {
+    return 'warning' as const
+  }
+  return 'critical' as const
 }
