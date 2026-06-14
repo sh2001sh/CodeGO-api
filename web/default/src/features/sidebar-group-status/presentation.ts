@@ -83,7 +83,12 @@ function sortModels(models: SidebarGroupModelStatusItem[]) {
 }
 
 export function buildHealthSegments(item: SidebarGroupModelStatusItem) {
-  return item.series.map((bucket) => ({
+  const series = item.series ?? []
+  if (series.length === 0) {
+    return buildFallbackSegments(item)
+  }
+
+  return series.map((bucket) => ({
     bucket,
     tone: bucketTone(bucket),
   }))
@@ -120,4 +125,36 @@ export function formatSampleWindowLabel(hours: number | null) {
   if (minutes < 60) return `最近 ${minutes} 分钟`
   if (minutes % 60 === 0) return `最近 ${minutes / 60} 小时`
   return `最近 ${minutes} 分钟`
+}
+
+function buildFallbackSegments(item: SidebarGroupModelStatusItem) {
+  const total = 20
+  const successRate = item.success_rate
+  const bucketSeconds = item.bucket_seconds ?? inferBucketSeconds(item.sample_window, total)
+  const endTs = Math.floor(Date.now() / 1000)
+  const startTs = endTs - bucketSeconds * total
+
+  return Array.from({ length: total }, (_, index) => {
+    const bucket = {
+      ts: startTs + index * bucketSeconds,
+      request_count: successRate == null ? 0 : 1,
+      success_rate: successRate,
+    }
+
+    if (successRate == null) {
+      return { bucket, tone: 'unknown' as const }
+    }
+    if (successRate >= 99.5) {
+      return { bucket, tone: 'healthy' as const }
+    }
+    if (successRate >= 95) {
+      return { bucket, tone: 'warning' as const }
+    }
+    return { bucket, tone: 'critical' as const }
+  })
+}
+
+function inferBucketSeconds(sampleWindowHours: number, total: number) {
+  const totalSeconds = Math.max(1, Math.round(sampleWindowHours * 3600))
+  return Math.max(60, Math.round(totalSeconds / total))
 }

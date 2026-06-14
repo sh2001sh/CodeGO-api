@@ -23,8 +23,8 @@ export type SidebarGroupModelStatusItem = {
   status: SidebarGroupAvailabilityStatus
   success_rate: number | null
   sample_window: number
-  bucket_seconds: number
-  series: SidebarGroupStatusBucket[]
+  bucket_seconds?: number
+  series?: SidebarGroupStatusBucket[]
 }
 
 export type SidebarGroupStatusBucket = {

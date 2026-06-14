@@ -13,6 +13,9 @@ const SEGMENT_CLASS = {
 export function HealthStrip(props: { item: SidebarGroupModelStatusItem }) {
   const segments = buildHealthSegments(props.item)
   const showCurrentMarker = segments.length > 0
+  const bucketSeconds =
+    props.item.bucket_seconds ??
+    inferBucketSeconds(props.item.sample_window, segments.length || 20)
 
   return (
     <div className='space-y-2'>
@@ -29,7 +32,7 @@ export function HealthStrip(props: { item: SidebarGroupModelStatusItem }) {
                 render={
                   <button
                     type='button'
-                    aria-label={buildBucketLabel(bucket, props.item.bucket_seconds)}
+                    aria-label={buildBucketLabel(bucket, bucketSeconds)}
                     className={cn(
                       'h-5 rounded-md transition-transform hover:-translate-y-0.5 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
                       SEGMENT_CLASS[tone]
@@ -40,7 +43,7 @@ export function HealthStrip(props: { item: SidebarGroupModelStatusItem }) {
               <TooltipContent side='top' className='max-w-none'>
                 <div className='space-y-1'>
                   <div className='font-medium'>
-                    {formatBucketRange(bucket.ts, props.item.bucket_seconds)}
+                    {formatBucketRange(bucket.ts, bucketSeconds)}
                   </div>
                   <div className='text-background/80'>
                     {bucket.request_count > 0 && bucket.success_rate != null
@@ -99,4 +102,9 @@ function buildBucketLabel(bucket: SidebarGroupStatusBucket, bucketSeconds: numbe
     return `${range}，暂无请求样本`
   }
   return `${range}，成功率 ${bucket.success_rate.toFixed(1)}%，共 ${bucket.request_count} 次请求`
+}
+
+function inferBucketSeconds(sampleWindowHours: number, segmentCount: number) {
+  const totalSeconds = Math.max(1, Math.round(sampleWindowHours * 3600))
+  return Math.max(60, Math.round(totalSeconds / Math.max(segmentCount, 1)))
 }
