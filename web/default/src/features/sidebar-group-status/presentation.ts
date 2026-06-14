@@ -66,6 +66,12 @@ export function sortItems(items: SidebarGroupStatusItem[]) {
       models: sortModels(item.models),
     }))
     .sort((a, b) => a.group.localeCompare(b.group, 'zh-CN'))
+    .sort((a, b) => {
+      const left = a.request_count ?? sumModelRequests(a.models)
+      const right = b.request_count ?? sumModelRequests(b.models)
+      if (left === right) return a.group.localeCompare(b.group, 'zh-CN')
+      return right - left
+    })
 }
 
 function sortModels(models: SidebarGroupModelStatusItem[]) {
@@ -76,6 +82,8 @@ function sortModels(models: SidebarGroupModelStatusItem[]) {
   }
 
   return [...models].sort((a, b) => {
+    const requestDiff = (b.request_count ?? 0) - (a.request_count ?? 0)
+    if (requestDiff !== 0) return requestDiff
     const statusDiff = weight[a.status] - weight[b.status]
     if (statusDiff !== 0) return statusDiff
     return a.model.localeCompare(b.model, 'en')
@@ -157,4 +165,8 @@ function buildFallbackSegments(item: SidebarGroupModelStatusItem) {
 function inferBucketSeconds(sampleWindowHours: number, total: number) {
   const totalSeconds = Math.max(1, Math.round(sampleWindowHours * 3600))
   return Math.max(60, Math.round(totalSeconds / total))
+}
+
+function sumModelRequests(models: SidebarGroupModelStatusItem[]) {
+  return models.reduce((sum, model) => sum + (model.request_count ?? 0), 0)
 }

@@ -47,7 +47,7 @@ export function HealthStrip(props: { item: SidebarGroupModelStatusItem }) {
                   </div>
                   <div className='text-background/80'>
                     {bucket.request_count > 0 && bucket.success_rate != null
-                      ? `成功率 ${bucket.success_rate.toFixed(1)}% · ${bucket.request_count} 次请求`
+                      ? `成功率 ${bucket.success_rate.toFixed(1)}%`
                       : '该时间段暂无请求样本'}
                   </div>
                 </div>
@@ -101,7 +101,7 @@ function buildBucketLabel(bucket: SidebarGroupStatusBucket, bucketSeconds: numbe
   if (bucket.request_count <= 0 || bucket.success_rate == null) {
     return `${range}，暂无请求样本`
   }
-  return `${range}，成功率 ${bucket.success_rate.toFixed(1)}%，共 ${bucket.request_count} 次请求`
+  return `${range}，成功率 ${bucket.success_rate.toFixed(1)}%`
 }
 
 function inferBucketSeconds(sampleWindowHours: number, segmentCount: number) {

@@ -6,9 +6,6 @@ import (
 	"time"
 
 	"github.com/QuantumNous/new-api/model"
-	perfmetrics "github.com/QuantumNous/new-api/pkg/perf_metrics"
-	"github.com/QuantumNous/new-api/service"
-	"github.com/QuantumNous/new-api/setting/perf_metrics_setting"
 
 	"github.com/gin-gonic/gin"
 )
@@ -19,13 +16,15 @@ type userGroupModelStatusItem struct {
 	SuccessRate   *float64                `json:"success_rate"`
 	SampleHours   float64                 `json:"sample_window"`
 	BucketSeconds int64                   `json:"bucket_seconds"`
+	RequestCount  int64                   `json:"request_count"`
 	Series        []userGroupStatusBucket `json:"series"`
 }
 
 type userGroupStatusItem struct {
-	Group  string                     `json:"group"`
-	Status string                     `json:"status"`
-	Models []userGroupModelStatusItem `json:"models"`
+	Group        string                     `json:"group"`
+	Status       string                     `json:"status"`
+	RequestCount int64                      `json:"request_count"`
+	Models       []userGroupModelStatusItem `json:"models"`
 }
 
 type userGroupStatusBucket struct {
@@ -36,11 +35,8 @@ type userGroupStatusBucket struct {
 
 func GetUserGroupStatus(c *gin.Context) {
 	const sampleMinutes = 30
-	userId := c.GetInt("id")
-	userGroup, _ := model.GetUserGroup(userId, false)
-	usableGroups := service.GetUserUsableGroups(userGroup)
-
-	groupSummaries, err := model.GetGroupModelStatusSummaries(usableGroups)
+	const segmentCount = 20
+	groupNames, err := model.ListGroupStatusGroups()
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"success": false,
@@ -49,18 +45,22 @@ func GetUserGroupStatus(c *gin.Context) {
 		return
 	}
 
-	groupNames := make([]string, 0, len(groupSummaries))
-	for groupName := range groupSummaries {
-		groupNames = append(groupNames, groupName)
+	groupSummaries, err := model.GetGroupModelStatusSummaries(groupNames)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"success": false,
+			"message": err.Error(),
+		})
+		return
 	}
-	sort.Strings(groupNames)
 
-	successRates, seriesByModel, sampleWindowHours, bucketSeconds := queryGroupModelRecentHealth(groupNames, sampleMinutes)
+	successRates, seriesByModel, requestCounts, sampleWindowHours, bucketSeconds := queryGroupModelRecentHealth(groupNames, sampleMinutes, segmentCount)
 	result := make([]userGroupStatusItem, 0, len(groupNames))
 	for _, groupName := range groupNames {
 		modelSummaries := groupSummaries[groupName]
 		modelItems := make([]userGroupModelStatusItem, 0, len(modelSummaries))
 		groupStatus := "unknown"
+		groupRequestCount := int64(0)
 
 		sort.Slice(modelSummaries, func(i, j int) bool {
 			left := modelStatusWeight(modelSummaries[i].Status)
@@ -72,26 +72,43 @@ func GetUserGroupStatus(c *gin.Context) {
 		})
 
 		for _, summary := range modelSummaries {
-			if groupStatus == "unknown" || modelStatusWeight(summary.Status) < modelStatusWeight(groupStatus) {
-				groupStatus = summary.Status
-			}
 			key := groupName + "::" + summary.Model
+			modelRequestCount := requestCounts[key]
+			modelRate := successRates[key]
+			modelStatus := resolveGroupModelStatus(summary.Status, modelRate, modelRequestCount)
+			if groupStatus == "unknown" || modelStatusWeight(modelStatus) < modelStatusWeight(groupStatus) {
+				groupStatus = modelStatus
+			}
+			groupRequestCount += modelRequestCount
+			series := seriesByModel[key]
+			if len(series) == 0 {
+				series = emptyStatusSeries(sampleMinutes, segmentCount, bucketSeconds)
+			}
 			modelItems = append(modelItems, userGroupModelStatusItem{
 				Model:         summary.Model,
-				Status:        summary.Status,
-				SuccessRate:   successRates[key],
+				Status:        modelStatus,
+				SuccessRate:   modelRate,
 				SampleHours:   sampleWindowHours,
 				BucketSeconds: bucketSeconds,
-				Series:        seriesByModel[key],
+				RequestCount:  modelRequestCount,
+				Series:        series,
 			})
 		}
 
 		result = append(result, userGroupStatusItem{
-			Group:  groupName,
-			Status: groupStatus,
-			Models: modelItems,
+			Group:        groupName,
+			Status:       groupStatus,
+			RequestCount: groupRequestCount,
+			Models:       modelItems,
 		})
 	}
+
+	sort.Slice(result, func(i, j int) bool {
+		if result[i].RequestCount == result[j].RequestCount {
+			return result[i].Group < result[j].Group
+		}
+		return result[i].RequestCount > result[j].RequestCount
+	})
 
 	c.JSON(http.StatusOK, gin.H{
 		"success": true,
@@ -100,73 +117,59 @@ func GetUserGroupStatus(c *gin.Context) {
 	})
 }
 
-func queryGroupModelRecentHealth(groupNames []string, sampleMinutes int) (map[string]*float64, map[string][]userGroupStatusBucket, float64, int64) {
+func queryGroupModelRecentHealth(groupNames []string, sampleMinutes int, segmentCount int) (map[string]*float64, map[string][]userGroupStatusBucket, map[string]int64, float64, int64) {
 	rates := make(map[string]*float64)
 	seriesByModel := make(map[string][]userGroupStatusBucket)
+	requestCounts := make(map[string]int64)
 	if len(groupNames) == 0 {
-		return rates, seriesByModel, 0, perf_metrics_setting.GetBucketSeconds()
+		return rates, seriesByModel, requestCounts, 0, 60
 	}
-
-	bucketSeconds := perf_metrics_setting.GetBucketSeconds()
-	if bucketSeconds <= 0 {
-		bucketSeconds = 3600
+	if segmentCount <= 0 {
+		segmentCount = 20
 	}
-	windowBuckets := int64((sampleMinutes * 60) / int(bucketSeconds))
-	if (sampleMinutes*60)%int(bucketSeconds) != 0 {
-		windowBuckets++
+	windowSeconds := int64(sampleMinutes * 60)
+	bucketSeconds := windowSeconds / int64(segmentCount)
+	if windowSeconds%int64(segmentCount) != 0 {
+		bucketSeconds++
 	}
-	if windowBuckets < 1 {
-		windowBuckets = 1
+	if bucketSeconds < 60 {
+		bucketSeconds = 60
 	}
-	windowSeconds := windowBuckets * bucketSeconds
 	sampleWindowHours := float64(windowSeconds) / 3600
-
-	hoursToQuery := int((windowSeconds + 3599) / 3600)
-	if hoursToQuery < 1 {
-		hoursToQuery = 1
-	}
-
-	summaries, err := perfmetrics.QuerySeriesByGroupModels(hoursToQuery, groupNames)
-	if err != nil {
-		return rates, seriesByModel, sampleWindowHours, bucketSeconds
-	}
-
 	now := time.Now().Unix()
 	windowStart := now - windowSeconds
-	for _, summary := range summaries {
-		key := summary.Group + "::" + summary.ModelName
-		recentSeries := make([]userGroupStatusBucket, 0, len(summary.Series))
-		weightedSuccess := 0.0
-		requestCount := int64(0)
-		for _, point := range summary.Series {
-			if point.Ts < windowStart {
-				continue
-			}
-			if point.RequestCount > 0 {
-				rate := point.SuccessRate
-				recentSeries = append(recentSeries, userGroupStatusBucket{
-					Ts:           point.Ts,
-					SuccessRate:  &rate,
-					RequestCount: point.RequestCount,
-				})
-				requestCount += point.RequestCount
-				weightedSuccess += (point.SuccessRate / 100) * float64(point.RequestCount)
-				continue
-			}
-			recentSeries = append(recentSeries, userGroupStatusBucket{
-				Ts:           point.Ts,
-				SuccessRate:  nil,
-				RequestCount: 0,
-			})
+	rows, err := model.GetGroupModelRequestBuckets(windowStart, now+1, bucketSeconds, groupNames)
+	if err != nil {
+		return rates, seriesByModel, requestCounts, sampleWindowHours, bucketSeconds
+	}
+
+	successCounts := make(map[string]int64)
+	for _, row := range rows {
+		if row.BucketIndex < 0 || row.BucketIndex >= int64(segmentCount) {
+			continue
 		}
-		seriesByModel[key] = recentSeries
+		key := row.GroupName + "::" + row.ModelName
+		if _, ok := seriesByModel[key]; !ok {
+			seriesByModel[key] = buildStatusSeries(windowStart, segmentCount, bucketSeconds)
+		}
+		bucket := &seriesByModel[key][row.BucketIndex]
+		bucket.RequestCount = row.RequestCount
+		if row.RequestCount > 0 {
+			rate := float64(row.SuccessCount) / float64(row.RequestCount) * 100
+			bucket.SuccessRate = &rate
+			requestCounts[key] += row.RequestCount
+			successCounts[key] += row.SuccessCount
+		}
+	}
+
+	for key, requestCount := range requestCounts {
 		if requestCount > 0 {
-			rate := weightedSuccess / float64(requestCount) * 100
+			rate := float64(successCounts[key]) / float64(requestCount) * 100
 			rates[key] = &rate
 		}
 	}
 
-	return rates, seriesByModel, sampleWindowHours, bucketSeconds
+	return rates, seriesByModel, requestCounts, sampleWindowHours, bucketSeconds
 }
 
 func modelStatusWeight(status string) int {
@@ -178,4 +181,34 @@ func modelStatusWeight(status string) int {
 	default:
 		return 2
 	}
+}
+
+func resolveGroupModelStatus(baseStatus string, successRate *float64, requestCount int64) string {
+	if baseStatus == "degraded" {
+		return "degraded"
+	}
+	if requestCount <= 0 || successRate == nil {
+		return "unknown"
+	}
+	if *successRate >= 95 {
+		return "healthy"
+	}
+	return "degraded"
+}
+
+func buildStatusSeries(windowStart int64, segmentCount int, bucketSeconds int64) []userGroupStatusBucket {
+	series := make([]userGroupStatusBucket, 0, segmentCount)
+	for index := 0; index < segmentCount; index++ {
+		series = append(series, userGroupStatusBucket{
+			Ts:           windowStart + int64(index)*bucketSeconds,
+			SuccessRate:  nil,
+			RequestCount: 0,
+		})
+	}
+	return series
+}
+
+func emptyStatusSeries(sampleMinutes int, segmentCount int, bucketSeconds int64) []userGroupStatusBucket {
+	windowStart := time.Now().Unix() - int64(sampleMinutes*60)
+	return buildStatusSeries(windowStart, segmentCount, bucketSeconds)
 }
