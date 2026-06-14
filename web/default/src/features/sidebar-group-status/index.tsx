@@ -142,7 +142,17 @@ function OverviewPanel(props: {
       tone: 'text-emerald-600 dark:text-emerald-400',
     },
     {
-      label: '异常模型',
+      label: '缓慢模型',
+      value: String(props.summary.slowModels),
+      hint:
+        props.summary.sampleWindow == null
+          ? '暂无采样窗口'
+          : `${formatSampleWindowLabel(props.summary.sampleWindow)} 成功率窗口`,
+      icon: AlertTriangle,
+      tone: 'text-amber-600 dark:text-amber-400',
+    },
+    {
+      label: '故障模型',
       value: String(props.summary.degradedModels),
       hint:
         props.summary.sampleWindow == null
@@ -171,7 +181,7 @@ function OverviewPanel(props: {
           快速查看哪些模型稳定可用，哪些模型最近出现波动，并定位问题出现的大致时间段。
         </CardDescription>
       </CardHeader>
-      <CardContent className='grid gap-3 pt-4 md:grid-cols-2 xl:grid-cols-4'>
+      <CardContent className='grid gap-3 pt-4 md:grid-cols-2 xl:grid-cols-5'>
         {metrics.map((metric) => {
           const Icon = metric.icon
 

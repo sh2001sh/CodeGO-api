@@ -181,10 +181,12 @@ func modelStatusWeight(status string) int {
 	switch status {
 	case "degraded":
 		return 0
-	case "unknown":
+	case "slow":
 		return 1
-	default:
+	case "unknown":
 		return 2
+	default:
+		return 3
 	}
 }
 
@@ -195,8 +197,11 @@ func resolveGroupModelStatus(baseStatus string, successRate *float64, requestCou
 	if requestCount <= 0 || successRate == nil {
 		return "unknown"
 	}
-	if *successRate >= 95 {
+	if *successRate >= 85 {
 		return "healthy"
+	}
+	if *successRate >= 30 {
+		return "slow"
 	}
 	return "degraded"
 }

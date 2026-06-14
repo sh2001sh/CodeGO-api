@@ -33,11 +33,18 @@ type StatusMeta = {
 
 const STATUS_META: Record<SidebarGroupAvailabilityStatus, StatusMeta> = {
   degraded: {
-    label: '异常',
+    label: '故障',
     accent: 'bg-rose-500',
     accentText: 'text-rose-700 dark:text-rose-300',
     dot: 'bg-rose-500 shadow-[0_0_0_4px_rgba(244,63,94,0.12)]',
     border: 'border-rose-500/30',
+  },
+  slow: {
+    label: '缓慢',
+    accent: 'bg-amber-500',
+    accentText: 'text-amber-700 dark:text-amber-300',
+    dot: 'bg-amber-500 shadow-[0_0_0_4px_rgba(245,158,11,0.14)]',
+    border: 'border-amber-500/30',
   },
   unknown: {
     label: '观测中',
@@ -77,8 +84,9 @@ export function sortItems(items: SidebarGroupStatusItem[]) {
 function sortModels(models: SidebarGroupModelStatusItem[]) {
   const weight: Record<SidebarGroupAvailabilityStatus, number> = {
     degraded: 0,
-    unknown: 1,
-    healthy: 2,
+    slow: 1,
+    unknown: 2,
+    healthy: 3,
   }
 
   return [...models].sort((a, b) => {
@@ -108,6 +116,7 @@ export function summarizeGroups(items: SidebarGroupStatusItem[]) {
     groups: items.length,
     models: models.length,
     healthyModels: models.filter((item) => item.status === 'healthy').length,
+    slowModels: models.filter((item) => item.status === 'slow').length,
     degradedModels: models.filter((item) => item.status === 'degraded').length,
     unknownModels: models.filter((item) => item.status === 'unknown').length,
     sampleWindow: models[0]?.sample_window ?? null,
@@ -165,7 +174,7 @@ function successRateTone(successRate: number) {
     return 'healthy' as const
   }
   if (successRate >= 30) {
-    return 'warning' as const
+    return 'slow' as const
   }
   return 'critical' as const
 }
