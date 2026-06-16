@@ -787,6 +787,196 @@ export const searchPages: SearchPageContent[] = [
       },
     ],
   },
+  {
+    slug: 'codex-api-vs-claude-code-api',
+    title: 'Codex API 和 Claude Code API 区别',
+    seoTitle: 'Codex API 和 Claude Code API 区别 | Code Go',
+    description:
+      'Code Go 帮你理解 Codex API 和 Claude Code API 的区别，适合正在比较两者的开发者。',
+    keywords:
+      'codex api 和 claude code api 区别, codex api vs claude code api, Code Go',
+    hero: 'Codex API 和 Claude Code API 区别',
+    intro:
+      '如果你在比较 Codex API 和 Claude Code API，通常不是只看参数，而是在选更适合自己的长期工作流。',
+    sections: [
+      {
+        heading: '区别不只是模型名不同',
+        paragraphs: [
+          '真正的区别，在于你更习惯什么样的工作节奏和使用方式。',
+          '有的人更看重直接推进，有的人更看重连续协作。',
+        ],
+      },
+      {
+        heading: '先选适合自己的工作流',
+        paragraphs: [
+          '比起问谁更强，更重要的是谁更适合你长期使用。',
+          'Code Go 更适合把这种比较放进同一条长期流程里。',
+        ],
+      },
+    ],
+    faq: [
+      {
+        question: 'Codex API 和 Claude Code API 区别主要看什么？',
+        answer: '主要看哪一种更适合你的长期 AI Coding 工作流。',
+      },
+      {
+        question: '这页适合谁？',
+        answer: '适合正在比较两种使用方式的开发者。',
+      },
+    ],
+  },
+  {
+    slug: 'codex-zhongzhuan-zenme-xuan',
+    title: 'Codex 中转怎么选',
+    seoTitle: 'Codex 中转怎么选 | Code Go',
+    description:
+      'Code Go 的 Codex 中转怎么选页面，适合正在寻找长期稳定入口的开发者。',
+    keywords:
+      'codex 中转怎么选, codex 中转选择, codex api中转怎么选, Code Go',
+    hero: 'Codex 中转怎么选',
+    intro:
+      '如果你在搜 Codex 中转怎么选，说明你已经从“能不能用”进入到了“值不值得长期用”的阶段。',
+    sections: [
+      {
+        heading: '先别只看能不能连通',
+        paragraphs: [
+          '能连通只是底线，不是判断标准。',
+          '真正值得选的入口，是你愿意长期反复使用的入口。',
+        ],
+      },
+      {
+        heading: '重点看长期体验',
+        paragraphs: [
+          '稳定、顺手、连续，比一次低价更重要。',
+          '这也是 Code Go 的方向。',
+        ],
+      },
+    ],
+    faq: [
+      {
+        question: 'Codex 中转怎么选最重要？',
+        answer: '最重要的是长期使用体验，而不是一次性可用。',
+      },
+      {
+        question: '这页适合谁？',
+        answer: '适合正在寻找长期稳定 Codex 入口的人。',
+      },
+    ],
+  },
+  {
+    slug: 'claude-zhongzhuan-wending-ma',
+    title: 'Claude 中转稳定吗',
+    seoTitle: 'Claude 中转稳定吗 | Code Go',
+    description:
+      'Code Go 的 Claude 中转稳定吗页面，帮助你判断 Claude 中转是否适合长期使用。',
+    keywords:
+      'claude 中转稳定吗, claude api中转稳定吗, claude 中转, Code Go',
+    hero: 'Claude 中转稳定吗',
+    intro:
+      '如果你在搜 Claude 中转稳定吗，说明你已经在意长期使用体验，而不只是临时连通。',
+    sections: [
+      {
+        heading: '稳定不是一句口号',
+        paragraphs: [
+          '稳定意味着你每次需要时都能顺利进入状态，而不是偶尔可用。',
+          '这对长期开发者来说非常关键。',
+        ],
+      },
+      {
+        heading: '稳定背后是连续感',
+        paragraphs: [
+          '长期 AI Coding 用户真正要的，是流程不中断。',
+          'Code Go 想承接的就是这种连续体验。',
+        ],
+      },
+    ],
+    faq: [
+      {
+        question: 'Claude 中转稳定吗，应该看什么？',
+        answer: '应该看是否适合长期重复使用，而不是只看一次访问结果。',
+      },
+      {
+        question: '这页解决什么问题？',
+        answer: '帮助你从长期使用角度判断 Claude 中转是否合适。',
+      },
+    ],
+  },
+  {
+    slug: 'codex-api-baocuo-zenmeban',
+    title: 'Codex API 报错怎么办',
+    seoTitle: 'Codex API 报错怎么办 | Code Go',
+    description:
+      'Code Go 的 Codex API 报错怎么办页面，适合遇到调用问题后想快速恢复工作流的开发者。',
+    keywords:
+      'codex api 报错怎么办, codex api 报错, codex api 问题, Code Go',
+    hero: 'Codex API 报错怎么办',
+    intro:
+      '如果你在搜 Codex API 报错怎么办，多半不是想看一堆概念，而是想尽快恢复正常使用。',
+    sections: [
+      {
+        heading: '先别让报错打断节奏',
+        paragraphs: [
+          '对长期用户来说，最重要的是尽快恢复工作流，而不是卡在一次报错里。',
+          '先确保入口和流程本身清晰，再逐步定位问题。',
+        ],
+      },
+      {
+        heading: '把问题处理成长期经验',
+        paragraphs: [
+          '真正有效的处理方式，是让这次报错之后，下次更容易恢复。',
+          '这也是长期积累的一部分。',
+        ],
+      },
+    ],
+    faq: [
+      {
+        question: 'Codex API 报错怎么办第一步做什么？',
+        answer: '先恢复可继续使用的状态，再逐步判断问题来源。',
+      },
+      {
+        question: '这页适合谁？',
+        answer: '适合遇到 Codex API 使用问题的开发者。',
+      },
+    ],
+  },
+  {
+    slug: 'claude-code-api-baocuo-zenmeban',
+    title: 'Claude Code API 报错怎么办',
+    seoTitle: 'Claude Code API 报错怎么办 | Code Go',
+    description:
+      'Code Go 的 Claude Code API 报错怎么办页面，帮助你在报错后尽快恢复 Claude Code 工作流。',
+    keywords:
+      'claude code api 报错怎么办, claude code api 报错, claude code api 问题, Code Go',
+    hero: 'Claude Code API 报错怎么办',
+    intro:
+      '如果你在搜 Claude Code API 报错怎么办，说明你已经在真实工作流里使用它了。',
+    sections: [
+      {
+        heading: '先恢复工作节奏',
+        paragraphs: [
+          '长期使用者最怕的不是报错本身，而是节奏被打断。',
+          '先让自己回到可继续工作的状态，再处理细节。',
+        ],
+      },
+      {
+        heading: '把一次问题变成长期经验',
+        paragraphs: [
+          '每次问题处理完，都应该让下一次恢复更快。',
+          '这才是长期 AI Coding 的有效方式。',
+        ],
+      },
+    ],
+    faq: [
+      {
+        question: 'Claude Code API 报错怎么办最重要？',
+        answer: '最重要的是先恢复可继续使用的工作流。',
+      },
+      {
+        question: '这页适合谁？',
+        answer: '适合已经在实际使用 Claude Code API 的开发者。',
+      },
+    ],
+  },
 ]
 
 export function getSearchPageBySlug(slug: string) {

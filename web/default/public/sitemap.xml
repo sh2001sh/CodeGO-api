@@ -131,6 +131,31 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://shu26.cfd/topics/codex-api-vs-claude-code-api</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://shu26.cfd/topics/codex-zhongzhuan-zenme-xuan</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://shu26.cfd/topics/claude-zhongzhuan-wending-ma</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://shu26.cfd/topics/codex-api-baocuo-zenmeban</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
+    <loc>https://shu26.cfd/topics/claude-code-api-baocuo-zenmeban</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://shu26.cfd/privacy-policy</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
