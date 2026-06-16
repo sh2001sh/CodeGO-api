@@ -65,6 +65,27 @@ export function SearchPage(props: { slug: string }) {
       />
       <main className='px-6 pb-16 pt-28 md:px-10 md:pt-32'>
         <div className='mx-auto max-w-5xl'>
+          <div className='mb-6 flex flex-wrap items-center gap-3'>
+            <Link
+              to='/'
+              className='inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-100 dark:hover:bg-white/[0.07]'
+            >
+              回到首页
+            </Link>
+            <Link
+              to='/topics'
+              className='inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-100 dark:hover:bg-white/[0.07]'
+            >
+              查看专题入口
+            </Link>
+            <Link
+              to='/keys'
+              className='inline-flex items-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-800 transition-colors hover:bg-amber-100 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200 dark:hover:bg-amber-500/16'
+            >
+              进入 Keys
+            </Link>
+          </div>
+
           <div className='max-w-3xl space-y-4'>
             <div className='inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-300'>
               <Search className='size-3.5' />
@@ -115,6 +136,31 @@ export function SearchPage(props: { slug: string }) {
                   </p>
                 </div>
               ))}
+            </div>
+          </section>
+
+          <section className='app-page-shell mt-10 rounded-[28px] p-6 md:p-7'>
+            <div className='flex flex-wrap items-center justify-between gap-4'>
+              <div>
+                <div className='app-section-kicker'>Code Go</div>
+                <h2 className='text-xl font-semibold tracking-tight text-slate-950 dark:text-slate-50'>
+                  回到首页或直接开始
+                </h2>
+              </div>
+              <div className='flex flex-wrap gap-3'>
+                <Link
+                  to='/'
+                  className='inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-100 dark:hover:bg-white/[0.07]'
+                >
+                  首页
+                </Link>
+                <Link
+                  to='/keys'
+                  className='inline-flex items-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-800 transition-colors hover:bg-amber-100 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200 dark:hover:bg-amber-500/16'
+                >
+                  立即开始
+                </Link>
+              </div>
             </div>
           </section>
 
@@ -201,6 +247,21 @@ export function SearchTopicsIndex() {
       />
       <main className='px-6 pb-16 pt-28 md:px-10 md:pt-32'>
         <div className='mx-auto max-w-5xl'>
+          <div className='mb-6 flex flex-wrap items-center gap-3'>
+            <Link
+              to='/'
+              className='inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:border-slate-300 hover:bg-slate-50 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-100 dark:hover:bg-white/[0.07]'
+            >
+              回到首页
+            </Link>
+            <Link
+              to='/keys'
+              className='inline-flex items-center gap-2 rounded-full border border-amber-300 bg-amber-50 px-4 py-2 text-sm font-medium text-amber-800 transition-colors hover:bg-amber-100 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200 dark:hover:bg-amber-500/16'
+            >
+              进入 Keys
+            </Link>
+          </div>
+
           <div className='max-w-3xl space-y-4'>
             <div className='inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700 dark:border-amber-900/60 dark:bg-amber-950/40 dark:text-amber-300'>
               <Search className='size-3.5' />

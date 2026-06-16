@@ -22,6 +22,13 @@ const searchRoutes = [
   { label: 'Claude 中转', href: '/topics/claude-zhongzhuan' },
 ]
 
+const keywordSignals = [
+  'Codex API',
+  'Claude Code API',
+  'Codex 中转',
+  'Claude 中转',
+]
+
 const valuePoints = [
   {
     title: '接入不散',
@@ -93,9 +100,9 @@ export function BrandHome() {
   return (
     <PublicLayout showMainContainer={false}>
       <SiteSeo
-        title='Code Go'
-        description='让 AI Coding 的每一步，都算数。Code Go 把 Codex、Claude Code 和长期 AI Coding 工作流放在一起。'
-        keywords='Code Go, Codex API, Claude Code API, Codex中转, Claude中转, AI Coding'
+        title='Code Go | Codex API、Claude Code API、Codex 中转、Claude 中转'
+        description='Code Go 是面向长期 AI Coding 的统一入口，覆盖 Codex API、Claude Code API、Codex 中转、Claude 中转与持续使用工作流。'
+        keywords='Code Go, Codex API, Claude Code API, Codex 中转, Claude 中转, codex api中转, claude code api中转, AI Coding'
         canonicalPath='/'
         jsonLd={{
           '@context': 'https://schema.org',
@@ -103,7 +110,7 @@ export function BrandHome() {
           name: 'Code Go',
           url: 'https://shu26.cfd',
           description:
-            '让 AI Coding 的每一步，都算数。一个适合长期 AI Coding 的统一入口。',
+            'Code Go 是面向长期 AI Coding 的统一入口，覆盖 Codex API、Claude Code API、Codex 中转与 Claude 中转。',
         }}
       />
 
@@ -122,8 +129,8 @@ export function BrandHome() {
                   <br />
                   的每一步，都算数
                 </h1>
-                <p className='max-w-xl text-[15px] leading-8 text-slate-600 md:text-lg dark:text-slate-300'>
-                  把 Codex、Claude Code 和你的长期工作流，接成一条会持续推进的主线。
+                <p className='max-w-3xl text-[15px] leading-8 text-slate-600 md:text-lg dark:text-slate-300'>
+                  面向 Codex API、Claude Code API、Codex 中转、Claude 中转的长期入口，把接入、调用和持续使用接成同一条主线。
                 </p>
               </div>
 
@@ -156,6 +163,17 @@ export function BrandHome() {
                   <div
                     key={item}
                     className='rounded-[22px] border border-black/6 bg-white/72 px-4 py-4 text-sm leading-7 text-slate-600 shadow-[0_10px_30px_rgba(15,20,27,0.05)] backdrop-blur dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300'
+                  >
+                    {item}
+                  </div>
+                ))}
+              </div>
+
+              <div className='flex flex-wrap gap-2.5'>
+                {keywordSignals.map((item) => (
+                  <div
+                    key={item}
+                    className='inline-flex items-center rounded-full border border-slate-200/80 bg-white/78 px-3 py-2 text-sm text-slate-700 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-200'
                   >
                     {item}
                   </div>
@@ -295,10 +313,10 @@ export function BrandHome() {
                 <h2 className='max-w-2xl text-3xl font-semibold tracking-[-0.03em] text-balance md:text-4xl'>
                   你找的不是一个
                   <br />
-                  临时能用的中转站
+                  临时能用的入口
                 </h2>
                 <p className='max-w-xl text-sm leading-8 text-slate-300 md:text-base'>
-                  你在找一个能陪你持续推进、持续积累、持续解锁的长期入口。Code Go 就是围绕这件事搭起来的。
+                  如果你搜的是 Codex API、Claude Code API、Codex 中转或 Claude 中转，你真正想找的是一个能持续推进、持续积累、持续解锁的长期入口。
                 </p>
               </div>
 
