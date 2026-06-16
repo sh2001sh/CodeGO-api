@@ -244,6 +244,27 @@ function renderPage(title, description, canonicalPath, content) {
         padding: 10px 14px;
         font-size: 0.92rem;
       }
+      .top-links {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        padding-top: 28px;
+      }
+      .top-link {
+        display: inline-flex;
+        align-items: center;
+        border: 1px solid var(--line);
+        border-radius: 999px;
+        background: white;
+        padding: 10px 15px;
+        font-size: 0.92rem;
+        font-weight: 700;
+      }
+      .top-link-primary {
+        border-color: rgba(217, 106, 57, 0.34);
+        background: rgba(217, 106, 57, 0.1);
+        color: #9b421f;
+      }
       @media (max-width: 640px) {
         .shell { width: min(100% - 28px, 1100px); }
         .hero { padding-top: 54px; }
@@ -356,6 +377,11 @@ function renderTopicDetail(page) {
     page.description,
     `/topics/${page.slug}`,
     `<main class="shell">
+  <nav class="top-links" aria-label="站点入口">
+    <a class="top-link" href="/">回到首页</a>
+    <a class="top-link" href="/topics">查看专题入口</a>
+    <a class="top-link top-link-primary" href="/keys">进入 Keys</a>
+  </nav>
   <section class="hero">
     <div class="hero-grid">
       <div>
@@ -378,6 +404,15 @@ function renderTopicDetail(page) {
     <div class="section-kicker">FAQ</div>
     <h2>常见问题</h2>
     <div class="faq">${faq}</div>
+  </section>
+  <section class="section">
+    <div class="section-kicker">Code Go</div>
+    <h2>回到首页或直接开始</h2>
+    <p>如果你已经确认 Code Go 适合你的 AI Coding 工作流，可以回到首页了解完整入口，或直接进入 Keys 开始配置。</p>
+    <div class="footer-links">
+      <a class="footer-link" href="/">首页</a>
+      <a class="footer-link" href="/keys">立即开始</a>
+    </div>
   </section>
   <section class="section">
     <div class="section-kicker">Next</div>
@@ -432,6 +467,10 @@ function renderTopicsIndex() {
     'Code Go 关键词专题聚合页，覆盖 Codex API、Claude Code API、Codex 中转、Claude 中转、教程、配置、问题与对比。',
     '/topics',
     `<main class="shell">
+  <nav class="top-links" aria-label="站点入口">
+    <a class="top-link" href="/">回到首页</a>
+    <a class="top-link top-link-primary" href="/keys">进入 Keys</a>
+  </nav>
   <section class="hero">
     <div class="eyebrow">Code Go · Topic Hub</div>
     <h1>Codex API、Claude Code API、Codex 中转、Claude 中转</h1>

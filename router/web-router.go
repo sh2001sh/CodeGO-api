@@ -31,12 +31,16 @@ func SetWebRouter(router *gin.Engine, assets ThemeAssets) {
 	router.Use(gzip.Gzip(gzip.DefaultCompression))
 	router.Use(middleware.GlobalWebRateLimit())
 	router.Use(middleware.Cache())
-	router.GET("/topics", func(c *gin.Context) {
+	topicsIndexHandler := func(c *gin.Context) {
 		serveEmbeddedHtml(c, themeFS, "/topics/index.html")
-	})
-	router.GET("/topics/:slug", func(c *gin.Context) {
+	}
+	topicDetailHandler := func(c *gin.Context) {
 		serveEmbeddedHtml(c, themeFS, "/topics/"+c.Param("slug")+"/index.html")
-	})
+	}
+	router.GET("/topics", topicsIndexHandler)
+	router.HEAD("/topics", topicsIndexHandler)
+	router.GET("/topics/:slug", topicDetailHandler)
+	router.HEAD("/topics/:slug", topicDetailHandler)
 	router.Use(func(c *gin.Context) {
 		path := c.Request.URL.Path
 		if path == "/topics" || strings.HasPrefix(path, "/topics/") {
