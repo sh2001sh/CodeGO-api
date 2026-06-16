@@ -2,6 +2,7 @@ package router
 
 import (
 	"embed"
+	"io"
 	"net/http"
 	"strings"
 
@@ -29,6 +30,12 @@ func SetWebRouter(router *gin.Engine, assets ThemeAssets) {
 	router.Use(gzip.Gzip(gzip.DefaultCompression))
 	router.Use(middleware.GlobalWebRateLimit())
 	router.Use(middleware.Cache())
+	router.GET("/topics", func(c *gin.Context) {
+		serveEmbeddedHtml(c, themeFS, "/topics/index.html")
+	})
+	router.GET("/topics/:slug", func(c *gin.Context) {
+		serveEmbeddedHtml(c, themeFS, "/topics/"+c.Param("slug")+"/index.html")
+	})
 	router.Use(static.Serve("/", themeFS))
 	router.NoRoute(func(c *gin.Context) {
 		c.Set(middleware.RouteTagKey, "web")
@@ -43,4 +50,22 @@ func SetWebRouter(router *gin.Engine, assets ThemeAssets) {
 			c.Data(http.StatusOK, "text/html; charset=utf-8", assets.DefaultIndexPage)
 		}
 	})
+}
+
+func serveEmbeddedHtml(c *gin.Context, fs static.ServeFileSystem, assetPath string) {
+	file, err := fs.Open(assetPath)
+	if err != nil {
+		controller.RelayNotFound(c)
+		return
+	}
+	defer file.Close()
+
+	content, err := io.ReadAll(file)
+	if err != nil {
+		controller.RelayNotFound(c)
+		return
+	}
+
+	c.Header("Cache-Control", "no-cache")
+	c.Data(http.StatusOK, "text/html; charset=utf-8", content)
 }

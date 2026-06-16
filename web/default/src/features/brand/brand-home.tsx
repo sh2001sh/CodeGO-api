@@ -134,7 +134,7 @@ export function BrandHome() {
                   render={
                     <Link
                       to='/sign-in'
-                      search={{ redirect: '/_authenticated/keys' }}
+                      search={{ redirect: '/keys' }}
                     />
                   }
                 >
