@@ -1,15 +1,15 @@
 import { Link } from '@tanstack/react-router'
 import {
   ArrowRight,
-  Bot,
   Braces,
   ChevronRight,
   Command,
   Flame,
+  History,
   Layers3,
-  Orbit,
   Sparkles,
   TerminalSquare,
+  Trophy,
 } from 'lucide-react'
 import { PublicLayout } from '@/components/layout'
 import { SiteSeo } from '@/components/seo'
@@ -59,16 +59,34 @@ const quickLinks = [
 ]
 
 const terminalLines = [
-  '> connect codex',
-  '> switch claude-code',
-  '> keep momentum',
-  '> unlock next step',
+  'connect codex workspace',
+  'sync claude code context',
+  'carry today into tomorrow',
+  'unlock next milestone',
 ]
 
 const brandMoments = [
   '今天的使用，不会在明天归零。',
   '每一次接入，都会变成下一次更顺手的起点。',
   '长期 AI Coding，需要的是连续感，不是临时可用。',
+]
+
+const progressItems = [
+  {
+    label: '接入',
+    text: '把 Codex 和 Claude Code 放进同一条主线。',
+    icon: Braces,
+  },
+  {
+    label: '记录',
+    text: '保留上下文、入口和每天推进过的痕迹。',
+    icon: History,
+  },
+  {
+    label: '解锁',
+    text: '每次使用都成为下一次更顺手的起点。',
+    icon: Trophy,
+  },
 ]
 
 export function BrandHome() {
@@ -159,64 +177,81 @@ export function BrandHome() {
             </div>
 
             <div className='relative'>
-              <div className='absolute inset-0 -z-10 rounded-[40px] bg-[radial-gradient(circle_at_top_left,_rgba(240,138,88,0.24),_transparent_30%),radial-gradient(circle_at_80%_28%,_rgba(119,174,249,0.22),_transparent_30%)] blur-2xl' />
-              <div className='rounded-[34px] border border-white/60 bg-[linear-gradient(160deg,rgba(255,255,255,0.95),rgba(247,249,252,0.7))] p-5 shadow-[0_30px_80px_rgba(15,20,27,0.12)] backdrop-blur-xl dark:border-white/10 dark:bg-[linear-gradient(160deg,rgba(20,26,36,0.92),rgba(15,20,27,0.72))]'>
-                <div className='rounded-[28px] border border-black/6 bg-slate-950 p-5 text-slate-100 shadow-[0_16px_44px_rgba(0,0,0,0.28)] dark:border-white/10'>
+              <div className='absolute inset-0 -z-10 rounded-[40px] bg-[radial-gradient(circle_at_top_left,_rgba(240,138,88,0.26),_transparent_30%),radial-gradient(circle_at_78%_24%,_rgba(217,106,57,0.18),_transparent_32%)] blur-2xl' />
+              <div className='rounded-[34px] border border-white/60 bg-[linear-gradient(160deg,rgba(255,248,244,0.96),rgba(250,244,239,0.72))] p-5 shadow-[0_30px_80px_rgba(15,20,27,0.12)] backdrop-blur-xl dark:border-white/10 dark:bg-[linear-gradient(160deg,rgba(28,19,15,0.94),rgba(15,20,27,0.78))]'>
+                <div className='rounded-[28px] border border-black/6 bg-[linear-gradient(180deg,#20130f,#130f11)] p-5 text-slate-100 shadow-[0_16px_44px_rgba(0,0,0,0.28)] dark:border-white/10'>
                   <div className='flex items-center justify-between'>
-                    <div className='inline-flex items-center gap-2 text-xs font-medium text-slate-300'>
-                      <Command className='size-3.5 text-amber-400' />
-                      Session / Code Go
+                    <div className='inline-flex items-center gap-2 text-xs font-medium text-orange-100/80'>
+                      <Command className='size-3.5 text-orange-300' />
+                      Code Go / Session
                     </div>
-                    <div className='inline-flex items-center gap-2 text-xs text-emerald-300'>
-                      <span className='size-2 rounded-full bg-emerald-400' />
-                      active
+                    <div className='inline-flex items-center gap-2 text-xs text-orange-200/70'>
+                      <span className='size-2 rounded-full bg-orange-300 terminal-demo-pulse' />
+                      ongoing
                     </div>
                   </div>
 
-                  <div className='mt-4 rounded-2xl border border-white/8 bg-white/[0.04] p-4'>
-                    <div className='flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-slate-400'>
+                  <div className='mt-4 rounded-2xl border border-white/8 bg-white/[0.03] p-4'>
+                    <div className='flex items-center gap-2 text-xs uppercase tracking-[0.18em] text-orange-100/45'>
                       <TerminalSquare className='size-3.5' />
-                      Momentum
+                      Long-run loop
                     </div>
-                    <div className='mt-4 space-y-2 font-mono text-sm leading-7 text-slate-200'>
-                      {terminalLines.map((line) => (
-                        <div key={line}>{line}</div>
+                    <div className='mt-4 rounded-2xl border border-white/6 bg-black/18 px-4 py-3 font-mono text-sm leading-7 text-orange-50/92'>
+                      {terminalLines.map((line, index) => (
+                        <div
+                          key={line}
+                          className='landing-animate-fade-up opacity-0'
+                          style={{ animationDelay: `${index * 0.9}s` }}
+                        >
+                          <span className='mr-3 text-orange-300/70'>&gt;</span>
+                          {line}
+                          {index === terminalLines.length - 1 ? (
+                            <span className='terminal-demo-blink ml-1 inline-block text-orange-300'>
+                              |
+                            </span>
+                          ) : null}
+                        </div>
                       ))}
                     </div>
                   </div>
 
-                  <div className='mt-4 grid gap-3 sm:grid-cols-[1.05fr_0.95fr]'>
-                    <div className='rounded-2xl border border-white/8 bg-white/[0.04] p-4'>
-                      <div className='text-[11px] uppercase tracking-[0.16em] text-slate-400'>
-                        Current flow
+                  <div className='mt-4 rounded-2xl border border-orange-300/10 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),rgba(255,255,255,0.02))] p-4'>
+                    <div className='flex items-center justify-between gap-4'>
+                      <div>
+                        <div className='text-[11px] uppercase tracking-[0.16em] text-orange-100/45'>
+                          Core loop
+                        </div>
+                        <div className='mt-2 text-lg font-semibold text-orange-50'>
+                          连接，记录，解锁
+                        </div>
                       </div>
-                      <div className='mt-3 text-lg font-semibold'>Codex + Claude Code</div>
-                      <p className='mt-2 text-sm leading-6 text-slate-400'>
-                        一个入口里切换、记录、推进，不把每次使用切成孤岛。
-                      </p>
+                      <div className='rounded-full border border-orange-300/12 bg-orange-300/8 px-3 py-1 text-xs text-orange-100/70'>
+                        Codex + Claude Code
+                      </div>
                     </div>
-                    <div className='grid gap-3'>
-                      <div className='rounded-2xl border border-white/8 bg-white/[0.04] p-4'>
-                        <div className='text-[11px] uppercase tracking-[0.16em] text-slate-400'>
-                          Product stance
-                        </div>
-                        <div className='mt-3 inline-flex items-center gap-2 text-lg font-semibold'>
-                          <Bot className='size-5 text-sky-300' />
-                          Long-run use
-                        </div>
-                        <p className='mt-2 text-sm leading-6 text-slate-400'>
-                          更适合长期 AI Coding，不只解决一次调用成功。
-                        </p>
-                      </div>
-                      <div className='rounded-2xl border border-amber-400/18 bg-[linear-gradient(135deg,rgba(240,138,88,0.14),rgba(255,255,255,0.02))] p-4'>
-                        <div className='inline-flex items-center gap-2 text-[11px] uppercase tracking-[0.16em] text-amber-200'>
-                          <Orbit className='size-3.5' />
-                          Core idea
-                        </div>
-                        <div className='mt-3 text-sm leading-7 text-slate-200'>
-                          不是一次代写，而是把每一步使用，变成下一步更顺手的积累。
-                        </div>
-                      </div>
+
+                    <div className='mt-4 space-y-3'>
+                      {progressItems.map((item) => {
+                        const Icon = item.icon
+                        return (
+                          <div
+                            key={item.label}
+                            className='flex items-start gap-3 rounded-2xl border border-white/6 bg-white/[0.03] px-3 py-3'
+                          >
+                            <div className='mt-0.5 inline-flex size-9 items-center justify-center rounded-2xl bg-orange-300/10 text-orange-200'>
+                              <Icon className='size-4.5' />
+                            </div>
+                            <div>
+                              <div className='text-sm font-semibold text-orange-50'>
+                                {item.label}
+                              </div>
+                              <p className='mt-1 text-sm leading-6 text-orange-50/66'>
+                                {item.text}
+                              </p>
+                            </div>
+                          </div>
+                        )
+                      })}
                     </div>
                   </div>
                 </div>
