@@ -635,6 +635,158 @@ export const searchPages: SearchPageContent[] = [
       },
     ],
   },
+  {
+    slug: 'codex-api-zenme-yong',
+    title: 'Codex API 怎么用',
+    seoTitle: 'Codex API 怎么用 | Code Go',
+    description:
+      'Code Go 的 Codex API 怎么用页面，帮助你快速找到 Codex 的实际使用方式。',
+    keywords:
+      'codex api 怎么用, codex api 使用方法, codex api 教程, Code Go',
+    hero: 'Codex API 怎么用',
+    intro:
+      '如果你在搜 Codex API 怎么用，说明你更关心实际操作而不是概念解释。',
+    sections: [
+      {
+        heading: '先开始最简单的一步',
+        paragraphs: [
+          '把 Codex 用在你最常见的开发动作上，先熟悉它的节奏。',
+          '这样更容易快速建立信心。',
+        ],
+      },
+      {
+        heading: '再把它变成习惯',
+        paragraphs: [
+          '真正好用的工具，不是第一次用得惊艳，而是第二天还愿意继续用。',
+          '这也是 Code Go 想强调的体验。',
+        ],
+      },
+    ],
+    faq: [
+      {
+        question: 'Codex API 怎么用最简单？',
+        answer: '先从常见的小任务开始，再逐步扩展到完整工作流。',
+      },
+      {
+        question: '这页适合什么人？',
+        answer: '适合正在寻找 Codex 实际用法的人。',
+      },
+    ],
+  },
+  {
+    slug: 'claude-code-api-zenme-jie',
+    title: 'Claude Code API 怎么接',
+    seoTitle: 'Claude Code API 怎么接 | Code Go',
+    description:
+      'Code Go 的 Claude Code API 怎么接页面，适合想快速接入 Claude Code 的开发者。',
+    keywords:
+      'claude code api 怎么接, claude code api 接入方法, claude code api 教程, Code Go',
+    hero: 'Claude Code API 怎么接',
+    intro:
+      '如果你在找 Claude Code API 怎么接，通常是在找一个足够直接的接入方式。',
+    sections: [
+      {
+        heading: '先把接入目标定下来',
+        paragraphs: [
+          '你是想临时试一下，还是想长期用。',
+          '目标不同，接入方式也会不同。',
+        ],
+      },
+      {
+        heading: '让接入之后还能继续用',
+        paragraphs: [
+          '接入只是开始，后面能不能持续使用才更关键。',
+          'Code Go 更看重这一点。',
+        ],
+      },
+    ],
+    faq: [
+      {
+        question: 'Claude Code API 怎么接最重要？',
+        answer: '先确认你的长期使用目标，再选择接入方式。',
+      },
+      {
+        question: '这页和教程页有什么区别？',
+        answer: '这页更直接偏向“怎么接”，更适合搜索入口词。',
+      },
+    ],
+  },
+  {
+    slug: 'codex-api-peizhi',
+    title: 'Codex API 配置说明',
+    seoTitle: 'Codex API 配置说明 | Code Go',
+    description:
+      'Code Go 的 Codex API 配置说明，帮助你把 Codex 放进稳定的使用流程。',
+    keywords:
+      'codex api 配置, codex api 配置说明, codex api 教程, Code Go',
+    hero: 'Codex API 配置说明',
+    intro:
+      '如果你在找 Codex API 配置说明，说明你已经准备把它放进日常使用流程。',
+    sections: [
+      {
+        heading: '配置不是终点',
+        paragraphs: [
+          '配置完成只是开始，后面是否顺手才是关键。',
+          '把流程设计成可持续使用，会更重要。',
+        ],
+      },
+      {
+        heading: '让配置服务长期使用',
+        paragraphs: [
+          '最好的配置方式，是让你每次打开都能快速进入状态。',
+          '这也是长期 AI Coding 的核心。',
+        ],
+      },
+    ],
+    faq: [
+      {
+        question: 'Codex API 配置说明主要看什么？',
+        answer: '主要看怎么让它稳定进入长期使用流程。',
+      },
+      {
+        question: '这页适合谁？',
+        answer: '适合已经准备开始配置 Codex 的开发者。',
+      },
+    ],
+  },
+  {
+    slug: 'claude-code-api-peizhi',
+    title: 'Claude Code API 配置说明',
+    seoTitle: 'Claude Code API 配置说明 | Code Go',
+    description:
+      'Code Go 的 Claude Code API 配置说明，帮助你把 Claude Code 接入日常开发流程。',
+    keywords:
+      'claude code api 配置, claude code api 配置说明, claude code api 教程, Code Go',
+    hero: 'Claude Code API 配置说明',
+    intro:
+      '如果你在找 Claude Code API 配置说明，你大概率已经准备进入长期使用阶段。',
+    sections: [
+      {
+        heading: '先完成必要配置',
+        paragraphs: [
+          '把最基础的部分配置好，先确保能顺畅开始。',
+          '然后再去优化使用体验。',
+        ],
+      },
+      {
+        heading: '把配置和使用连起来',
+        paragraphs: [
+          '配置完成后，最重要的是让它真正进入你的开发习惯。',
+          '这会直接影响你之后的使用频率。',
+        ],
+      },
+    ],
+    faq: [
+      {
+        question: 'Claude Code API 配置说明适合谁？',
+        answer: '适合正在准备长期使用 Claude Code 的开发者。',
+      },
+      {
+        question: '配置完成后下一步是什么？',
+        answer: '把它放进固定工作流里，形成持续使用。',
+      },
+    ],
+  },
 ]
 
 export function getSearchPageBySlug(slug: string) {
