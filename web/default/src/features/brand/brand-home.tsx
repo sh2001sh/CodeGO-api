@@ -113,7 +113,12 @@ export function BrandHome() {
                 <Button
                   size='lg'
                   className='h-12 rounded-full px-6 text-sm font-semibold'
-                  render={<Link to='/pricing' />}
+                  render={
+                    <Link
+                      to='/sign-in'
+                      search={{ redirect: '/_authenticated/keys' }}
+                    />
+                  }
                 >
                   立即开始
                   <ArrowRight className='ml-2 size-4' />

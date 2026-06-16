@@ -5,6 +5,8 @@ import (
 	"io/fs"
 	"net/http"
 	"os"
+	"path"
+	"strings"
 
 	"github.com/gin-contrib/static"
 )
@@ -29,7 +31,18 @@ func (e *embedFileSystem) Open(name string) (http.File, error) {
 		// which will use the replaced index bytes with analytic codes.
 		return nil, os.ErrNotExist
 	}
-	return e.FileSystem.Open(name)
+
+	cleanName := path.Clean(strings.TrimPrefix(name, "/"))
+	if cleanName == "." || cleanName == "" {
+		return nil, os.ErrNotExist
+	}
+
+	file, err := e.FileSystem.Open(cleanName)
+	if err == nil {
+		return file, nil
+	}
+
+	return e.FileSystem.Open(path.Join(cleanName, "index.html"))
 }
 
 func EmbedFolder(fsEmbed embed.FS, targetPath string) static.ServeFileSystem {
