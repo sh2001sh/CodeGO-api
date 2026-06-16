@@ -26,6 +26,7 @@ func SetWebRouter(router *gin.Engine, assets ThemeAssets) {
 	defaultFS := common.EmbedFolder(assets.DefaultBuildFS, "web/default/dist")
 	classicFS := common.EmbedFolder(assets.ClassicBuildFS, "web/classic/dist")
 	themeFS := common.NewThemeAwareFS(defaultFS, classicFS)
+	staticHandler := static.Serve("/", themeFS)
 
 	router.Use(gzip.Gzip(gzip.DefaultCompression))
 	router.Use(middleware.GlobalWebRateLimit())
@@ -36,7 +37,14 @@ func SetWebRouter(router *gin.Engine, assets ThemeAssets) {
 	router.GET("/topics/:slug", func(c *gin.Context) {
 		serveEmbeddedHtml(c, themeFS, "/topics/"+c.Param("slug")+"/index.html")
 	})
-	router.Use(static.Serve("/", themeFS))
+	router.Use(func(c *gin.Context) {
+		path := c.Request.URL.Path
+		if path == "/topics" || strings.HasPrefix(path, "/topics/") {
+			c.Next()
+			return
+		}
+		staticHandler(c)
+	})
 	router.NoRoute(func(c *gin.Context) {
 		c.Set(middleware.RouteTagKey, "web")
 		if strings.HasPrefix(c.Request.RequestURI, "/v1") || strings.HasPrefix(c.Request.RequestURI, "/api") || strings.HasPrefix(c.Request.RequestURI, "/assets") {
