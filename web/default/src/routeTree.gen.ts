@@ -16,11 +16,13 @@ import { Route as BrandRouteImport } from './routes/brand'
 import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
 import { Route as authRouteRouteImport } from './routes/(auth)/route'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as TopicsIndexRouteImport } from './routes/topics/index'
 import { Route as SetupIndexRouteImport } from './routes/setup/index'
 import { Route as RankingsIndexRouteImport } from './routes/rankings/index'
 import { Route as PricingIndexRouteImport } from './routes/pricing/index'
 import { Route as GuideIndexRouteImport } from './routes/guide/index'
 import { Route as AboutIndexRouteImport } from './routes/about/index'
+import { Route as TopicsSlugRouteImport } from './routes/topics/$slug'
 import { Route as OauthProviderRouteImport } from './routes/oauth/$provider'
 import { Route as MiniappLandingRouteImport } from './routes/miniapp/landing'
 import { Route as GeneMapTokenRouteImport } from './routes/gene-map/$token'
@@ -114,6 +116,11 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const TopicsIndexRoute = TopicsIndexRouteImport.update({
+  id: '/topics/',
+  path: '/topics/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SetupIndexRoute = SetupIndexRouteImport.update({
   id: '/setup/',
   path: '/setup/',
@@ -137,6 +144,11 @@ const GuideIndexRoute = GuideIndexRouteImport.update({
 const AboutIndexRoute = AboutIndexRouteImport.update({
   id: '/about/',
   path: '/about/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const TopicsSlugRoute = TopicsSlugRouteImport.update({
+  id: '/topics/$slug',
+  path: '/topics/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
 const OauthProviderRoute = OauthProviderRouteImport.update({
@@ -496,11 +508,13 @@ export interface FileRoutesByFullPath {
   '/gene-map/$token': typeof GeneMapTokenRoute
   '/miniapp/landing': typeof MiniappLandingRoute
   '/oauth/$provider': typeof OauthProviderRoute
+  '/topics/$slug': typeof TopicsSlugRoute
   '/about/': typeof AboutIndexRoute
   '/guide/': typeof GuideIndexRoute
   '/pricing/': typeof PricingIndexRoute
   '/rankings/': typeof RankingsIndexRoute
   '/setup/': typeof SetupIndexRoute
+  '/topics/': typeof TopicsIndexRoute
   '/user/reset': typeof authUserResetRoute
   '/chat/$chatId': typeof AuthenticatedChatChatIdRoute
   '/dashboard/$section': typeof AuthenticatedDashboardSectionRoute
@@ -566,11 +580,13 @@ export interface FileRoutesByTo {
   '/gene-map/$token': typeof GeneMapTokenRoute
   '/miniapp/landing': typeof MiniappLandingRoute
   '/oauth/$provider': typeof OauthProviderRoute
+  '/topics/$slug': typeof TopicsSlugRoute
   '/about': typeof AboutIndexRoute
   '/guide': typeof GuideIndexRoute
   '/pricing': typeof PricingIndexRoute
   '/rankings': typeof RankingsIndexRoute
   '/setup': typeof SetupIndexRoute
+  '/topics': typeof TopicsIndexRoute
   '/user/reset': typeof authUserResetRoute
   '/chat/$chatId': typeof AuthenticatedChatChatIdRoute
   '/dashboard/$section': typeof AuthenticatedDashboardSectionRoute
@@ -640,11 +656,13 @@ export interface FileRoutesById {
   '/gene-map/$token': typeof GeneMapTokenRoute
   '/miniapp/landing': typeof MiniappLandingRoute
   '/oauth/$provider': typeof OauthProviderRoute
+  '/topics/$slug': typeof TopicsSlugRoute
   '/about/': typeof AboutIndexRoute
   '/guide/': typeof GuideIndexRoute
   '/pricing/': typeof PricingIndexRoute
   '/rankings/': typeof RankingsIndexRoute
   '/setup/': typeof SetupIndexRoute
+  '/topics/': typeof TopicsIndexRoute
   '/(auth)/user/reset': typeof authUserResetRoute
   '/_authenticated/chat/$chatId': typeof AuthenticatedChatChatIdRoute
   '/_authenticated/dashboard/$section': typeof AuthenticatedDashboardSectionRoute
@@ -713,11 +731,13 @@ export interface FileRouteTypes {
     | '/gene-map/$token'
     | '/miniapp/landing'
     | '/oauth/$provider'
+    | '/topics/$slug'
     | '/about/'
     | '/guide/'
     | '/pricing/'
     | '/rankings/'
     | '/setup/'
+    | '/topics/'
     | '/user/reset'
     | '/chat/$chatId'
     | '/dashboard/$section'
@@ -783,11 +803,13 @@ export interface FileRouteTypes {
     | '/gene-map/$token'
     | '/miniapp/landing'
     | '/oauth/$provider'
+    | '/topics/$slug'
     | '/about'
     | '/guide'
     | '/pricing'
     | '/rankings'
     | '/setup'
+    | '/topics'
     | '/user/reset'
     | '/chat/$chatId'
     | '/dashboard/$section'
@@ -856,11 +878,13 @@ export interface FileRouteTypes {
     | '/gene-map/$token'
     | '/miniapp/landing'
     | '/oauth/$provider'
+    | '/topics/$slug'
     | '/about/'
     | '/guide/'
     | '/pricing/'
     | '/rankings/'
     | '/setup/'
+    | '/topics/'
     | '/(auth)/user/reset'
     | '/_authenticated/chat/$chatId'
     | '/_authenticated/dashboard/$section'
@@ -922,11 +946,13 @@ export interface RootRouteChildren {
   GeneMapTokenRoute: typeof GeneMapTokenRoute
   MiniappLandingRoute: typeof MiniappLandingRoute
   OauthProviderRoute: typeof OauthProviderRoute
+  TopicsSlugRoute: typeof TopicsSlugRoute
   AboutIndexRoute: typeof AboutIndexRoute
   GuideIndexRoute: typeof GuideIndexRoute
   PricingIndexRoute: typeof PricingIndexRoute
   RankingsIndexRoute: typeof RankingsIndexRoute
   SetupIndexRoute: typeof SetupIndexRoute
+  TopicsIndexRoute: typeof TopicsIndexRoute
   PricingModelIdIndexRoute: typeof PricingModelIdIndexRoute
 }
 
@@ -981,6 +1007,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/topics/': {
+      id: '/topics/'
+      path: '/topics'
+      fullPath: '/topics/'
+      preLoaderRoute: typeof TopicsIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/setup/': {
       id: '/setup/'
       path: '/setup'
@@ -1014,6 +1047,13 @@ declare module '@tanstack/react-router' {
       path: '/about'
       fullPath: '/about/'
       preLoaderRoute: typeof AboutIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/topics/$slug': {
+      id: '/topics/$slug'
+      path: '/topics/$slug'
+      fullPath: '/topics/$slug'
+      preLoaderRoute: typeof TopicsSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/oauth/$provider': {
@@ -1595,11 +1635,13 @@ const rootRouteChildren: RootRouteChildren = {
   GeneMapTokenRoute: GeneMapTokenRoute,
   MiniappLandingRoute: MiniappLandingRoute,
   OauthProviderRoute: OauthProviderRoute,
+  TopicsSlugRoute: TopicsSlugRoute,
   AboutIndexRoute: AboutIndexRoute,
   GuideIndexRoute: GuideIndexRoute,
   PricingIndexRoute: PricingIndexRoute,
   RankingsIndexRoute: RankingsIndexRoute,
   SetupIndexRoute: SetupIndexRoute,
+  TopicsIndexRoute: TopicsIndexRoute,
   PricingModelIdIndexRoute: PricingModelIdIndexRoute,
 }
 export const routeTree = rootRouteImport
