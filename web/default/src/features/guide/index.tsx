@@ -216,6 +216,32 @@ export function Guide() {
         </section>
 
         <section className='px-6 py-8 md:px-10'>
+          <div className='mx-auto max-w-7xl rounded-3xl border bg-background p-6'>
+            <div className='max-w-3xl space-y-3'>
+              <div className='inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold'>
+                <Compass className='size-3.5' />
+                关键词入口
+              </div>
+              <h2 className='text-2xl font-semibold tracking-tight text-slate-950 dark:text-slate-50'>
+                从搜索词直接进入 Code Go
+              </h2>
+              <p className='text-sm leading-7 text-muted-foreground'>
+                如果你是从 Codex API、Claude Code API、Codex 中转、Claude 中转，或者教程、配置、对比、报错相关关键词进入，可以直接查看专题聚合页。
+              </p>
+            </div>
+            <div className='mt-5 flex flex-wrap gap-3'>
+              <Button variant='outline' render={<Link to='/topics' />}>
+                查看专题聚合页
+                <ArrowRight className='ml-2 size-4' />
+              </Button>
+              <Button variant='ghost' render={<Link to='/pricing' />}>
+                查看模型广场
+              </Button>
+            </div>
+          </div>
+        </section>
+
+        <section className='px-6 py-8 md:px-10'>
           <div className='mx-auto grid max-w-7xl gap-10 xl:grid-cols-[240px_minmax(0,1fr)]'>
             <aside className='xl:sticky xl:top-24 xl:self-start'>
               <div className='space-y-4 rounded-2xl border border-slate-200/70 bg-muted/40 p-4 dark:border-slate-800'>

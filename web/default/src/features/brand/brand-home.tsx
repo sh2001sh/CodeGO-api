@@ -186,6 +186,32 @@ export function BrandHome() {
             </div>
           </div>
         </section>
+
+        <section className='px-6 py-10 md:px-10'>
+          <div className='mx-auto max-w-7xl rounded-[28px] border bg-background p-6'>
+            <div className='max-w-3xl space-y-3'>
+              <div className='inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700 dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-300'>
+                <BookOpen className='size-3.5' />
+                搜索入口
+              </div>
+              <h2 className='text-2xl font-semibold tracking-tight text-slate-950 dark:text-slate-50'>
+                常搜专题已经整理好
+              </h2>
+              <p className='text-sm leading-7 text-muted-foreground'>
+                如果你是在找 Codex API、Claude Code API、Codex 中转、Claude 中转，或者相关教程、配置、区别、报错页面，可以直接从专题聚合页进入。
+              </p>
+            </div>
+            <div className='mt-5 flex flex-wrap gap-3'>
+              <Button variant='outline' render={<Link to='/topics' />}>
+                查看专题聚合页
+                <ArrowRight className='ml-2 size-4' />
+              </Button>
+              <Button variant='ghost' render={<Link to='/guide' />}>
+                查看使用说明
+              </Button>
+            </div>
+          </div>
+        </section>
       </main>
     </PublicLayout>
   )
