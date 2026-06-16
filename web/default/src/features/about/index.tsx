@@ -19,10 +19,46 @@ For commercial licensing, please contact support@quantumnous.com
 import { useQuery } from '@tanstack/react-query'
 import { Construction } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { SiteSeo } from '@/components/seo'
 import { Markdown } from '@/components/ui/markdown'
 import { Skeleton } from '@/components/ui/skeleton'
 import { PublicLayout } from '@/components/layout'
 import { getAboutContent } from './api'
+
+const fallbackAboutMarkdown = `# About Code Go
+
+## 品牌主张
+
+让 AI Coding 的每一步，都算数。
+
+## Code Go 在做什么
+
+Code Go 让 AI Coding 更适合长期使用。
+
+## 为什么这样做
+
+如果你长期使用 Codex、Claude Code 或多模型工作流，你会需要一个更稳定的使用入口。
+
+## Code Go 的差异化
+
+- 不只是接入模型
+- 不只是管理额度
+- 也不只是看调用结果
+
+我们更关心的是：你每天做 AI Coding 时，是否能感受到进度在持续累积。
+
+## 适合谁
+
+- 长期使用 Codex 的开发者
+- 长期使用 Claude Code 的开发者
+- 需要多模型、额度管理、成长反馈和工作流记录的团队
+
+## 对外表达
+
+如果只用一句话介绍 Code Go，就是：
+
+**让 AI Coding 的每一步，都算数。**
+`
 
 function SupportGroupCard() {
   return (
@@ -170,6 +206,11 @@ export function About() {
   if (isLoading) {
     return (
       <PublicLayout>
+        <SiteSeo
+          title='About'
+          description='关于 Code Go：让 AI Coding 的每一步，都算数。一个围绕长期积累感构建的 AI Coding 平台。'
+          canonicalPath='/about'
+        />
         <div className='mx-auto flex max-w-4xl flex-col gap-4 py-12'>
           <Skeleton className='h-8 w-[45%]' />
           <Skeleton className='h-4 w-full' />
@@ -183,7 +224,18 @@ export function About() {
   if (!hasContent) {
     return (
       <PublicLayout>
-        <EmptyAboutState />
+        <SiteSeo
+          title='About'
+          description='关于 Code Go：让 AI Coding 的每一步，都算数。一个围绕长期积累感构建的 AI Coding 平台。'
+          canonicalPath='/about'
+        />
+          <div className='mx-auto max-w-6xl space-y-6 px-4 py-8'>
+            <SupportGroupCard />
+            <Markdown className='prose-neutral dark:prose-invert max-w-none'>
+              {fallbackAboutMarkdown}
+            </Markdown>
+          <EmptyAboutState />
+        </div>
       </PublicLayout>
     )
   }
@@ -191,6 +243,11 @@ export function About() {
   if (isUrl) {
     return (
       <PublicLayout showMainContainer={false}>
+        <SiteSeo
+          title='About'
+          description='关于 Code Go：让 AI Coding 的每一步，都算数。一个围绕长期积累感构建的 AI Coding 平台。'
+          canonicalPath='/about'
+        />
         <div className='space-y-4 px-4 py-6 md:px-6'>
           <div className='mx-auto max-w-6xl'>
             <SupportGroupCard />
@@ -207,6 +264,11 @@ export function About() {
 
   return (
     <PublicLayout>
+      <SiteSeo
+        title='About'
+        description='关于 Code Go：让 AI Coding 的每一步，都算数。一个围绕长期积累感构建的 AI Coding 平台。'
+        canonicalPath='/about'
+      />
       <div className='mx-auto max-w-6xl space-y-6 px-4 py-8'>
         <SupportGroupCard />
         {isHtml ? (

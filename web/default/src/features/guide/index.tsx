@@ -2,13 +2,31 @@ import { Link } from '@tanstack/react-router'
 import {
   ArrowRight,
   BookOpenText,
+  Code2,
   Compass,
   FolderKanban,
   ShieldAlert,
+  Terminal,
 } from 'lucide-react'
+import { SiteSeo } from '@/components/seo'
 import { Button } from '@/components/ui/button'
 import { PublicLayout } from '@/components/layout'
 import { guideSections } from './content'
+
+const brandSections = [
+  {
+    title: '适合 Codex 用户',
+    text: '如果你已经把 Codex 用进日常工作，Code Go 可以继续承接这条工作流。',
+  },
+  {
+    title: '适合 Claude Code 用户',
+    text: '如果你偏终端、偏任务流，Code Go 可以作为日常调用和记录的入口。',
+  },
+  {
+    title: '一句话介绍',
+    text: '让 AI Coding 的每一步，都算数。',
+  },
+]
 
 function GuideDiagram(props: { title: string; steps: string[] }) {
   return (
@@ -120,6 +138,12 @@ function GuideSectionBlock(props: { section: (typeof guideSections)[number] }) {
 export function Guide() {
   return (
     <PublicLayout showMainContainer={false}>
+      <SiteSeo
+        title='Guide'
+        description='Code Go 使用说明与推广指南，覆盖 Codex、Claude Code、AI Coding 长期积累感、平台玩法与实际使用流程。'
+        keywords='Code Go guide, Codex, Claude Code, AI Coding, 使用说明, 推广语, 长期积累'
+        canonicalPath='/guide'
+      />
       <main className='bg-background'>
         <section className='border-b border-border/50 px-6 pb-10 pt-28 md:px-10 md:pb-14 md:pt-32'>
           <div className='mx-auto flex max-w-7xl flex-col gap-8 lg:flex-row lg:items-end lg:justify-between'>
@@ -133,7 +157,7 @@ export function Guide() {
                   Code Go 使用说明
                 </h1>
                 <p className='max-w-2xl text-base leading-8 text-muted-foreground md:text-lg'>
-                  这份说明页直接集成在前端，按真实用户流程拆成章节，并补充宠物图鉴、升级、盲盒规则和侧边栏功能入口说明。
+                  这里会告诉你怎么开始使用 Code Go，也会告诉你它为什么适合长期做 AI Coding。
                 </p>
               </div>
             </div>
@@ -157,6 +181,36 @@ export function Guide() {
                   宠物、盲盒、套餐
                 </div>
               </div>
+            </div>
+          </div>
+        </section>
+
+        <section className='px-6 py-8 md:px-10'>
+          <div className='mx-auto max-w-7xl'>
+            <div className='mb-6 max-w-3xl space-y-3'>
+              <div className='inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold'>
+                <Terminal className='size-3.5' />
+                一句话介绍
+              </div>
+              <h2 className='text-2xl font-semibold tracking-tight text-slate-950 dark:text-slate-50'>
+                为什么这句话适合放在首页
+              </h2>
+              <p className='text-sm leading-7 text-muted-foreground'>
+                因为它直接说明了产品要解决的事：不是只完成一次调用，而是让 AI Coding 持续积累。
+              </p>
+            </div>
+            <div className='grid gap-4 md:grid-cols-3'>
+              {brandSections.map((item) => (
+                <div key={item.title} className='rounded-3xl border bg-background p-5'>
+                <div className='flex items-center gap-2 text-sm font-semibold'>
+                  <Code2 className='size-4 text-amber-600' />
+                  {item.title}
+                </div>
+                <p className='mt-2 text-sm leading-7 text-muted-foreground'>
+                    {item.text}
+                  </p>
+                </div>
+              ))}
             </div>
           </div>
         </section>
@@ -189,12 +243,12 @@ export function Guide() {
                 </nav>
 
                 <div className='border-t border-border/60 pt-4 text-sm leading-6'>
-                  <div className='mb-2 flex items-center gap-2 font-medium'>
-                    <FolderKanban className='size-4' />
-                    阅读说明
+                <div className='mb-2 flex items-center gap-2 font-medium'>
+                  <FolderKanban className='size-4' />
+                    你会看到什么
                   </div>
                   <p className='text-muted-foreground'>
-                    套餐、盲盒和宠物章节都会把入口、规则、数量、增益和升级链路拆开说明。
+                    这里把套餐、盲盒、宠物和钱包入口分别说明，方便你直接开始使用。
                   </p>
                 </div>
 
@@ -224,4 +278,3 @@ export function Guide() {
     </PublicLayout>
   )
 }
-
