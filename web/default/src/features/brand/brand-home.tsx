@@ -107,7 +107,7 @@ export function BrandHome() {
         }}
       />
 
-      <main className='relative overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(217,106,57,0.14),_transparent_28%),radial-gradient(circle_at_85%_16%,_rgba(62,118,210,0.14),_transparent_22%),linear-gradient(180deg,rgba(255,255,255,0.16),transparent_28%)]'>
+      <main className='relative overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(217,106,57,0.16),_transparent_28%),radial-gradient(circle_at_85%_16%,_rgba(62,118,210,0.1),_transparent_22%),linear-gradient(180deg,#f4ede7_0%,#efe6de_42%,#eceff3_100%)] dark:bg-[radial-gradient(circle_at_top,_rgba(217,106,57,0.14),_transparent_28%),linear-gradient(180deg,#171312_0%,#10151b_100%)]'>
         <section className='px-6 pb-10 pt-24 md:px-10 md:pb-14 md:pt-30'>
           <div className='mx-auto grid max-w-7xl gap-10 lg:grid-cols-[minmax(0,1.04fr)_minmax(350px,0.96fr)] lg:items-center'>
             <div className='max-w-3xl space-y-8'>
@@ -117,7 +117,7 @@ export function BrandHome() {
               </div>
 
               <div className='space-y-4'>
-                <h1 className='max-w-4xl text-5xl font-semibold tracking-[-0.035em] text-slate-950 text-balance md:text-[5.5rem] md:leading-[0.92] dark:text-slate-50'>
+                <h1 className='max-w-4xl text-5xl leading-[1.04] font-semibold tracking-[-0.035em] text-slate-950 text-balance md:text-[5.5rem] md:leading-[1.02] dark:text-slate-50'>
                   让 AI Coding
                   <br />
                   的每一步，都算数
