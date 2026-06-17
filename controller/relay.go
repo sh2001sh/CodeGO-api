@@ -92,7 +92,11 @@ func Relay(c *gin.Context, relayFormat types.RelayFormat) {
 			if common.GetContextKeyBool(c, constant.ContextKeyResponseBodyDelivered) {
 				return
 			}
-			newAPIError.SetMessage(common.MessageWithRequestId(newAPIError.Error(), requestId))
+			rawMessageWithRequestID := common.MessageWithRequestId(newAPIError.Error(), requestId)
+			if newAPIError.StatusCode == http.StatusForbidden && common.IsUpstreamQuotaLeakMessage(rawMessageWithRequestID) {
+				newAPIError.StatusCode = http.StatusServiceUnavailable
+			}
+			newAPIError.SetMessage(common.SanitizeUpstreamQuotaErrorMessage(rawMessageWithRequestID))
 			switch relayFormat {
 			case types.RelayFormatOpenAIRealtime:
 				helper.WssError(c, ws, newAPIError.ToOpenAIError())
@@ -621,6 +625,9 @@ func RelayTask(c *gin.Context) {
 
 // respondTaskError 统一输出 Task 错误响应（含 429 限流提示改写）
 func respondTaskError(c *gin.Context, taskErr *dto.TaskError) {
+	if taskErr.StatusCode == http.StatusForbidden && common.IsUpstreamQuotaLeakMessage(taskErr.Message) {
+		taskErr.StatusCode = http.StatusServiceUnavailable
+	}
 	if taskErr.StatusCode == http.StatusTooManyRequests {
 		taskErr.Message = "当前分组上游负载已饱和，请稍后再试"
 	}

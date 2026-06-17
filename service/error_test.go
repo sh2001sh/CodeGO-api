@@ -159,3 +159,28 @@ func withDebugEnabled(t *testing.T, enabled bool) {
 		common.DebugEnabled = oldDebug
 	})
 }
+
+func TestTaskErrorWrapperSanitizesUpstreamQuotaLeak(t *testing.T) {
+	t.Parallel()
+
+	err := fmt.Errorf("status_code=403, 预扣费额度失败, 用户剩余额度: 0.000750, 需要预扣费额度: 0.002364 (request id: 202606170140313551875538268d9d6mB3fntBc)")
+
+	taskErr := TaskErrorWrapper(err, "bad_response_status_code", http.StatusForbidden)
+
+	require.Equal(t, common.UpstreamQuotaGenericMessage, taskErr.Message)
+}
+
+func TestTaskErrorFromAPIErrorKeepsLocalQuotaMessage(t *testing.T) {
+	t.Parallel()
+
+	apiErr := types.NewErrorWithStatusCode(
+		fmt.Errorf("用户额度不足, 剩余额度: 0.000750"),
+		types.ErrorCodeInsufficientUserQuota,
+		http.StatusForbidden,
+	)
+
+	taskErr := TaskErrorFromAPIError(apiErr)
+
+	require.NotNil(t, taskErr)
+	require.Equal(t, "用户额度不足, 剩余额度: 0.000750", taskErr.Message)
+}

@@ -19,9 +19,11 @@ var (
 	maskIPPattern     = regexp.MustCompile(`\b(?:\d{1,3}\.){3}\d{1,3}\b`)
 	// maskApiKeyPattern matches patterns like 'api_key:xxx' or "api_key:xxx" to mask the API key value
 	maskApiKeyPattern = regexp.MustCompile(`(['"]?)api_key:([^\s'"]+)(['"]?)`)
+	upstreamQuotaLeakPattern = regexp.MustCompile(`(?i)(status_code\s*=\s*403.*(?:预扣费额度失败|用户剩余额度|需要预扣费额度)|(?:预扣费额度失败|用户剩余额度|需要预扣费额度).*(?:request id\s*:|status_code\s*=)|insufficient\s+quota.*(?:request id\s*:|status_code\s*=)|pre-?consume.*quota.*(?:request id\s*:|status_code\s*=))`)
 )
 
 const LocalLogContentLimit = 2048
+const UpstreamQuotaGenericMessage = "当前模型服务暂不可用，请稍后重试"
 
 // LocalLogPreview limits log-only content unless debug logging is enabled.
 func LocalLogPreview(content string) string {
@@ -370,4 +372,21 @@ func MaskSensitiveInfo(str string) string {
 	str = maskApiKeyPattern.ReplaceAllString(str, "${1}api_key:***${3}")
 
 	return str
+}
+
+func SanitizeUpstreamQuotaErrorMessage(message string) string {
+	if message == "" {
+		return ""
+	}
+	if upstreamQuotaLeakPattern.MatchString(message) {
+		return UpstreamQuotaGenericMessage
+	}
+	return message
+}
+
+func IsUpstreamQuotaLeakMessage(message string) bool {
+	if message == "" {
+		return false
+	}
+	return upstreamQuotaLeakPattern.MatchString(message)
 }
