@@ -99,7 +99,7 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
           : 'hover:border-foreground/18 hover:bg-card'
       )}
     >
-      {/* Header: icon + name + price + actions */}
+      {/* Header: icon + content + actions */}
       <div className='flex items-start justify-between gap-2.5 sm:gap-3'>
         <div className='flex min-w-0 items-start gap-2.5 sm:gap-3'>
           <div className='bg-muted/45 ring-border/60 flex size-9 shrink-0 items-center justify-center rounded-xl ring-1 sm:size-10'>
@@ -109,10 +109,19 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
               </span>
             )}
           </div>
-          <div className='min-w-0'>
-            <h3 className='text-foreground truncate font-mono text-[15px] leading-tight font-semibold'>
-              {props.model.model_name}
-            </h3>
+          <div className='min-w-0 flex-1'>
+            <div className='flex min-w-0 items-start gap-2'>
+              <h3 className='text-foreground min-w-0 flex-1 truncate font-mono text-[15px] leading-tight font-semibold'>
+                {props.model.model_name}
+              </h3>
+              {isFreeModel && (
+                <Badge className='shrink-0 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] tracking-[0.12em] text-emerald-700 uppercase backdrop-blur dark:text-emerald-300'>
+                  <Sparkles className='size-3' />
+                  {t('Free')}
+                </Badge>
+              )}
+            </div>
+
             <div className='mt-0.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-xs sm:mt-1 sm:gap-x-3'>
               {dynamicSummary ? (
                 dynamicSummary.isSpecialExpression ? (
@@ -207,13 +216,7 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
           </div>
         </div>
 
-        <div className='flex shrink-0 items-start gap-1.5'>
-          {isFreeModel && (
-            <Badge className='mt-0.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] tracking-[0.12em] text-emerald-700 uppercase backdrop-blur dark:text-emerald-300'>
-              <Sparkles className='size-3' />
-              {t('Free')}
-            </Badge>
-          )}
+        <div className='flex shrink-0 items-center gap-1.5 self-start'>
           <button
             type='button'
             onClick={props.onClick}
