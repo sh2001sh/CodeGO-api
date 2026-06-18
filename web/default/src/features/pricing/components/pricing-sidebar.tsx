@@ -51,6 +51,7 @@ type FilterSectionProps = {
   value: string
   options: FilterOption[]
   onChange: (value: string) => void
+  defaultOpen?: boolean
 }
 
 export interface PricingSidebarProps {
@@ -99,24 +100,24 @@ function FilterChip(props: {
       type='button'
       onClick={props.onClick}
       className={cn(
-        'group inline-flex max-w-full items-center gap-1.5 rounded-md border px-2 py-1 text-xs font-medium transition-all',
+        'group inline-flex min-w-0 max-w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors',
         props.active
-          ? 'border-foreground/30 bg-foreground/5 text-foreground shadow-sm'
-          : 'border-border/70 bg-background text-muted-foreground hover:border-border hover:bg-muted/50 hover:text-foreground'
+          ? 'bg-foreground text-background'
+          : 'text-muted-foreground hover:bg-muted/60 hover:text-foreground'
       )}
       title={props.option.label}
     >
       {props.option.icon && (
-        <span className='shrink-0'>{props.option.icon}</span>
+        <span className='grid size-4 shrink-0 place-items-center'>{props.option.icon}</span>
       )}
       <span className='truncate'>{props.option.label}</span>
       {(props.option.suffix || props.option.count != null) && (
         <span
           className={cn(
-            'rounded-md px-1.5 py-0.5 text-[10px]',
+            'ml-auto shrink-0 font-mono text-[10px] tabular-nums',
             props.active
-              ? 'bg-background text-foreground'
-              : 'bg-muted text-muted-foreground'
+              ? 'text-background/70'
+              : 'text-muted-foreground/55'
           )}
         >
           {props.option.suffix ?? props.option.count}
@@ -129,8 +130,8 @@ function FilterChip(props: {
 function FilterSection(props: FilterSectionProps) {
   return (
     <Collapsible
-      defaultOpen
-      className='border-border/70 border-b pb-3 last:border-b-0'
+      defaultOpen={props.defaultOpen ?? true}
+      className='border-border/60 border-b pb-3 last:border-b-0'
     >
       <CollapsibleTrigger className='group flex w-full items-center justify-between py-2.5 text-left'>
         <span className='text-foreground text-sm font-semibold'>
@@ -139,7 +140,7 @@ function FilterSection(props: FilterSectionProps) {
         <ChevronDown className='text-muted-foreground size-4 transition-transform group-data-[panel-open]:rotate-180' />
       </CollapsibleTrigger>
       <CollapsibleContent>
-        <div className='flex flex-wrap gap-1.5'>
+        <div className='grid gap-1'>
           {props.options.map((option) => (
             <FilterChip
               key={option.value}
@@ -244,11 +245,11 @@ export function PricingSidebar(props: PricingSidebarProps) {
   ]
 
   return (
-    <aside className={cn('rounded-xl border p-3', props.className)}>
+    <aside className={cn('rounded-2xl border bg-card/70 p-3 backdrop-blur-sm', props.className)}>
       <div className='mb-2.5 flex items-center justify-between gap-2'>
         <div>
-          <h2 className='text-foreground text-sm font-bold'>{t('Filter')}</h2>
-          <p className='text-muted-foreground mt-1 text-xs'>
+          <h2 className='text-foreground text-sm font-semibold'>{t('Filter')}</h2>
+          <p className='text-muted-foreground mt-1 text-xs leading-5'>
             {t('Refine models by provider, group, type, and tags.')}
           </p>
         </div>
@@ -258,7 +259,7 @@ export function PricingSidebar(props: PricingSidebarProps) {
           size='sm'
           onClick={props.onClearFilters}
           disabled={!props.hasActiveFilters}
-          className='h-7 gap-1.5 px-2 text-xs'
+          className='h-8 gap-1.5 px-3 text-xs'
         >
           <RotateCcw className='size-3.5' />
           {t('Reset')}
@@ -266,7 +267,7 @@ export function PricingSidebar(props: PricingSidebarProps) {
       </div>
 
       {props.hasActiveFilters && (
-        <Badge variant='secondary' className='mb-3'>
+        <Badge variant='secondary' className='mb-3 rounded-full px-2.5 py-0.5'>
           {t('Filters active')}
         </Badge>
       )}
@@ -295,12 +296,14 @@ export function PricingSidebar(props: PricingSidebarProps) {
           value={props.quotaTypeFilter}
           options={quotaOptions}
           onChange={props.onQuotaTypeChange}
+          defaultOpen={false}
         />
         <FilterSection
           title={t('Endpoint Type')}
           value={props.endpointTypeFilter}
           options={endpointOptions}
           onChange={props.onEndpointTypeChange}
+          defaultOpen={false}
         />
       </div>
     </aside>

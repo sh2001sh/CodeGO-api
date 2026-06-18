@@ -17,10 +17,11 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { memo } from 'react'
-import { ChevronRight, Copy } from 'lucide-react'
+import { ChevronRight, Copy, Sparkles } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { getLobeIcon } from '@/lib/lobe-icon'
 import { cn } from '@/lib/utils'
+import { Badge } from '@/components/ui/badge'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
 import { StatusBadge } from '@/components/status-badge'
 import { DEFAULT_TOKEN_UNIT } from '../constants'
@@ -29,7 +30,7 @@ import {
   getDynamicPricingSummary,
 } from '../lib/dynamic-price'
 import { parseTags } from '../lib/filters'
-import { isTokenBasedModel } from '../lib/model-helpers'
+import { getFreeEligibleGroups, isTokenBasedModel } from '../lib/model-helpers'
 import { formatPrice, formatRequestPrice } from '../lib/price'
 import type { PricingModel, TokenUnit } from '../types'
 import { ModelPerfBadge, type ModelPerfBadgeData } from './model-perf-badge'
@@ -42,6 +43,7 @@ export interface ModelCardProps {
   tokenUnit?: TokenUnit
   showRechargePrice?: boolean
   perf?: ModelPerfBadgeData
+  groupRatios?: Record<string, number>
 }
 
 export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
@@ -80,6 +82,8 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
     Math.max(groups.length - 1, 0) +
     Math.max(endpoints.length - 2, 0) +
     Math.max(tags.length - 2, 0)
+  const freeGroups = getFreeEligibleGroups(props.model, props.groupRatios)
+  const isFreeModel = freeGroups.length > 0
 
   const handleCopy = (e: React.MouseEvent) => {
     e.stopPropagation()
@@ -89,14 +93,25 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
   return (
     <div
       className={cn(
-        'group relative flex flex-col rounded-xl border p-3 transition-colors sm:p-5',
-        'hover:bg-muted/20'
+        'group relative flex min-h-[230px] flex-col overflow-hidden rounded-2xl border bg-card/70 p-3 backdrop-blur-sm transition-all duration-200 sm:p-5',
+        isFreeModel
+          ? 'border-emerald-500/25 shadow-[0_0_18px_rgb(16_185_129_/_0.06)] hover:border-emerald-400/45 hover:shadow-[0_0_22px_rgb(16_185_129_/_0.14)]'
+          : 'hover:border-foreground/18 hover:bg-card'
       )}
     >
+      {isFreeModel && (
+        <div className='absolute top-3 right-3 z-10'>
+          <Badge className='rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] tracking-[0.12em] text-emerald-700 uppercase backdrop-blur dark:text-emerald-300'>
+            <Sparkles className='size-3' />
+            {t('Free')}
+          </Badge>
+        </div>
+      )}
+
       {/* Header: icon + name + price + actions */}
-      <div className='flex items-start justify-between gap-2.5 sm:gap-3'>
+      <div className={cn('flex items-start justify-between gap-2.5 sm:gap-3', isFreeModel && 'pr-20')}>
         <div className='flex min-w-0 items-start gap-2.5 sm:gap-3'>
-          <div className='bg-muted/40 flex size-9 shrink-0 items-center justify-center rounded-lg sm:size-10 sm:rounded-xl'>
+          <div className='bg-muted/45 flex size-9 shrink-0 items-center justify-center rounded-xl ring-1 ring-border/60 sm:size-10'>
             {vendorIcon || (
               <span className='text-muted-foreground text-sm font-bold'>
                 {initial}
@@ -104,7 +119,7 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
             )}
           </div>
           <div className='min-w-0'>
-            <h3 className='text-foreground truncate font-mono text-[15px] leading-tight font-bold'>
+            <h3 className='text-foreground truncate font-mono text-[15px] leading-tight font-semibold'>
               {props.model.model_name}
             </h3>
             <div className='mt-0.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-xs sm:mt-1 sm:gap-x-3'>
@@ -205,7 +220,7 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
           <button
             type='button'
             onClick={props.onClick}
-            className='text-muted-foreground hover:text-foreground hover:bg-muted inline-flex items-center gap-1 rounded-md border px-2 py-1 text-xs transition-colors sm:px-2.5 sm:py-1.5'
+            className='text-muted-foreground hover:text-foreground hover:bg-muted inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-xs transition-colors sm:px-2.5 sm:py-1.5'
           >
             {t('Details')}
             <ChevronRight className='size-3.5' />
@@ -213,7 +228,7 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
           <button
             type='button'
             onClick={handleCopy}
-            className='text-muted-foreground hover:text-foreground hover:bg-muted rounded-md border p-1.5 transition-colors'
+            className='text-muted-foreground hover:text-foreground hover:bg-muted rounded-lg border p-1.5 transition-colors'
             title={t('Copy')}
           >
             <Copy className='size-3.5' />
@@ -223,7 +238,7 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
 
       {/* Description */}
       <p className='text-muted-foreground mt-2 line-clamp-1 flex-1 text-[13px] leading-relaxed sm:mt-4 sm:line-clamp-2 sm:min-h-[2.5rem]'>
-        {props.model.description || t('No description available.')}
+        {props.model.description || ''}
       </p>
 
       {/* Footer: left metadata and right performance summary share row alignment */}
@@ -246,9 +261,10 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
             />
           )}
         </div>
-        <ModelPerfBadge perf={props.perf} className='row-span-2 self-start' />
+        <ModelPerfBadge perf={props.perf} className='row-span-2 self-start opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-within:opacity-100' />
 
-        <div className='flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-0.5 sm:gap-x-3 sm:gap-y-1'>
+        <div className='max-h-0 min-w-0 overflow-hidden opacity-0 transition-all duration-200 group-hover:max-h-20 group-hover:opacity-100 group-focus-within:max-h-20 group-focus-within:opacity-100'>
+          <div className='flex flex-wrap items-center gap-x-2.5 gap-y-0.5 pt-1 sm:gap-x-3 sm:gap-y-1'>
           {bottomTags.map((item) => (
             <span key={item} className='text-muted-foreground/70 text-xs'>
               {item}
@@ -262,6 +278,13 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
               +{hiddenCount}
             </span>
           )}
+          {isFreeModel && (
+            <span className='text-xs font-medium text-emerald-700 dark:text-emerald-300'>
+              {freeGroups[0] ? `${freeGroups[0]} · ` : ''}
+              {t('Available at zero group ratio')}
+            </span>
+          )}
+          </div>
         </div>
       </div>
     </div>

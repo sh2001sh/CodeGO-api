@@ -18,6 +18,11 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { EXCLUDED_GROUPS, QUOTA_TYPE_VALUES } from '../constants'
 import type { PricingModel } from '../types'
+export {
+  countFreeModels,
+  getFreeEligibleGroups,
+  isFreeModel,
+} from './free-models'
 
 // ----------------------------------------------------------------------------
 // Model Helper Utilities

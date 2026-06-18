@@ -408,14 +408,22 @@ export function SubscriptionPlansCard({
               onClick={() => void handleRefresh()}
               disabled={refreshing}
             >
-              <RefreshCw className={cn('h-4 w-4', refreshing && 'animate-spin')} />
+              <RefreshCw
+                className={cn('h-4 w-4', refreshing && 'animate-spin')}
+              />
             </Button>
           }
           contentClassName='space-y-4'
         >
+          <div className='border-border bg-muted/40 text-muted-foreground rounded-2xl border px-4 py-3 text-sm leading-6'>
+            套餐额度用于 GPT 模型调用；Claude
+            模型使用独立钱包额度，不直接从套餐中扣除。生效中的套餐额度可按当前规则比例转换为
+            Claude 额度。
+          </div>
+
           <PlanSection
             title='月卡套餐'
-            description='适合长期使用 Code Go。月卡有效期 1 个月，购买的总额度就是本月可用额度，一个月内可自由使用。'
+            description='适合长期使用 GPT 系列模型。月卡有效期 1 个月，购买的总额度就是本月可用额度，一个月内可自由使用。'
             loading={loadingPlans}
             emptyText='当前没有可购买的月卡套餐。'
           >
@@ -478,7 +486,10 @@ export function SubscriptionPlansCard({
                         : 0
                     const isMonthlyPlan = isMonthlyCardPlan(relatedPlan)
                     const isDayPass = isDayPassPlan(relatedPlan)
-                    const totalPercent = getUsagePercent(usedAmount, totalAmount)
+                    const totalPercent = getUsagePercent(
+                      usedAmount,
+                      totalAmount
+                    )
                     const periodPercent = getUsagePercent(
                       periodUsed,
                       periodAmount
@@ -487,8 +498,7 @@ export function SubscriptionPlansCard({
                     const active =
                       subscription.status === 'active' &&
                       subscription.end_time > Date.now() / 1000
-                    const totalExhausted =
-                      totalAmount > 0 && totalRemain <= 0
+                    const totalExhausted = totalAmount > 0 && totalRemain <= 0
                     const periodExhausted =
                       !isMonthlyPlan &&
                       periodAmount > 0 &&
@@ -529,7 +539,10 @@ export function SubscriptionPlansCard({
                                 </span>
                               </div>
                               <p className='text-muted-foreground mt-1 text-xs'>
-                                {active ? `剩余 ${remainDays} 天` : '该订阅已结束'} · 到期时间{' '}
+                                {active
+                                  ? `剩余 ${remainDays} 天`
+                                  : '该订阅已结束'}{' '}
+                                · 到期时间{' '}
                                 {new Date(
                                   subscription.end_time * 1000
                                 ).toLocaleString()}
