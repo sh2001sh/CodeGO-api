@@ -99,9 +99,18 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
           : 'hover:border-foreground/18 hover:bg-card'
       )}
     >
+      {isFreeModel && (
+        <div className='pointer-events-none absolute right-4 bottom-4 z-0'>
+          <Badge className='rounded-full border border-emerald-500/15 bg-emerald-500/8 px-3 py-1 text-[11px] tracking-[0.16em] text-emerald-700/55 uppercase shadow-none dark:text-emerald-300/55'>
+            <Sparkles className='size-3' />
+            {t('Free')}
+          </Badge>
+        </div>
+      )}
+
       {/* Header: icon + content + actions */}
-      <div className='flex items-start justify-between gap-2.5 sm:gap-3'>
-        <div className='flex min-w-0 items-start gap-2.5 sm:gap-3'>
+      <div className='relative z-10 flex items-start justify-between gap-2.5 sm:gap-3'>
+        <div className='flex min-w-0 flex-1 items-start gap-2.5 sm:gap-3'>
           <div className='bg-muted/45 ring-border/60 flex size-9 shrink-0 items-center justify-center rounded-xl ring-1 sm:size-10'>
             {vendorIcon || (
               <span className='text-muted-foreground text-sm font-bold'>
@@ -110,17 +119,9 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
             )}
           </div>
           <div className='min-w-0 flex-1'>
-            <div className='flex min-w-0 items-start gap-2'>
-              <h3 className='text-foreground min-w-0 flex-1 truncate font-mono text-[15px] leading-tight font-semibold'>
-                {props.model.model_name}
-              </h3>
-              {isFreeModel && (
-                <Badge className='shrink-0 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] tracking-[0.12em] text-emerald-700 uppercase backdrop-blur dark:text-emerald-300'>
-                  <Sparkles className='size-3' />
-                  {t('Free')}
-                </Badge>
-              )}
-            </div>
+            <h3 className='text-foreground min-w-0 truncate font-mono text-[15px] leading-tight font-semibold'>
+              {props.model.model_name}
+            </h3>
 
             <div className='mt-0.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-xs sm:mt-1 sm:gap-x-3'>
               {dynamicSummary ? (
@@ -237,12 +238,12 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
       </div>
 
       {/* Description */}
-      <p className='text-muted-foreground mt-2 line-clamp-1 flex-1 text-[13px] leading-relaxed sm:mt-4 sm:line-clamp-2 sm:min-h-[2.5rem]'>
+      <p className='text-muted-foreground relative z-10 mt-2 line-clamp-1 flex-1 text-[13px] leading-relaxed sm:mt-4 sm:line-clamp-2 sm:min-h-[2.5rem]'>
         {props.model.description || ''}
       </p>
 
       {/* Footer: left metadata and right performance summary share row alignment */}
-      <div className='mt-2 space-y-1 sm:mt-4'>
+      <div className='relative z-10 mt-2 space-y-1 sm:mt-4'>
         <div className='flex min-w-0 flex-wrap items-center gap-1.5'>
           {primaryGroup && (
             <span className='text-muted-foreground bg-muted/45 inline-flex max-w-full shrink-0 items-center rounded-md px-2 py-0.5 text-xs font-medium whitespace-nowrap'>
