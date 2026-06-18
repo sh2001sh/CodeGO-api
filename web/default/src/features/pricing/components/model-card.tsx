@@ -21,8 +21,8 @@ import { ChevronRight, Copy, Sparkles } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { getLobeIcon } from '@/lib/lobe-icon'
 import { cn } from '@/lib/utils'
-import { Badge } from '@/components/ui/badge'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
+import { Badge } from '@/components/ui/badge'
 import { StatusBadge } from '@/components/status-badge'
 import { DEFAULT_TOKEN_UNIT } from '../constants'
 import {
@@ -93,7 +93,7 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
   return (
     <div
       className={cn(
-        'group relative flex min-h-[230px] flex-col overflow-hidden rounded-2xl border bg-card/70 p-3 backdrop-blur-sm transition-all duration-200 sm:p-5',
+        'group bg-card/70 relative flex min-h-[230px] flex-col overflow-hidden rounded-2xl border p-3 backdrop-blur-sm transition-all duration-200 sm:p-5',
         isFreeModel
           ? 'border-emerald-500/25 shadow-[0_0_18px_rgb(16_185_129_/_0.06)] hover:border-emerald-400/45 hover:shadow-[0_0_22px_rgb(16_185_129_/_0.14)]'
           : 'hover:border-foreground/18 hover:bg-card'
@@ -109,9 +109,14 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
       )}
 
       {/* Header: icon + name + price + actions */}
-      <div className={cn('flex items-start justify-between gap-2.5 sm:gap-3', isFreeModel && 'pr-20')}>
+      <div
+        className={cn(
+          'flex items-start justify-between gap-2.5 sm:gap-3',
+          isFreeModel && 'pr-20'
+        )}
+      >
         <div className='flex min-w-0 items-start gap-2.5 sm:gap-3'>
-          <div className='bg-muted/45 flex size-9 shrink-0 items-center justify-center rounded-xl ring-1 ring-border/60 sm:size-10'>
+          <div className='bg-muted/45 ring-border/60 flex size-9 shrink-0 items-center justify-center rounded-xl ring-1 sm:size-10'>
             {vendorIcon || (
               <span className='text-muted-foreground text-sm font-bold'>
                 {initial}
@@ -242,14 +247,14 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
       </p>
 
       {/* Footer: left metadata and right performance summary share row alignment */}
-      <div className='mt-2 grid grid-cols-[minmax(0,1fr)_auto] items-start gap-x-2 gap-y-1 sm:mt-4'>
-        <div className='flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1'>
+      <div className='mt-2 space-y-1 sm:mt-4'>
+        <div className='flex min-w-0 flex-wrap items-center gap-1.5'>
           {primaryGroup && (
-            <span className='text-muted-foreground text-xs font-medium'>
+            <span className='text-muted-foreground bg-muted/45 inline-flex max-w-full shrink-0 items-center rounded-md px-2 py-0.5 text-xs font-medium whitespace-nowrap'>
               {primaryGroup} {t('Groups')}
             </span>
           )}
-          <span className='text-muted-foreground text-xs font-medium'>
+          <span className='text-muted-foreground bg-muted/45 inline-flex shrink-0 items-center rounded-md px-2 py-0.5 text-xs font-medium whitespace-nowrap'>
             {isTokenBased ? t('Token-based') : t('Per Request')}
           </span>
           {isDynamicPricing && (
@@ -261,29 +266,32 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
             />
           )}
         </div>
-        <ModelPerfBadge perf={props.perf} className='row-span-2 self-start opacity-0 transition-opacity duration-200 group-hover:opacity-100 group-focus-within:opacity-100' />
 
-        <div className='max-h-0 min-w-0 overflow-hidden opacity-0 transition-all duration-200 group-hover:max-h-20 group-hover:opacity-100 group-focus-within:max-h-20 group-focus-within:opacity-100'>
-          <div className='flex flex-wrap items-center gap-x-2.5 gap-y-0.5 pt-1 sm:gap-x-3 sm:gap-y-1'>
-          {bottomTags.map((item) => (
-            <span key={item} className='text-muted-foreground/70 text-xs'>
-              {item}
+        <div className='max-h-0 min-w-0 overflow-hidden opacity-0 transition-all duration-200 group-focus-within:max-h-20 group-focus-within:opacity-100 group-hover:max-h-20 group-hover:opacity-100'>
+          <div className='flex flex-wrap items-center gap-x-2.5 gap-y-1 pt-1 sm:gap-x-3'>
+            <ModelPerfBadge perf={props.perf} className='mr-1 opacity-100' />
+            {bottomTags.map((item) => (
+              <span
+                key={item}
+                className='text-muted-foreground/70 text-xs whitespace-nowrap'
+              >
+                {item}
+              </span>
+            ))}
+            <span className='text-muted-foreground/50 text-xs whitespace-nowrap'>
+              {tokenUnitLabel}
             </span>
-          ))}
-          <span className='text-muted-foreground/50 text-xs'>
-            {tokenUnitLabel}
-          </span>
-          {hiddenCount > 0 && (
-            <span className='text-muted-foreground/40 text-xs'>
-              +{hiddenCount}
-            </span>
-          )}
-          {isFreeModel && (
-            <span className='text-xs font-medium text-emerald-700 dark:text-emerald-300'>
-              {freeGroups[0] ? `${freeGroups[0]} · ` : ''}
-              {t('Available at zero group ratio')}
-            </span>
-          )}
+            {hiddenCount > 0 && (
+              <span className='text-muted-foreground/40 text-xs whitespace-nowrap'>
+                +{hiddenCount}
+              </span>
+            )}
+            {isFreeModel && (
+              <span className='text-xs font-medium whitespace-nowrap text-emerald-700 dark:text-emerald-300'>
+                {freeGroups[0] ? `${freeGroups[0]} · ` : ''}
+                {t('Available at zero group ratio')}
+              </span>
+            )}
           </div>
         </div>
       </div>

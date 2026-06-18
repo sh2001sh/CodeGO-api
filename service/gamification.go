@@ -162,6 +162,7 @@ type gamificationContext struct {
 	companionPetMap    map[string]model.UserCompanionPet
 	equippedPet        *model.UserCompanionPet
 	activeBonus        *model.CompanionAppliedBonus
+	paidConsumeCount   int64
 }
 
 type leaderboardScoreRow struct {
@@ -315,7 +316,11 @@ func buildGamificationContext(userId int) (*gamificationContext, error) {
 		todayRewardMap[reward.MissionKey] = reward
 	}
 
-	consumeTodayCount, err := model.CountConsumeLogsByUser(userId, startOfDay, endOfDay)
+	paidConsumeTodayCount, err := model.CountPaidConsumeLogsByUser(userId, startOfDay, endOfDay)
+	if err != nil {
+		return nil, err
+	}
+	paidConsumeCount, err := model.CountPaidConsumeLogsByUser(userId, 0, 0)
 	if err != nil {
 		return nil, err
 	}
@@ -357,7 +362,7 @@ func buildGamificationContext(userId int) (*gamificationContext, error) {
 		unlockMap:          unlockMap,
 		todayRewardMap:     todayRewardMap,
 		latestUnlock:       latestUnlock,
-		consumeTodayCount:  consumeTodayCount,
+		consumeTodayCount:  paidConsumeTodayCount,
 		blindBoxTodayCount: blindBoxTodayCount,
 		totalBlindBoxOpens: totalBlindBoxOpens,
 		hasSubscription:    hasSubscription,
@@ -365,6 +370,7 @@ func buildGamificationContext(userId int) (*gamificationContext, error) {
 		hasBlindBoxJackpot: hasBlindBoxJackpot,
 		equippedPet:        equippedPet,
 		activeBonus:        activeBonus,
+		paidConsumeCount:   paidConsumeCount,
 	}, nil
 }
 
@@ -373,13 +379,13 @@ func ensureAchievementUnlocks(ctx *gamificationContext) error {
 		unlocked := false
 		switch achievement.Key {
 		case "first-call":
-			unlocked = ctx.user.RequestCount > 0
+			unlocked = ctx.paidConsumeCount > 0
 		case "ten-calls":
-			unlocked = ctx.user.RequestCount >= 10
+			unlocked = ctx.paidConsumeCount >= 10
 		case "hundred-calls":
-			unlocked = ctx.user.RequestCount >= 100
+			unlocked = ctx.paidConsumeCount >= 100
 		case "thousand-calls":
-			unlocked = ctx.user.RequestCount >= 1000
+			unlocked = ctx.paidConsumeCount >= 1000
 		case "quota-scout":
 			unlocked = int64(ctx.user.UsedQuota) >= quotaUnitsFromUSD(50)
 		case "quota-smith":
