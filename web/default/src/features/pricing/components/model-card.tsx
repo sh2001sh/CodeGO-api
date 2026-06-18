@@ -99,22 +99,8 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
           : 'hover:border-foreground/18 hover:bg-card'
       )}
     >
-      {isFreeModel && (
-        <div className='absolute top-3 right-3 z-10'>
-          <Badge className='rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] tracking-[0.12em] text-emerald-700 uppercase backdrop-blur dark:text-emerald-300'>
-            <Sparkles className='size-3' />
-            {t('Free')}
-          </Badge>
-        </div>
-      )}
-
       {/* Header: icon + name + price + actions */}
-      <div
-        className={cn(
-          'flex items-start justify-between gap-2.5 sm:gap-3',
-          isFreeModel && 'pr-20'
-        )}
-      >
+      <div className='flex items-start justify-between gap-2.5 sm:gap-3'>
         <div className='flex min-w-0 items-start gap-2.5 sm:gap-3'>
           <div className='bg-muted/45 ring-border/60 flex size-9 shrink-0 items-center justify-center rounded-xl ring-1 sm:size-10'>
             {vendorIcon || (
@@ -221,7 +207,13 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
           </div>
         </div>
 
-        <div className='flex shrink-0 items-center gap-1.5'>
+        <div className='flex shrink-0 items-start gap-1.5'>
+          {isFreeModel && (
+            <Badge className='mt-0.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-0.5 text-[10px] tracking-[0.12em] text-emerald-700 uppercase backdrop-blur dark:text-emerald-300'>
+              <Sparkles className='size-3' />
+              {t('Free')}
+            </Badge>
+          )}
           <button
             type='button'
             onClick={props.onClick}
