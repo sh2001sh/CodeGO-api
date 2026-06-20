@@ -37,6 +37,13 @@ func SetWebRouter(router *gin.Engine, assets ThemeAssets) {
 	topicDetailHandler := func(c *gin.Context) {
 		serveEmbeddedHtml(c, themeFS, "/topics/"+c.Param("slug")+"/index.html")
 	}
+	homeHandler := func(c *gin.Context) {
+		serveThemeIndexPage(c, assets)
+	}
+	router.GET("/", homeHandler)
+	router.HEAD("/", homeHandler)
+	router.GET("/index.html", homeHandler)
+	router.HEAD("/index.html", homeHandler)
 	router.GET("/topics", topicsIndexHandler)
 	router.HEAD("/topics", topicsIndexHandler)
 	router.GET("/topics/:slug", topicDetailHandler)
@@ -55,12 +62,7 @@ func SetWebRouter(router *gin.Engine, assets ThemeAssets) {
 			controller.RelayNotFound(c)
 			return
 		}
-		c.Header("Cache-Control", "no-cache")
-		if common.GetTheme() == "classic" {
-			c.Data(http.StatusOK, "text/html; charset=utf-8", assets.ClassicIndexPage)
-		} else {
-			c.Data(http.StatusOK, "text/html; charset=utf-8", assets.DefaultIndexPage)
-		}
+		serveThemeIndexPage(c, assets)
 	})
 }
 
@@ -80,4 +82,13 @@ func serveEmbeddedHtml(c *gin.Context, fs static.ServeFileSystem, assetPath stri
 
 	c.Header("Cache-Control", "no-cache")
 	c.Data(http.StatusOK, "text/html; charset=utf-8", content)
+}
+
+func serveThemeIndexPage(c *gin.Context, assets ThemeAssets) {
+	c.Header("Cache-Control", "no-cache")
+	if common.GetTheme() == "classic" {
+		c.Data(http.StatusOK, "text/html; charset=utf-8", assets.ClassicIndexPage)
+		return
+	}
+	c.Data(http.StatusOK, "text/html; charset=utf-8", assets.DefaultIndexPage)
 }

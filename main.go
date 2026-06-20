@@ -41,14 +41,23 @@ var buildFS embed.FS
 //go:embed web/default/dist/index.html
 var indexPage []byte
 
+//go:embed web/default/index.html
+var defaultIndexTemplate []byte
+
 //go:embed web/classic/dist
 var classicBuildFS embed.FS
 
 //go:embed web/classic/dist/index.html
 var classicIndexPage []byte
 
+//go:embed web/classic/index.html
+var classicIndexTemplate []byte
+
 func main() {
 	startTime := time.Now()
+
+	indexPage = common.MergeIndexShell(indexPage, defaultIndexTemplate)
+	classicIndexPage = common.MergeIndexShell(classicIndexPage, classicIndexTemplate)
 
 	err := InitResources()
 	if err != nil {
