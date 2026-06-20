@@ -1,13 +1,4 @@
 import { Link } from '@tanstack/react-router'
-import {
-  ArrowRight,
-  BookOpen,
-  ChevronRight,
-  Compass,
-  Layers3,
-  Search,
-  Sparkles,
-} from 'lucide-react'
 import { PublicLayout } from '@/components/layout'
 import { SiteSeo } from '@/components/seo'
 import { getSearchPageBySlug, searchPages } from './data'
@@ -46,6 +37,11 @@ const topicEntryLinks = [
   { label: '使用教程', to: '/guide' as const },
 ]
 
+const TOPICS_INDEX_TITLE =
+  'Codex API、Claude Code API、Codex 中转、Claude 中转专题页 | Code Go'
+const TOPICS_INDEX_DESCRIPTION =
+  'Code Go 专题页汇总，覆盖 Codex API、Claude Code API、Codex 中转、Claude 中转、教程、配置、排障与模型选择。'
+
 function slugToLabel(slug: string) {
   return slug.replaceAll('-', ' / ')
 }
@@ -68,11 +64,6 @@ function buildTopicDescription(page: {
   return `${page.description} ${page.intro}`.trim()
 }
 
-const TOPICS_INDEX_TITLE =
-  'Codex API、Claude Code API、Codex 中转、Claude 中转专题页 | Code Go'
-const TOPICS_INDEX_DESCRIPTION =
-  'Code Go 专题页汇总，覆盖 Codex API、Claude Code API、Codex 中转、Claude 中转、教程、配置、排障与模型选择。'
-
 function topicKeywordsList(keywords: string) {
   return keywords
     .split(',')
@@ -81,93 +72,218 @@ function topicKeywordsList(keywords: string) {
     .slice(0, 6)
 }
 
-function TopicShell(props: {
-  title: string
-  description: string
-  eyebrow: string
-  children: React.ReactNode
-}) {
+function TopicPageFrame(props: { children: React.ReactNode }) {
   return (
-    <main className='public-topbar-spacer px-4 pb-12 sm:px-6 sm:pb-16 xl:px-8'>
-      <div className='mx-auto max-w-7xl'>
-        <section className='border-border/70 bg-card/80 rounded-[28px] border px-6 py-8 shadow-[0_18px_50px_rgba(15,20,27,0.08)] backdrop-blur sm:px-8 sm:py-10'>
-          <div className='border-border/80 bg-background/90 inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-[12px] font-semibold text-slate-700 dark:text-slate-200'>
-            <Sparkles className='text-primary size-3.5' />
-            {props.eyebrow}
-          </div>
-          <h1 className='mt-5 max-w-5xl text-4xl font-semibold tracking-tight text-slate-950 sm:text-5xl dark:text-slate-50'>
-            {props.title}
-          </h1>
-          <p className='mt-4 max-w-4xl text-[15px] leading-8 text-slate-600 sm:text-base dark:text-slate-300'>
-            {props.description}
-          </p>
-          <div className='mt-6 flex flex-wrap gap-2.5'>
-            {topicEntryLinks.map((item) => (
-              <Link
-                key={item.to}
-                to={item.to}
-                className='border-border/80 bg-background/90 hover:bg-background inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium text-slate-700 transition-colors dark:text-slate-200 dark:hover:bg-white/[0.04]'
-              >
-                {item.label}
-              </Link>
-            ))}
-          </div>
-        </section>
-        <div className='mt-6'>{props.children}</div>
-      </div>
-    </main>
+    <PublicLayout
+      showMainContainer={false}
+      showNotifications={false}
+      showThemeSwitch={false}
+    >
+      <main className='public-topbar-spacer px-4 pb-12 sm:px-6 sm:pb-16 xl:px-8'>
+        <div className='mx-auto grid max-w-[1320px] gap-5 xl:grid-cols-[250px_minmax(0,1fr)_286px]'>
+          {props.children}
+        </div>
+      </main>
+    </PublicLayout>
   )
 }
 
-function TopicIndexCard(props: {
-  title: string
-  description: string
-  slug: string
+function TopicSurface(props: {
+  id?: string
+  children: React.ReactNode
+  className?: string
 }) {
   return (
-    <Link
-      to='/topics/$slug'
-      params={{ slug: props.slug }}
-      className='group border-border/70 bg-card/78 hover:border-primary/30 dark:bg-card/72 rounded-[20px] border p-5 shadow-[0_10px_28px_rgba(15,20,27,0.05)] transition-transform duration-200 hover:-translate-y-0.5'
+    <section
+      id={props.id}
+      className={[
+        'rounded-[22px] border border-slate-200/70 bg-white/85 p-6 shadow-[0_14px_38px_rgba(15,20,27,0.08)] backdrop-blur dark:border-white/10 dark:bg-white/[0.04]',
+        props.className,
+      ]
+        .filter(Boolean)
+        .join(' ')}
     >
-      <div className='bg-primary/12 text-primary inline-flex size-10 items-center justify-center rounded-2xl'>
-        <Search className='size-4.5' />
-      </div>
-      <div className='mt-5 text-base font-semibold text-slate-950 dark:text-slate-50'>
+      {props.children}
+    </section>
+  )
+}
+
+function TopicNavCard(props: {
+  title: string
+  description: string
+  href: string
+  external?: boolean
+}) {
+  const className =
+    'block rounded-2xl border border-transparent bg-white/70 px-4 py-3 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/25 hover:bg-white dark:bg-white/[0.03] dark:hover:bg-white/[0.06]'
+
+  if (props.external) {
+    return (
+      <a href={props.href} className={className}>
+        <div className='text-sm font-semibold text-slate-950 dark:text-slate-50'>
+          {props.title}
+        </div>
+        <div className='mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300'>
+          {props.description}
+        </div>
+      </a>
+    )
+  }
+
+  return (
+    <Link to={props.href} className={className}>
+      <div className='text-sm font-semibold text-slate-950 dark:text-slate-50'>
         {props.title}
       </div>
-      <p className='text-muted-foreground mt-2 text-sm leading-7'>
+      <div className='mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300'>
         {props.description}
-      </p>
-      <div className='mt-5 inline-flex items-center gap-2 text-sm font-semibold text-slate-800 dark:text-slate-100'>
-        查看专题
-        <ArrowRight className='size-4 transition-transform group-hover:translate-x-0.5' />
       </div>
     </Link>
   )
 }
 
-function TopicAnchorCard(props: {
+function TopicSlugCard(props: {
   title: string
   description: string
-  href: string
-  index: number
+  slug: string
+  anchorHref?: string
 }) {
-  return (
-    <a
-      href={props.href}
-      className='border-border/70 bg-background/85 hover:border-primary/30 hover:bg-background rounded-[18px] border px-4 py-4 transition-colors'
-    >
-      <div className='text-primary text-[12px] font-semibold'>
-        {String(props.index).padStart(2, '0')}
-      </div>
-      <div className='mt-2 text-sm font-semibold text-slate-950 dark:text-slate-50'>
+  const content = (
+    <>
+      <div className='text-sm font-semibold text-slate-950 dark:text-slate-50'>
         {props.title}
       </div>
-      <p className='text-muted-foreground mt-1 text-sm leading-6'>
+      <div className='mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300'>
+        {props.description}
+      </div>
+    </>
+  )
+
+  if (props.anchorHref) {
+    return (
+      <a
+        href={props.anchorHref}
+        className='block rounded-2xl border border-transparent bg-white/70 px-4 py-3 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/25 hover:bg-white dark:bg-white/[0.03] dark:hover:bg-white/[0.06]'
+      >
+        {content}
+      </a>
+    )
+  }
+
+  return (
+    <Link
+      to='/topics/$slug'
+      params={{ slug: props.slug }}
+      className='block rounded-2xl border border-transparent bg-white/70 px-4 py-3 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/25 hover:bg-white dark:bg-white/[0.03] dark:hover:bg-white/[0.06]'
+    >
+      {content}
+    </Link>
+  )
+}
+
+function TopicHero(props: {
+  eyebrow: string
+  title: string
+  description: string
+  meta?: string[]
+}) {
+  return (
+    <TopicSurface>
+      <div className='inline-flex items-center rounded-full border border-slate-200 bg-white/90 px-3.5 py-2 text-[12px] font-semibold text-slate-700 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-200'>
+        {props.eyebrow}
+      </div>
+      <h1 className='mt-5 max-w-5xl text-[2.25rem] font-semibold tracking-[-0.03em] text-slate-950 sm:text-5xl dark:text-slate-50'>
+        {props.title}
+      </h1>
+      <p className='mt-4 max-w-4xl text-[15px] leading-8 text-slate-600 dark:text-slate-300'>
         {props.description}
       </p>
-    </a>
+      {props.meta && props.meta.length > 0 && (
+        <div className='mt-5 flex flex-wrap gap-2'>
+          {props.meta.map((item) => (
+            <span
+              key={item}
+              className='inline-flex items-center rounded-full border border-slate-200 bg-white/90 px-3 py-1.5 text-[12px] font-semibold text-slate-700 dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-200'
+            >
+              {item}
+            </span>
+          ))}
+        </div>
+      )}
+      <div className='mt-6 flex flex-wrap gap-2.5'>
+        {topicEntryLinks.map((item) => (
+          <Link
+            key={item.to}
+            to={item.to}
+            className='inline-flex items-center rounded-full border border-slate-200 bg-white/90 px-4 py-2 text-sm font-medium text-slate-700 transition-colors hover:bg-white dark:border-white/10 dark:bg-white/[0.05] dark:text-slate-200 dark:hover:bg-white/[0.08]'
+          >
+            {item.label}
+          </Link>
+        ))}
+      </div>
+    </TopicSurface>
+  )
+}
+
+function SectionHeading(props: { kicker: string; title: string; description?: string }) {
+  return (
+    <div>
+      <div className='text-primary text-[12px] font-semibold'>{props.kicker}</div>
+      <h2 className='mt-3 text-[1.85rem] font-semibold tracking-[-0.02em] text-slate-950 dark:text-slate-50'>
+        {props.title}
+      </h2>
+      {props.description ? (
+        <p className='mt-3 max-w-[72ch] text-[15px] leading-8 text-slate-600 dark:text-slate-300'>
+          {props.description}
+        </p>
+      ) : null}
+    </div>
+  )
+}
+
+function TopicSidebar(props: {
+  navTitle: string
+  navDescription: string
+  navItems: React.ReactNode
+  extraItems?: React.ReactNode
+}) {
+  return (
+    <aside className='hidden xl:block'>
+      <TopicSurface className='sticky top-[86px] p-[18px]'>
+        <div className='text-primary text-[12px] font-semibold'>页内导航</div>
+        <div className='mt-3 text-base font-semibold text-slate-950 dark:text-slate-50'>
+          {props.navTitle}
+        </div>
+        <div className='mt-2 text-[13px] leading-6 text-slate-600 dark:text-slate-300'>
+          {props.navDescription}
+        </div>
+        <div className='mt-4 space-y-2'>{props.navItems}</div>
+        {props.extraItems ? (
+          <div className='mt-5 border-t border-slate-200/80 pt-5 dark:border-white/10'>
+            {props.extraItems}
+          </div>
+        ) : null}
+      </TopicSurface>
+    </aside>
+  )
+}
+
+function TopicRightRail(props: { children: React.ReactNode }) {
+  return <aside className='space-y-5'>{props.children}</aside>
+}
+
+function TopicBulletList(props: { items: string[] }) {
+  return (
+    <ul className='mt-4 space-y-3'>
+      {props.items.map((item) => (
+        <li
+          key={item}
+          className='relative pl-4 text-sm leading-7 text-slate-600 before:absolute before:top-2.5 before:left-0 before:size-1.5 before:rounded-full before:bg-primary dark:text-slate-300'
+        >
+          {item}
+        </li>
+      ))}
+    </ul>
   )
 }
 
@@ -176,49 +292,47 @@ export function SearchPage(props: { slug: string }) {
 
   if (!page) {
     return (
-      <PublicLayout showMainContainer={false}>
-        <TopicShell
-          eyebrow='Topic / Missing'
-          title='未找到对应专题'
-          description='该专题可能不存在，或者当前链接已经变更。你可以先回到专题页总入口，或者直接查看模型与教程。'
-        >
-          <section className='grid gap-4 md:grid-cols-3'>
-            <TopicIndexCard
-              title='专题入口'
-              description='回到专题页总入口。'
-              slug='codex-api'
-            />
-            <Link
-              to='/pricing'
-              className='border-border/70 bg-card/78 rounded-[20px] border p-5 shadow-[0_10px_28px_rgba(15,20,27,0.05)]'
-            >
-              <div className='bg-primary/12 text-primary inline-flex size-10 items-center justify-center rounded-2xl'>
-                <Layers3 className='size-4.5' />
+      <TopicPageFrame>
+        <div className='xl:col-start-2'>
+          <TopicHero
+            eyebrow='Topic / Missing'
+            title='未找到对应专题'
+            description='该专题可能不存在，或者当前链接已经变更。你可以先回到专题页总入口，或者直接查看模型与教程。'
+          />
+          <div className='mt-5 grid gap-4 md:grid-cols-3'>
+            <TopicSurface>
+              <SectionHeading kicker='入口' title='返回专题目录' />
+              <div className='mt-4'>
+                <TopicSlugCard
+                  title='专题页总入口'
+                  description='先回到专题页总入口重新选择主题。'
+                  slug='codex-api'
+                />
               </div>
-              <div className='mt-5 text-base font-semibold text-slate-950 dark:text-slate-50'>
-                查看模型
+            </TopicSurface>
+            <TopicSurface>
+              <SectionHeading kicker='模型' title='查看模型' />
+              <div className='mt-4'>
+                <TopicNavCard
+                  title='查看模型'
+                  description='继续浏览免费模型、Claude、GPT 与相关价格结构。'
+                  href='/pricing'
+                />
               </div>
-              <p className='text-muted-foreground mt-2 text-sm leading-7'>
-                继续浏览免费模型、Claude、GPT 与相关价格结构。
-              </p>
-            </Link>
-            <Link
-              to='/guide'
-              className='border-border/70 bg-card/78 rounded-[20px] border p-5 shadow-[0_10px_28px_rgba(15,20,27,0.05)]'
-            >
-              <div className='bg-info/12 text-info inline-flex size-10 items-center justify-center rounded-2xl'>
-                <BookOpen className='size-4.5' />
+            </TopicSurface>
+            <TopicSurface>
+              <SectionHeading kicker='教程' title='查看教程' />
+              <div className='mt-4'>
+                <TopicNavCard
+                  title='查看教程'
+                  description='从平台说明、模型选择到配置步骤继续往下看。'
+                  href='/guide'
+                />
               </div>
-              <div className='mt-5 text-base font-semibold text-slate-950 dark:text-slate-50'>
-                查看教程
-              </div>
-              <p className='text-muted-foreground mt-2 text-sm leading-7'>
-                从平台说明、模型选择到配置步骤继续往下看。
-              </p>
-            </Link>
-          </section>
-        </TopicShell>
-      </PublicLayout>
+            </TopicSurface>
+          </div>
+        </div>
+      </TopicPageFrame>
     )
   }
 
@@ -228,11 +342,7 @@ export function SearchPage(props: { slug: string }) {
     .slice(0, 6)
 
   return (
-    <PublicLayout
-      showMainContainer={false}
-      showNotifications={false}
-      showThemeSwitch={false}
-    >
+    <>
       <SiteSeo
         title={buildTopicTitle(page)}
         description={buildTopicDescription(page)}
@@ -290,225 +400,208 @@ export function SearchPage(props: { slug: string }) {
         ]}
       />
 
-      <TopicShell
-        eyebrow={`Topic / ${slugToLabel(page.slug)}`}
-        title={page.hero}
-        description={page.intro}
-      >
-        <div className='grid gap-5 lg:grid-cols-[minmax(0,1fr)_320px] xl:grid-cols-[minmax(0,1fr)_340px]'>
-          <div className='space-y-5'>
-            <section className='grid gap-4 md:grid-cols-[minmax(0,1.2fr)_minmax(260px,0.8fr)]'>
-              <div className='border-border/70 bg-card/80 rounded-[24px] border p-6 shadow-[0_12px_32px_rgba(15,20,27,0.06)]'>
-                <div className='text-primary text-[12px] font-semibold tracking-wide'>
-                  本页适合谁
-                </div>
-                <h2 className='mt-3 text-2xl font-semibold tracking-tight text-slate-950 dark:text-slate-50'>
-                  先理解关键词，再决定下一步看哪里
-                </h2>
-                <p className='text-muted-foreground mt-4 text-sm leading-7'>
-                  这一页不是单纯堆 SEO
-                  文案，而是把“这个词为什么会被搜索、用户真正想解决什么、进入
-                  Code Go
-                  后应该先看哪里”讲清楚。你可以先通读，再根据目录进入对应章节。
-                </p>
-                <div className='mt-5 flex flex-wrap gap-2'>
-                  {keywordList.map((item) => (
-                    <span
-                      key={item}
-                      className='border-border/70 bg-background/85 inline-flex items-center rounded-full border px-3 py-1.5 text-[12px] font-medium text-slate-700 dark:text-slate-200'
-                    >
-                      {item}
-                    </span>
-                  ))}
-                </div>
-              </div>
-              <div className='border-border/70 bg-card/80 rounded-[24px] border p-6 shadow-[0_12px_32px_rgba(15,20,27,0.06)]'>
-                <div className='text-primary text-[12px] font-semibold tracking-wide'>
-                  快速入口
-                </div>
-                <div className='mt-4 space-y-3'>
-                  <Link
-                    to='/pricing'
-                    className='border-border/70 bg-background/85 hover:border-primary/30 flex items-start justify-between rounded-[18px] border px-4 py-4 transition-colors'
-                  >
-                    <div>
-                      <div className='text-sm font-semibold text-slate-950 dark:text-slate-50'>
-                        查看模型
-                      </div>
-                      <div className='text-muted-foreground mt-1 text-sm leading-6'>
-                        先看免费模型、Claude、GPT 与可用模型分组。
-                      </div>
-                    </div>
-                    <ChevronRight className='text-muted-foreground mt-0.5 size-4' />
-                  </Link>
-                  <Link
-                    to='/guide'
-                    className='border-border/70 bg-background/85 hover:border-primary/30 flex items-start justify-between rounded-[18px] border px-4 py-4 transition-colors'
-                  >
-                    <div>
-                      <div className='text-sm font-semibold text-slate-950 dark:text-slate-50'>
-                        查看教程
-                      </div>
-                      <div className='text-muted-foreground mt-1 text-sm leading-6'>
-                        从接入、配置到使用路径继续往下看。
-                      </div>
-                    </div>
-                    <ChevronRight className='text-muted-foreground mt-0.5 size-4' />
-                  </Link>
-                  <Link
-                    to='/'
-                    className='border-border/70 bg-background/85 hover:border-primary/30 flex items-start justify-between rounded-[18px] border px-4 py-4 transition-colors'
-                  >
-                    <div>
-                      <div className='text-sm font-semibold text-slate-950 dark:text-slate-50'>
-                        回到首页
-                      </div>
-                      <div className='text-muted-foreground mt-1 text-sm leading-6'>
-                        查看入口概览、公告与核心功能导航。
-                      </div>
-                    </div>
-                    <ChevronRight className='text-muted-foreground mt-0.5 size-4' />
-                  </Link>
-                </div>
-              </div>
-            </section>
-
-            <section className='border-border/70 bg-card/80 rounded-[24px] border p-6 shadow-[0_12px_32px_rgba(15,20,27,0.06)]'>
-              <div className='text-primary flex items-center gap-2 text-[12px] font-semibold tracking-wide'>
-                <Compass className='size-3.5' />
-                页面目录
-              </div>
-              <div className='mt-4 grid gap-3 md:grid-cols-2'>
-                {page.sections.map((section, index) => (
-                  <TopicAnchorCard
-                    key={section.heading}
-                    title={section.heading}
-                    description={section.paragraphs[0] || page.intro}
-                    href={`#section-${index + 1}`}
-                    index={index + 1}
+      <TopicPageFrame>
+        <TopicSidebar
+          navTitle={page.title}
+          navDescription='先按章节理解关键词，再决定下一步去模型页还是教程页。'
+          navItems={
+            <>
+              <TopicNavCard
+                title='总览'
+                description='快速理解这个专题词的用途和阅读顺序。'
+                href='#overview'
+                external
+              />
+              {page.sections.map((section, index) => (
+                <TopicNavCard
+                  key={section.heading}
+                  title={`${String(index + 1).padStart(2, '0')} ${section.heading}`}
+                  description={section.paragraphs[0] || page.intro}
+                  href={`#section-${index + 1}`}
+                  external
+                />
+              ))}
+              <TopicNavCard
+                title='FAQ'
+                description='集中看常见问题与对应判断方式。'
+                href='#faq'
+                external
+              />
+            </>
+          }
+          extraItems={
+            <>
+              <div className='text-primary text-[12px] font-semibold'>相关专题</div>
+              <div className='mt-3 space-y-2'>
+                {relatedPages.slice(0, 4).map((item) => (
+                  <TopicSlugCard
+                    key={item.slug}
+                    title={item.title}
+                    description={item.description}
+                    slug={item.slug}
                   />
                 ))}
               </div>
-            </section>
+            </>
+          }
+        />
 
-            {page.sections.map((section, index) => (
-              <section
-                key={section.heading}
-                id={`section-${index + 1}`}
-                className='border-border/70 bg-card/80 rounded-[24px] border p-6 shadow-[0_12px_32px_rgba(15,20,27,0.06)] sm:p-7'
-              >
-                <div className='text-primary text-[12px] font-semibold tracking-wide'>
-                  第 {index + 1} 节
-                </div>
-                <h2 className='mt-3 text-[1.7rem] font-semibold tracking-tight text-slate-950 dark:text-slate-50'>
-                  {section.heading}
-                </h2>
-                <div className='mt-5 space-y-4'>
-                  {section.paragraphs.map((paragraph) => (
-                    <p
-                      key={paragraph}
-                      className='text-muted-foreground max-w-[72ch] text-[15px] leading-8'
-                    >
-                      {paragraph}
-                    </p>
-                  ))}
-                </div>
-              </section>
-            ))}
+        <div className='space-y-5 xl:col-start-2'>
+          <TopicHero
+            eyebrow={`Topic / ${slugToLabel(page.slug)}`}
+            title={page.hero}
+            description={page.intro}
+            meta={keywordList}
+          />
 
-            <section className='border-border/70 bg-card/80 rounded-[24px] border p-6 shadow-[0_12px_32px_rgba(15,20,27,0.06)] sm:p-7'>
-              <div className='text-primary text-[12px] font-semibold tracking-wide'>
-                常见问题
+          <TopicSurface id='overview'>
+            <SectionHeading
+              kicker='阅读方式'
+              title='这是专题页，不是只给搜索引擎看的占位页'
+              description='这一页会先解释“为什么有人会搜这个词”，再把模型、价格路径、教程入口和常见判断逻辑整理清楚。你可以先看总览，再按目录直接跳到最关心的章节。'
+            />
+            <div className='mt-5 grid gap-4 md:grid-cols-3'>
+              <div className='rounded-[18px] border border-slate-200 bg-white/92 p-5 dark:border-white/10 dark:bg-white/[0.05]'>
+                <div className='text-primary text-[12px] font-semibold'>01</div>
+                <div className='mt-3 text-base font-semibold text-slate-950 dark:text-slate-50'>
+                  先判断你要解决什么问题
+                </div>
+                <p className='mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300'>
+                  是找模型入口、看接入教程，还是正在比较稳定性、成本和错误处理。
+                </p>
               </div>
-              <h2 className='mt-3 text-[1.7rem] font-semibold tracking-tight text-slate-950 dark:text-slate-50'>
-                FAQ
-              </h2>
-              <div className='mt-5 space-y-3'>
-                {page.faq.map((item) => (
-                  <div
-                    key={item.question}
-                    className='border-border/70 bg-background/88 rounded-[18px] border px-5 py-5'
-                  >
-                    <div className='text-base font-semibold text-slate-950 dark:text-slate-50'>
-                      {item.question}
-                    </div>
-                    <p className='text-muted-foreground mt-2 text-sm leading-7'>
-                      {item.answer}
-                    </p>
+              <div className='rounded-[18px] border border-slate-200 bg-white/92 p-5 dark:border-white/10 dark:bg-white/[0.05]'>
+                <div className='text-primary text-[12px] font-semibold'>02</div>
+                <div className='mt-3 text-base font-semibold text-slate-950 dark:text-slate-50'>
+                  再看这个词和 Code Go 的关系
+                </div>
+                <p className='mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300'>
+                  看清它对应的模型、路由方式和最短使用路径，不在关键词里绕圈。
+                </p>
+              </div>
+              <div className='rounded-[18px] border border-slate-200 bg-white/92 p-5 dark:border-white/10 dark:bg-white/[0.05]'>
+                <div className='text-primary text-[12px] font-semibold'>03</div>
+                <div className='mt-3 text-base font-semibold text-slate-950 dark:text-slate-50'>
+                  最后回到模型页或教程页
+                </div>
+                <p className='mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300'>
+                  专题页负责解释和分流，真正下决策还是回到模型广场与教程入口。
+                </p>
+              </div>
+            </div>
+          </TopicSurface>
+
+          <TopicSurface>
+            <SectionHeading kicker='章节导航' title='按章节快速进入' />
+            <div className='mt-5 grid gap-4 md:grid-cols-2'>
+              {page.sections.map((section, index) => (
+                <a
+                  key={section.heading}
+                  href={`#section-${index + 1}`}
+                  className='rounded-[18px] border border-slate-200 bg-white/92 px-5 py-4 transition-colors hover:border-primary/25 dark:border-white/10 dark:bg-white/[0.05]'
+                >
+                  <div className='text-primary text-[12px] font-semibold'>
+                    {String(index + 1).padStart(2, '0')}
                   </div>
+                  <div className='mt-2 text-sm font-semibold text-slate-950 dark:text-slate-50'>
+                    {section.heading}
+                  </div>
+                  <p className='mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300'>
+                    {section.paragraphs[0] || page.intro}
+                  </p>
+                </a>
+              ))}
+            </div>
+          </TopicSurface>
+
+          {page.sections.map((section, index) => (
+            <TopicSurface key={section.heading} id={`section-${index + 1}`}>
+              <SectionHeading
+                kicker={`第 ${index + 1} 节`}
+                title={section.heading}
+              />
+              <div className='mt-5 space-y-4'>
+                {section.paragraphs.map((paragraph) => (
+                  <p
+                    key={paragraph}
+                    className='max-w-[72ch] text-[15px] leading-8 text-slate-600 dark:text-slate-300'
+                  >
+                    {paragraph}
+                  </p>
                 ))}
               </div>
-            </section>
-          </div>
+            </TopicSurface>
+          ))}
 
-          <aside className='space-y-5'>
-            <section className='border-border/70 bg-card/80 rounded-[24px] border p-6 shadow-[0_12px_32px_rgba(15,20,27,0.06)]'>
-              <div className='text-primary text-[12px] font-semibold tracking-wide'>
-                本页定位
-              </div>
-              <ul className='text-muted-foreground mt-4 space-y-3 text-sm leading-7'>
-                <li>承接搜索进入后的第一轮解释，而不是只做标题占位。</li>
-                <li>帮用户快速看清这个关键词对应的任务、模型和下一步路径。</li>
-                <li>让首页、教程页、模型页与专题页形成顺序阅读链路。</li>
-              </ul>
-            </section>
-
-            <section className='border-border/70 bg-card/80 rounded-[24px] border p-6 shadow-[0_12px_32px_rgba(15,20,27,0.06)]'>
-              <div className='text-primary text-[12px] font-semibold tracking-wide'>
-                下一步
-              </div>
-              <div className='mt-4 space-y-3'>
-                <Link
-                  to='/pricing'
-                  className='border-border/70 bg-background/85 hover:border-primary/30 block rounded-[18px] border px-4 py-4 transition-colors'
+          <TopicSurface id='faq'>
+            <SectionHeading kicker='常见问题' title='FAQ' />
+            <div className='mt-5 space-y-3'>
+              {page.faq.map((item) => (
+                <div
+                  key={item.question}
+                  className='rounded-[18px] border border-slate-200 bg-white/92 px-5 py-5 dark:border-white/10 dark:bg-white/[0.05]'
                 >
-                  <div className='text-sm font-semibold text-slate-950 dark:text-slate-50'>
-                    查看模型
+                  <div className='text-base font-semibold text-slate-950 dark:text-slate-50'>
+                    {item.question}
                   </div>
-                  <div className='text-muted-foreground mt-1 text-sm leading-6'>
-                    先看免费模型，再决定是否切到 GPT 或 Claude。
-                  </div>
-                </Link>
-                <Link
-                  to='/guide'
-                  className='border-border/70 bg-background/85 hover:border-primary/30 block rounded-[18px] border px-4 py-4 transition-colors'
-                >
-                  <div className='text-sm font-semibold text-slate-950 dark:text-slate-50'>
-                    查看使用教程
-                  </div>
-                  <div className='text-muted-foreground mt-1 text-sm leading-6'>
-                    从配置、接入到长期工作流进一步理解。
-                  </div>
-                </Link>
-              </div>
-            </section>
-
-            <section className='border-border/70 bg-card/80 rounded-[24px] border p-6 shadow-[0_12px_32px_rgba(15,20,27,0.06)]'>
-              <div className='text-primary text-[12px] font-semibold tracking-wide'>
-                相关专题
-              </div>
-              <div className='mt-4 space-y-3'>
-                {relatedPages.map((item) => (
-                  <Link
-                    key={item.slug}
-                    to='/topics/$slug'
-                    params={{ slug: item.slug }}
-                    className='border-border/70 bg-background/85 hover:border-primary/30 block rounded-[18px] border px-4 py-4 transition-colors'
-                  >
-                    <div className='text-sm font-semibold text-slate-950 dark:text-slate-50'>
-                      {item.title}
-                    </div>
-                    <div className='text-muted-foreground mt-1 text-sm leading-6'>
-                      {item.description}
-                    </div>
-                  </Link>
-                ))}
-              </div>
-            </section>
-          </aside>
+                  <p className='mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300'>
+                    {item.answer}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </TopicSurface>
         </div>
-      </TopicShell>
-    </PublicLayout>
+
+        <TopicRightRail>
+          <TopicSurface>
+            <div className='text-primary text-[12px] font-semibold'>快速入口</div>
+            <div className='mt-4 space-y-3'>
+              <TopicNavCard
+                title='查看模型'
+                description='先看免费模型、Claude、GPT 与当前可用分组。'
+                href='/pricing'
+              />
+              <TopicNavCard
+                title='查看教程'
+                description='从配置、接入到长期使用路径继续往下看。'
+                href='/guide'
+              />
+              <TopicNavCard
+                title='回到专题目录'
+                description='继续切换到其它相关专题与教程入口。'
+                href='/topics'
+              />
+            </div>
+          </TopicSurface>
+
+          <TopicSurface>
+            <div className='text-primary text-[12px] font-semibold'>本页定位</div>
+            <TopicBulletList
+              items={[
+                '承接搜索进入后的第一轮解释，而不是只做标题占位。',
+                '帮助你快速判断这个词在实际接入流程里的位置。',
+                '把首页、模型页、教程页和专题页串成同一条阅读链路。',
+              ]}
+            />
+          </TopicSurface>
+
+          <TopicSurface>
+            <div className='text-primary text-[12px] font-semibold'>相关专题</div>
+            <div className='mt-4 space-y-3'>
+              {relatedPages.map((item) => (
+                <TopicSlugCard
+                  key={item.slug}
+                  title={item.title}
+                  description={item.description}
+                  slug={item.slug}
+                />
+              ))}
+            </div>
+          </TopicSurface>
+        </TopicRightRail>
+      </TopicPageFrame>
+    </>
   )
 }
 
@@ -520,12 +613,10 @@ export function SearchTopicsIndex() {
     }))
     .filter((group) => group.items.length > 0)
 
+  const hotTopics = searchPages.slice(0, 4)
+
   return (
-    <PublicLayout
-      showMainContainer={false}
-      showNotifications={false}
-      showThemeSwitch={false}
-    >
+    <>
       <SiteSeo
         title={TOPICS_INDEX_TITLE}
         description={TOPICS_INDEX_DESCRIPTION}
@@ -534,77 +625,41 @@ export function SearchTopicsIndex() {
         ogType='website'
       />
 
-      <TopicShell
-        eyebrow='Topic / Index'
-        title='Codex API、Claude Code API、Codex 中转、Claude 中转专题页'
-        description='这是 Code Go 的专题页总入口。适合从搜索直接进入的用户先看清关键词含义、适用场景、教程入口和模型选择路径，再决定下一步去模型页还是教程页。'
-      >
-        <section className='grid gap-4 md:grid-cols-3'>
-          <div className='border-border/70 bg-card/80 rounded-[24px] border p-6 shadow-[0_12px_32px_rgba(15,20,27,0.06)]'>
-            <div className='bg-primary/12 text-primary inline-flex size-10 items-center justify-center rounded-2xl'>
-              <Search className='size-4.5' />
-            </div>
-            <h2 className='mt-5 text-xl font-semibold tracking-tight text-slate-950 dark:text-slate-50'>
-              搜索进入后先看什么
-            </h2>
-            <p className='text-muted-foreground mt-3 text-sm leading-7'>
-              先看专题页，把词义、模型、价格路径和教程入口理顺，再进入更具体的页面。
-            </p>
-          </div>
-          <div className='border-border/70 bg-card/80 rounded-[24px] border p-6 shadow-[0_12px_32px_rgba(15,20,27,0.06)]'>
-            <div className='bg-info/12 text-info inline-flex size-10 items-center justify-center rounded-2xl'>
-              <Compass className='size-4.5' />
-            </div>
-            <h2 className='mt-5 text-xl font-semibold tracking-tight text-slate-950 dark:text-slate-50'>
-              看目录再做选择
-            </h2>
-            <p className='text-muted-foreground mt-3 text-sm leading-7'>
-              按核心入口、接入教程、比较与排障三类组织，减少用户第一次进入时的判断成本。
-            </p>
-          </div>
-          <div className='border-border/70 bg-card/80 rounded-[24px] border p-6 shadow-[0_12px_32px_rgba(15,20,27,0.06)]'>
-            <div className='inline-flex size-10 items-center justify-center rounded-2xl bg-violet-500/12 text-violet-600 dark:text-violet-300'>
-              <BookOpen className='size-4.5' />
-            </div>
-            <h2 className='mt-5 text-xl font-semibold tracking-tight text-slate-950 dark:text-slate-50'>
-              专题页不是终点
-            </h2>
-            <p className='text-muted-foreground mt-3 text-sm leading-7'>
-              每一页都要把用户带回模型广场、教程页或首页，而不是停在一堆关键词里。
-            </p>
-          </div>
-        </section>
-
-        <section className='border-border/70 bg-card/80 mt-5 rounded-[24px] border p-6 shadow-[0_12px_32px_rgba(15,20,27,0.06)] sm:p-7'>
-          <div className='text-primary text-[12px] font-semibold tracking-wide'>
-            专题导航
-          </div>
-          <h2 className='mt-3 text-[1.7rem] font-semibold tracking-tight text-slate-950 dark:text-slate-50'>
-            按搜索意图进入
-          </h2>
-          <p className='text-muted-foreground mt-3 max-w-[72ch] text-[15px] leading-8'>
-            如果你搜的是具体模型与中转词，先看核心入口；如果你搜的是教程、配置、怎么用，先看接入教程；如果你在比较或者排查问题，直接进入比较与排障。
-          </p>
-        </section>
-
-        <div className='mt-5 space-y-8'>
-          {groupedTopics.map((group) => (
-            <section key={group.title} className='space-y-4'>
-              <div>
-                <div className='text-primary text-[12px] font-semibold tracking-wide'>
-                  Topic Group
-                </div>
-                <h2 className='mt-2 text-[1.7rem] font-semibold tracking-tight text-slate-950 dark:text-slate-50'>
-                  {group.title}
-                </h2>
-                <p className='text-muted-foreground mt-2 max-w-[72ch] text-[15px] leading-8'>
-                  {group.description}
-                </p>
-              </div>
-
-              <div className='grid gap-4 md:grid-cols-2 xl:grid-cols-3'>
-                {group.items.map((item) => (
-                  <TopicIndexCard
+      <TopicPageFrame>
+        <TopicSidebar
+          navTitle='Topics Index'
+          navDescription='按搜索意图看专题，不要先陷进零散关键词。'
+          navItems={
+            <>
+              <TopicNavCard
+                title='总览'
+                description='先理解专题页存在的目的和阅读顺序。'
+                href='#overview'
+                external
+              />
+              <TopicNavCard
+                title='进入路径'
+                description='先判断要看模型、教程还是比较与排障。'
+                href='#path'
+                external
+              />
+              {groupedTopics.map((group, index) => (
+                <TopicNavCard
+                  key={group.title}
+                  title={group.title}
+                  description={group.description}
+                  href={`#group-${index + 1}`}
+                  external
+                />
+              ))}
+            </>
+          }
+          extraItems={
+            <>
+              <div className='text-primary text-[12px] font-semibold'>热门专题</div>
+              <div className='mt-3 space-y-2'>
+                {hotTopics.map((item) => (
+                  <TopicSlugCard
                     key={item.slug}
                     title={item.title}
                     description={item.description}
@@ -612,10 +667,175 @@ export function SearchTopicsIndex() {
                   />
                 ))}
               </div>
-            </section>
+            </>
+          }
+        />
+
+        <div className='space-y-5 xl:col-start-2'>
+          <TopicHero
+            eyebrow='Topic / Index'
+            title='Codex API、Claude Code API、Codex 中转、Claude 中转专题页'
+            description='这是 Code Go 的专题页总入口。适合从搜索直接进入的用户先看清关键词含义、适用场景、教程入口和模型选择路径，再决定下一步去模型页还是教程页。'
+          />
+
+          <TopicSurface id='overview'>
+            <SectionHeading
+              kicker='总览'
+              title='先把词义、模型和下一步路径理顺'
+              description='这个入口页的目标不是堆满 SEO 关键词，而是让从搜索直接进入的用户先看懂：这些词各自代表什么、适合去哪一页继续看，以及怎么最快完成配置与选择。'
+            />
+            <div className='mt-5 grid gap-4 md:grid-cols-3'>
+              <div className='rounded-[18px] border border-slate-200 bg-white/92 p-5 dark:border-white/10 dark:bg-white/[0.05]'>
+                <div className='text-primary text-[12px] font-semibold'>01</div>
+                <div className='mt-3 text-base font-semibold text-slate-950 dark:text-slate-50'>
+                  先看核心入口专题
+                </div>
+                <p className='mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300'>
+                  如果你搜的是 Codex API、Claude Code API、Codex 中转、Claude 中转，先从核心入口看起。
+                </p>
+              </div>
+              <div className='rounded-[18px] border border-slate-200 bg-white/92 p-5 dark:border-white/10 dark:bg-white/[0.05]'>
+                <div className='text-primary text-[12px] font-semibold'>02</div>
+                <div className='mt-3 text-base font-semibold text-slate-950 dark:text-slate-50'>
+                  再按教程或排障分流
+                </div>
+                <p className='mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300'>
+                  需要接入、配置、怎么用，就去教程；需要比较和排查，就去比较与排障。
+                </p>
+              </div>
+              <div className='rounded-[18px] border border-slate-200 bg-white/92 p-5 dark:border-white/10 dark:bg-white/[0.05]'>
+                <div className='text-primary text-[12px] font-semibold'>03</div>
+                <div className='mt-3 text-base font-semibold text-slate-950 dark:text-slate-50'>
+                  最后回到模型页或教程页
+                </div>
+                <p className='mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300'>
+                  专题页负责解释搜索词，真正做模型选择和接入时还是回到模型广场与指南页。
+                </p>
+              </div>
+            </div>
+          </TopicSurface>
+
+          <TopicSurface id='path'>
+            <SectionHeading
+              kicker='进入路径'
+              title='按搜索意图进入，而不是逐个点开试'
+            />
+            <div className='mt-5 grid gap-4 md:grid-cols-3'>
+              <a
+                href='#group-1'
+                className='rounded-[18px] border border-slate-200 bg-white/92 px-5 py-4 transition-colors hover:border-primary/25 dark:border-white/10 dark:bg-white/[0.05]'
+              >
+                <div className='text-primary text-[12px] font-semibold'>01</div>
+                <div className='mt-2 text-sm font-semibold text-slate-950 dark:text-slate-50'>
+                  核心入口
+                </div>
+                <p className='mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300'>
+                  先看主搜索词和对应的产品入口，适合第一次判断模型与路由方式。
+                </p>
+              </a>
+              <a
+                href='#group-2'
+                className='rounded-[18px] border border-slate-200 bg-white/92 px-5 py-4 transition-colors hover:border-primary/25 dark:border-white/10 dark:bg-white/[0.05]'
+              >
+                <div className='text-primary text-[12px] font-semibold'>02</div>
+                <div className='mt-2 text-sm font-semibold text-slate-950 dark:text-slate-50'>
+                  接入教程
+                </div>
+                <p className='mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300'>
+                  看怎么接、怎么配、怎么用，把接入流程一次理顺。
+                </p>
+              </a>
+              <a
+                href='#group-3'
+                className='rounded-[18px] border border-slate-200 bg-white/92 px-5 py-4 transition-colors hover:border-primary/25 dark:border-white/10 dark:bg-white/[0.05]'
+              >
+                <div className='text-primary text-[12px] font-semibold'>03</div>
+                <div className='mt-2 text-sm font-semibold text-slate-950 dark:text-slate-50'>
+                  比较与排障
+                </div>
+                <p className='mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300'>
+                  如果你正在比较、排错或判断稳定性，直接去问题导向专题。
+                </p>
+              </a>
+            </div>
+          </TopicSurface>
+
+          {groupedTopics.map((group, index) => (
+            <TopicSurface key={group.title} id={`group-${index + 1}`}>
+              <SectionHeading
+                kicker='Topic Group'
+                title={group.title}
+                description={group.description}
+              />
+              <div className='mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3'>
+                {group.items.map((item) => (
+                  <Link
+                    key={item.slug}
+                    to='/topics/$slug'
+                    params={{ slug: item.slug }}
+                    className='block rounded-[18px] border border-slate-200 bg-white/92 p-5 transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/25 dark:border-white/10 dark:bg-white/[0.05]'
+                  >
+                    <div className='text-base font-semibold text-slate-950 dark:text-slate-50'>
+                      {item.title}
+                    </div>
+                    <p className='mt-2 text-sm leading-7 text-slate-600 dark:text-slate-300'>
+                      {item.description}
+                    </p>
+                  </Link>
+                ))}
+              </div>
+            </TopicSurface>
           ))}
         </div>
-      </TopicShell>
-    </PublicLayout>
+
+        <TopicRightRail>
+          <TopicSurface>
+            <div className='text-primary text-[12px] font-semibold'>快速入口</div>
+            <div className='mt-4 space-y-3'>
+              <TopicNavCard
+                title='查看模型'
+                description='先看免费模型、Claude、GPT 与当前模型分组。'
+                href='/pricing'
+              />
+              <TopicNavCard
+                title='使用教程'
+                description='从接入、配置到使用路径继续往下看。'
+                href='/guide'
+              />
+              <TopicNavCard
+                title='回到首页'
+                description='查看平台入口概览、导航与主要能力说明。'
+                href='/'
+              />
+            </div>
+          </TopicSurface>
+
+          <TopicSurface>
+            <div className='text-primary text-[12px] font-semibold'>为什么先看专题页</div>
+            <TopicBulletList
+              items={[
+                '把零散搜索词整理成可阅读的入口结构。',
+                '让用户在模型、教程、排障之间快速分流。',
+                '避免进入首页后还要重新判断该点哪里。',
+              ]}
+            />
+          </TopicSurface>
+
+          <TopicSurface>
+            <div className='text-primary text-[12px] font-semibold'>热门专题</div>
+            <div className='mt-4 space-y-3'>
+              {hotTopics.map((item) => (
+                <TopicSlugCard
+                  key={item.slug}
+                  title={item.title}
+                  description={item.description}
+                  slug={item.slug}
+                />
+              ))}
+            </div>
+          </TopicSurface>
+        </TopicRightRail>
+      </TopicPageFrame>
+    </>
   )
 }
