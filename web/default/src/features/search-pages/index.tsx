@@ -1,7 +1,12 @@
 import { Link } from '@tanstack/react-router'
 import { PublicLayout } from '@/components/layout'
 import { SiteSeo } from '@/components/seo'
-import { getSearchPageBySlug, searchPages } from './data'
+import {
+  getSearchPageBySlug,
+  getSearchPageFaq,
+  getSearchPageSections,
+  searchPages,
+} from './data'
 
 const topicGroups = [
   {
@@ -337,6 +342,8 @@ export function SearchPage(props: { slug: string }) {
   }
 
   const keywordList = topicKeywordsList(page.keywords)
+  const sections = getSearchPageSections(page)
+  const faqItems = getSearchPageFaq(page)
   const relatedPages = searchPages
     .filter((item) => item.slug !== page.slug)
     .slice(0, 6)
@@ -388,7 +395,7 @@ export function SearchPage(props: { slug: string }) {
           {
             '@context': 'https://schema.org',
             '@type': 'FAQPage',
-            mainEntity: page.faq.map((item) => ({
+            mainEntity: faqItems.map((item) => ({
               '@type': 'Question',
               name: item.question,
               acceptedAnswer: {
@@ -412,7 +419,7 @@ export function SearchPage(props: { slug: string }) {
                 href='#overview'
                 external
               />
-              {page.sections.map((section, index) => (
+              {sections.map((section, index) => (
                 <TopicNavCard
                   key={section.heading}
                   title={`${String(index + 1).padStart(2, '0')} ${section.heading}`}
@@ -494,7 +501,7 @@ export function SearchPage(props: { slug: string }) {
           <TopicSurface>
             <SectionHeading kicker='章节导航' title='按章节快速进入' />
             <div className='mt-5 grid gap-4 md:grid-cols-2'>
-              {page.sections.map((section, index) => (
+              {sections.map((section, index) => (
                 <a
                   key={section.heading}
                   href={`#section-${index + 1}`}
@@ -514,7 +521,7 @@ export function SearchPage(props: { slug: string }) {
             </div>
           </TopicSurface>
 
-          {page.sections.map((section, index) => (
+          {sections.map((section, index) => (
             <TopicSurface key={section.heading} id={`section-${index + 1}`}>
               <SectionHeading
                 kicker={`第 ${index + 1} 节`}
@@ -536,7 +543,7 @@ export function SearchPage(props: { slug: string }) {
           <TopicSurface id='faq'>
             <SectionHeading kicker='常见问题' title='FAQ' />
             <div className='mt-5 space-y-3'>
-              {page.faq.map((item) => (
+              {faqItems.map((item) => (
                 <div
                   key={item.question}
                   className='rounded-[18px] border border-slate-200 bg-white/92 px-5 py-5 dark:border-white/10 dark:bg-white/[0.05]'

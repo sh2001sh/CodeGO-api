@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-export const DEFAULT_LOGO = '/codexforall-logo.svg';
+export const DEFAULT_LOGO = '/code-go-logo.svg';
 
 const INVALID_LOGO_VALUES = new Set(['', 'null', 'undefined', 'false', '0']);
 

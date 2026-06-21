@@ -7,7 +7,7 @@ const projectRoot = path.resolve(__dirname, '..')
 const distDir = path.join(projectRoot, 'dist')
 const baseUrl = 'https://shu26.cfd'
 
-const { searchPages } = await import(
+const { getSearchPageFaq, getSearchPageSections, searchPages } = await import(
   pathToFileUrl(path.join(projectRoot, 'src/features/search-pages/data.ts')).href,
 )
 
@@ -86,6 +86,7 @@ function renderPage({
   jsonLd,
 }) {
   const canonical = `${baseUrl}${canonicalPath}`
+  const jsonLdText = JSON.stringify(jsonLd).replaceAll('<', '\\u003c')
 
   return `<!doctype html>
 <html lang="zh-CN">
@@ -93,7 +94,8 @@ function renderPage({
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/code-go-logo.svg" />
-    <link rel="shortcut icon" href="/code-go-logo.svg" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    <link rel="apple-touch-icon" href="/logo.png" />
     <title>${escapeHtml(title)}</title>
     <meta name="title" content="${escapeHtml(title)}" />
     <meta name="description" content="${escapeHtml(description)}" />
@@ -106,11 +108,11 @@ function renderPage({
     <meta property="og:type" content="${escapeHtml(ogType)}" />
     <meta property="og:url" content="${canonical}" />
     <meta property="og:site_name" content="Code Go" />
-    <meta property="og:image" content="${baseUrl}/code-go-logo.svg" />
+    <meta property="og:image" content="${baseUrl}/logo.png" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="${escapeHtml(title)}" />
     <meta name="twitter:description" content="${escapeHtml(description)}" />
-    <meta name="twitter:image" content="${baseUrl}/code-go-logo.svg" />
+    <meta name="twitter:image" content="${baseUrl}/logo.png" />
     <style>
       :root {
         color-scheme: light;
@@ -524,7 +526,7 @@ function renderPage({
   </head>
   <body>
     ${body}
-    <script type="application/ld+json">${escapeHtml(JSON.stringify(jsonLd))}</script>
+    <script type="application/ld+json">${jsonLdText}</script>
   </body>
 </html>`
 }
@@ -575,10 +577,12 @@ function renderHeader(title, description, eyebrow, meta = '') {
 }
 
 function renderTopicDetail(page) {
+  const sections = getSearchPageSections(page)
+  const faqItems = getSearchPageFaq(page)
   const relatedPages = searchPages.filter((item) => item.slug !== page.slug).slice(0, 6)
   const keywords = keywordList(page.keywords)
 
-  const toc = page.sections
+  const toc = sections
     .map(
       (section, index) => `<a class="toc-card" href="#section-${index + 1}">
   <div class="toc-index">${String(index + 1).padStart(2, '0')}</div>
@@ -588,7 +592,7 @@ function renderTopicDetail(page) {
     )
     .join('')
 
-  const sections = page.sections
+  const sectionMarkup = sections
     .map(
       (section, index) => `<section class="section" id="section-${index + 1}">
   <div class="kicker">第 ${index + 1} 节</div>
@@ -600,7 +604,7 @@ function renderTopicDetail(page) {
     )
     .join('')
 
-  const faq = page.faq
+  const faq = faqItems
     .map(
       (item) => `<div class="faq-item">
   <strong>${escapeHtml(item.question)}</strong>
@@ -622,7 +626,7 @@ function renderTopicDetail(page) {
     .map((item) => `<span class="meta-pill">${escapeHtml(item)}</span>`)
     .join('')
 
-  const navLinks = page.sections
+  const navLinks = sections
     .map(
       (section, index) => `<a class="nav-link" href="#section-${index + 1}">
   <strong>${String(index + 1).padStart(2, '0')} ${escapeHtml(section.heading)}</strong>
@@ -671,7 +675,7 @@ function renderTopicDetail(page) {
       {
         '@context': 'https://schema.org',
         '@type': 'FAQPage',
-        mainEntity: page.faq.map((item) => ({
+        mainEntity: faqItems.map((item) => ({
           '@type': 'Question',
           name: item.question,
           acceptedAnswer: {
@@ -746,7 +750,7 @@ function renderTopicDetail(page) {
       <div class="toc-grid" style="margin-top:18px;">${toc}</div>
     </section>
 
-    ${sections}
+    ${sectionMarkup}
 
     <section class="section" id="faq">
       <div class="kicker">常见问题</div>

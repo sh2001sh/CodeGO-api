@@ -115,17 +115,30 @@ export function BrandHome() {
     <PublicLayout showMainContainer={false}>
       <SiteSeo
         title='Code Go | Codex API、Claude Code API、Codex 中转、Claude 中转'
-        description='Code Go 是面向长期 AI Coding 的统一入口，覆盖 Codex API、Claude Code API、Codex 中转、Claude 中转与持续使用工作流。'
-        keywords='Code Go, Codex API, Claude Code API, Codex 中转, Claude 中转, codex api中转, claude code api中转, AI Coding'
+        description='Code Go 是面向长期 AI Coding 的统一入口，覆盖 Codex API、Claude Code API、Codex中转、Claude中转、免费模型、DeepSeek、GLM 与持续使用工作流。'
+        keywords='Code Go, Codex API, Claude Code API, Codex中转, Codex 中转, Claude中转, Claude 中转, codex api中转, claude code api中转, 免费模型, DeepSeek, GLM, AI Coding'
         canonicalPath='/'
-        jsonLd={{
-          '@context': 'https://schema.org',
-          '@type': 'Organization',
-          name: 'Code Go',
-          url: 'https://shu26.cfd',
-          description:
-            'Code Go 是面向长期 AI Coding 的统一入口，覆盖 Codex API、Claude Code API、Codex 中转与 Claude 中转。',
-        }}
+        jsonLd={[
+          {
+            '@context': 'https://schema.org',
+            '@type': 'Organization',
+            name: 'Code Go',
+            url: 'https://shu26.cfd',
+            logo: 'https://shu26.cfd/logo.png',
+            image: 'https://shu26.cfd/logo.png',
+            description:
+              'Code Go 是面向长期 AI Coding 的统一入口，覆盖 Codex API、Claude Code API、Codex中转、Claude中转与免费模型。',
+          },
+          {
+            '@context': 'https://schema.org',
+            '@type': 'WebSite',
+            name: 'Code Go',
+            url: 'https://shu26.cfd',
+            inLanguage: 'zh-CN',
+            description:
+              'Code Go 提供 Codex API、Claude Code API、Codex中转、Claude中转与免费模型入口。',
+          },
+        ]}
       />
 
       <main className='relative overflow-hidden bg-[#f4ede7] px-3 py-3'>
@@ -141,8 +154,8 @@ export function BrandHome() {
                   的每一步，都算数
                 </h1>
                 <p className='mx-auto mt-6 max-w-3xl text-base leading-8 text-slate-700/82 md:text-lg'>
-                  面向 Codex API、Claude Code API、Codex 中转、Claude
-                  中转，把接入、调用和持续使用接成同一条主线。
+                  面向 Codex API、Claude Code API、Codex中转、Claude中转，
+                  把接入、调用、免费模型试用和持续使用接成同一条主线。
                 </p>
                 <div className='mt-8 flex flex-wrap justify-center gap-3'>
                   <Button
@@ -161,7 +174,7 @@ export function BrandHome() {
                     className='h-12 rounded-full border-white/70 bg-white/50 px-6 text-sm font-semibold text-slate-900 backdrop-blur hover:bg-white/70'
                     render={<Link to='/pricing' />}
                   >
-                    查看套餐
+                    查看模型
                   </Button>
                 </div>
               </div>
@@ -192,6 +205,12 @@ export function BrandHome() {
                   groupRatios={groupRatios}
                   reverse
                 />
+              </div>
+              <div className='mx-auto mt-6 max-w-4xl text-center text-sm leading-7 text-slate-700/78'>
+                适合搜索 Codex中转、Claude中转、Codex API、Claude Code API
+                的开发者先看模型分组与免费模型，再决定什么时候切到 GPT
+                或 Claude。当前也覆盖 DeepSeek、GLM、Kimi、Qwen
+                等免费模型入口，方便先完成第一轮整理、改写和轻量代码任务。
               </div>
             </div>
           </div>
