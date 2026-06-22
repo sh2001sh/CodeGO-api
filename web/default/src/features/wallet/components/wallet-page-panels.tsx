@@ -17,16 +17,21 @@ import type {
   SelfSubscriptionData,
 } from '@/features/subscriptions/types'
 import type { UserWalletData } from '../types'
+import { RedemptionCodePanel } from './redemption-code-panel'
 import { SubscriptionClaudeConversionCard } from './subscription-claude-conversion-card'
 import { WalletBalancePanels } from './wallet-balance-panels'
 import { WalletBillingOrderPanel } from './wallet-billing-order-panel'
-import { WalletResetOpportunityPanel } from './wallet-reset-opportunity-panel'
 import {
   getOrderedSubscriptions,
   type WalletPlanMeta,
 } from './wallet-panel-utils'
+import { WalletResetOpportunityPanel } from './wallet-reset-opportunity-panel'
 
-const ALL_FUNDING_SOURCES: FundingSource[] = ['blind_box', 'subscription', 'wallet']
+const ALL_FUNDING_SOURCES: FundingSource[] = [
+  'blind_box',
+  'subscription',
+  'wallet',
+]
 
 interface WalletPagePanelsProps {
   user: UserWalletData | null
@@ -53,7 +58,10 @@ export function WalletPagePanels(props: WalletPagePanelsProps) {
   const [loadingPlans, setLoadingPlans] = useState(true)
   const showBalancePanels = props.showBalancePanels !== false
 
-  const activeSubscriptions = props.subscriptionData?.subscriptions || []
+  const activeSubscriptions = useMemo(
+    () => props.subscriptionData?.subscriptions ?? [],
+    [props.subscriptionData?.subscriptions]
+  )
   const hasActiveSubscriptions = activeSubscriptions.length > 0
 
   useEffect(() => {
@@ -242,10 +250,7 @@ export function WalletPagePanels(props: WalletPagePanelsProps) {
     return (
       <div className='grid gap-4 lg:grid-cols-2'>
         {Array.from({ length: 4 }).map((_, index) => (
-          <div
-            key={index}
-            className='app-page-shell p-4'
-          >
+          <div key={index} className='app-page-shell p-4'>
             <Skeleton className='h-5 w-28' />
             <Skeleton className='mt-3 h-10 w-full' />
             <Skeleton className='mt-3 h-10 w-full' />
@@ -267,6 +272,16 @@ export function WalletPagePanels(props: WalletPagePanelsProps) {
           redeeming={props.redeeming}
         />
       ) : null}
+
+      <RedemptionCodePanel
+        title='兑换码'
+        description='兑换码可补充普通余额、Claude 额度、套餐或活动权益。这里位于额度重置区域上方，适合先核销再调整订阅额度。'
+        topupLink={props.topupLink}
+        redemptionCode={props.redemptionCode}
+        onRedemptionCodeChange={props.onRedemptionCodeChange}
+        onRedeem={props.onRedeem}
+        redeeming={props.redeeming}
+      />
 
       <div className='grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(340px,0.92fr)]'>
         <SubscriptionClaudeConversionCard

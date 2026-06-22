@@ -26,6 +26,7 @@ import {
   buildCurlCommand,
   formatDisplayKey,
   getPreferredKey,
+  normalizeAnthropicEndpoint,
   getSavedSetupGuideExpanded,
   normalizeEndpoint,
   saveSetupGuideExpanded,
@@ -171,6 +172,7 @@ export function useSetupGuide(): SetupGuideState {
 
   const requestExample = useMemo<RequestExample>(() => {
     const endpoint = normalizeEndpoint(apiInfoItems[0]?.url)
+    const anthropicEndpoint = normalizeAnthropicEndpoint(apiInfoItems[0]?.url)
     const model = modelsQuery.data?.[0] ?? 'gpt-4o-mini'
     const apiKey = realKeyQuery.data ?? ''
     const keyName = preferredKey?.name ?? '还没有 API Key'
@@ -178,6 +180,8 @@ export function useSetupGuide(): SetupGuideState {
 
     return {
       endpoint,
+      openaiEndpoint: endpoint,
+      anthropicEndpoint,
       model,
       keyName,
       displayKey: formatDisplayKey(apiKey),

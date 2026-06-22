@@ -1,3 +1,4 @@
+import { normalizePublicServerAddress } from '@/lib/server-url'
 import type { ApiKey } from '@/features/keys/types'
 
 export const SETUP_GUIDE_VISIBILITY_STORAGE_KEY =
@@ -35,19 +36,36 @@ function getCurrentOrigin(): string {
   return window.location.origin
 }
 
-export function normalizeEndpoint(sourceUrl?: string): string {
-  const fallback = `${getCurrentOrigin()}/v1/chat/completions`
+export function normalizeServerBase(sourceUrl?: string): string {
+  const fallback = getCurrentOrigin()
   const trimmed = sourceUrl?.trim()
-  if (!trimmed) return fallback
+  if (!trimmed) return normalizePublicServerAddress(fallback)
 
   const withoutTrailingSlash = trimmed.replace(/\/+$/, '')
   if (withoutTrailingSlash.endsWith('/v1/chat/completions')) {
-    return withoutTrailingSlash
+    return normalizePublicServerAddress(
+      withoutTrailingSlash.replace(/\/v1\/chat\/completions$/i, '')
+    )
+  }
+  if (withoutTrailingSlash.endsWith('/v1/messages')) {
+    return normalizePublicServerAddress(
+      withoutTrailingSlash.replace(/\/v1\/messages$/i, '')
+    )
   }
   if (withoutTrailingSlash.endsWith('/v1')) {
-    return `${withoutTrailingSlash}/chat/completions`
+    return normalizePublicServerAddress(
+      withoutTrailingSlash.replace(/\/v1$/i, '')
+    )
   }
-  return `${withoutTrailingSlash}/v1/chat/completions`
+  return normalizePublicServerAddress(withoutTrailingSlash)
+}
+
+export function normalizeEndpoint(sourceUrl?: string): string {
+  return `${normalizeServerBase(sourceUrl)}/v1/chat/completions`
+}
+
+export function normalizeAnthropicEndpoint(sourceUrl?: string): string {
+  return `${normalizeServerBase(sourceUrl)}/v1/messages`
 }
 
 export function getPreferredKey(keys: ApiKey[]): ApiKey | null {

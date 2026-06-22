@@ -16,19 +16,41 @@ with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { OverviewHeroPanel } from './overview-hero-panel'
-import { OverviewHealthPanel } from './overview-health-panel'
-import { useSetupGuide } from './setup-guide/use-setup-guide'
-import { SummaryCards } from './summary-cards'
+import { useState } from 'react'
+import { RedemptionCodePanel } from '@/features/wallet/components/redemption-code-panel'
+import { useRedemption } from '@/features/wallet/hooks/use-redemption'
+import { useTopupInfo } from '@/features/wallet/hooks/use-topup-info'
 import { AnnouncementsPanel } from './announcements-panel'
 import { FAQPanel } from './faq-panel'
+import { OverviewHealthPanel } from './overview-health-panel'
+import { OverviewHeroPanel } from './overview-hero-panel'
+import { useSetupGuide } from './setup-guide/use-setup-guide'
+import { SummaryCards } from './summary-cards'
 
 export function OverviewDashboard() {
   const setupGuide = useSetupGuide()
+  const [redemptionCode, setRedemptionCode] = useState('')
+  const { topupInfo } = useTopupInfo()
+  const { redeeming, redeemCode } = useRedemption()
+
+  const handleRedeem = async () => {
+    const success = await redeemCode(redemptionCode)
+    if (success) setRedemptionCode('')
+  }
 
   return (
     <div className='flex flex-col gap-4'>
       <OverviewHeroPanel guide={setupGuide} />
+
+      <RedemptionCodePanel
+        title='兑换码'
+        description='有充值码、套餐码或活动码时可直接在这里兑换，无需再进入钱包页。'
+        topupLink={topupInfo?.topup_link}
+        redemptionCode={redemptionCode}
+        onRedemptionCodeChange={setRedemptionCode}
+        onRedeem={() => void handleRedeem()}
+        redeeming={redeeming}
+      />
 
       <SummaryCards />
 

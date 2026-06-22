@@ -22,21 +22,51 @@ import {
   Check,
   Circle,
   KeyRound,
+  LinkIcon,
   TerminalSquare,
   Timer,
 } from 'lucide-react'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { CopyButton } from '@/components/copy-button'
-import { cn } from '@/lib/utils'
 import type { SetupGuideState } from './setup-guide/use-setup-guide'
 
 function formatSignalValue(label: string, value: string) {
   return value || (label === '路由状态' ? '在线' : '--')
 }
 
-export function OverviewHeroPanel(props: {
-  guide: SetupGuideState
+function EndpointRow(props: {
+  label: string
+  value: string
+  copyLabel: string
 }) {
+  return (
+    <div className='bg-background/72 flex min-w-0 items-center gap-2 rounded-xl border border-white/60 px-3 py-2 dark:border-white/10'>
+      <span className='text-muted-foreground shrink-0 text-[11px] font-medium'>
+        {props.label}
+      </span>
+      <code
+        className='text-foreground min-w-0 flex-1 truncate font-mono text-[11px]'
+        title={props.value}
+      >
+        {props.value}
+      </code>
+      <CopyButton
+        value={props.value}
+        variant='ghost'
+        size='sm'
+        className='h-6 px-2 text-[11px]'
+        tooltip={props.copyLabel}
+        successTooltip='已复制'
+        aria-label={props.copyLabel}
+      >
+        复制
+      </CopyButton>
+    </div>
+  )
+}
+
+export function OverviewHeroPanel(props: { guide: SetupGuideState }) {
   const { guide } = props
   const signalItems = guide.heroSignals.slice(0, 3)
   const previewLines = guide.requestExample.curl.split('\n').map((line) => {
@@ -54,7 +84,7 @@ export function OverviewHeroPanel(props: {
             <div className='text-primary text-xs font-semibold tracking-[0.16em] uppercase'>
               快速开始
             </div>
-            <h2 className='text-balance max-w-xl text-3xl font-semibold tracking-tight sm:text-4xl xl:text-5xl'>
+            <h2 className='max-w-xl text-3xl font-semibold tracking-tight text-balance sm:text-4xl xl:text-5xl'>
               三步开始调用 API
             </h2>
             <p className='text-muted-foreground max-w-xl text-sm leading-7 sm:text-[15px]'>
@@ -162,6 +192,23 @@ export function OverviewHeroPanel(props: {
             </div>
           </div>
 
+          <div className='space-y-2'>
+            <div className='text-muted-foreground flex items-center gap-1.5 text-[11px] font-medium'>
+              <LinkIcon className='size-3.5' aria-hidden='true' />
+              请求 URL
+            </div>
+            <EndpointRow
+              label='OpenAI'
+              value={guide.requestExample.openaiEndpoint}
+              copyLabel='复制 OpenAI 兼容请求 URL'
+            />
+            <EndpointRow
+              label='Anthropic'
+              value={guide.requestExample.anthropicEndpoint}
+              copyLabel='复制 Anthropic 兼容请求 URL'
+            />
+          </div>
+
           <div className='grid gap-2 sm:grid-cols-3'>
             {signalItems.map((signal) => {
               const Icon = signal.icon
@@ -205,7 +252,11 @@ export function OverviewHeroPanel(props: {
 }
 
 export function OverviewMiniSignals(props: {
-  items: Array<{ label: string; value: string; icon: React.ComponentType<{ className?: string }> }>
+  items: Array<{
+    label: string
+    value: string
+    icon: React.ComponentType<{ className?: string }>
+  }>
 }) {
   return (
     <div className='grid gap-2 sm:grid-cols-2 xl:grid-cols-4'>

@@ -1,3 +1,8 @@
+import {
+  getConfiguredServerAddress,
+  normalizePublicServerAddress,
+} from '@/lib/server-url'
+
 const DEFAULT_CODEX_MODEL = 'gpt-5.2'
 const PLACEHOLDER_SERVER_URL = 'https://your-codexforall.example.com'
 const PLACEHOLDER_API_KEY = 'YOUR_CODEXFORALL_API_KEY'
@@ -12,42 +17,15 @@ interface DownloadCodexScriptOptions {
   model?: string
 }
 
-function getServerAddress(): string {
-  try {
-    const raw = localStorage.getItem('status')
-    if (raw) {
-      const status = JSON.parse(raw)
-      if (status.server_address) return status.server_address
-    }
-  } catch {
-    /* empty */
-  }
-  return window.location.origin
-}
-
 function normalizeApiKey(value?: string): string {
   if (!value) return PLACEHOLDER_API_KEY
   return value.startsWith('sk-') ? value : `sk-${value}`
 }
 
 function normalizeServerAddress(value?: string): string {
-  const raw = (value || getServerAddress() || PLACEHOLDER_SERVER_URL).trim()
-  const base = raw.replace(/\/+$/, '').replace(/\/v1$/i, '')
-
-  try {
-    const url = new URL(base)
-    const isLocalhost = ['localhost', '127.0.0.1', '0.0.0.0'].includes(
-      url.hostname
-    )
-
-    if (url.protocol === 'http:' && !isLocalhost) {
-      url.protocol = 'https:'
-    }
-
-    return url.toString().replace(/\/+$/, '')
-  } catch {
-    return base
-  }
+  return normalizePublicServerAddress(
+    value || getConfiguredServerAddress(PLACEHOLDER_SERVER_URL)
+  )
 }
 
 function sanitizeLabel(value?: string): string {

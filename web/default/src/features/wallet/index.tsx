@@ -40,11 +40,6 @@ export function Wallet(props: WalletProps) {
             activeSubscriptionCount={
               workspace.subscriptionData?.subscriptions?.length ?? 0
             }
-            topupLink={workspace.topupInfo?.topup_link}
-            redemptionCode={workspace.redemptionCode}
-            onRedemptionCodeChange={workspace.setRedemptionCode}
-            onRedeem={workspace.handleRedeem}
-            redeeming={workspace.redeeming}
           />
         }
         framedMain={false}
@@ -58,14 +53,17 @@ export function Wallet(props: WalletProps) {
                     先确认余额和支付方式，再完成充值
                   </div>
                   <div className='text-muted-foreground mt-1 text-sm leading-6'>
-                    钱包页优先解决普通余额和 Claude 额度充值。套餐转换、额度刷新与扣费顺序统一放在下方，避免右侧反复重复表单。
+                    钱包页优先解决普通余额和 Claude
+                    额度充值。套餐转换、额度刷新与扣费顺序统一放在下方，避免右侧反复重复表单。
                   </div>
                 </div>
                 <div className='app-subtle-panel grid gap-2 px-4 py-3 text-sm'>
                   <div className='flex items-center justify-between gap-3'>
                     <span className='text-muted-foreground'>普通余额</span>
                     <span className='font-semibold'>
-                      {formatUsdAmount(quotaUnitsToUsd(workspace.user?.quota ?? 0))}
+                      {formatUsdAmount(
+                        quotaUnitsToUsd(workspace.user?.quota ?? 0)
+                      )}
                     </span>
                   </div>
                   <div className='flex items-center justify-between gap-3'>

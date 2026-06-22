@@ -1,8 +1,7 @@
-import { Activity, Gift, Loader2, WalletCards } from 'lucide-react'
+import { Activity, WalletCards } from 'lucide-react'
 import { formatUsdAmount, quotaUnitsToUsd } from '@/lib/format'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import type { UserWalletData } from '../types'
+import { RedemptionCodePanel } from './redemption-code-panel'
 import { WalletStatItem } from './wallet-panel-primitives'
 
 interface WalletBalancePanelsProps {
@@ -32,56 +31,32 @@ export function WalletBalancePanels(props: WalletBalancePanelsProps) {
           />
           <WalletStatItem
             label='Claude 额度'
-            value={formatUsdAmount(quotaUnitsToUsd(props.user?.claude_quota ?? 0))}
+            value={formatUsdAmount(
+              quotaUnitsToUsd(props.user?.claude_quota ?? 0)
+            )}
           />
           <WalletStatItem
             label='累计消耗'
-            value={formatUsdAmount(quotaUnitsToUsd(props.user?.used_quota ?? 0))}
+            value={formatUsdAmount(
+              quotaUnitsToUsd(props.user?.used_quota ?? 0)
+            )}
           />
           <WalletStatItem
             label='API 请求'
             value={(props.user?.request_count ?? 0).toLocaleString()}
-            icon={
-              <Activity className='text-muted-foreground h-4 w-4' />
-            }
+            icon={<Activity className='text-muted-foreground h-4 w-4' />}
           />
         </div>
       </div>
 
-      <div className='app-page-shell p-4'>
-        <div className='text-foreground flex items-center gap-2 text-sm font-semibold'>
-          <Gift className='text-primary h-4 w-4' />
-          兑换码
-        </div>
-        <div className='text-muted-foreground mt-1 text-xs leading-5'>
-          适合线下充值或管理员发放的补充额度，兑换后会立即计入对应余额池。
-        </div>
-        <div className='mt-4 grid grid-cols-[minmax(0,1fr)_auto] gap-2'>
-          <Input
-            value={props.redemptionCode}
-            onChange={(event) => props.onRedemptionCodeChange(event.target.value)}
-            placeholder='输入兑换码'
-            className='h-10'
-          />
-          <Button
-            onClick={props.onRedeem}
-            disabled={props.redeeming}
-            className='h-10 px-4'
-          >
-            {props.redeeming ? <Loader2 className='h-4 w-4 animate-spin' /> : '兑换'}
-          </Button>
-        </div>
-        {props.topupLink ? (
-          <a
-            href={props.topupLink}
-            target='_blank'
-            rel='noopener noreferrer'
-            className='text-muted-foreground hover:text-foreground mt-3 inline-flex text-xs underline-offset-4 hover:underline'
-          >
-            获取兑换码
-          </a>
-        ) : null}
-      </div>
+      <RedemptionCodePanel
+        topupLink={props.topupLink}
+        redemptionCode={props.redemptionCode}
+        onRedemptionCodeChange={props.onRedemptionCodeChange}
+        onRedeem={props.onRedeem}
+        redeeming={props.redeeming}
+        compact
+      />
     </div>
   )
 }

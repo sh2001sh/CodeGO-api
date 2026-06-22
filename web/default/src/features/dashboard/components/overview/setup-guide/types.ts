@@ -26,6 +26,8 @@ export interface QuickAction {
 
 export interface RequestExample {
   endpoint: string
+  openaiEndpoint: string
+  anthropicEndpoint: string
   model: string
   keyName: string
   displayKey: string
