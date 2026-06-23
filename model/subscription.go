@@ -551,28 +551,6 @@ func pickPrimaryActivePackageTx(tx *gorm.DB, userId int, now int64) (*UserSubscr
 	return pickedSub, pickedPlan, nil
 }
 
-func calcSubscriptionRemainingFraction(sub *UserSubscription, now int64) float64 {
-	if sub == nil || sub.EndTime <= now {
-		return 0
-	}
-	totalSeconds := sub.EndTime - sub.StartTime
-	if totalSeconds <= 0 {
-		return 1
-	}
-	remainingSeconds := sub.EndTime - now
-	if remainingSeconds <= 0 {
-		return 0
-	}
-	fraction := float64(remainingSeconds) / float64(totalSeconds)
-	if fraction < 0 {
-		return 0
-	}
-	if fraction > 1 {
-		return 1
-	}
-	return fraction
-}
-
 func ResolveSubscriptionPurchasePreviewTx(tx *gorm.DB, userId int, targetPlan *SubscriptionPlan) (*SubscriptionPurchasePreview, error) {
 	if targetPlan == nil || targetPlan.Id <= 0 {
 		return nil, errors.New("invalid plan")
@@ -608,16 +586,15 @@ func ResolveSubscriptionPurchasePreviewTx(tx *gorm.DB, userId int, targetPlan *S
 		preview.AmountDue = targetPlan.PriceAmount
 	default:
 		preview.Action = SubscriptionPurchaseActionUpgrade
-		remainingFraction := calcSubscriptionRemainingFraction(currentSub, now)
-		priceDiff := targetPlan.PriceAmount - currentPlan.PriceAmount
-		if priceDiff < 0 {
-			priceDiff = 0
+		remainingQuota := currentSub.AmountTotal - currentSub.AmountUsed
+		if remainingQuota < 0 {
+			remainingQuota = 0
 		}
-		if remainingFraction <= 0 {
-			preview.AmountDue = targetPlan.PriceAmount
-		} else {
-			preview.AmountDue = priceDiff * remainingFraction
+		discount := 0.0
+		if currentPlan.PriceAmount > 0 && currentSub.AmountTotal > 0 && remainingQuota > 0 {
+			discount = currentPlan.PriceAmount * float64(remainingQuota) / float64(currentSub.AmountTotal)
 		}
+		preview.AmountDue = targetPlan.PriceAmount - discount
 		if preview.AmountDue < 0.01 {
 			preview.AmountDue = 0.01
 		}
@@ -934,30 +911,27 @@ func upgradeUserSubscriptionWithPlanTx(tx *gorm.DB, sub *UserSubscription, plan 
 	sub.Status = "active"
 	sub.Source = source
 	sub.ModelLimits = plan.ModelLimits
-	if plan.TotalAmount == 0 {
-		sub.AmountTotal = 0
-	} else if sub.AmountTotal < plan.TotalAmount {
-		sub.AmountTotal = plan.TotalAmount
+	nowUnix := GetDBTimestamp()
+	now := time.Unix(nowUnix, 0)
+	endUnix, err := calcPlanEndTime(now, plan)
+	if err != nil {
+		return nil, err
 	}
-	if sub.AmountTotal > 0 && sub.AmountTotal < sub.AmountUsed {
-		sub.AmountTotal = sub.AmountUsed
-	}
+	sub.StartTime = nowUnix
+	sub.EndTime = endUnix
+	sub.AmountTotal = plan.TotalAmount
+	sub.AmountUsed = 0
 	sub.PeriodAmount = plan.PeriodAmount
-	if sub.PeriodAmount > 0 && sub.PeriodAmount < sub.PeriodUsed {
-		sub.PeriodAmount = sub.PeriodUsed
-	}
+	sub.PeriodUsed = 0
 	if err := applySubscriptionUpgradeGroupTx(tx, sub, plan); err != nil {
 		return nil, err
 	}
-	now := GetDBTimestamp()
 	if NormalizeResetPeriod(plan.QuotaResetPeriod) == SubscriptionResetNever {
 		sub.LastResetTime = 0
 		sub.NextResetTime = 0
 	} else {
-		if sub.LastResetTime <= 0 || sub.LastResetTime < sub.StartTime {
-			sub.LastResetTime = sub.StartTime
-		}
-		sub.NextResetTime = calcNextResetTime(time.Unix(sub.LastResetTime, 0), plan, sub.EndTime)
+		sub.LastResetTime = nowUnix
+		sub.NextResetTime = calcNextResetTime(now, plan, sub.EndTime)
 		if err := maybeResetUserSubscriptionWithPlanTx(tx, sub, plan, now); err != nil {
 			return nil, err
 		}
