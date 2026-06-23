@@ -1,7 +1,10 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
+import { Link } from '@tanstack/react-router'
+import { ArrowRight, Gift } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth-store'
 import { formatNumber, formatUsdAmount, quotaUnitsToUsd } from '@/lib/format'
+import { Button } from '@/components/ui/button'
 import { computeTimeRange } from '@/lib/time'
 import { getUserQuotaDates } from '@/features/dashboard/api'
 import type { QuotaDataItem } from '@/features/dashboard/types'
@@ -114,7 +117,6 @@ export function SummaryCards() {
   const recentUsage = chartValues.reduce((total, value) => total + value, 0)
   const blindBoxQuota = Number(blindBoxQuery.data?.overview?.remaining_quota ?? 0)
   const totalAvailableQuota = remainQuota + blindBoxQuota
-  const availableBoxes = Number(blindBoxQuery.data?.overview?.available_boxes ?? 0)
   const availableUsd = quotaUnitsToUsd(totalAvailableQuota)
   const walletUsd = quotaUnitsToUsd(remainQuota)
   const claudeUsd = quotaUnitsToUsd(claudeQuota)

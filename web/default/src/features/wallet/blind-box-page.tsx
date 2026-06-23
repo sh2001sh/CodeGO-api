@@ -4,7 +4,6 @@ import { ArrowRight, Gift, Package, Sparkles, Ticket } from 'lucide-react'
 import { toast } from 'sonner'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
-import { formatUsdAmount } from '@/lib/format'
 import { getGamificationDashboard } from '@/features/gamification/api'
 import { WalletWorkspaceShell } from './components/wallet-workspace-shell'
 import { useWalletWorkspace } from './hooks/use-wallet-workspace'
@@ -98,11 +97,9 @@ function buildDisplayRecords(records: BlindBoxRecord[]): DisplayRecord[] {
 export function BlindBoxPage(props: BlindBoxPageProps) {
   const workspace = useWalletWorkspace()
   const [blindBoxData, setBlindBoxData] = useState<BlindBoxSelfData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [paymentResult, setPaymentResult] = useState<
+  const [paymentResult] = useState<
     BlindBoxPageProps['initialPaymentStatus']
   >(props.initialPaymentStatus)
-  const [refreshKey, setRefreshKey] = useState(0)
   const [records, setRecords] = useState<DisplayRecord[]>([])
   const [selectedTab, setSelectedTab] = useState<'main' | 'pool' | 'history'>('main')
 
@@ -110,9 +107,8 @@ export function BlindBoxPage(props: BlindBoxPageProps) {
     let active = true
 
     const load = async () => {
-      setLoading(true)
       try {
-        const [boxResult, gameResult] = await Promise.all([
+        const [boxResult] = await Promise.all([
           getBlindBoxSelf(),
           getGamificationDashboard(),
         ])
@@ -129,10 +125,6 @@ export function BlindBoxPage(props: BlindBoxPageProps) {
         }
       } catch (error) {
         toast.error(error instanceof Error ? error.message : '加载盲盒页失败')
-      } finally {
-        if (active) {
-          setLoading(false)
-        }
       }
     }
 
@@ -140,7 +132,7 @@ export function BlindBoxPage(props: BlindBoxPageProps) {
     return () => {
       active = false
     }
-  }, [refreshKey])
+  }, [])
 
   useEffect(() => {
     if (!props.initialPaymentStatus) return
@@ -160,13 +152,9 @@ export function BlindBoxPage(props: BlindBoxPageProps) {
   const firstPurchaseEligible =
     blindBoxData?.first_purchase_guarantee_eligible ?? false
   const firstPurchaseUsd = blindBoxData?.first_purchase_guarantee_usd ?? 0
-  const pityThreshold = overview?.effective_pity_threshold ?? blindBoxData?.pity_threshold ?? 0
-  const pityProgress = overview?.pity_progress ?? 0
-  const remainingPity = Math.max(0, pityThreshold - pityProgress)
   const availableBoxes = overview?.available_boxes ?? 0
   const pendingBoxes = overview?.pending_boxes ?? 0
   const activeCredits = overview?.active_credit_count ?? 0
-  const walletUsd = formatUsdAmount(Number(overview?.remaining_quota ?? 0))
   const latestExpireAt = overview?.next_expire_at
     ? new Date(overview.next_expire_at * 1000).toLocaleString()
     : '--'
