@@ -884,7 +884,7 @@ func renewUserSubscriptionWithPlanTx(tx *gorm.DB, sub *UserSubscription, plan *S
 	if err := applySubscriptionUpgradeGroupTx(tx, sub, plan); err != nil {
 		return nil, err
 	}
-	now := GetDBTimestamp()
+	nowUnix := GetDBTimestamp()
 	if NormalizeResetPeriod(plan.QuotaResetPeriod) == SubscriptionResetNever {
 		sub.LastResetTime = 0
 		sub.NextResetTime = 0
@@ -932,7 +932,7 @@ func upgradeUserSubscriptionWithPlanTx(tx *gorm.DB, sub *UserSubscription, plan 
 	} else {
 		sub.LastResetTime = nowUnix
 		sub.NextResetTime = calcNextResetTime(now, plan, sub.EndTime)
-		if err := maybeResetUserSubscriptionWithPlanTx(tx, sub, plan, now); err != nil {
+		if err := maybeResetUserSubscriptionWithPlanTx(tx, sub, plan, nowUnix); err != nil {
 			return nil, err
 		}
 	}
