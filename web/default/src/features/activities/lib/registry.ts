@@ -2,12 +2,10 @@ import {
   RefreshCcw,
   Sparkles,
   ShoppingBag,
-  Ticket,
   type LucideIcon,
 } from 'lucide-react'
 
 export type ActivitySlug =
-  | 'blind-box'
   | 'invite-rewards'
   | 'point-mall'
   | 'claude-convert'
@@ -34,9 +32,6 @@ export type ActivityDefinition = {
   accentChip: string
 }
 
-const POSTER_BLIND_BOX =
-  'bg-[radial-gradient(circle_at_top_left,rgba(240,138,88,0.24),transparent_55%),linear-gradient(135deg,rgba(255,253,249,0.98),rgba(248,245,239,0.92))] dark:bg-[radial-gradient(circle_at_top_left,rgba(240,138,88,0.26),transparent_52%),linear-gradient(135deg,rgba(23,29,38,0.98),rgba(17,21,28,0.96))]'
-
 const POSTER_INVITE =
   'bg-[radial-gradient(circle_at_top_left,rgba(62,118,210,0.2),transparent_55%),linear-gradient(135deg,rgba(237,244,255,0.92),rgba(255,253,249,0.94))] dark:bg-[radial-gradient(circle_at_top_left,rgba(119,174,249,0.24),transparent_52%),linear-gradient(135deg,rgba(22,31,45,0.98),rgba(17,21,28,0.95))]'
 
@@ -47,19 +42,6 @@ const POSTER_CLAUDE =
   'bg-[radial-gradient(circle_at_top_left,rgba(67,181,141,0.2),transparent_55%),linear-gradient(135deg,rgba(240,255,249,0.96),rgba(255,253,249,0.94))] dark:bg-[radial-gradient(circle_at_top_left,rgba(82,196,154,0.22),transparent_52%),linear-gradient(135deg,rgba(19,33,30,0.95),rgba(17,21,28,0.96))]'
 
 export const ACTIVITY_LIST: ActivityDefinition[] = [
-  {
-    slug: 'blind-box',
-    name: '盲盒活动',
-    badge: '盲盒',
-    tagline: '抽取随机临时额度，已启用额度将优先用于 API 消费扣费。',
-    intro:
-      '抽取随机临时额度奖励。已启用的盲盒额度会优先用于 API 消费扣费，连续未中高额时将逐步累积保底奖励。购买与开启在盲盒页完成。',
-    icon: Ticket,
-    handling: 'redirect',
-    primaryActionLabel: '进入盲盒大厅',
-    posterTone: POSTER_BLIND_BOX,
-    accentChip: 'bg-[#f08a58]/14 text-[#d96a39]',
-  },
   {
     slug: 'invite-rewards',
     name: '邀请与刷新',

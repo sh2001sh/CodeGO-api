@@ -77,7 +77,7 @@ export function WalletResetOpportunityPanel(
           className='flex-1'
           render={<Link to='/activities' />}
         >
-          去活动中心查看说明
+          查看刷新说明
         </Button>
       </div>
     </div>

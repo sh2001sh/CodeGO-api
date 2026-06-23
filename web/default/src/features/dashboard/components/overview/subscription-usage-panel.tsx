@@ -363,7 +363,7 @@ export function SubscriptionUsagePanel() {
                 扣费顺序
               </div>
               <p className='text-muted-foreground text-sm leading-6'>
-                盲盒额度、订阅额度和钱包余额现在共用一套扣费顺序。
+                盲盒奖励、订阅额度和钱包余额现在共用一套扣费顺序。
               </p>
             </div>
 

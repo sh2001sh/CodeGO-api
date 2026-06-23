@@ -19,7 +19,7 @@ export function CTA(props: CTAProps) {
             选好套餐，开盒拿额度，立刻调用模型
           </h2>
           <p className='mt-4 max-w-2xl text-sm leading-7 text-white/78 md:text-base'>
-            注册即可领取受邀积分，首购盲盒享保底额度。统一 API 接入主流模型，额度怎么扣由你决定。
+            注册即可领取受邀积分，首抽盲盒享更实用的结果。统一 API 接入主流模型，额度怎么扣由你决定。
           </p>
         </div>
 
@@ -36,9 +36,9 @@ export function CTA(props: CTAProps) {
               <Button
                 variant='outline'
                 className='rounded-full border-white/30 bg-transparent text-white hover:bg-white/10'
-                render={<a href='/packages' />}
+                render={<a href='/pricing' />}
               >
-                查看套餐
+                查看模型
               </Button>
             </>
           ) : (

@@ -251,7 +251,7 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
       formUrl?: string
       formFields?: Record<string, unknown> | null
     }) => {
-      setPaymentState({
+        setPaymentState({
         open: true,
         stage: 'pending',
         orderId: args.orderId,
@@ -262,7 +262,7 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
         formUrl: args.formUrl || '',
         formFields: args.formFields || null,
         quantity: args.quantity,
-        message: '请在当前弹窗内扫码支付，付款完成后这里会自动出现开奖结果。',
+        message: '请在当前弹窗内扫码支付，付款完成后这里会自动显示结果。',
       })
     },
     []
@@ -310,7 +310,7 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
       try {
         const response = await openBlindBoxes({ count })
         if (!response.success || !response.data) {
-          throw new Error(response.message || '补开奖失败')
+          throw new Error(response.message || '处理失败')
         }
 
         setPrizeState({
@@ -320,7 +320,7 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
         })
         await refreshAll()
       } catch {
-        toast.error('补开奖失败')
+        toast.error('处理失败')
       } finally {
         setOpeningCount(null)
       }

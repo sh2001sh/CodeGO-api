@@ -52,13 +52,13 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
     props.data?.first_purchase_guarantee_eligible ?? false
   const petTitle = props.petProfile?.species || '盲盒宠物'
   const petNote =
-    props.petProfile?.note || '装备盲盒系宠物后，保底推进或返还效果会立刻生效。'
+    props.petProfile?.note || '装备对应宠物后，相关奖励加成会立即生效。'
   const petSkillName = props.petSkill
     ? `${props.petSkill.name} ${props.petSkill.value_text}`.trim()
     : '盲盒联动'
   const petSkillDescription =
     props.petSkill?.description ||
-    '盲盒系宠物会缩短保底触发次数，或在开盒时返还额外额度。'
+    '宠物加成会影响奖励进度或开盒返还。'
 
   return (
     <div className='space-y-4'>
@@ -70,33 +70,27 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
               <span>盲盒概览</span>
               {firstPurchaseEligible ? (
                 <span className='ios-pill px-2.5 py-0.5 text-[11px] text-primary'>
-                  首购保底进行中
+                  首抽规则生效
                 </span>
               ) : null}
             </div>
             <h3 className='mt-3 text-2xl font-semibold tracking-[-0.03em] text-foreground sm:text-3xl'>
               {firstPurchaseEligible
-                ? `首次开盒至少拿 ${firstPurchaseStartUSD.toFixed(2)} 美元额度`
-                : '购买盲盒，抽取随机额度奖励'}
+                ? `首次抽取至少获得 ${firstPurchaseStartUSD.toFixed(2)} 美元`
+                : '购买盲盒，抽取随机奖励'}
             </h3>
             <p className='mt-3 max-w-2xl text-sm leading-7 text-muted-foreground'>
               {firstPurchaseEligible
-                ? '首购福利会直接抬高第一次开盒收益，奖励到账后优先用于 API 消耗扣费。处理完首购后，再根据保底进度安排后续开盒。'
-                : '开出的额度优先用于 API 消耗扣费，连续未开出高额奖励时会累积保底，到达门槛后保证最低收益。'}
+                ? '首次抽取会优先给出更实用的结果，奖励到账后会直接进入对应账户。'
+                : '抽中的普通额度会直接进入钱包，Claude 额度会直接进入 Claude 额度池。'}
             </p>
             <div className='mt-4 grid gap-3 md:grid-cols-4'>
               <MetricCard
-                label='盲盒额度'
+                label='钱包余额'
                 value={formatQuota(props.data?.overview?.remaining_quota || 0)}
               />
-              <MetricCard
-                label='待开奖盲盒'
-                value={String(props.availableBoxes)}
-              />
-              <MetricCard
-                label='活跃额度份数'
-                value={String(props.data?.overview?.active_credit_count || 0)}
-              />
+              <MetricCard label='待处理' value={String(props.availableBoxes)} />
+              <MetricCard label='活跃奖励' value={String(props.data?.overview?.active_credit_count || 0)} />
               <MetricCard
                 label='保底进度'
                 value={`${props.pityProgress}/${props.effectivePityThreshold}`}
@@ -107,7 +101,7 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
           <div className='space-y-3'>
             <div className='app-subtle-panel p-4'>
               <div className='text-muted-foreground text-[11px] font-medium'>
-                当前盲盒余额
+                当前余额
               </div>
               <div className='mt-2 text-3xl font-semibold tracking-tight text-foreground'>
                 {formatQuota(props.data?.overview?.remaining_quota || 0)}
@@ -118,17 +112,17 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
             </div>
             <div className='app-subtle-panel p-4'>
               <div className='text-muted-foreground text-[11px] font-medium'>
-                当前建议
+                使用建议
               </div>
               <div className='mt-2 text-base font-semibold text-foreground'>
                 {firstPurchaseEligible
-                  ? '先完成首购福利，再看是否继续冲保底'
+                  ? '先完成首抽，再继续查看奖池'
                   : props.availableBoxes > 0
-                    ? `先处理 ${props.availableBoxes} 个待开奖盲盒`
-                    : '直接根据保底进度安排下一轮购买'}
+                    ? `先处理 ${props.availableBoxes} 条待处理记录`
+                    : '可以直接继续购买并抽取'}
               </div>
               <div className='mt-2 text-sm leading-6 text-muted-foreground'>
-                奖励到账后会优先用于 API 消耗扣费，建议及时开启待开奖盲盒。
+                奖励到账后会直接进入对应账户，建议及时处理待抽记录。
               </div>
             </div>
           </div>
@@ -144,10 +138,10 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
           <div>
             <div className='text-muted-foreground flex items-center gap-2 text-[11px] font-medium'>
               <Sparkles className='size-4 text-amber-500' />
-              盲盒活动
+              盲盒规则
             </div>
             <h3 className='text-foreground mt-2 text-2xl font-semibold tracking-[-0.03em]'>
-              盲盒购买与开奖
+              购买、抽取、到账
             </h3>
           </div>
           <div className='ios-pill px-3 py-1 text-xs font-medium text-foreground'>
@@ -155,12 +149,12 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
           </div>
         </div>
 
-        <div className='ios-floating-shell mt-5 p-4'>
-          <div className='flex items-center justify-between gap-3'>
-            <div>
-              <div className='text-foreground text-base font-semibold'>
-                本轮购买设置
-              </div>
+            <div className='ios-floating-shell mt-5 p-4'>
+              <div className='flex items-center justify-between gap-3'>
+                <div>
+                  <div className='text-foreground text-base font-semibold'>
+                当前购买状态
+                  </div>
               <div className='text-muted-foreground text-sm'>
                 今日已购 {props.data?.overview?.purchased_today || 0}/
                 {props.data?.daily_limit || 0}，本月已购{' '}
@@ -169,7 +163,7 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
               </div>
             </div>
             <Badge variant={props.data?.enabled ? 'default' : 'secondary'}>
-              {props.data?.enabled ? '活动进行中' : '暂未开放'}
+              {props.data?.enabled ? '可购买' : '暂未开放'}
             </Badge>
           </div>
 
@@ -180,7 +174,7 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
               </div>
               {firstPurchaseEligible ? (
                 <div className='border-border/70 bg-background/72 text-foreground mt-3 rounded-2xl border px-4 py-3 text-sm font-semibold'>
-                  首购保底已生效，本次至少获得 {firstPurchaseStartUSD.toFixed(2)} 美元额度
+                  首抽规则已生效，本次至少获得 {firstPurchaseStartUSD.toFixed(2)} 美元
                 </div>
               ) : null}
               <div className='mt-3 flex flex-wrap gap-2'>
@@ -261,7 +255,7 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
                         发起支付中
                       </>
                     ) : (
-                      '立即购买并开奖'
+                      '立即购买并抽取'
                     )}
                   </Button>
                 </div>
@@ -274,7 +268,7 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
                     {(props.data?.tiers || []).map((tier) => (
                       <div key={tier.name} className='flex items-center justify-between gap-4'>
                         <span>
-                          {tier.min_usd} - {tier.max_usd} 美元额度
+                          {tier.min_usd} - {tier.max_usd} 美元
                         </span>
                         <span className='font-semibold'>
                           {(tier.probability * 100).toFixed(1)}%
@@ -291,7 +285,7 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
                       </span>
                     </div>
                     <div className='border-border/70 text-muted-foreground border-t pt-3'>
-                      连续开出低于 {props.data?.low_reward_threshold_usd || 0} 美元的奖励达到门槛后，下一次至少获得 {props.data?.pity_guarantee_usd || 0} 美元奖励。
+                      连续开出低于 {props.data?.low_reward_threshold_usd || 0} 美元的奖励达到门槛后，下一次至少获得 {props.data?.pity_guarantee_usd || 0} 美元。
                     </div>
                   </div>
                   <Button
@@ -379,11 +373,11 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
         <div className='app-page-shell p-4'>
           <div className='text-foreground flex items-center gap-2 text-base font-semibold'>
             <CircleAlert className='size-4' />
-            待处理盲盒
+            待处理记录
           </div>
           <div className='text-muted-foreground mt-1 text-sm leading-6'>
             当前还有 {props.availableBoxes}{' '}
-            个盲盒未处理，通常来自历史订单或支付回调延迟。你可以直接补开奖，不会重复扣费。
+            条待处理记录，通常来自历史订单或支付回调延迟。你可以直接补处理，不会重复扣费。
           </div>
           <Button
             type='button'
@@ -393,8 +387,8 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
             disabled={props.openingCount !== null}
           >
             {props.openingCount === props.availableBoxes
-              ? '补开奖中...'
-              : `立即补开 ${props.availableBoxes} 个`}
+              ? '处理中...'
+              : `立即处理 ${props.availableBoxes} 条`}
           </Button>
         </div>
       ) : null}
@@ -402,7 +396,7 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
       <div className='app-page-shell p-4'>
         <div className='flex items-center justify-between gap-3'>
           <div className='text-foreground text-base font-semibold'>
-            最近掉落
+            最近结果
           </div>
           <div className='ios-pill px-3 py-1 text-xs font-medium text-muted-foreground'>
             <WandSparkles className='mr-1 inline size-3.5' />

@@ -16,9 +16,9 @@ const activityCards = [
   {
     icon: <Gift className='size-5 text-amber-600' />,
     tag: '盲盒活动',
-    title: '首购保底，开盒拿随机额度',
+    title: '首抽奖励，开盒拿随机奖励',
     description:
-      '首次开盒享保底美元额度，连续未中高额会累积保底进度。开出的额度优先用于 API 扣费。',
+      '首次开盒会优先给出更实用的结果，抽到的普通额度和 Claude 额度都会直接到账。',
     to: '/blind-box',
     cta: '去开盲盒',
   },
@@ -45,7 +45,7 @@ const activityCards = [
     tag: '额度管理',
     title: '扣费顺序自己说了算',
     description:
-      '盲盒额度、订阅额度和钱包余额共用一套扣费顺序，可随时调整，看清真实可用余额。',
+      '盲盒奖励、订阅额度和钱包余额共用一套扣费顺序，可随时调整，看清真实可用余额。',
     to: '/wallet',
     cta: '管理钱包',
   },

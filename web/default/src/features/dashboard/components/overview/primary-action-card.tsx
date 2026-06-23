@@ -1,11 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import {
-  ArrowRight,
-  Crown,
-  Egg,
-  Sparkles,
-  type LucideIcon,
-} from 'lucide-react'
+import { ArrowRight, Crown, Egg, Sparkles, type LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -33,28 +27,6 @@ interface NavigationCardItem {
 }
 
 const NAVIGATION_ITEMS: NavigationCardItem[] = [
-  {
-    id: 'blind-box',
-    eyebrow: '盲盒活动',
-    title: '去开盲盒，直接处理额度和开奖',
-    description:
-      '购买盲盒抽取随机额度，连续未开出高额时累积保底，适合快速补充短期额度。',
-    note: '盲盒额度会优先于套餐和钱包余额消耗。',
-    ctaLabel: '进入盲盒活动',
-    to: '/blind-box',
-    icon: Egg,
-    theme: {
-      frame:
-        'border-border/70 bg-background/76',
-      eyebrow: 'text-muted-foreground',
-      title: 'text-foreground',
-      body: 'text-muted-foreground',
-      note: 'border-border/70 bg-background/72 text-muted-foreground',
-      button:
-        'bg-primary text-primary-foreground hover:bg-primary/90',
-      iconTile: 'bg-primary/12 text-primary',
-    },
-  },
   {
     id: 'packages',
     eyebrow: '套餐购买',
@@ -97,6 +69,26 @@ const NAVIGATION_ITEMS: NavigationCardItem[] = [
       note: 'border-border/70 bg-background/72 text-muted-foreground',
       button:
         'bg-primary text-primary-foreground hover:bg-primary/90',
+      iconTile: 'bg-primary/12 text-primary',
+    },
+  },
+  {
+    id: 'blind-box',
+    eyebrow: '盲盒抽取',
+    title: '去抽盲盒，额度和道具直接入账',
+    description:
+      '抽中普通额度会直接进入钱包，Claude 额度进入 Claude 余额，道具会发放到奖励中心。',
+    note: '抽取结果会直接显示到账内容。',
+    ctaLabel: '进入盲盒',
+    to: '/blind-box',
+    icon: Egg,
+    theme: {
+      frame: 'border-border/70 bg-muted/34',
+      eyebrow: 'text-muted-foreground',
+      title: 'text-foreground',
+      body: 'text-muted-foreground',
+      note: 'border-border/70 bg-background/72 text-muted-foreground',
+      button: 'bg-primary text-primary-foreground hover:bg-primary/90',
       iconTile: 'bg-primary/12 text-primary',
     },
   },

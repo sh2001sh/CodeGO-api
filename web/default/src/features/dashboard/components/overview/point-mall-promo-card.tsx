@@ -69,12 +69,12 @@ const PROMO_ITEMS: ActivityPromoItem[] = [
   {
     id: 'blind-box',
     eyebrow: '盲盒活动',
-    title: '低门槛开盲盒，直接拿额度和订阅大奖',
+    title: '低门槛开盲盒，直接拿额度和订阅奖励',
     description:
-      '花小钱抽取随机额度奖励，连续未开出高额时累积保底，还有机会开出整份订阅大奖，适合想快速补额度、顺手搏一把的用户。',
-    sideTitle: '开出的额度优先用于扣费',
+      '花小钱抽取随机奖励，普通额度会直接进入钱包，Claude 额度会直接进入 Claude 额度池。',
+    sideTitle: '抽到后直接到账',
     sideDescription:
-      '盲盒额度会优先于套餐和钱包余额参与 API 消耗，开出即可立即生效，无需额外操作。',
+      '结果会直接展示到账内容，无需再做额外处理。',
     to: '/blind-box',
     ctaLabel: '去开盲盒',
     icon: PackageOpen,

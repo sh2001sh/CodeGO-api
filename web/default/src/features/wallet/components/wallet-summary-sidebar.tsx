@@ -49,8 +49,7 @@ export function WalletSummarySidebar(props: WalletSummarySidebarProps) {
       <div className='app-subtle-panel p-4'>
         <div className='text-foreground text-sm font-semibold'>活动入口</div>
         <div className='text-muted-foreground mt-2 text-xs leading-5'>
-          盲盒、邀请刷新、积分商城和 Claude
-          转换说明统一移到活动中心，这里不再重复铺开。
+          盲盒、邀请刷新、积分商城和 Claude 转换说明都可以从这里进入。
         </div>
         <Button
           variant='outline'

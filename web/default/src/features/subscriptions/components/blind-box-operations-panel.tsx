@@ -58,10 +58,10 @@ export function BlindBoxOperationsPanel() {
           <div className='space-y-2'>
             <div className='flex items-center gap-2 text-sm font-semibold text-slate-950'>
               <Gift className='h-4 w-4 text-amber-600' />
-              盲盒活动运营面板
+              盲盒运营面板
             </div>
             <p className='text-muted-foreground text-sm leading-6'>
-              在这里快速查看盲盒活动规则，跳转用户管理，或直接进入盲盒配置页，确保后台参数和钱包侧展示一致。
+              在这里查看盲盒规则、价格和奖池概率，并跳转到配置页进行调整。
             </p>
           </div>
 
@@ -108,7 +108,7 @@ export function BlindBoxOperationsPanel() {
           value={`${settings['blind_box_setting.unit_price'].toFixed(2)} USD`}
         />
         <MetricCard
-          label='月卡大奖概率'
+          label='月卡奖励概率'
           value={`${(
             settings['blind_box_setting.subscription_prize_probability'] * 100
           ).toFixed(2)}%`}
@@ -118,7 +118,7 @@ export function BlindBoxOperationsPanel() {
           value={settings['blind_box_setting.subscription_plan_title']}
         />
         <MetricCard
-          label='首购奖池起点'
+          label='首抽奖池起点'
           value={`${settings['blind_box_setting.first_purchase_guarantee_usd'].toFixed(2)} USD`}
         />
         <MetricCard
@@ -160,9 +160,9 @@ export function BlindBoxOperationsPanel() {
 
         <div className='space-y-4'>
           <div className='rounded-2xl border p-4 text-sm'>
-            <div className='font-semibold'>首购专属奖池规则</div>
+            <div className='font-semibold'>首抽专属奖池规则</div>
             <div className='text-muted-foreground mt-2 leading-6'>
-              首购首盒会优先保留月卡大奖概率；若未命中月卡，则进入专属奖池，非月卡奖励区间从首购奖池起始金额开始，同时提高高档位概率。
+              首次抽取会优先使用首抽奖池；若未命中月卡，则继续按专属奖池规则发放，非月卡奖励从首抽起始金额开始，并提高高档位概率。
             </div>
           </div>
 

@@ -11,15 +11,12 @@ import {
   ActivitySwitcher,
   type SwitcherItem,
 } from './components/activity-switcher'
-import { BlindBoxDetail } from './components/blind-box-detail'
 import { ClaudeConvertDetail } from './components/claude-convert-detail'
 import { InviteRewardsDetail } from './components/invite-rewards-detail'
 import { PointMallDetail } from './components/point-mall-detail'
 
 function ActivityBody(props: { slug: ActivitySlug; data: ActivitiesData }) {
   switch (props.slug) {
-    case 'blind-box':
-      return <BlindBoxDetail data={props.data} />
     case 'invite-rewards':
       return <InviteRewardsDetail data={props.data} />
     case 'point-mall':
@@ -32,19 +29,13 @@ function ActivityBody(props: { slug: ActivitySlug; data: ActivitiesData }) {
 export function ActivitiesPage() {
   const data = useActivitiesData()
   const { activity } = useSearch({ from: '/_authenticated/activities/' })
-  const active: ActivitySlug = activity ?? 'blind-box'
+  const active: ActivitySlug = activity ?? 'invite-rewards'
 
-  const blindBox = data.blindBoxOverview
   const pointBalance = data.pointMallOverview?.account.balance ?? 0
-  const availableBoxes = blindBox?.available_boxes ?? 0
   const eligibleCount = data.eligibleConversionSubscriptions.length
   const resetCount = data.resetOpportunity.available_count
 
   const statusMap: Record<ActivitySlug, SwitcherItem['status']> = {
-    'blind-box': {
-      tone: availableBoxes > 0 ? 'active' : 'idle',
-      text: availableBoxes > 0 ? '有待开启' : '暂无待开启',
-    },
     'invite-rewards': {
       tone: resetCount > 0 ? 'active' : 'idle',
       text: resetCount > 0 ? '有可用刷新' : '暂无刷新',

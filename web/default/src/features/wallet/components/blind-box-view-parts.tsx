@@ -62,7 +62,7 @@ export function ActiveCreditList(props: { credits: BlindBoxCredit[] }) {
   if (props.credits.length === 0) {
     return (
       <div className='border-border/70 bg-background/60 text-muted-foreground rounded-2xl border border-dashed px-4 py-6 text-center text-sm'>
-        还没有活跃中的盲盒额度。
+        还没有正在生效的奖励。
       </div>
     )
   }
@@ -76,7 +76,7 @@ export function ActiveCreditList(props: { credits: BlindBoxCredit[] }) {
         >
           <div className='flex items-center justify-between gap-3'>
             <div className='text-foreground font-medium'>
-              {credit.reward_usd.toFixed(2)} 美元掉落
+              {credit.reward_usd.toFixed(2)} 美元奖励
             </div>
             <div className='text-muted-foreground'>
               剩余 {formatQuota(credit.remaining_amount)}
@@ -95,7 +95,7 @@ export function DropRecordList(props: { records: BlindBoxRecord[] }) {
   if (props.records.length === 0) {
     return (
       <div className='border-border/70 bg-background/60 text-muted-foreground rounded-2xl border border-dashed px-4 py-8 text-center text-sm'>
-        还没有盲盒开奖记录。
+        还没有抽取记录。
       </div>
     )
   }
@@ -123,7 +123,7 @@ export function DropRecordList(props: { records: BlindBoxRecord[] }) {
               )}
             >
               {record.reward_type === 'subscription'
-                ? '套餐大奖'
+                ? '套餐奖励'
                 : `${formatQuota(record.credit_amount || 0)} 额度`}
             </div>
           </div>

@@ -79,11 +79,6 @@ export function useSidebarData(): SidebarData {
                 icon: Gift,
               },
               {
-                title: '盲盒活动',
-                url: '/blind-box',
-                icon: Ticket,
-              },
-              {
                 title: '邀请与刷新',
                 url: '/invite-rewards',
                 icon: RefreshCcw,
@@ -135,6 +130,11 @@ export function useSidebarData(): SidebarData {
             title: '套餐',
             url: '/packages',
             icon: ScrollText,
+          },
+          {
+            title: '盲盒',
+            url: '/blind-box',
+            icon: Ticket,
           },
           {
             title: '个人资料',

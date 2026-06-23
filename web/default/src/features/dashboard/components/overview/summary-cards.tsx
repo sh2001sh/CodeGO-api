@@ -20,7 +20,6 @@ import type { PlanRecord } from '@/features/subscriptions/types'
 import { getBlindBoxSelf } from '@/features/wallet/api'
 import { UsageChart } from './summary-card-parts'
 import {
-  ActivityOverviewPanel,
   BalanceWorkspace,
   PackageStatusCard,
   StatusInfoCard,
@@ -163,10 +162,6 @@ export function SummaryCards() {
   const isMonthlyPlan = isMonthlyCardPlan(primaryPlanMeta?.plan)
   const showPeriodQuota = !isMonthlyPlan && periodAmount > 0
   const hasSubscription = Boolean(subscription)
-  const blindBoxNextExpireAt = Number(
-    blindBoxQuery.data?.overview?.next_expire_at ?? 0
-  )
-
   const heroMetrics: MetricDef[] = [
     {
       label: '24 小时消耗',
@@ -188,21 +183,7 @@ export function SummaryCards() {
       value: formatUsdAmount(claudeUsd),
       hint: 'Claude 模型专用余额池',
     },
-    {
-      label: '盲盒余额',
-      value: formatUsdAmount(blindBoxQuotaUsd),
-      hint:
-        blindBoxNextExpireAt > 0
-          ? `最近到期：${formatDateTime(blindBoxNextExpireAt)}`
-          : '当前没有即将到期的盲盒额度',
-    },
   ]
-
-  const gamificationData = gamificationQuery.data?.data
-  const missionCount = gamificationData?.daily_missions?.length ?? 0
-  const completedMissions =
-    gamificationData?.daily_missions?.filter((mission) => mission.claimed)
-      .length ?? 0
 
   return (
     <div className='flex flex-col gap-4'>
@@ -252,16 +233,54 @@ export function SummaryCards() {
         </PackageStatusCard>
       </div>
 
-      <ActivityOverviewPanel
-        availableBoxes={availableBoxes}
-        affCount={formatNumber(Number(user?.aff_count ?? 0))}
-        resetOpportunity={
-          subscriptionsQuery.data?.reset_opportunity ??
-          EMPTY_SUBSCRIPTIONS.reset_opportunity
-        }
-        missionProgress={missionCount > 0 ? `${completedMissions}/${missionCount} 任务` : undefined}
-        companionName={gamificationData?.companion?.name}
-      />
+      <section className='overview-glass-card p-5 xl:p-6'>
+        <div className='grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(280px,320px)] xl:items-center'>
+          <div className='min-w-0'>
+            <div className='text-foreground flex items-center gap-2 text-base font-semibold'>
+              <Gift className='text-primary size-4' />
+              活动与成长
+            </div>
+            <p className='text-muted-foreground mt-1 max-w-xl text-sm leading-6'>
+              这里显示邀请、积分和任务摘要，盲盒入口已单独放到导航中。
+            </p>
+
+            <div className='mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3'>
+              <div className='overview-soft-card px-3 py-3'>
+                <div className='text-muted-foreground text-[11px] font-medium'>
+                  已邀请人数
+                </div>
+                <div className='text-foreground mt-1 text-base font-semibold'>
+                  {formatNumber(Number(user?.aff_count ?? 0))}
+                </div>
+              </div>
+              <div className='overview-soft-card px-3 py-3'>
+                <div className='text-muted-foreground text-[11px] font-medium'>
+                  可用刷新
+                </div>
+                <div className='text-foreground mt-1 text-base font-semibold'>
+                  {subscriptionsQuery.data?.reset_opportunity?.available_count ?? 0} 次
+                </div>
+              </div>
+              <div className='overview-soft-card px-3 py-3'>
+                <div className='text-muted-foreground text-[11px] font-medium'>
+                  活动摘要
+                </div>
+                <div className='text-foreground mt-1 text-base font-semibold'>
+                  {gamificationQuery.data?.data?.daily_missions?.length ?? 0} 项
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <Button
+            className='h-full min-h-28 w-full justify-between rounded-2xl'
+            render={<Link to='/activities' />}
+          >
+            <span>进入活动中心</span>
+            <ArrowRight data-icon='inline-end' />
+          </Button>
+        </div>
+      </section>
 
       <UsageChart points={chartPoints} />
     </div>

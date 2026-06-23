@@ -119,7 +119,7 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
         resetOpportunity={resetOpportunity}
         compact
         title='套餐额度刷新'
-        description='活动规则和入口统一收口到活动中心，这里只保留状态摘要。'
+        description='邀请新用户首购后可获得刷新机会，当前只展示你的使用状态。'
       />
 
       <div className='app-subtle-panel p-4'>
@@ -128,7 +128,7 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
           活动与权益入口
         </div>
         <div className='text-muted-foreground mt-2 text-xs leading-5'>
-          盲盒、邀请刷新、积分商城和 Claude 转换说明已经统一放到活动中心，不再在套餐页重复展开。
+          盲盒、邀请刷新、积分商城和 Claude 转换说明都可以从这里进入。
         </div>
         <Button
           variant='outline'

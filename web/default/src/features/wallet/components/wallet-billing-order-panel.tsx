@@ -43,7 +43,7 @@ export function WalletBillingOrderPanel(props: WalletBillingOrderPanelProps) {
         <div>
           <div className='text-foreground text-sm font-semibold'>扣费顺序</div>
           <div className='text-muted-foreground mt-1 text-xs leading-5'>
-            盲盒额度、订阅额度和钱包余额共用同一套优先级，下面可以直接调整。
+            盲盒奖励、订阅额度和钱包余额共用同一套优先级，下面可以直接调整。
           </div>
         </div>
         <div className='flex gap-2'>

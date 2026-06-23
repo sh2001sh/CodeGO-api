@@ -27,11 +27,11 @@ const advantages = [
     title: '价格更耐用',
     description: '人民币付费，按美元信用额度计费，长期调用更划算。',
   },
-  {
-    icon: <Gift className='h-4 w-4 text-amber-600' />,
-    title: '活动福利多',
-    description: '盲盒首购保底、积分商城、邀请刷新，多重福利叠加。',
-  },
+    {
+      icon: <Gift className='h-4 w-4 text-amber-600' />,
+      title: '活动福利多',
+      description: '盲盒首抽奖励、积分商城、邀请刷新，多重福利叠加。',
+    },
   {
     icon: <Layers className='h-4 w-4 text-sky-600' />,
     title: '多模型接入',
@@ -52,12 +52,12 @@ const usagePaths = [
     title: '统一调用模型',
     description: '一套 API 接入主流模型，盲盒、订阅与余额的扣费顺序自己可调。',
   },
-  {
-    step: '3',
-    icon: <Gift className='h-4 w-4 text-amber-600' />,
-    title: '领取活动福利',
-    description: '开盲盒抽随机额度、用积分兑权益、邀请好友得额度刷新。',
-  },
+    {
+      step: '3',
+      icon: <Gift className='h-4 w-4 text-amber-600' />,
+      title: '领取活动福利',
+      description: '开盲盒抽随机奖励、用积分兑权益、邀请好友得额度刷新。',
+    },
 ]
 
 export function Hero(props: HeroProps) {
@@ -89,7 +89,7 @@ export function Hero(props: HeroProps) {
               接入主流大模型
             </h1>
             <p className='mt-5 max-w-xl text-lg leading-8 text-slate-600 dark:text-slate-300'>
-              面向开发者的多模型 AI 接入平台。盲盒开额度、积分兑权益、邀请换刷新，多重活动福利让你的额度越用越多。
+              面向开发者的多模型 AI 接入平台。盲盒开奖励、积分兑权益、邀请换刷新，多重活动福利让你的额度越用越多。
             </p>
 
             <div className='mt-7'>
@@ -124,9 +124,9 @@ export function Hero(props: HeroProps) {
                   <Button
                     variant='outline'
                     className='rounded-full px-5'
-                    render={<a href='/packages' />}
+                    render={<a href='/pricing' />}
                   >
-                    查看套餐
+                    查看模型
                   </Button>
                 </>
               ) : (

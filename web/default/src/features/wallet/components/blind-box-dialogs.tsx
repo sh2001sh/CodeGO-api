@@ -85,10 +85,10 @@ export function summarizeOpenResult(records: BlindBoxRecord[]) {
     .reduce((sum, record) => sum + (record.reward_usd || 0), 0)
 
   if (subscriptionHits > 0) {
-    return `本次开出 ${records.length} 个盲盒，命中 ${subscriptionHits} 份套餐大奖，并获得 ${quotaTotal.toFixed(2)} 美元临时额度。`
+    return `本次获得 ${records.length} 项奖励，包含 ${subscriptionHits} 份套餐奖励和 ${quotaTotal.toFixed(2)} 美元额度。`
   }
 
-  return `本次开出 ${records.length} 个盲盒，共获得 ${quotaTotal.toFixed(2)} 美元临时额度。`
+  return `本次获得 ${records.length} 项奖励，共计 ${quotaTotal.toFixed(2)} 美元额度。`
 }
 
 export function resolveRewardTone(record: BlindBoxRecord) {
@@ -138,7 +138,7 @@ export function BlindBoxPaymentDialog(props: {
         <DialogHeader className='border-b px-5 py-4'>
           <DialogTitle className='flex items-center gap-2'>
             <Gift className='size-5' />
-            盲盒扫码支付
+            盲盒支付
           </DialogTitle>
         </DialogHeader>
 
@@ -186,13 +186,13 @@ export function BlindBoxPaymentDialog(props: {
                   </div>
                 ) : (
                   <div className='border-border/70 text-muted-foreground rounded-2xl border border-dashed px-5 py-10 text-center text-sm'>
-                    当前支付方式没有直接返回二维码，可点击下方按钮继续支付。
+                    当前支付方式没有直接返回二维码，可以点击下方按钮继续支付。
                   </div>
                 )}
 
                 <div className='text-muted-foreground flex items-center gap-2 text-center text-xs leading-6'>
                   <QrCode className='size-4 shrink-0' />
-                  扫码完成后会在当前页面自动同步开奖结果，无需跳转或手动刷新。
+                  支付完成后会在当前页面自动同步结果，无需跳转或手动刷新。
                 </div>
               </div>
             </div>
@@ -211,7 +211,7 @@ export function BlindBoxPaymentDialog(props: {
               onClick={() => props.onOpenChange(false)}
               disabled={props.state.stage === 'pending'}
             >
-              {props.state.stage === 'pending' ? '等待支付回传中' : '关闭'}
+              {props.state.stage === 'pending' ? '等待支付完成' : '关闭'}
             </Button>
           </div>
         </div>
@@ -230,7 +230,7 @@ export function BlindBoxPrizeDialog(props: {
         <DialogHeader className='border-b px-5 py-4'>
           <DialogTitle className='flex items-center gap-2'>
             <Trophy className='size-5 text-amber-500' />
-            开奖结果
+            抽取结果
           </DialogTitle>
         </DialogHeader>
 
@@ -240,7 +240,7 @@ export function BlindBoxPrizeDialog(props: {
               {summarizeOpenResult(props.state.records)}
             </div>
             <div className='text-muted-foreground mt-1 text-sm'>
-              本次共开启 {props.state.openCount} 个盲盒，奖励已经写入盲盒额度或套餐。
+              本次共抽取 {props.state.openCount} 次，奖励已经写入对应账户。
             </div>
           </div>
 
@@ -267,12 +267,12 @@ export function BlindBoxPrizeDialog(props: {
                       )}
                     >
                       {record.reward_type === 'subscription'
-                        ? '套餐大奖'
+                        ? '套餐奖励'
                         : `${formatQuota(record.credit_amount || 0)} 额度`}
                     </div>
                     {record.is_pity ? (
                       <div className='border-border bg-background/80 text-muted-foreground rounded-full border px-3 py-1 text-xs font-medium'>
-                        保底触发
+                        保底命中
                       </div>
                     ) : null}
                   </div>
@@ -281,7 +281,7 @@ export function BlindBoxPrizeDialog(props: {
             ))}
           </div>
 
-          <Button onClick={() => props.onOpenChange(false)}>收下奖励</Button>
+          <Button onClick={() => props.onOpenChange(false)}>确定</Button>
         </div>
       </DialogContent>
     </Dialog>
