@@ -19,6 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 import { useCallback, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { PublicLayout } from '@/components/layout'
+import { SiteSeo } from '@/components/seo'
 import { PageTransition } from '@/components/page-transition'
 import {
   LoadingSkeleton,
@@ -174,6 +175,13 @@ export function Pricing() {
 
   return (
     <PublicLayout showMainContainer={false}>
+      <SiteSeo
+        title='模型广场与价格总览'
+        description='Code Go 模型广场汇总当前可用模型、免费模型、分组与价格信息，支持按供应商、标签、额度和输出单价快速筛选对比，方便你挑选适合长期 AI Coding 的入口。'
+        keywords='模型广场, 价格总览, 免费模型, Codex, Claude, GPT, AI API 价格, Code Go'
+        canonicalPath='/pricing'
+        ogType='website'
+      />
       <PageTransition className='public-topbar-spacer mx-auto w-full max-w-[1800px] px-3 pb-8 sm:px-6 sm:pb-10 xl:px-8'>
         <div className='mx-auto mb-6 max-w-7xl sm:mb-10'>
           <header className='grid gap-5 rounded-[28px] border border-border/70 bg-card/70 p-5 backdrop-blur-xl sm:p-7 lg:grid-cols-[minmax(0,1fr)_340px] lg:items-end'>

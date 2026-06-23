@@ -115,7 +115,7 @@ export function BrandHome() {
     <PublicLayout showMainContainer={false}>
       <SiteSeo
         title='Code Go | Codex API、Claude Code API、Codex 中转、Claude 中转'
-        description='Code Go 是面向长期 AI Coding 的统一入口，覆盖 Codex API、Claude Code API、Codex中转、Claude中转、免费模型、DeepSeek、GLM 与持续使用工作流。'
+        description='Code Go 是面向长期 AI Coding 的统一入口，覆盖 Codex API、Claude Code API、Codex中转、Claude中转、免费模型、DeepSeek、GLM、模型广场、价格对比与持续使用工作流。'
         keywords='Code Go, Codex API, Claude Code API, Codex中转, Codex 中转, Claude中转, Claude 中转, codex api中转, claude code api中转, 免费模型, DeepSeek, GLM, AI Coding'
         canonicalPath='/'
         jsonLd={[

@@ -23,7 +23,7 @@ export const searchPages: SearchPageContent[] = [
   {
     slug: 'codex-api',
     title: 'Codex API',
-    seoTitle: 'Codex API 接入与中转 | Code Go',
+    seoTitle: 'Codex API 接入与长期使用指南 | Code Go',
     description:
       'Code Go 提供适合长期使用的 Codex API 接入与中转方案，帮助你在 AI Coding 工作流里稳定调用模型。',
     keywords:
@@ -72,7 +72,7 @@ export const searchPages: SearchPageContent[] = [
   {
     slug: 'codex-api-jiaocheng',
     title: 'Codex API 教程',
-    seoTitle: 'Codex API 教程 | Code Go',
+    seoTitle: 'Codex API 教程：接入、配置与长期使用 | Code Go',
     description:
       'Code Go 的 Codex API 教程，适合想把 Codex 接入长期 AI Coding 工作流的开发者。',
     keywords:
@@ -117,7 +117,7 @@ export const searchPages: SearchPageContent[] = [
   {
     slug: 'codex-zhongzhuan',
     title: 'Codex 中转',
-    seoTitle: 'Codex中转入口推荐：支持免费模型与 GPT / Claude | Code Go',
+    seoTitle: 'Codex中转入口推荐：免费模型、GPT 与 Claude 一起看 | Code Go',
     description:
       'Code Go 提供适合开发者长期使用的 Codex中转入口，支持免费模型、GPT、Claude 统一查看与接入，适合做 AI Coding、代码修改、终端协作与长期工作流。',
     keywords:
@@ -184,7 +184,7 @@ export const searchPages: SearchPageContent[] = [
   {
     slug: 'codex-zhongzhuan-jiaocheng',
     title: 'Codex 中转教程',
-    seoTitle: 'Codex 中转教程 | Code Go',
+    seoTitle: 'Codex 中转教程：长期入口与使用路径 | Code Go',
     description:
       'Code Go 的 Codex 中转教程，帮助你把 Codex 中转放入长期可用的 AI Coding 工作流。',
     keywords:
@@ -222,7 +222,7 @@ export const searchPages: SearchPageContent[] = [
   {
     slug: 'claude-code-api',
     title: 'Claude Code API',
-    seoTitle: 'Claude Code API 接入与中转：先试免费模型，再切 Claude | Code Go',
+    seoTitle: 'Claude Code API 接入与长期工作流指南 | Code Go',
     description:
       'Code Go 提供适合长期 AI Coding 工作流的 Claude Code API 接入与中转能力，支持你先看免费模型，再决定什么时候切到 Claude，适合终端型开发者持续使用。',
     keywords:
@@ -289,7 +289,7 @@ export const searchPages: SearchPageContent[] = [
   {
     slug: 'claude-code-api-jiaocheng',
     title: 'Claude Code API 教程',
-    seoTitle: 'Claude Code API 教程 | Code Go',
+    seoTitle: 'Claude Code API 教程：接入、配置与使用 | Code Go',
     description:
       'Code Go 的 Claude Code API 教程，适合想把 Claude Code 接入长期 AI Coding 工作流的开发者。',
     keywords:
@@ -327,7 +327,7 @@ export const searchPages: SearchPageContent[] = [
   {
     slug: 'claude-zhongzhuan',
     title: 'Claude 中转',
-    seoTitle: 'Claude中转平台怎么选：价格、模型与使用方式说明 | Code Go',
+    seoTitle: 'Claude中转平台怎么选：价格、模型与长期使用方式 | Code Go',
     description:
       'Code Go 是适合长期使用的 Claude中转平台，帮助开发者查看 Claude 模型、免费模型和价格结构，再决定如何接入 AI Coding 工作流。',
     keywords:
@@ -394,7 +394,7 @@ export const searchPages: SearchPageContent[] = [
   {
     slug: 'ai-api-zhongzhuan',
     title: 'AI API 中转',
-    seoTitle: 'AI API 中转怎么选：免费模型、GPT、Claude 一起看 | Code Go',
+    seoTitle: 'AI API 中转怎么选：免费模型、GPT、Claude 与价格对比 | Code Go',
     description:
       'Code Go 是一个面向开发者的 AI API 中转入口，支持免费模型、GPT、Claude 统一查看与选择，适合先用免费模型，再决定什么时候切到高阶模型。',
     keywords:
@@ -454,7 +454,7 @@ export const searchPages: SearchPageContent[] = [
   {
     slug: 'claude-zhongzhuan-jiaocheng',
     title: 'Claude 中转教程',
-    seoTitle: 'Claude 中转教程 | Code Go',
+    seoTitle: 'Claude 中转教程：选择、配置与使用路径 | Code Go',
     description:
       'Code Go 的 Claude 中转教程，帮助开发者把 Claude 中转接入日常工作流并长期使用。',
     keywords:
@@ -492,7 +492,7 @@ export const searchPages: SearchPageContent[] = [
   {
     slug: 'codex-api-jiaocheng-2',
     title: 'Codex 接入教程',
-    seoTitle: 'Codex 接入教程 | Code Go',
+    seoTitle: 'Codex 接入教程：从入门到长期使用 | Code Go',
     description:
       'Code Go 的 Codex 接入教程，帮助你把 Codex 接入 AI Coding 工作流。',
     keywords:
@@ -526,7 +526,7 @@ export const searchPages: SearchPageContent[] = [
   {
     slug: 'claude-code-api-jiaocheng-2',
     title: 'Claude Code 接入教程',
-    seoTitle: 'Claude Code 接入教程 | Code Go',
+    seoTitle: 'Claude Code 接入教程：从入门到长期使用 | Code Go',
     description:
       'Code Go 的 Claude Code 接入教程，适合希望将 Claude Code 长期接入工作流的开发者。',
     keywords:
@@ -560,7 +560,7 @@ export const searchPages: SearchPageContent[] = [
   {
     slug: 'codex-api-shangshou-jiaocheng',
     title: 'Codex API 上手教程',
-    seoTitle: 'Codex API 上手教程 | Code Go',
+    seoTitle: 'Codex API 上手教程：从接入到使用 | Code Go',
     description:
       'Code Go 的 Codex API 上手教程，适合想快速进入长期 AI Coding 工作流的开发者。',
     keywords:
@@ -598,7 +598,7 @@ export const searchPages: SearchPageContent[] = [
   {
     slug: 'codex-zhongzhuan-shiyong-jiaocheng',
     title: 'Codex 中转使用教程',
-    seoTitle: 'Codex 中转使用教程 | Code Go',
+    seoTitle: 'Codex 中转使用教程：接入与长期使用 | Code Go',
     description:
       'Code Go 的 Codex 中转使用教程，帮助你把 Codex 中转接入长期稳定的使用方式。',
     keywords:
@@ -636,7 +636,7 @@ export const searchPages: SearchPageContent[] = [
   {
     slug: 'claude-code-api-shangshou-jiaocheng',
     title: 'Claude Code API 上手教程',
-    seoTitle: 'Claude Code API 上手教程 | Code Go',
+    seoTitle: 'Claude Code API 上手教程：从接入到使用 | Code Go',
     description:
       'Code Go 的 Claude Code API 上手教程，适合想快速进入 Claude Code 长期工作流的开发者。',
     keywords:
@@ -674,7 +674,7 @@ export const searchPages: SearchPageContent[] = [
   {
     slug: 'claude-zhongzhuan-shiyong-jiaocheng',
     title: 'Claude 中转使用教程',
-    seoTitle: 'Claude 中转使用教程 | Code Go',
+    seoTitle: 'Claude 中转使用教程：接入与长期使用 | Code Go',
     description:
       'Code Go 的 Claude 中转使用教程，帮助你把 Claude 中转变成长期可用的开发入口。',
     keywords:
@@ -712,7 +712,7 @@ export const searchPages: SearchPageContent[] = [
   {
     slug: 'codex-api-jinjie-jiaocheng',
     title: 'Codex API 进阶教程',
-    seoTitle: 'Codex API 进阶教程 | Code Go',
+    seoTitle: 'Codex API 进阶教程：进阶使用与工作流 | Code Go',
     description:
       'Code Go 的 Codex API 进阶教程，适合已经开始长期使用 Codex 的开发者。',
     keywords:
@@ -750,7 +750,7 @@ export const searchPages: SearchPageContent[] = [
   {
     slug: 'claude-code-api-jinjie-jiaocheng',
     title: 'Claude Code API 进阶教程',
-    seoTitle: 'Claude Code API 进阶教程 | Code Go',
+    seoTitle: 'Claude Code API 进阶教程：进阶使用与工作流 | Code Go',
     description:
       'Code Go 的 Claude Code API 进阶教程，适合已经进入长期 AI Coding 阶段的开发者。',
     keywords:
@@ -788,7 +788,7 @@ export const searchPages: SearchPageContent[] = [
   {
     slug: 'codex-api-zenme-yong',
     title: 'Codex API 怎么用',
-    seoTitle: 'Codex API 怎么用 | Code Go',
+    seoTitle: 'Codex API 怎么用：入门与长期使用 | Code Go',
     description:
       'Code Go 的 Codex API 怎么用页面，帮助你快速找到 Codex 的实际使用方式。',
     keywords:
@@ -826,7 +826,7 @@ export const searchPages: SearchPageContent[] = [
   {
     slug: 'claude-code-api-zenme-jie',
     title: 'Claude Code API 怎么接',
-    seoTitle: 'Claude Code API 怎么接 | Code Go',
+    seoTitle: 'Claude Code API 怎么接：入门与工作流 | Code Go',
     description:
       'Code Go 的 Claude Code API 怎么接页面，适合想快速接入 Claude Code 的开发者。',
     keywords:
@@ -864,7 +864,7 @@ export const searchPages: SearchPageContent[] = [
   {
     slug: 'codex-api-peizhi',
     title: 'Codex API 配置说明',
-    seoTitle: 'Codex API 配置说明 | Code Go',
+    seoTitle: 'Codex API 配置说明：接入与使用路径 | Code Go',
     description:
       'Code Go 的 Codex API 配置说明，帮助你把 Codex 放进稳定的使用流程。',
     keywords:
@@ -902,7 +902,7 @@ export const searchPages: SearchPageContent[] = [
   {
     slug: 'claude-code-api-peizhi',
     title: 'Claude Code API 配置说明',
-    seoTitle: 'Claude Code API 配置说明 | Code Go',
+    seoTitle: 'Claude Code API 配置说明：接入与使用路径 | Code Go',
     description:
       'Code Go 的 Claude Code API 配置说明，帮助你把 Claude Code 接入日常开发流程。',
     keywords:
@@ -940,7 +940,7 @@ export const searchPages: SearchPageContent[] = [
   {
     slug: 'codex-api-vs-claude-code-api',
     title: 'Codex API 和 Claude Code API 区别',
-    seoTitle: 'Codex API 和 Claude Code API 区别 | Code Go',
+    seoTitle: 'Codex API 和 Claude Code API 区别：如何选择 | Code Go',
     description:
       'Code Go 帮你理解 Codex API 和 Claude Code API 的区别，适合正在比较两者的开发者。',
     keywords:
@@ -978,7 +978,7 @@ export const searchPages: SearchPageContent[] = [
   {
     slug: 'codex-zhongzhuan-zenme-xuan',
     title: 'Codex 中转怎么选',
-    seoTitle: 'Codex 中转怎么选 | Code Go',
+    seoTitle: 'Codex 中转怎么选：稳定性、价格与使用方式 | Code Go',
     description:
       'Code Go 的 Codex 中转怎么选页面，适合正在寻找长期稳定入口的开发者。',
     keywords:
@@ -1016,7 +1016,7 @@ export const searchPages: SearchPageContent[] = [
   {
     slug: 'claude-zhongzhuan-wending-ma',
     title: 'Claude 中转稳定吗',
-    seoTitle: 'Claude 中转稳定吗 | Code Go',
+    seoTitle: 'Claude 中转稳定吗：长期使用前先看这几点 | Code Go',
     description:
       'Code Go 的 Claude 中转稳定吗页面，帮助你判断 Claude 中转是否适合长期使用。',
     keywords:
@@ -1054,7 +1054,7 @@ export const searchPages: SearchPageContent[] = [
   {
     slug: 'codex-api-baocuo-zenmeban',
     title: 'Codex API 报错怎么办',
-    seoTitle: 'Codex API 报错怎么办 | Code Go',
+    seoTitle: 'Codex API 报错怎么办：快速排障与恢复 | Code Go',
     description:
       'Code Go 的 Codex API 报错怎么办页面，适合遇到调用问题后想快速恢复工作流的开发者。',
     keywords:
@@ -1092,7 +1092,7 @@ export const searchPages: SearchPageContent[] = [
   {
     slug: 'claude-code-api-baocuo-zenmeban',
     title: 'Claude Code API 报错怎么办',
-    seoTitle: 'Claude Code API 报错怎么办 | Code Go',
+    seoTitle: 'Claude Code API 报错怎么办：快速排障与恢复 | Code Go',
     description:
       'Code Go 的 Claude Code API 报错怎么办页面，帮助你在报错后尽快恢复 Claude Code 工作流。',
     keywords:

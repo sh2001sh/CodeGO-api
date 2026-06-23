@@ -19,6 +19,7 @@ For commercial licensing, please contact support@quantumnous.com
 import { Link, useSearch } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { useStatus } from '@/hooks/use-status'
+import { SiteSeo } from '@/components/seo'
 import { AuthLayout } from '../auth-layout'
 import { TermsFooter } from '../components/terms-footer'
 import { UserAuthForm } from './components/user-auth-form'
@@ -30,6 +31,12 @@ export function SignIn() {
 
   return (
     <AuthLayout>
+      <SiteSeo
+        title='登录'
+        description='登录 Code Go 继续管理你的 API Key、模型、额度与工作流。'
+        canonicalPath='/sign-in'
+        robots='noindex,follow'
+      />
       <div className='w-full space-y-8'>
         <div className='space-y-2'>
           <h2 className='text-center text-2xl font-semibold tracking-tight sm:text-left'>

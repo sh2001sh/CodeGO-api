@@ -43,9 +43,9 @@ const topicEntryLinks = [
 ]
 
 const TOPICS_INDEX_TITLE =
-  'Codex API、Claude Code API、Codex 中转、Claude 中转专题页 | Code Go'
+  'Codex API、Claude Code API、Codex 中转、Claude 中转专题页总入口 | Code Go'
 const TOPICS_INDEX_DESCRIPTION =
-  'Code Go 专题页汇总，覆盖 Codex API、Claude Code API、Codex 中转、Claude 中转、教程、配置、排障与模型选择。'
+  'Code Go 专题页总入口，汇总 Codex API、Claude Code API、Codex 中转、Claude 中转、教程、配置、排障与模型选择，方便从搜索结果进入后快速分流。'
 
 function slugToLabel(slug: string) {
   return slug.replaceAll('-', ' / ')

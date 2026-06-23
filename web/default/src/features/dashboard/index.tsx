@@ -21,6 +21,7 @@ import { getRouteApi, useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '@/stores/auth-store'
 import { ROLE } from '@/lib/roles'
+import { SiteSeo } from '@/components/seo'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { SectionPageLayout } from '@/components/layout'
@@ -238,6 +239,12 @@ export function Dashboard() {
 
   return (
     <SectionPageLayout>
+      <SiteSeo
+        title={t(meta.titleKey)}
+        description={t(meta.descriptionKey)}
+        canonicalPath={`/dashboard/${activeSection}`}
+        robots='noindex,follow'
+      />
       <SectionPageLayout.Title>{t(meta.titleKey)}</SectionPageLayout.Title>
       <SectionPageLayout.Description>
         {t(meta.descriptionKey)}
