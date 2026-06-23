@@ -42,6 +42,13 @@ export interface PrizeDialogState {
   openCount: number
 }
 
+export interface BlindBoxPrizeItem {
+  label: string
+  detail: string
+  probability: string
+  tone: 'quota' | 'claude' | 'prop' | 'hidden'
+}
+
 export const EMPTY_PAYMENT_STATE: BlindBoxPaymentState = {
   open: false,
   stage: 'idle',
@@ -77,15 +84,18 @@ export function getBlindBoxMethodLabel(method?: {
 }
 
 export function summarizeOpenResult(records: BlindBoxRecord[]) {
-  const subscriptionHits = records.filter(
-    (record) => record.reward_type === 'subscription'
-  ).length
+  const subscriptionHits = records.filter((record) => record.reward_type === 'subscription').length
+  const propHits = records.filter((record) => record.reward_type === 'prop').length
   const quotaTotal = records
     .filter((record) => record.reward_type === 'quota')
     .reduce((sum, record) => sum + (record.reward_usd || 0), 0)
 
   if (subscriptionHits > 0) {
     return `本次获得 ${records.length} 项奖励，包含 ${subscriptionHits} 份套餐奖励和 ${quotaTotal.toFixed(2)} 美元额度。`
+  }
+
+  if (propHits > 0) {
+    return `本次获得 ${records.length} 项奖励，包含 ${propHits} 个实用道具和 ${quotaTotal.toFixed(2)} 美元额度。`
   }
 
   return `本次获得 ${records.length} 项奖励，共计 ${quotaTotal.toFixed(2)} 美元额度。`
@@ -223,6 +233,8 @@ export function BlindBoxPaymentDialog(props: {
 export function BlindBoxPrizeDialog(props: {
   state: PrizeDialogState
   onOpenChange: (open: boolean) => void
+  onUseReward?: (record: BlindBoxRecord) => void
+  activePropKeys?: Record<string, number>
 }) {
   return (
     <Dialog open={props.state.open} onOpenChange={props.onOpenChange}>
@@ -259,7 +271,7 @@ export function BlindBoxPrizeDialog(props: {
                       {formatBlindBoxTimestamp(record.create_time)}
                     </div>
                   </div>
-                  <div className='flex flex-wrap gap-2'>
+                  <div className='flex flex-wrap items-center gap-2'>
                     <div
                       className={cn(
                         'rounded-full border px-3 py-1 text-xs font-medium',
@@ -268,6 +280,8 @@ export function BlindBoxPrizeDialog(props: {
                     >
                       {record.reward_type === 'subscription'
                         ? '套餐奖励'
+                        : record.reward_type === 'prop'
+                          ? '实用道具'
                         : `${formatQuota(record.credit_amount || 0)} 额度`}
                     </div>
                     {record.is_pity ? (
@@ -275,13 +289,84 @@ export function BlindBoxPrizeDialog(props: {
                         保底命中
                       </div>
                     ) : null}
+                    {record.reward_type === 'prop' && props.onUseReward ? (
+                      <Button
+                        type='button'
+                        size='sm'
+                        variant='outline'
+                        onClick={() => props.onUseReward?.(record)}
+                      >
+                        {props.activePropKeys?.[record.reward_title] ? '已启用' : '立即使用'}
+                      </Button>
+                    ) : null}
+                  </div>
+                </div>
+                {record.reward_type === 'prop' ? (
+                  <div className='text-muted-foreground mt-3 text-xs leading-5'>
+                    {props.activePropKeys?.[record.reward_title]
+                      ? '已开始生效，自动持续 24 小时。'
+                      : '点击“立即使用”后开始生效，持续 24 小时。'}
+                  </div>
+                ) : null}
+              </div>
+            ))}
+          </div>
+
+          <Button onClick={() => props.onOpenChange(false)}>确定</Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  )
+}
+
+export function BlindBoxPrizePoolDialog(props: {
+  open: boolean
+  onOpenChange: (open: boolean) => void
+  items: BlindBoxPrizeItem[]
+}) {
+  return (
+    <Dialog open={props.open} onOpenChange={props.onOpenChange}>
+      <DialogContent className='w-[calc(100vw-1rem)] max-w-3xl overflow-hidden p-0'>
+        <DialogHeader className='border-b px-5 py-4'>
+          <DialogTitle className='flex items-center gap-2'>
+            <Gift className='size-5 text-amber-500' />
+            奖池说明
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className='space-y-4 px-5 py-5'>
+          <div className='app-subtle-panel p-4'>
+            <div className='text-foreground text-lg font-semibold'>
+              大奖包括 Lite 月卡、Claude 额度和实用道具
+            </div>
+            <div className='text-muted-foreground mt-1 text-sm leading-6'>
+              普通额度会直接进入钱包，Claude 额度会直接进入 Claude 额度池，道具可在盲盒结果中立即启用。
+            </div>
+          </div>
+
+          <div className='grid gap-3 md:grid-cols-2'>
+            {props.items.map((item) => (
+              <div key={item.label} className='app-subtle-panel p-4'>
+                <div className='flex items-start justify-between gap-3'>
+                  <div>
+                    <div className='text-foreground text-sm font-semibold'>
+                      {item.label}
+                    </div>
+                    <div className='text-muted-foreground mt-1 text-sm leading-6'>
+                      {item.detail}
+                    </div>
+                  </div>
+                  <div className='border-border/70 bg-background/72 text-muted-foreground rounded-full border px-2.5 py-1 text-[11px] font-medium'>
+                    {item.probability}
                   </div>
                 </div>
               </div>
             ))}
           </div>
 
-          <Button onClick={() => props.onOpenChange(false)}>确定</Button>
+          <Button className='w-full' onClick={() => props.onOpenChange(false)}>
+            知道了
+          </Button>
         </div>
       </DialogContent>
     </Dialog>

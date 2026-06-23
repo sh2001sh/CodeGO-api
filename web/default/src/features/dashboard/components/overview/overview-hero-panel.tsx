@@ -85,21 +85,21 @@ export function OverviewHeroPanel(props: { guide: SetupGuideState }) {
               快速开始
             </div>
             <h2 className='max-w-xl text-3xl font-semibold tracking-tight text-balance sm:text-4xl xl:text-5xl'>
-              三步开始调用 API
+              先看钱包、套餐，再去盲盒
             </h2>
             <p className='text-muted-foreground max-w-xl text-sm leading-7 sm:text-[15px]'>
-              创建密钥、复制示例请求、发起首次调用，几分钟即可完成接入。
+              从这里直接进入钱包、套餐和盲盒，先确认余额和订阅状态，再处理购买或抽取。
             </p>
           </div>
 
           <div className='flex flex-wrap items-center gap-2'>
-            <Button variant='outline' render={<Link to='/keys' />}>
+            <Button variant='outline' render={<Link to='/wallet' />}>
               <KeyRound data-icon='inline-start' />
-              查看快速上手
+              查看钱包
             </Button>
-            <Button render={<Link to='/keys' />}>
+            <Button render={<Link to='/blind-box' />}>
               <ArrowRight data-icon='inline-end' />
-              创建 API 密钥
+              进入盲盒
             </Button>
           </div>
 

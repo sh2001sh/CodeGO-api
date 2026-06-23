@@ -14,6 +14,7 @@ import {
 import { submitPaymentForm } from '../lib'
 import type {
   BlindBoxOrderStatus,
+  BlindBoxRecord,
   BlindBoxSelfData,
   PaymentMethod,
 } from '../types'
@@ -53,6 +54,25 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
   const [paymentState, setPaymentState] =
     useState<BlindBoxPaymentState>(EMPTY_PAYMENT_STATE)
   const [prizeState, setPrizeState] = useState<PrizeDialogState>(EMPTY_PRIZE_STATE)
+  const [activeProps, setActiveProps] = useState<Record<string, number>>({})
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    const raw = window.localStorage.getItem('blind-box-active-props')
+    if (!raw) return
+    try {
+      const parsed = JSON.parse(raw) as Record<string, number>
+      const now = Date.now()
+      const validEntries = Object.entries(parsed).filter(([, expireAt]) => expireAt > now)
+      const next = Object.fromEntries(validEntries)
+      setActiveProps(next)
+      if (Object.keys(next).length !== Object.keys(parsed).length) {
+        window.localStorage.setItem('blind-box-active-props', JSON.stringify(next))
+      }
+    } catch {
+      window.localStorage.removeItem('blind-box-active-props')
+    }
+  }, [])
 
   const fetchSelf = useCallback(async () => {
     try {
@@ -328,6 +348,19 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
     [refreshAll]
   )
 
+  const handleUseReward = useCallback((record: BlindBoxRecord) => {
+    if (record.reward_type !== 'prop') return
+    const expireAt = Date.now() + 24 * 60 * 60 * 1000
+    setActiveProps((current) => {
+      const next = { ...current, [record.reward_title]: expireAt }
+      if (typeof window !== 'undefined') {
+        window.localStorage.setItem('blind-box-active-props', JSON.stringify(next))
+      }
+      return next
+    })
+    toast.success(`${record.reward_title} 已启用，24 小时后自动失效。`)
+  }, [])
+
   const handleOpenExternal = useCallback(() => {
     if (paymentState.formUrl && paymentState.formFields) {
       submitPaymentForm(paymentState.formUrl, paymentState.formFields)
@@ -381,6 +414,8 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
             open,
           }))
         }
+        onUseReward={handleUseReward}
+        activePropKeys={activeProps}
       />
     </div>
   )

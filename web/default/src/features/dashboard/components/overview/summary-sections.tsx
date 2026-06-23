@@ -58,7 +58,7 @@ export function BalanceWorkspace(props: {
               className='justify-between rounded-2xl'
               render={<Link to='/wallet' />}
             >
-              <span>钱包余额</span>
+              <span>钱包</span>
               <ArrowRight data-icon='inline-end' />
             </Button>
             <Button
@@ -66,14 +66,14 @@ export function BalanceWorkspace(props: {
               className='justify-between rounded-2xl'
               render={<Link to='/packages' />}
             >
-              <span>套餐管理</span>
+              <span>套餐</span>
               <ArrowRight data-icon='inline-end' />
             </Button>
             <Button
               className='justify-between rounded-2xl'
-              render={<Link to='/wallet' search={{ wallet_type: 'claude' }} />}
+              render={<Link to='/blind-box' />}
             >
-              <span>Claude 充值</span>
+              <span>盲盒</span>
               <ArrowRight data-icon='inline-end' />
             </Button>
           </div>

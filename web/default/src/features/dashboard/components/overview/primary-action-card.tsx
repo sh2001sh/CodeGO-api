@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { ArrowRight, Crown, Egg, Sparkles, type LucideIcon } from 'lucide-react'
+import { ArrowRight, Crown, Egg, WalletCards, type LucideIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -28,15 +28,15 @@ interface NavigationCardItem {
 
 const NAVIGATION_ITEMS: NavigationCardItem[] = [
   {
-    id: 'packages',
-    eyebrow: '套餐购买',
-    title: '去选月卡和日卡，适合稳定主力调用',
+    id: 'wallet',
+    eyebrow: '钱包',
+    title: '查看余额与 Claude 额度',
     description:
-      '购买月卡或日卡获得稳定额度，适合长期高频调用常规模型的日常消费。',
-    note: '套餐额度不能用于 Claude 模型，请单独走 Claude 额度充值。',
-    ctaLabel: '进入套餐购买',
-    to: '/packages',
-    icon: Crown,
+      '进入钱包查看普通余额和 Claude 专用额度，适合先确认当前可用资产。',
+    note: '普通余额和 Claude 额度是分开管理的，购买前先看清当前余额。',
+    ctaLabel: '进入钱包',
+    to: '/wallet',
+    icon: WalletCards,
     theme: {
       frame:
         'border-border/70 bg-accent/16 dark:bg-accent/10',
@@ -50,16 +50,15 @@ const NAVIGATION_ITEMS: NavigationCardItem[] = [
     },
   },
   {
-    id: 'claude-wallet',
-    eyebrow: 'Claude 额度充值',
-    title: '直达 Claude 专用余额池',
+    id: 'packages',
+    eyebrow: '套餐',
+    title: '购买月卡和日卡',
     description:
-      '为 Claude 模型单独充值和管理专用余额，进入钱包后默认切到 Claude 额度模式。',
-    note: 'Claude 额度仅用于 Claude 模型，按 1:1 充值，不走普通余额折扣。',
-    ctaLabel: '进入 Claude 充值',
-    to: '/wallet',
-    walletType: 'claude',
-    icon: Sparkles,
+      '进入套餐页选择适合的订阅方案，适合稳定的主力调用场景。',
+    note: '套餐购买后会按当前规则进入对应账户，Claude 单独使用钱包额度。',
+    ctaLabel: '进入套餐',
+    to: '/packages',
+    icon: Crown,
     theme: {
       frame:
         'border-border/70 bg-muted/34',
@@ -75,10 +74,10 @@ const NAVIGATION_ITEMS: NavigationCardItem[] = [
   {
     id: 'blind-box',
     eyebrow: '盲盒抽取',
-    title: '去抽盲盒，额度和道具直接入账',
+    title: '抽盲盒拿额度和道具',
     description:
-      '抽中普通额度会直接进入钱包，Claude 额度进入 Claude 余额，道具会发放到奖励中心。',
-    note: '抽取结果会直接显示到账内容。',
+      '抽中普通额度会直接进入钱包，Claude 额度会直接进入 Claude 额度池，道具可在结果弹窗中启用。',
+    note: '抽取后先看结果弹窗，再决定是否启用道具。',
     ctaLabel: '进入盲盒',
     to: '/blind-box',
     icon: Egg,
