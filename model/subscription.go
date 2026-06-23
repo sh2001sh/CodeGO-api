@@ -893,7 +893,7 @@ func renewUserSubscriptionWithPlanTx(tx *gorm.DB, sub *UserSubscription, plan *S
 			sub.LastResetTime = sub.StartTime
 		}
 		sub.NextResetTime = calcNextResetTime(time.Unix(sub.LastResetTime, 0), plan, sub.EndTime)
-		if err := maybeResetUserSubscriptionWithPlanTx(tx, sub, plan, now); err != nil {
+		if err := maybeResetUserSubscriptionWithPlanTx(tx, sub, plan, nowUnix); err != nil {
 			return nil, err
 		}
 	}
