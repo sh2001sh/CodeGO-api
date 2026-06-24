@@ -14,11 +14,9 @@ func TestHomeAndIndexHtmlServeSameEmbeddedShell(t *testing.T) {
 	engine := gin.New()
 
 	defaultPage := []byte(`<!doctype html><html lang="zh-CN"><head><title>Code Go | Codex API、Claude Code API、Codex 中转、Claude 中转</title></head><body><h1>Code Go home</h1><div id="root"></div></body></html>`)
-	classicPage := []byte(`<!doctype html><html lang="zh-CN"><head><title>Code Go Classic</title></head><body><h1>Code Go classic</h1><div id="root"></div></body></html>`)
 
 	SetWebRouter(engine, ThemeAssets{
 		DefaultIndexPage: defaultPage,
-		ClassicIndexPage: classicPage,
 	})
 
 	for _, path := range []string{"/", "/index.html"} {

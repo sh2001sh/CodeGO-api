@@ -32,14 +32,6 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import {
-  Select,
-  SelectContent,
-  SelectGroup,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { FormDirtyIndicator } from '../components/form-dirty-indicator'
 import { FormNavigationGuard } from '../components/form-navigation-guard'
@@ -49,7 +41,7 @@ import { useUpdateOption } from '../hooks/use-update-option'
 
 const _systemInfoSchema = z.object({
   theme: z.object({
-    frontend: z.enum(['default', 'classic']),
+    frontend: z.literal('default'),
   }),
   SystemName: z.string().min(1),
   ServerAddress: z.string().optional(),
@@ -81,19 +73,18 @@ export function SystemInfoSection({ defaultValues }: SystemInfoSectionProps) {
 
   const normalizedDefaults: SystemInfoFormValues = {
     theme: {
-      frontend:
-        defaultValues.theme?.frontend === 'classic' ? 'classic' : 'default',
+      frontend: 'default',
     },
     SystemName: normalizeValue(defaultValues.SystemName),
     ServerAddress: normalizeValue(defaultValues.ServerAddress),
     Logo: normalizeValue(defaultValues.Logo),
-  Footer: normalizeValue(defaultValues.Footer),
-  About: normalizeValue(defaultValues.About),
-  HomePageContent: normalizeValue(defaultValues.HomePageContent),
-  HomePagePackagesContent: normalizeValue(
-    defaultValues.HomePagePackagesContent
-  ),
-  legal: {
+    Footer: normalizeValue(defaultValues.Footer),
+    About: normalizeValue(defaultValues.About),
+    HomePageContent: normalizeValue(defaultValues.HomePageContent),
+    HomePagePackagesContent: normalizeValue(
+      defaultValues.HomePagePackagesContent
+    ),
+    legal: {
       user_agreement: normalizeValue(defaultValues.legal?.user_agreement),
       privacy_policy: normalizeValue(defaultValues.legal?.privacy_policy),
     },
@@ -101,7 +92,7 @@ export function SystemInfoSection({ defaultValues }: SystemInfoSectionProps) {
 
   const systemInfoSchemaWithI18n = z.object({
     theme: z.object({
-      frontend: z.enum(['default', 'classic']),
+      frontend: z.literal('default'),
     }),
     SystemName: z.string().min(1, {
       error: () => t('System name is required'),
@@ -151,48 +142,6 @@ export function SystemInfoSection({ defaultValues }: SystemInfoSectionProps) {
         <Form {...form}>
           <form onSubmit={handleSubmit} className='space-y-6'>
             <FormDirtyIndicator isDirty={isDirty} />
-            <FormField
-              control={form.control}
-              name='theme.frontend'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>{t('Frontend Theme')}</FormLabel>
-                  <Select
-                    items={[
-                      { value: 'default', label: t('Default (New Frontend)') },
-                      {
-                        value: 'classic',
-                        label: t('Classic (Legacy Frontend)'),
-                      },
-                    ]}
-                    onValueChange={field.onChange}
-                    value={field.value}
-                  >
-                    <FormControl>
-                      <SelectTrigger className='w-full'>
-                        <SelectValue />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent alignItemWithTrigger={false}>
-                      <SelectGroup>
-                        <SelectItem value='default'>
-                          {t('Default (New Frontend)')}
-                        </SelectItem>
-                        <SelectItem value='classic'>
-                          {t('Classic (Legacy Frontend)')}
-                        </SelectItem>
-                      </SelectGroup>
-                    </SelectContent>
-                  </Select>
-                  <FormDescription>
-                    {t(
-                      'Switch between the new frontend and the classic frontend. Changes take effect after page reload.'
-                    )}
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
 
             <FormField
               control={form.control}

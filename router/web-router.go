@@ -14,31 +14,27 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// ThemeAssets holds the embedded frontend assets for both themes.
+// ThemeAssets holds the embedded default frontend assets.
 type ThemeAssets struct {
 	DefaultBuildFS   embed.FS
 	DefaultIndexPage []byte
-	ClassicBuildFS   embed.FS
-	ClassicIndexPage []byte
 }
 
 func SetWebRouter(router *gin.Engine, assets ThemeAssets) {
 	defaultFS := common.EmbedFolder(assets.DefaultBuildFS, "web/default/dist")
-	classicFS := common.EmbedFolder(assets.ClassicBuildFS, "web/classic/dist")
-	themeFS := common.NewThemeAwareFS(defaultFS, classicFS)
-	staticHandler := static.Serve("/", themeFS)
+	staticHandler := static.Serve("/", defaultFS)
 
 	router.Use(gzip.Gzip(gzip.DefaultCompression))
 	router.Use(middleware.GlobalWebRateLimit())
 	router.Use(middleware.Cache())
 	topicsIndexHandler := func(c *gin.Context) {
-		serveEmbeddedHtml(c, themeFS, "/topics/index.html")
+		serveEmbeddedHtml(c, defaultFS, "/topics/index.html")
 	}
 	topicDetailHandler := func(c *gin.Context) {
-		serveEmbeddedHtml(c, themeFS, "/topics/"+c.Param("slug")+"/index.html")
+		serveEmbeddedHtml(c, defaultFS, "/topics/"+c.Param("slug")+"/index.html")
 	}
 	homeHandler := func(c *gin.Context) {
-		serveThemeIndexPage(c, assets)
+		serveIndexPage(c, assets.DefaultIndexPage)
 	}
 	router.GET("/", homeHandler)
 	router.HEAD("/", homeHandler)
@@ -62,7 +58,7 @@ func SetWebRouter(router *gin.Engine, assets ThemeAssets) {
 			controller.RelayNotFound(c)
 			return
 		}
-		serveThemeIndexPage(c, assets)
+		serveIndexPage(c, assets.DefaultIndexPage)
 	})
 }
 
@@ -84,11 +80,7 @@ func serveEmbeddedHtml(c *gin.Context, fs static.ServeFileSystem, assetPath stri
 	c.Data(http.StatusOK, "text/html; charset=utf-8", content)
 }
 
-func serveThemeIndexPage(c *gin.Context, assets ThemeAssets) {
+func serveIndexPage(c *gin.Context, indexPage []byte) {
 	c.Header("Cache-Control", "no-cache")
-	if common.GetTheme() == "classic" {
-		c.Data(http.StatusOK, "text/html; charset=utf-8", assets.ClassicIndexPage)
-		return
-	}
-	c.Data(http.StatusOK, "text/html; charset=utf-8", assets.DefaultIndexPage)
+	c.Data(http.StatusOK, "text/html; charset=utf-8", indexPage)
 }

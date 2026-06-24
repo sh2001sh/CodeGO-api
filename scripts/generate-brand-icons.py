@@ -5,7 +5,6 @@ from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_PUBLIC = ROOT / "web" / "default" / "public"
-CLASSIC_PUBLIC = ROOT / "web" / "classic" / "public"
 
 
 def make_logo(size: int) -> Image.Image:
@@ -91,11 +90,6 @@ def write_targets(public_dir: Path) -> None:
 
 def main() -> None:
     write_targets(DEFAULT_PUBLIC)
-    write_targets(CLASSIC_PUBLIC)
-
-    svg_source = DEFAULT_PUBLIC / "code-go-logo.svg"
-    svg_target = CLASSIC_PUBLIC / "code-go-logo.svg"
-    svg_target.write_text(svg_source.read_text(encoding="utf-8"), encoding="utf-8")
 
 
 if __name__ == "__main__":
