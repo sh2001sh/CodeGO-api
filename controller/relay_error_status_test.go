@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestRespondTaskErrorMapsUpstreamQuota403To503(t *testing.T) {
+func TestRespondTaskErrorKeepsUpstreamQuota403(t *testing.T) {
 	t.Parallel()
 
 	gin.SetMode(gin.TestMode)
@@ -24,8 +24,8 @@ func TestRespondTaskErrorMapsUpstreamQuota403To503(t *testing.T) {
 
 	respondTaskError(c, taskErr)
 
-	require.Equal(t, http.StatusServiceUnavailable, recorder.Code)
-	require.Equal(t, http.StatusServiceUnavailable, taskErr.StatusCode)
+	require.Equal(t, http.StatusForbidden, recorder.Code)
+	require.Equal(t, http.StatusForbidden, taskErr.StatusCode)
 }
 
 func TestRespondTaskErrorKeepsLocalQuota403(t *testing.T) {

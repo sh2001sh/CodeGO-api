@@ -48,3 +48,12 @@ func TestIsUpstreamQuotaLeakMessage(t *testing.T) {
 		t.Fatal("expected local user quota message not to be treated as upstream leak")
 	}
 }
+
+func TestSanitizeUpstreamQuotaErrorMessageKeeps403QuotaLeakMessage(t *testing.T) {
+	t.Parallel()
+
+	input := "status_code=403, 预扣费额度失败, 用户剩余额度: 0.000750, 需要预扣费额度: 0.002364 (request id: abc)"
+	if got := SanitizeUpstreamQuotaErrorMessage(input); got != UpstreamQuotaGenericMessage {
+		t.Fatalf("expected sanitized upstream quota message, got %q", got)
+	}
+}
