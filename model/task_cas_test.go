@@ -50,6 +50,8 @@ func TestMain(m *testing.M) {
 		&BlindBoxCredit{},
 		&BlindBoxOpenRecord{},
 		&BlindBoxPityState{},
+		&BlindBoxProp{},
+		&UserCompanionPet{},
 		&SubscriptionResetOpportunityAccount{},
 		&SubscriptionResetOpportunityLedger{},
 	); err != nil {
@@ -73,6 +75,7 @@ func truncateTables(t *testing.T) {
 		DB.Exec("DELETE FROM blind_box_credits")
 		DB.Exec("DELETE FROM blind_box_open_records")
 		DB.Exec("DELETE FROM blind_box_pity_states")
+		DB.Exec("DELETE FROM user_companion_pets")
 		DB.Exec("DELETE FROM subscription_orders")
 		DB.Exec("DELETE FROM subscription_plans")
 		DB.Exec("DELETE FROM user_subscriptions")
@@ -397,8 +400,8 @@ func TestMigrateBlindBoxLegacyCredits_TerminatesToMatchingWallets(t *testing.T) 
 	truncateTables(t)
 
 	users := []*User{
-		{Id: 8804, Username: "legacy_wallet_user", Status: common.UserStatusEnabled, Quota: 100, ClaudeQuota: 200},
-		{Id: 8805, Username: "legacy_claude_user", Status: common.UserStatusEnabled, Quota: 300, ClaudeQuota: 400},
+		{Id: 8804, Username: "legacy_wallet_user", AffCode: "legacy-wallet-user", Status: common.UserStatusEnabled, Quota: 100, ClaudeQuota: 200},
+		{Id: 8805, Username: "legacy_claude_user", AffCode: "legacy-claude-user", Status: common.UserStatusEnabled, Quota: 300, ClaudeQuota: 400},
 	}
 	for _, user := range users {
 		require.NoError(t, DB.Create(user).Error)
