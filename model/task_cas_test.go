@@ -396,6 +396,87 @@ func TestOpenBlindBoxes_AddsQuotaToDefaultAndClaudeWallets(t *testing.T) {
 	assert.NotEmpty(t, records[0].RewardWalletType)
 }
 
+func TestOpenBlindBoxOrderByTradeNo_DoesNotDoubleCreditQuota(t *testing.T) {
+	truncateTables(t)
+
+	setting := operation_setting.GetBlindBoxSetting()
+	originalSetting := setting
+	setting.Enabled = true
+	setting.SubscriptionPrizeProbability = 0
+	setting.PityThreshold = 999
+	setting.PityGuaranteeUSD = 0
+	setting.LowRewardThresholdUSD = 0
+	setting.FirstPurchaseGuaranteeUSD = 0
+	setting.Tiers = []operation_setting.BlindBoxTierSetting{
+		{Name: "quota-tier", MinUSD: 1, MaxUSD: 1, Probability: 1, WalletType: "default"},
+	}
+	operation_setting.SetBlindBoxSetting(setting)
+	t.Cleanup(func() {
+		operation_setting.SetBlindBoxSetting(originalSetting)
+	})
+
+	plan := &SubscriptionPlan{
+		Id:               9510,
+		Title:            setting.SubscriptionPlanTitle,
+		Subtitle:         "盲盒月卡",
+		PriceAmount:      99,
+		Currency:         "CNY",
+		DurationUnit:     SubscriptionDurationMonth,
+		DurationValue:    1,
+		Enabled:          true,
+		TotalAmount:      100000,
+		PeriodAmount:     100000,
+		QuotaResetPeriod: SubscriptionResetMonthly,
+	}
+	require.NoError(t, DB.Create(plan).Error)
+	t.Cleanup(func() {
+		DB.Exec("DELETE FROM subscription_plans")
+	})
+
+	user := &User{
+		Id:       8813,
+		Username: "blind_box_double_credit_user",
+		Status:   common.UserStatusEnabled,
+		Quota:    100,
+	}
+	require.NoError(t, DB.Create(user).Error)
+
+	order := &BlindBoxOrder{
+		UserId:          user.Id,
+		Quantity:        1,
+		OpenedCount:     0,
+		Money:           5,
+		TradeNo:         "blind-box-double-credit-order",
+		PaymentMethod:   "test",
+		PaymentProvider: "test",
+		Status:          common.TopUpStatusSuccess,
+		CreateTime:      time.Now().Unix(),
+		CompleteTime:    time.Now().Unix(),
+	}
+	require.NoError(t, DB.Create(order).Error)
+
+	beforeQuota := user.Quota
+	records1, err := OpenBlindBoxOrderByTradeNo(order.TradeNo)
+	require.NoError(t, err)
+	require.Len(t, records1, 1)
+
+	var afterFirst User
+	require.NoError(t, DB.Where("id = ?", user.Id).First(&afterFirst).Error)
+	assert.Greater(t, afterFirst.Quota, beforeQuota)
+
+	records2, err := OpenBlindBoxOrderByTradeNo(order.TradeNo)
+	require.NoError(t, err)
+	assert.Len(t, records2, 0)
+
+	var afterSecond User
+	require.NoError(t, DB.Where("id = ?", user.Id).First(&afterSecond).Error)
+	assert.Equal(t, afterFirst.Quota, afterSecond.Quota)
+
+	var savedOrder BlindBoxOrder
+	require.NoError(t, DB.Where("id = ?", order.Id).First(&savedOrder).Error)
+	assert.Equal(t, 1, savedOrder.OpenedCount)
+}
+
 func TestMigrateBlindBoxLegacyCredits_TerminatesToMatchingWallets(t *testing.T) {
 	truncateTables(t)
 

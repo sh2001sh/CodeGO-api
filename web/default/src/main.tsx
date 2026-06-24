@@ -110,9 +110,9 @@ declare module '@tanstack/react-router' {
 
 // Render the app
 const rootElement = document.getElementById('root')!
-const seoShellHeading = document.getElementById('seo-shell-h1')
-if (seoShellHeading) {
-  seoShellHeading.remove()
+const seoShellHero = document.getElementById('seo-shell-hero')
+if (seoShellHero) {
+  seoShellHero.remove()
 }
 // Set document.title and favicon from cached status, then refresh from network
 ;(function initSystemBranding() {
