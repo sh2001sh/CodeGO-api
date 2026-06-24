@@ -426,6 +426,28 @@ export function SubscriptionPlansCard({
             Claude 额度。
           </div>
 
+          <PlanSection
+            title='月卡套餐'
+            description='适合长期使用 GPT 系列模型。月卡有效期 1 个月，购买的总额度就是本月可用额度，一个月内可自由使用。'
+            loading={loadingPlans}
+            emptyText='当前没有可购买的月卡套餐。'
+          >
+            {groupedPlans.monthPlans.map((record, index) =>
+              renderPlanCard(record, index)
+            )}
+          </PlanSection>
+
+          <PlanSection
+            title='日卡套餐'
+            description='适合临时补量。日卡额度独立结算，不并入月卡总额度，扣费时默认优先于月卡。'
+            loading={loadingPlans}
+            emptyText='当前没有可购买的日卡套餐。'
+          >
+            {groupedPlans.dayPlans.map((record, index) =>
+              renderPlanCard(record, index)
+            )}
+          </PlanSection>
+
           {allSubscriptions.length > 0 ? (
             <section className='app-subtle-panel space-y-4 p-4 shadow-none'>
               <div>
@@ -433,7 +455,7 @@ export function SubscriptionPlansCard({
                   我的订阅
                 </div>
                 <p className='text-muted-foreground mt-1 text-sm leading-6'>
-                  先确认当前生效的订阅与额度，再决定是否加购。月卡只展示本月可用额度，不展示周期重置。
+                  先确认当前生效的订阅与额度，再决定是否继续加购。月卡只展示本月可用额度，不展示周期重置。
                 </p>
               </div>
 
@@ -567,28 +589,6 @@ export function SubscriptionPlansCard({
               </CardStaggerContainer>
             </section>
           ) : null}
-
-          <PlanSection
-            title='月卡套餐'
-            description='适合长期使用 GPT 系列模型。月卡有效期 1 个月，购买的总额度就是本月可用额度，一个月内可自由使用。'
-            loading={loadingPlans}
-            emptyText='当前没有可购买的月卡套餐。'
-          >
-            {groupedPlans.monthPlans.map((record, index) =>
-              renderPlanCard(record, index)
-            )}
-          </PlanSection>
-
-          <PlanSection
-            title='日卡套餐'
-            description='适合临时补量。日卡额度独立结算，不并入月卡总额度，扣费时默认优先于月卡。'
-            loading={loadingPlans}
-            emptyText='当前没有可购买的日卡套餐。'
-          >
-            {groupedPlans.dayPlans.map((record, index) =>
-              renderPlanCard(record, index)
-            )}
-          </PlanSection>
         </TitledCard>
       </div>
 

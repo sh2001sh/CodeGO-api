@@ -1,6 +1,7 @@
 package operation_setting
 
 import (
+	"math"
 	"sort"
 	"strings"
 
@@ -33,6 +34,24 @@ type BlindBoxSetting struct {
 	Tiers                        []BlindBoxTierSetting `json:"tiers"`
 }
 
+const (
+	defaultBlindBoxSubscriptionPrizeProbability = 0.003
+	defaultBlindBoxSubscriptionPlanTitle        = "Lite月卡"
+)
+
+var defaultBlindBoxTierSettings = []BlindBoxTierSetting{
+	{Name: "5 美元普通额度", MinUSD: 5.0, MaxUSD: 5.0, Probability: 0.05, RewardType: "quota", WalletType: "default"},
+	{Name: "8 美元普通额度", MinUSD: 8.0, MaxUSD: 8.0, Probability: 0.09, RewardType: "quota", WalletType: "default"},
+	{Name: "12 美元普通额度", MinUSD: 12.0, MaxUSD: 12.0, Probability: 0.167, RewardType: "quota", WalletType: "default"},
+	{Name: "20 美元 Claude 额度", MinUSD: 20.0, MaxUSD: 20.0, Probability: 0.23, RewardType: "claude_quota", WalletType: "claude"},
+	{Name: "30 美元 Claude 额度", MinUSD: 30.0, MaxUSD: 30.0, Probability: 0.17, RewardType: "claude_quota", WalletType: "claude"},
+	{Name: "充值九折卡", MinUSD: 0, MaxUSD: 0, Probability: 0.08, RewardType: "prop"},
+	{Name: "套餐九折卡", MinUSD: 0, MaxUSD: 0, Probability: 0.07, RewardType: "prop"},
+	{Name: "0.95 倍率卡", MinUSD: 0, MaxUSD: 0, Probability: 0.05, RewardType: "prop"},
+	{Name: "0.9 倍率卡", MinUSD: 0, MaxUSD: 0, Probability: 0.04, RewardType: "prop"},
+	{Name: "免费调用次数卡（10 次）", MinUSD: 0, MaxUSD: 0, Probability: 0.05, RewardType: "prop"},
+}
+
 var blindBoxSetting = BlindBoxSetting{
 	Enabled:                      false,
 	UnitPrice:                    2.5,
@@ -44,21 +63,10 @@ var blindBoxSetting = BlindBoxSetting{
 	PityThreshold:                5,
 	PityGuaranteeUSD:             10,
 	LowRewardThresholdUSD:        5,
-	SubscriptionPrizeProbability: 0.001,
-	SubscriptionPlanTitle:        "Standard月卡",
+	SubscriptionPrizeProbability: defaultBlindBoxSubscriptionPrizeProbability,
+	SubscriptionPlanTitle:        defaultBlindBoxSubscriptionPlanTitle,
 	CountOptions:                 []int{1, 5, 10, 20, 50},
-	Tiers: []BlindBoxTierSetting{
-		{Name: "5 美元普通额度", MinUSD: 5.0, MaxUSD: 5.0, Probability: 0.10, RewardType: "quota", WalletType: "default"},
-		{Name: "8 美元普通额度", MinUSD: 8.0, MaxUSD: 8.0, Probability: 0.16, RewardType: "quota", WalletType: "default"},
-		{Name: "12 美元普通额度", MinUSD: 12.0, MaxUSD: 12.0, Probability: 0.18, RewardType: "quota", WalletType: "default"},
-		{Name: "20 美元 Claude 额度", MinUSD: 20.0, MaxUSD: 20.0, Probability: 0.20, RewardType: "claude_quota", WalletType: "claude"},
-		{Name: "30 美元 Claude 额度", MinUSD: 30.0, MaxUSD: 30.0, Probability: 0.14, RewardType: "claude_quota", WalletType: "claude"},
-		{Name: "充值九折卡", MinUSD: 0, MaxUSD: 0, Probability: 0.08, RewardType: "prop"},
-		{Name: "套餐九折卡", MinUSD: 0, MaxUSD: 0, Probability: 0.07, RewardType: "prop"},
-		{Name: "0.95 倍率卡", MinUSD: 0, MaxUSD: 0, Probability: 0.04, RewardType: "prop"},
-		{Name: "0.9 倍率卡", MinUSD: 0, MaxUSD: 0, Probability: 0.03, RewardType: "prop"},
-		{Name: "免费调用次数卡（10 次）", MinUSD: 0, MaxUSD: 0, Probability: 0.02, RewardType: "prop"},
-	},
+	Tiers:                        append([]BlindBoxTierSetting(nil), defaultBlindBoxTierSettings...),
 }
 
 func init() {
@@ -89,9 +97,44 @@ func normalizeBlindBoxCountOptions(options []int) []int {
 }
 
 func defaultBlindBoxTiers() []BlindBoxTierSetting {
-	copied := make([]BlindBoxTierSetting, len(blindBoxSetting.Tiers))
-	copy(copied, blindBoxSetting.Tiers)
+	copied := make([]BlindBoxTierSetting, len(defaultBlindBoxTierSettings))
+	copy(copied, defaultBlindBoxTierSettings)
 	return copied
+}
+
+func isApproxProbability(left, right float64) bool {
+	return math.Abs(left-right) < 0.0001
+}
+
+func isLegacyBrokenBlindBoxTiers(tiers []BlindBoxTierSetting) bool {
+	legacy := []BlindBoxTierSetting{
+		{Name: "5 美元普通额度", MinUSD: 5.0, MaxUSD: 5.0, Probability: 0.10},
+		{Name: "8 美元普通额度", MinUSD: 8.0, MaxUSD: 8.0, Probability: 0.16},
+		{Name: "12 美元普通额度", MinUSD: 12.0, MaxUSD: 12.0, Probability: 0.18},
+		{Name: "20 美元 Claude 额度", MinUSD: 20.0, MaxUSD: 20.0, Probability: 0.20},
+		{Name: "30 美元 Claude 额度", MinUSD: 30.0, MaxUSD: 30.0, Probability: 0.14},
+		{Name: "充值九折卡", MinUSD: 0, MaxUSD: 0, Probability: 0.08},
+		{Name: "套餐九折卡", MinUSD: 0, MaxUSD: 0, Probability: 0.07},
+		{Name: "0.95 倍率卡", MinUSD: 0, MaxUSD: 0, Probability: 0.04},
+		{Name: "0.9 倍率卡", MinUSD: 0, MaxUSD: 0, Probability: 0.03},
+		{Name: "免费调用次数卡（10 次）", MinUSD: 0, MaxUSD: 0, Probability: 0.02},
+	}
+
+	if len(tiers) != len(legacy) {
+		return false
+	}
+	for index, tier := range tiers {
+		target := legacy[index]
+		if strings.TrimSpace(tier.Name) != target.Name {
+			return false
+		}
+		if !isApproxProbability(tier.MinUSD, target.MinUSD) ||
+			!isApproxProbability(tier.MaxUSD, target.MaxUSD) ||
+			!isApproxProbability(tier.Probability, target.Probability) {
+			return false
+		}
+	}
+	return true
 }
 
 func normalizeBlindBoxWalletType(walletType string) string {
@@ -103,6 +146,41 @@ func normalizeBlindBoxWalletType(walletType string) string {
 	}
 }
 
+func inferBlindBoxRewardType(tier BlindBoxTierSetting) string {
+	switch strings.TrimSpace(tier.RewardType) {
+	case "claude_quota":
+		return "claude_quota"
+	case "prop":
+		return "prop"
+	case "subscription":
+		return "subscription"
+	case "quota":
+		return "quota"
+	}
+
+	lowerName := strings.ToLower(strings.TrimSpace(tier.Name))
+	if tier.MinUSD == 0 && tier.MaxUSD == 0 {
+		return "prop"
+	}
+	if strings.Contains(lowerName, "claude") {
+		return "claude_quota"
+	}
+	return "quota"
+}
+
+func inferBlindBoxWalletType(tier BlindBoxTierSetting) string {
+	if normalizeBlindBoxWalletType(tier.WalletType) == "claude" {
+		return "claude"
+	}
+	if inferBlindBoxRewardType(tier) == "claude_quota" {
+		return "claude"
+	}
+	if strings.Contains(strings.ToLower(strings.TrimSpace(tier.Name)), "claude") {
+		return "claude"
+	}
+	return "default"
+}
+
 func normalizeBlindBoxTierSettings(tiers []BlindBoxTierSetting) []BlindBoxTierSetting {
 	if len(tiers) == 0 {
 		return defaultBlindBoxTiers()
@@ -110,8 +188,8 @@ func normalizeBlindBoxTierSettings(tiers []BlindBoxTierSetting) []BlindBoxTierSe
 	result := make([]BlindBoxTierSetting, len(tiers))
 	for i, tier := range tiers {
 		result[i] = tier
-		result[i].RewardType = NormalizeBlindBoxRewardType(tier.RewardType)
-		result[i].WalletType = normalizeBlindBoxWalletType(tier.WalletType)
+		result[i].RewardType = NormalizeBlindBoxRewardType(inferBlindBoxRewardType(tier))
+		result[i].WalletType = inferBlindBoxWalletType(tier)
 	}
 	return result
 }
@@ -165,10 +243,17 @@ func GetBlindBoxSetting() BlindBoxSetting {
 		settingCopy.SubscriptionPrizeProbability = 1
 	}
 	if settingCopy.SubscriptionPlanTitle == "" {
-		settingCopy.SubscriptionPlanTitle = "Standard月卡"
+		settingCopy.SubscriptionPlanTitle = defaultBlindBoxSubscriptionPlanTitle
 	}
 	settingCopy.CountOptions = normalizeBlindBoxCountOptions(settingCopy.CountOptions)
 	if len(settingCopy.Tiers) == 0 {
+		settingCopy.Tiers = defaultBlindBoxTiers()
+	}
+	if isLegacyBrokenBlindBoxTiers(settingCopy.Tiers) &&
+		strings.TrimSpace(settingCopy.SubscriptionPlanTitle) == "Standard月卡" &&
+		isApproxProbability(settingCopy.SubscriptionPrizeProbability, 0.001) {
+		settingCopy.SubscriptionPrizeProbability = defaultBlindBoxSubscriptionPrizeProbability
+		settingCopy.SubscriptionPlanTitle = defaultBlindBoxSubscriptionPlanTitle
 		settingCopy.Tiers = defaultBlindBoxTiers()
 	}
 	settingCopy.Tiers = normalizeBlindBoxTierSettings(settingCopy.Tiers)

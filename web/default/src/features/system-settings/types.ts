@@ -26,6 +26,8 @@ export type BlindBoxTierSetting = {
   min_usd: number
   max_usd: number
   probability: number
+  reward_type?: string
+  wallet_type?: string
 }
 
 export type SystemOptionKey = string

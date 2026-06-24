@@ -4,7 +4,7 @@ import type { PetProfile } from '@/features/gamification/pet-catalog'
 import type { CompanionBuffView } from '@/features/gamification/types'
 import { cn } from '@/lib/utils'
 import { AlertCircle, ChevronDown, Gift, Loader2, Sparkles } from 'lucide-react'
-import type { BlindBoxSelfData, PaymentMethod } from '../types'
+import type { BlindBoxSelfData, BlindBoxTier, PaymentMethod } from '../types'
 import { PaymentMethodSelector, PityStatusCard } from './blind-box-view-parts'
 
 interface BlindBoxCardViewProps {
@@ -28,6 +28,35 @@ interface BlindBoxCardViewProps {
   onManualOpen: (count: number) => void
   onTogglePrizeNotice: () => void
   onClosePrizeNotice: () => void
+}
+
+function resolveTierRewardType(tier: BlindBoxTier) {
+  if (tier.reward_type) return tier.reward_type
+  if (tier.min_usd === 0 && tier.max_usd === 0) return 'prop'
+  if (
+    tier.wallet_type === 'claude' ||
+    tier.name.toLowerCase().includes('claude')
+  ) {
+    return 'claude_quota'
+  }
+  return 'quota'
+}
+
+function formatBlindBoxTierLabel(tier: BlindBoxTier) {
+  const rewardType = resolveTierRewardType(tier)
+  if (rewardType === 'prop' || rewardType === 'subscription') {
+    return tier.name
+  }
+
+  const amountText =
+    tier.min_usd === tier.max_usd
+      ? `$${tier.min_usd}`
+      : `$${tier.min_usd} - $${tier.max_usd}`
+
+  if (rewardType === 'claude_quota') {
+    return `${amountText} Claude 额度`
+  }
+  return `${amountText} 普通额度`
 }
 
 export function BlindBoxCardView(props: BlindBoxCardViewProps) {
@@ -179,9 +208,7 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
           <div className='space-y-2 text-sm'>
             {(props.data?.tiers || []).map((tier) => (
               <div key={tier.name} className='flex items-center justify-between'>
-                <span className='text-foreground'>
-                  ${tier.min_usd} - ${tier.max_usd}
-                </span>
+                <span className='text-foreground'>{formatBlindBoxTierLabel(tier)}</span>
                 <span className='text-muted-foreground font-medium tabular-nums'>
                   {(tier.probability * 100).toFixed(1)}%
                 </span>
@@ -189,7 +216,7 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
             ))}
             <div className='flex items-center justify-between'>
               <span className='text-foreground'>
-                {props.data?.subscription_plan_title || '月卡'}
+                {(props.data?.subscription_plan_title || '月卡') + '（隐藏款）'}
               </span>
               <span className='text-muted-foreground font-medium tabular-nums'>
                 {((props.data?.subscription_prize_probability || 0) * 100).toFixed(

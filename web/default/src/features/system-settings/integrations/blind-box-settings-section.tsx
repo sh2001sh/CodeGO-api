@@ -24,6 +24,8 @@ const tierSchema = z.object({
   min_usd: z.number().min(0),
   max_usd: z.number().min(0),
   probability: z.number().min(0).max(1),
+  reward_type: z.string().optional(),
+  wallet_type: z.string().optional(),
 })
 
 const schema = z.object({
@@ -458,7 +460,7 @@ export function BlindBoxSettingsSection({
                       <Textarea rows={10} {...field} />
                     </FormControl>
                     <FormDescription>
-                      JSON 数组，包含 name、min_usd、max_usd、probability
+                      JSON 数组，支持 name、min_usd、max_usd、probability、reward_type、wallet_type
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

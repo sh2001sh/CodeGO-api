@@ -333,6 +333,7 @@ export interface BlindBoxTier {
   min_usd: number
   max_usd: number
   probability: number
+  reward_type?: 'quota' | 'claude_quota' | 'prop' | 'subscription' | string
   wallet_type?: 'default' | 'claude' | string
 }
 
