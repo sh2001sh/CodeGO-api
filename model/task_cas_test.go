@@ -451,6 +451,56 @@ func TestMigrateBlindBoxLegacyCredits_TerminatesToMatchingWallets(t *testing.T) 
 	assert.Equal(t, 480, finalUsers[1].ClaudeQuota)
 }
 
+func TestMigrateBlindBoxLegacyCredits_SkipsCacheInvalidationWhenRedisClientNotReady(t *testing.T) {
+	truncateTables(t)
+
+	originalRedisEnabled := common.RedisEnabled
+	originalRDB := common.RDB
+	common.RedisEnabled = true
+	common.RDB = nil
+	t.Cleanup(func() {
+		common.RedisEnabled = originalRedisEnabled
+		common.RDB = originalRDB
+	})
+
+	user := &User{Id: 8807, Username: "legacy_no_redis_client", Status: common.UserStatusEnabled, Quota: 100, ClaudeQuota: 50}
+	require.NoError(t, DB.Create(user).Error)
+
+	record := &BlindBoxOpenRecord{
+		Id:               9904,
+		UserId:           user.Id,
+		RewardType:       BlindBoxRewardTypeQuota,
+		RewardWalletType: string(BlindBoxRewardWalletTypeDefault),
+	}
+	require.NoError(t, DB.Create(record).Error)
+
+	credit := &BlindBoxCredit{
+		UserId:          user.Id,
+		OpenRecordId:    record.Id,
+		OriginalAmount:  75,
+		RemainingAmount: 75,
+		RewardUSD:       0.75,
+		ExpiresAt:       time.Now().Add(24 * time.Hour).Unix(),
+		Status:          BlindBoxCreditStatusActive,
+	}
+	require.NoError(t, DB.Create(credit).Error)
+
+	require.NotPanics(t, func() {
+		require.NoError(t, MigrateBlindBoxLegacyCredits())
+	})
+
+	var savedUser User
+	require.NoError(t, DB.Where("id = ?", user.Id).First(&savedUser).Error)
+	assert.Equal(t, 175, savedUser.Quota)
+	assert.Equal(t, 50, savedUser.ClaudeQuota)
+
+	var savedCredit BlindBoxCredit
+	require.NoError(t, DB.Where("id = ?", credit.Id).First(&savedCredit).Error)
+	assert.Equal(t, int64(0), savedCredit.RemainingAmount)
+	assert.Equal(t, BlindBoxCreditStatusExhausted, savedCredit.Status)
+	assert.NotZero(t, savedCredit.MigratedAt)
+}
+
 func TestMigrateBlindBoxLegacyCredits_SkipsExpiredCredits(t *testing.T) {
 	truncateTables(t)
 

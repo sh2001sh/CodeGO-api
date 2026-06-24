@@ -52,8 +52,8 @@ func cacheSetTokenField(key string, field string, value string) error {
 // CacheGetTokenByKey 从缓存中获取 token，如果缓存中不存在，则从数据库中获取
 func cacheGetTokenByKey(key string) (*Token, error) {
 	hmacKey := common.GenerateHMAC(key)
-	if !common.RedisEnabled {
-		return nil, fmt.Errorf("redis is not enabled")
+	if !common.RedisReady() {
+		return nil, fmt.Errorf("redis is not ready")
 	}
 	var token Token
 	err := common.RedisHGetObj(fmt.Sprintf("token:%s", hmacKey), &token)
