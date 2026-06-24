@@ -196,6 +196,7 @@ func main() {
 		DefaultBuildFS:   buildFS,
 		DefaultIndexPage: indexPage,
 	})
+	service.StartIndexNowSubmissionTask(buildFS)
 	var port = os.Getenv("PORT")
 	if port == "" {
 		port = strconv.Itoa(*common.Port)
