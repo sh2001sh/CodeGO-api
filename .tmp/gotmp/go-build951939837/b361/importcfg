@@ -1,0 +1,11 @@
+# import config
+packagefile crypto/hmac=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b070\_pkg_.a
+packagefile crypto/md5=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b146\_pkg_.a
+packagefile crypto/tls=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b109\_pkg_.a
+packagefile encoding/base64=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b156\_pkg_.a
+packagefile errors=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b003\_pkg_.a
+packagefile fmt=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b056\_pkg_.a
+packagefile io=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b035\_pkg_.a
+packagefile net=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b158\_pkg_.a
+packagefile net/textproto=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b196\_pkg_.a
+packagefile strings=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b078\_pkg_.a

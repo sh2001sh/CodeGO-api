@@ -114,7 +114,6 @@ export function BlindBoxPrizeDialog(props: {
   state: PrizeDialogState
   onOpenChange: (open: boolean) => void
   onUseReward?: (record: BlindBoxRecord) => void
-  activePropKeys?: Record<string, number>
 }) {
   return (
     <Dialog open={props.state.open} onOpenChange={props.onOpenChange}>
@@ -136,7 +135,6 @@ export function BlindBoxPrizeDialog(props: {
           <PrizeRevealList
             records={props.state.records}
             onUseReward={props.onUseReward}
-            activePropKeys={props.activePropKeys}
             formatTimestamp={formatBlindBoxTimestamp}
           />
 

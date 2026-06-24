@@ -1,0 +1,13 @@
+# import config
+packagefile encoding/json=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b166\_pkg_.a
+packagefile errors=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b003\_pkg_.a
+packagefile fmt=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b056\_pkg_.a
+packagefile github.com/nicksnyder/go-i18n/v2/i18n/template=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b372\_pkg_.a
+packagefile github.com/nicksnyder/go-i18n/v2/internal=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b373\_pkg_.a
+packagefile github.com/nicksnyder/go-i18n/v2/internal/plural=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b374\_pkg_.a
+packagefile golang.org/x/text/language=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b229\_pkg_.a
+packagefile io/fs=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b044\_pkg_.a
+packagefile os=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b061\_pkg_.a
+packagefile sort=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b165\_pkg_.a
+packagefile strings=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b078\_pkg_.a
+packagefile text/template=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b246\_pkg_.a

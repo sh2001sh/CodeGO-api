@@ -1,0 +1,10 @@
+# import config
+packagefile crypto=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b072\_pkg_.a
+packagefile crypto/rand=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b101\_pkg_.a
+packagefile crypto/rsa=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b148\_pkg_.a
+packagefile crypto/sha256=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b108\_pkg_.a
+packagefile crypto/x509=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b151\_pkg_.a
+packagefile encoding/base64=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b156\_pkg_.a
+packagefile fmt=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b056\_pkg_.a
+packagefile github.com/waffo-com/waffo-go/errors=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b666\_pkg_.a
+packagefile time=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b049\_pkg_.a

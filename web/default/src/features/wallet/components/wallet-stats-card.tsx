@@ -1,8 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link } from '@tanstack/react-router'
-import { Activity, Settings2, WalletCards } from 'lucide-react'
+import { Activity, WalletCards } from 'lucide-react'
 import { formatUsdAmount, quotaUnitsToUsd } from '@/lib/format'
-import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { getPublicPlans } from '@/features/subscriptions/api'
 import { getSubscriptionPlanSubtitle } from '@/features/subscriptions/lib'
@@ -121,23 +119,6 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
         title='套餐额度刷新'
         description='邀请新用户首购后可获得刷新机会，当前只展示你的使用状态。'
       />
-
-      <div className='app-subtle-panel p-4'>
-        <div className='text-foreground flex items-center gap-2 text-sm font-semibold'>
-          <Settings2 className='text-primary h-4 w-4' />
-          活动与权益入口
-        </div>
-        <div className='text-muted-foreground mt-2 text-xs leading-5'>
-          盲盒、邀请刷新、积分商城和 Claude 转换说明都可以从这里进入。
-        </div>
-        <Button
-          variant='outline'
-          className='mt-3 w-full'
-          render={<Link to='/activities' />}
-        >
-          前往活动中心
-        </Button>
-      </div>
     </aside>
   )
 }

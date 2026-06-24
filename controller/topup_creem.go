@@ -14,6 +14,7 @@ import (
 	"github.com/QuantumNous/new-api/model"
 	"github.com/QuantumNous/new-api/setting"
 	"io"
+	"math"
 	"net/http"
 	"time"
 
@@ -115,7 +116,7 @@ func (*CreemAdaptor) RequestPay(c *gin.Context, req *CreemPayRequest) {
 		CreateTime:      time.Now().Unix(),
 		Status:          common.TopUpStatusPending,
 	}
-	err = topUp.Insert()
+	_, err = model.CreatePendingTopUpOrderWithBlindBoxDiscount(topUp)
 	if err != nil {
 		logger.LogError(c.Request.Context(), fmt.Sprintf("Creem 创建充值订单失败 user_id=%d trade_no=%s product_id=%s error=%q", id, referenceId, selectedProduct.ProductId, err.Error()))
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "创建订单失败"})
@@ -123,14 +124,15 @@ func (*CreemAdaptor) RequestPay(c *gin.Context, req *CreemPayRequest) {
 	}
 
 	// 创建支付链接，传入用户邮箱
-	checkoutUrl, err := genCreemLink(c.Request.Context(), referenceId, selectedProduct, user.Email, user.Username)
+	checkoutUrl, err := genCreemLink(c.Request.Context(), referenceId, selectedProduct, user.Email, user.Username, topUp.Money)
 	if err != nil {
+		_ = model.UpdatePendingTopUpStatus(referenceId, model.PaymentProviderCreem, common.TopUpStatusFailed)
 		logger.LogError(c.Request.Context(), fmt.Sprintf("Creem 创建支付链接失败 user_id=%d trade_no=%s product_id=%s error=%q", id, referenceId, selectedProduct.ProductId, err.Error()))
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "拉起支付失败"})
 		return
 	}
 
-	logger.LogInfo(c.Request.Context(), fmt.Sprintf("Creem 充值订单创建成功 user_id=%d trade_no=%s product_id=%s product_name=%q quota=%d money=%.2f", id, referenceId, selectedProduct.ProductId, selectedProduct.Name, selectedProduct.Quota, selectedProduct.Price))
+	logger.LogInfo(c.Request.Context(), fmt.Sprintf("Creem 充值订单创建成功 user_id=%d trade_no=%s product_id=%s product_name=%q quota=%d money=%.2f", id, referenceId, selectedProduct.ProductId, selectedProduct.Name, selectedProduct.Quota, topUp.Money))
 
 	c.JSON(http.StatusOK, gin.H{
 		"message": "success",
@@ -359,9 +361,11 @@ func handleCheckoutCompleted(c *gin.Context, event *CreemWebhookEvent) {
 }
 
 type CreemCheckoutRequest struct {
-	ProductId string `json:"product_id"`
-	RequestId string `json:"request_id"`
-	Customer  struct {
+	ProductId   string `json:"product_id"`
+	RequestId   string `json:"request_id"`
+	Units       int    `json:"units,omitempty"`
+	CustomPrice *int64 `json:"custom_price,omitempty"`
+	Customer    struct {
 		Email string `json:"email"`
 	} `json:"customer"`
 	Metadata map[string]string `json:"metadata,omitempty"`
@@ -372,7 +376,14 @@ type CreemCheckoutResponse struct {
 	Id          string `json:"id"`
 }
 
-func genCreemLink(ctx context.Context, referenceId string, product *CreemProduct, email string, username string) (string, error) {
+func creemPriceToCents(price float64) int64 {
+	if price <= 0 {
+		return 0
+	}
+	return int64(math.Round(price * 100))
+}
+
+func genCreemLink(ctx context.Context, referenceId string, product *CreemProduct, email string, username string, customPrice float64) (string, error) {
 	if setting.CreemApiKey == "" {
 		return "", fmt.Errorf("未配置Creem API密钥")
 	}
@@ -388,6 +399,7 @@ func genCreemLink(ctx context.Context, referenceId string, product *CreemProduct
 	requestData := CreemCheckoutRequest{
 		ProductId: product.ProductId,
 		RequestId: referenceId, // 这个作为订单ID传递给Creem
+		Units:     1,
 		Customer: struct {
 			Email string `json:"email"`
 		}{
@@ -399,6 +411,9 @@ func genCreemLink(ctx context.Context, referenceId string, product *CreemProduct
 			"product_name": product.Name,
 			"quota":        fmt.Sprintf("%d", product.Quota),
 		},
+	}
+	if cents := creemPriceToCents(customPrice); cents > 0 {
+		requestData.CustomPrice = &cents
 	}
 
 	// 序列化请求数据

@@ -1,0 +1,12 @@
+# import config
+packagefile context=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b069\_pkg_.a
+packagefile errors=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b003\_pkg_.a
+packagefile github.com/jackc/pgx/v5=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b495\_pkg_.a
+packagefile github.com/jackc/pgx/v5/pgconn=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b499\_pkg_.a
+packagefile github.com/jackc/puddle/v2=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b514\_pkg_.a
+packagefile math/rand/v2=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b104\_pkg_.a
+packagefile runtime=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b009\_pkg_.a
+packagefile strconv=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b060\_pkg_.a
+packagefile sync=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b036\_pkg_.a
+packagefile sync/atomic=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b038\_pkg_.a
+packagefile time=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b049\_pkg_.a

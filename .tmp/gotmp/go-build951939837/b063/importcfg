@@ -1,0 +1,9 @@
+# import config
+packagefile errors=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b003\_pkg_.a
+packagefile internal/oserror=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b045\_pkg_.a
+packagefile internal/runtime/syscall/windows=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b030\_pkg_.a
+packagefile internal/syscall/windows/sysdll=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b053\_pkg_.a
+packagefile runtime=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b009\_pkg_.a
+packagefile structs=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b064\_pkg_.a
+packagefile sync=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b036\_pkg_.a
+packagefile syscall=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b054\_pkg_.a

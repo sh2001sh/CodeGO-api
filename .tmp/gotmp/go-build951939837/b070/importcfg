@@ -1,0 +1,7 @@
+# import config
+packagefile crypto/internal/boring=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b071\_pkg_.a
+packagefile crypto/internal/fips140/hmac=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b081\_pkg_.a
+packagefile crypto/internal/fips140hash=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b099\_pkg_.a
+packagefile crypto/internal/fips140only=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b095\_pkg_.a
+packagefile crypto/subtle=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b097\_pkg_.a
+packagefile hash=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b073\_pkg_.a

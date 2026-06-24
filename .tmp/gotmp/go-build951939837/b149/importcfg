@@ -1,0 +1,15 @@
+# import config
+packagefile bytes=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b002\_pkg_.a
+packagefile crypto/internal/constanttime=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b088\_pkg_.a
+packagefile crypto/internal/fips140=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b076\_pkg_.a
+packagefile crypto/internal/fips140/bigmod=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b122\_pkg_.a
+packagefile crypto/internal/fips140/check=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b080\_pkg_.a
+packagefile crypto/internal/fips140/drbg=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b091\_pkg_.a
+packagefile crypto/internal/fips140/sha256=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b082\_pkg_.a
+packagefile crypto/internal/fips140/sha3=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b086\_pkg_.a
+packagefile crypto/internal/fips140/sha512=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b089\_pkg_.a
+packagefile crypto/internal/fips140/subtle=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b087\_pkg_.a
+packagefile errors=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b003\_pkg_.a
+packagefile hash=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b073\_pkg_.a
+packagefile io=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b035\_pkg_.a
+packagefile sync=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b036\_pkg_.a

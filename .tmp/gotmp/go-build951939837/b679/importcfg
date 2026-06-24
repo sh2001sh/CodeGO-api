@@ -1,0 +1,17 @@
+# import config
+packagefile embed=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b043\_pkg_.a
+packagefile fmt=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b056\_pkg_.a
+packagefile github.com/QuantumNous/new-api/common=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b068\_pkg_.a
+packagefile github.com/QuantumNous/new-api/constant=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b169\_pkg_.a
+packagefile github.com/QuantumNous/new-api/controller=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b362\_pkg_.a
+packagefile github.com/QuantumNous/new-api/middleware=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b375\_pkg_.a
+packagefile github.com/QuantumNous/new-api/oauth=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b550\_pkg_.a
+packagefile github.com/QuantumNous/new-api/relay=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b552\_pkg_.a
+packagefile github.com/QuantumNous/new-api/types=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b369\_pkg_.a
+packagefile github.com/gin-contrib/gzip=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b680\_pkg_.a
+packagefile github.com/gin-contrib/static=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b180\_pkg_.a
+packagefile github.com/gin-gonic/gin=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b181\_pkg_.a
+packagefile io=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b035\_pkg_.a
+packagefile net/http=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b186\_pkg_.a
+packagefile os=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b061\_pkg_.a
+packagefile strings=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b078\_pkg_.a

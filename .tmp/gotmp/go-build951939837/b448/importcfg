@@ -1,0 +1,25 @@
+# import config
+packagefile bufio=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b182\_pkg_.a
+packagefile bytes=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b002\_pkg_.a
+packagefile compress/flate=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b187\_pkg_.a
+packagefile context=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b069\_pkg_.a
+packagefile crypto/rand=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b101\_pkg_.a
+packagefile crypto/sha1=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b107\_pkg_.a
+packagefile crypto/tls=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b109\_pkg_.a
+packagefile encoding/base64=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b156\_pkg_.a
+packagefile encoding/binary=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b139\_pkg_.a
+packagefile encoding/json=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b166\_pkg_.a
+packagefile errors=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b003\_pkg_.a
+packagefile io=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b035\_pkg_.a
+packagefile io/ioutil=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b185\_pkg_.a
+packagefile math/rand=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b106\_pkg_.a
+packagefile net=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b158\_pkg_.a
+packagefile net/http=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b186\_pkg_.a
+packagefile net/http/httptrace=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b203\_pkg_.a
+packagefile net/url=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b164\_pkg_.a
+packagefile os=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b061\_pkg_.a
+packagefile strconv=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b060\_pkg_.a
+packagefile strings=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b078\_pkg_.a
+packagefile sync=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b036\_pkg_.a
+packagefile time=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b049\_pkg_.a
+packagefile unicode/utf8=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b042\_pkg_.a

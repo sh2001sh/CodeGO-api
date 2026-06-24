@@ -1,0 +1,8 @@
+# import config
+packagefile internal/abi=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b005\_pkg_.a
+packagefile internal/asan=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b025\_pkg_.a
+packagefile internal/goarch=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b006\_pkg_.a
+packagefile internal/msan=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b026\_pkg_.a
+packagefile internal/race=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b027\_pkg_.a
+packagefile internal/runtime/math=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b028\_pkg_.a
+packagefile internal/runtime/sys=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b023\_pkg_.a

@@ -1,0 +1,15 @@
+# import config
+packagefile bytes=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b002\_pkg_.a
+packagefile cmp=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b048\_pkg_.a
+packagefile fmt=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b056\_pkg_.a
+packagefile go/scanner=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b355\_pkg_.a
+packagefile go/token=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b243\_pkg_.a
+packagefile io=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b035\_pkg_.a
+packagefile iter=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b040\_pkg_.a
+packagefile os=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b061\_pkg_.a
+packagefile reflect=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b058\_pkg_.a
+packagefile slices=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b047\_pkg_.a
+packagefile strconv=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b060\_pkg_.a
+packagefile strings=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b078\_pkg_.a
+packagefile unicode=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b041\_pkg_.a
+packagefile unicode/utf8=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b042\_pkg_.a

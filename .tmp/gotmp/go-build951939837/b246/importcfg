@@ -1,0 +1,18 @@
+# import config
+packagefile errors=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b003\_pkg_.a
+packagefile fmt=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b056\_pkg_.a
+packagefile internal/fmtsort=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b057\_pkg_.a
+packagefile io=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b035\_pkg_.a
+packagefile io/fs=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b044\_pkg_.a
+packagefile maps=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b157\_pkg_.a
+packagefile net/url=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b164\_pkg_.a
+packagefile os=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b061\_pkg_.a
+packagefile path=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b046\_pkg_.a
+packagefile path/filepath=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b202\_pkg_.a
+packagefile reflect=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b058\_pkg_.a
+packagefile runtime=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b009\_pkg_.a
+packagefile strings=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b078\_pkg_.a
+packagefile sync=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b036\_pkg_.a
+packagefile text/template/parse=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b247\_pkg_.a
+packagefile unicode=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b041\_pkg_.a
+packagefile unicode/utf8=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b042\_pkg_.a

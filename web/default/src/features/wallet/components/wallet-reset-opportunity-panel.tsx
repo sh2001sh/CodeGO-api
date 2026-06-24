@@ -75,7 +75,7 @@ export function WalletResetOpportunityPanel(
         <Button
           variant='outline'
           className='flex-1'
-          render={<Link to='/activities' />}
+          render={<Link to='/invite-rewards' />}
         >
           查看刷新说明
         </Button>

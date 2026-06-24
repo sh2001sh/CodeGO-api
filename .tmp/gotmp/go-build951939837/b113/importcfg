@@ -1,0 +1,11 @@
+# import config
+packagefile bytes=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b002\_pkg_.a
+packagefile crypto=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b072\_pkg_.a
+packagefile crypto/internal/boring=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b071\_pkg_.a
+packagefile crypto/internal/fips140/ecdh=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b114\_pkg_.a
+packagefile crypto/internal/fips140/edwards25519/field=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b117\_pkg_.a
+packagefile crypto/internal/fips140only=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b095\_pkg_.a
+packagefile crypto/internal/rand=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b102\_pkg_.a
+packagefile crypto/subtle=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b097\_pkg_.a
+packagefile errors=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b003\_pkg_.a
+packagefile io=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b035\_pkg_.a

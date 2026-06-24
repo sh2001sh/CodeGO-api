@@ -1,0 +1,17 @@
+# import config
+packagefile bytes=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b002\_pkg_.a
+packagefile crypto/aes=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b111\_pkg_.a
+packagefile crypto/cipher=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b074\_pkg_.a
+packagefile crypto/hmac=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b070\_pkg_.a
+packagefile crypto/rand=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b101\_pkg_.a
+packagefile crypto/sha256=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b108\_pkg_.a
+packagefile crypto/subtle=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b097\_pkg_.a
+packagefile encoding/base64=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b156\_pkg_.a
+packagefile encoding/gob=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b242\_pkg_.a
+packagefile encoding/json=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b166\_pkg_.a
+packagefile fmt=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b056\_pkg_.a
+packagefile hash=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b073\_pkg_.a
+packagefile io=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b035\_pkg_.a
+packagefile strconv=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b060\_pkg_.a
+packagefile strings=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b078\_pkg_.a
+packagefile time=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b049\_pkg_.a

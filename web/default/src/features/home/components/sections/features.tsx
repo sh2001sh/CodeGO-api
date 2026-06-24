@@ -3,7 +3,6 @@ import {
   ArrowRight,
   Gift,
   RefreshCcw,
-  ShoppingBag,
   Sparkles,
   Wallet,
 } from 'lucide-react'
@@ -22,15 +21,6 @@ const activityCards = [
       '首次开盒会优先给出更实用的结果，抽到的普通额度和 Claude 额度都会直接到账。',
     to: '/blind-box',
     cta: '去开盲盒',
-  },
-  {
-    icon: <ShoppingBag className='size-5 text-sky-600' />,
-    tag: '积分商城',
-    title: '积分兑换卡密、券与权益',
-    description:
-      '购买套餐和受邀注册都能攒积分，积分可兑换京东 E 卡、盲盒券和月卡权益。',
-    to: '/point-mall',
-    cta: '逛积分商城',
   },
   {
     icon: <RefreshCcw className='size-5 text-emerald-600' />,

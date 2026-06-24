@@ -1,0 +1,11 @@
+# import config
+packagefile encoding/json=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b166\_pkg_.a
+packagefile errors=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b003\_pkg_.a
+packagefile fmt=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b056\_pkg_.a
+packagefile github.com/QuantumNous/new-api/common=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b068\_pkg_.a
+packagefile github.com/QuantumNous/new-api/dto=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b365\_pkg_.a
+packagefile github.com/QuantumNous/new-api/setting/model_setting=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b447\_pkg_.a
+packagefile github.com/samber/lo=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b331\_pkg_.a
+packagefile regexp=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b233\_pkg_.a
+packagefile strings=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b078\_pkg_.a
+packagefile sync=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b036\_pkg_.a

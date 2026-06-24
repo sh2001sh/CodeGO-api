@@ -1,0 +1,22 @@
+# import config
+importmap golang.org/x/crypto/cryptobyte=vendor/golang.org/x/crypto/cryptobyte
+importmap golang.org/x/crypto/cryptobyte/asn1=vendor/golang.org/x/crypto/cryptobyte/asn1
+packagefile crypto=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b072\_pkg_.a
+packagefile crypto/ecdh=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b113\_pkg_.a
+packagefile crypto/elliptic=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b119\_pkg_.a
+packagefile crypto/internal/boring=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b071\_pkg_.a
+packagefile crypto/internal/boring/bbig=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b120\_pkg_.a
+packagefile crypto/internal/fips140/ecdsa=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b121\_pkg_.a
+packagefile crypto/internal/fips140/nistec=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b115\_pkg_.a
+packagefile crypto/internal/fips140cache=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b123\_pkg_.a
+packagefile crypto/internal/fips140hash=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b099\_pkg_.a
+packagefile crypto/internal/fips140only=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b095\_pkg_.a
+packagefile crypto/internal/rand=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b102\_pkg_.a
+packagefile crypto/sha512=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b125\_pkg_.a
+packagefile crypto/subtle=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b097\_pkg_.a
+packagefile errors=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b003\_pkg_.a
+packagefile vendor/golang.org/x/crypto/cryptobyte=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b126\_pkg_.a
+packagefile vendor/golang.org/x/crypto/cryptobyte/asn1=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b129\_pkg_.a
+packagefile io=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b035\_pkg_.a
+packagefile math/big=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b105\_pkg_.a
+packagefile math/rand/v2=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b104\_pkg_.a

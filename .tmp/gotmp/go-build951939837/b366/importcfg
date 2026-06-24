@@ -1,0 +1,13 @@
+# import config
+packagefile context=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b069\_pkg_.a
+packagefile fmt=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b056\_pkg_.a
+packagefile github.com/QuantumNous/new-api/common=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b068\_pkg_.a
+packagefile github.com/QuantumNous/new-api/setting/operation_setting=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b367\_pkg_.a
+packagefile github.com/bytedance/gopkg/util/gopool=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b175\_pkg_.a
+packagefile github.com/gin-gonic/gin=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b181\_pkg_.a
+packagefile io=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b035\_pkg_.a
+packagefile log=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b177\_pkg_.a
+packagefile os=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b061\_pkg_.a
+packagefile path/filepath=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b202\_pkg_.a
+packagefile sync=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b036\_pkg_.a
+packagefile time=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b049\_pkg_.a

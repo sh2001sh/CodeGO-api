@@ -88,6 +88,11 @@ type BlindBoxOpenRecord struct {
 	UserSubscriptionId int     `json:"user_subscription_id" gorm:"index"`
 	IsPity             bool    `json:"is_pity"`
 	CreateTime         int64   `json:"create_time" gorm:"bigint;index"`
+
+	PropId        int    `json:"prop_id,omitempty" gorm:"-"`
+	PropType      string `json:"prop_type,omitempty" gorm:"-"`
+	PropStatus    string `json:"prop_status,omitempty" gorm:"-"`
+	PropExpiresAt int64  `json:"prop_expires_at,omitempty" gorm:"-"`
 }
 
 type BlindBoxPityState struct {
@@ -237,6 +242,39 @@ func normalizeBlindBoxOpenRecordDisplay(record *BlindBoxOpenRecord) {
 	}
 }
 
+func attachBlindBoxPropStateTx(tx *gorm.DB, records []BlindBoxOpenRecord) error {
+	if tx == nil || len(records) == 0 {
+		return nil
+	}
+	openRecordIds := make([]int, 0, len(records))
+	indexByOpenRecordId := make(map[int]int, len(records))
+	for index := range records {
+		if records[index].RewardType != BlindBoxRewardTypeProp || records[index].Id <= 0 {
+			continue
+		}
+		openRecordIds = append(openRecordIds, records[index].Id)
+		indexByOpenRecordId[records[index].Id] = index
+	}
+	if len(openRecordIds) == 0 {
+		return nil
+	}
+	var props []BlindBoxProp
+	if err := tx.Where("open_record_id IN ?", openRecordIds).Find(&props).Error; err != nil {
+		return err
+	}
+	for _, prop := range props {
+		index, ok := indexByOpenRecordId[prop.OpenRecordId]
+		if !ok {
+			continue
+		}
+		records[index].PropId = prop.Id
+		records[index].PropType = prop.PropType
+		records[index].PropStatus = prop.Status
+		records[index].PropExpiresAt = prop.ExpiresAt
+	}
+	return nil
+}
+
 func GetBlindBoxOrderByTradeNo(tradeNo string) *BlindBoxOrder {
 	if strings.TrimSpace(tradeNo) == "" {
 		return nil
@@ -322,6 +360,9 @@ func GetUserBlindBoxOverview(userId int, recentLimit int) (*BlindBoxOverview, er
 		Order("create_time desc, id desc").
 		Limit(recentLimit).
 		Find(&overview.RecentRecords).Error; err != nil {
+		return nil, err
+	}
+	if err := attachBlindBoxPropStateTx(DB, overview.RecentRecords); err != nil {
 		return nil, err
 	}
 	for index := range overview.RecentRecords {

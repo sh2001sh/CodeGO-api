@@ -1,0 +1,7 @@
+# import config
+packagefile go/token=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b243\_pkg_.a
+packagefile google.golang.org/protobuf/internal/flags=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b256\_pkg_.a
+packagefile google.golang.org/protobuf/reflect/protoreflect=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b254\_pkg_.a
+packagefile strings=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b078\_pkg_.a
+packagefile unicode=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b041\_pkg_.a
+packagefile unicode/utf8=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b042\_pkg_.a

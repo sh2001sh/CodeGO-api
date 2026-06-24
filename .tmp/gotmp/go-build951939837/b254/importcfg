@@ -1,0 +1,9 @@
+# import config
+packagefile bytes=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b002\_pkg_.a
+packagefile fmt=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b056\_pkg_.a
+packagefile google.golang.org/protobuf/encoding/protowire=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b249\_pkg_.a
+packagefile google.golang.org/protobuf/internal/pragma=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b255\_pkg_.a
+packagefile math=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b059\_pkg_.a
+packagefile reflect=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b058\_pkg_.a
+packagefile strconv=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b060\_pkg_.a
+packagefile strings=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b078\_pkg_.a

@@ -1,0 +1,27 @@
+# import config
+packagefile context=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b069\_pkg_.a
+packagefile crypto/sha1=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b107\_pkg_.a
+packagefile crypto/tls=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b109\_pkg_.a
+packagefile encoding/hex=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b154\_pkg_.a
+packagefile errors=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b003\_pkg_.a
+packagefile fmt=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b056\_pkg_.a
+packagefile github.com/cespare/xxhash/v2=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b281\_pkg_.a
+packagefile github.com/dgryski/go-rendezvous=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b282\_pkg_.a
+packagefile github.com/go-redis/redis/v8/internal=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b283\_pkg_.a
+packagefile github.com/go-redis/redis/v8/internal/hashtag=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b286\_pkg_.a
+packagefile github.com/go-redis/redis/v8/internal/hscan=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b287\_pkg_.a
+packagefile github.com/go-redis/redis/v8/internal/pool=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b288\_pkg_.a
+packagefile github.com/go-redis/redis/v8/internal/proto=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b289\_pkg_.a
+packagefile github.com/go-redis/redis/v8/internal/rand=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b284\_pkg_.a
+packagefile github.com/go-redis/redis/v8/internal/util=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b285\_pkg_.a
+packagefile io=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b035\_pkg_.a
+packagefile math=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b059\_pkg_.a
+packagefile net=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b158\_pkg_.a
+packagefile net/url=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b164\_pkg_.a
+packagefile runtime=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b009\_pkg_.a
+packagefile sort=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b165\_pkg_.a
+packagefile strconv=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b060\_pkg_.a
+packagefile strings=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b078\_pkg_.a
+packagefile sync=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b036\_pkg_.a
+packagefile sync/atomic=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b038\_pkg_.a
+packagefile time=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b049\_pkg_.a

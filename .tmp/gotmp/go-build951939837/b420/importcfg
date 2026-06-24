@@ -1,0 +1,6 @@
+# import config
+packagefile github.com/DmitriyVTitov/size=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b408\_pkg_.a
+packagefile github.com/samber/hot/internal=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b406\_pkg_.a
+packagefile github.com/samber/hot/internal/container/list=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b409\_pkg_.a
+packagefile github.com/samber/hot/pkg/base=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b410\_pkg_.a
+packagefile github.com/samber/hot/pkg/lru=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b413\_pkg_.a

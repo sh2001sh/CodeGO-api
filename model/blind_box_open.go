@@ -303,7 +303,7 @@ func openBlindBoxesTx(tx *gorm.DB, userId int, count int, orderId *int) ([]Blind
 				if err := applyBlindBoxWalletRewardTx(tx, userId, creditAmount, BlindBoxRewardWalletTypeClaude); err != nil {
 					return nil, err
 				}
-				if rewardUSD >= setting.LowRewardThresholdUSD {
+				if isBlindBoxHighValueReward(record.RewardType, rewardUSD, setting.LowRewardThresholdUSD) {
 					pityState.ConsecutiveLowRewards = 0
 				} else {
 					pityState.ConsecutiveLowRewards++
@@ -335,7 +335,7 @@ func openBlindBoxesTx(tx *gorm.DB, userId int, count int, orderId *int) ([]Blind
 				if err := applyBlindBoxWalletRewardTx(tx, userId, creditAmount, tierWalletType); err != nil {
 					return nil, err
 				}
-				if rewardUSD >= setting.LowRewardThresholdUSD {
+				if isBlindBoxHighValueReward(record.RewardType, rewardUSD, setting.LowRewardThresholdUSD) {
 					pityState.ConsecutiveLowRewards = 0
 				} else {
 					pityState.ConsecutiveLowRewards++
@@ -346,12 +346,32 @@ func openBlindBoxesTx(tx *gorm.DB, userId int, count int, orderId *int) ([]Blind
 			if err := tx.Create(&record).Error; err != nil {
 				return nil, err
 			}
+			if record.RewardType == BlindBoxRewardTypeProp {
+				prop, err := createBlindBoxPropTx(tx, userId, record.Id, record.RewardTitle)
+				if err != nil {
+					return nil, err
+				}
+				record.PropId = prop.Id
+				record.PropType = prop.PropType
+				record.PropStatus = prop.Status
+				record.PropExpiresAt = prop.ExpiresAt
+			}
 			records = append(records, record)
 			continue
 		}
 
 		if err := tx.Create(&record).Error; err != nil {
 			return nil, err
+		}
+		if record.RewardType == BlindBoxRewardTypeProp {
+			prop, err := createBlindBoxPropTx(tx, userId, record.Id, record.RewardTitle)
+			if err != nil {
+				return nil, err
+			}
+			record.PropId = prop.Id
+			record.PropType = prop.PropType
+			record.PropStatus = prop.Status
+			record.PropExpiresAt = prop.ExpiresAt
 		}
 		records = append(records, record)
 	}
@@ -400,6 +420,23 @@ func randomTierRewardUSD(tier operation_setting.BlindBoxTierSetting) float64 {
 	}
 	value := minValue + rand.Float64()*(maxValue-minValue)
 	return math.Round(value*100) / 100
+}
+
+func isBlindBoxHighValueReward(
+	rewardType string,
+	rewardUSD float64,
+	thresholdUSD float64,
+) bool {
+	if rewardUSD <= 0 || thresholdUSD <= 0 {
+		return false
+	}
+	valueEquivalent := rewardUSD
+	if rewardType == BlindBoxRewardTypeClaudeQuota {
+		// Claude quota cost is roughly 10x normal quota cost in the current pool,
+		// so the pity threshold uses an ordinary-quota equivalent value.
+		valueEquivalent = rewardUSD * 10
+	}
+	return valueEquivalent >= thresholdUSD
 }
 
 func OpenBlindBoxes(userId int, count int) ([]BlindBoxOpenRecord, error) {

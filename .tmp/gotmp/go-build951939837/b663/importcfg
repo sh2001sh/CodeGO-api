@@ -1,0 +1,4 @@
+# import config
+packagefile bytes=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b002\_pkg_.a
+packagefile crypto/rand=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b101\_pkg_.a
+packagefile encoding/binary=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b139\_pkg_.a

@@ -1,0 +1,19 @@
+# import config
+packagefile context=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b069\_pkg_.a
+packagefile database/sql=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b306\_pkg_.a
+packagefile database/sql/driver=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b174\_pkg_.a
+packagefile encoding/json=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b166\_pkg_.a
+packagefile errors=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b003\_pkg_.a
+packagefile fmt=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b056\_pkg_.a
+packagefile github.com/jinzhu/now=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b352\_pkg_.a
+packagefile gorm.io/gorm/clause=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b353\_pkg_.a
+packagefile gorm.io/gorm/logger=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b357\_pkg_.a
+packagefile gorm.io/gorm/schema=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b359\_pkg_.a
+packagefile gorm.io/gorm/utils=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b358\_pkg_.a
+packagefile reflect=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b058\_pkg_.a
+packagefile regexp=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b233\_pkg_.a
+packagefile sort=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b165\_pkg_.a
+packagefile strconv=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b060\_pkg_.a
+packagefile strings=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b078\_pkg_.a
+packagefile sync=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b036\_pkg_.a
+packagefile time=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b049\_pkg_.a

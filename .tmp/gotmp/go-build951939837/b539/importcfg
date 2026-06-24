@@ -1,0 +1,4 @@
+# import config
+packagefile image=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b323\_pkg_.a
+packagefile image/color=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b324\_pkg_.a
+packagefile image/internal/imageutil=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b540\_pkg_.a

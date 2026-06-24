@@ -16,6 +16,15 @@ type companionQuotaSpend struct {
 	Quota          int64
 }
 
+func getEffectiveConsumptionDiscountRate(userId int) float64 {
+	companionRate := getCompanionConsumptionDiscountRate(userId)
+	blindBoxRate := model.GetUserBlindBoxConsumptionDiscountRate(userId)
+	if blindBoxRate > companionRate {
+		return blindBoxRate
+	}
+	return companionRate
+}
+
 func rewardQuotaWithRate(baseQuota int64, bonusRate float64) int64 {
 	if baseQuota <= 0 {
 		return 0
@@ -183,5 +192,5 @@ func applyCompanionConsumptionDiscount(userId int, quota int) int {
 	if quota <= 0 {
 		return quota
 	}
-	return model.CompanionDiscountedQuota(quota, getCompanionConsumptionDiscountRate(userId))
+	return model.CompanionDiscountedQuota(quota, getEffectiveConsumptionDiscountRate(userId))
 }

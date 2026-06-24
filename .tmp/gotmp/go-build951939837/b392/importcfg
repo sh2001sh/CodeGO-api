@@ -1,0 +1,7 @@
+# import config
+packagefile google.golang.org/protobuf/internal/descopts=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b388\_pkg_.a
+packagefile google.golang.org/protobuf/internal/filedesc=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b386\_pkg_.a
+packagefile google.golang.org/protobuf/internal/impl=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b393\_pkg_.a
+packagefile google.golang.org/protobuf/reflect/protoreflect=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b254\_pkg_.a
+packagefile google.golang.org/protobuf/reflect/protoregistry=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b260\_pkg_.a
+packagefile reflect=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b058\_pkg_.a

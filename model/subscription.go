@@ -309,10 +309,12 @@ type SubscriptionSummary struct {
 
 type SubscriptionPurchasePreview struct {
 	Action              string            `json:"action"`
+	BaseAmountDue       float64           `json:"base_amount_due"`
 	AmountDue           float64           `json:"amount_due"`
 	CurrentSubscription *UserSubscription `json:"-"`
 	CurrentPlan         *SubscriptionPlan `json:"-"`
 	DisabledReason      string            `json:"disabled_reason,omitempty"`
+	AppliedBlindBoxDiscountRate float64   `json:"applied_blind_box_discount_rate,omitempty"`
 }
 
 func NormalizeSubscriptionModelQuotaMap(input map[string]int64) SubscriptionModelQuotaMap {
@@ -559,8 +561,9 @@ func ResolveSubscriptionPurchasePreviewTx(tx *gorm.DB, userId int, targetPlan *S
 		return nil, errors.New("invalid userId")
 	}
 	preview := &SubscriptionPurchasePreview{
-		Action:    SubscriptionPurchaseActionSubscribe,
-		AmountDue: targetPlan.PriceAmount,
+		Action:        SubscriptionPurchaseActionSubscribe,
+		BaseAmountDue: targetPlan.PriceAmount,
+		AmountDue:     targetPlan.PriceAmount,
 	}
 	if !isManagedPackagePlan(targetPlan) {
 		return preview, nil
@@ -579,10 +582,12 @@ func ResolveSubscriptionPurchasePreviewTx(tx *gorm.DB, userId int, targetPlan *S
 	switch compareSubscriptionPlanTier(targetPlan, currentPlan) {
 	case -1:
 		preview.Action = SubscriptionPurchaseActionDisabled
+		preview.BaseAmountDue = 0
 		preview.AmountDue = 0
 		preview.DisabledReason = "cannot subscribe to a lower-tier plan while your current package is active"
 	case 0:
 		preview.Action = SubscriptionPurchaseActionRenew
+		preview.BaseAmountDue = targetPlan.PriceAmount
 		preview.AmountDue = targetPlan.PriceAmount
 	default:
 		preview.Action = SubscriptionPurchaseActionUpgrade
@@ -594,12 +599,28 @@ func ResolveSubscriptionPurchasePreviewTx(tx *gorm.DB, userId int, targetPlan *S
 		if currentPlan.PriceAmount > 0 && currentSub.AmountTotal > 0 && remainingQuota > 0 {
 			discount = currentPlan.PriceAmount * float64(remainingQuota) / float64(currentSub.AmountTotal)
 		}
-		preview.AmountDue = targetPlan.PriceAmount - discount
+		preview.BaseAmountDue = targetPlan.PriceAmount - discount
+		preview.AmountDue = preview.BaseAmountDue
 		if preview.AmountDue < 0.01 {
+			preview.BaseAmountDue = 0.01
 			preview.AmountDue = 0.01
 		}
 	}
+	if preview.Action != SubscriptionPurchaseActionDisabled && preview.AmountDue > 0 {
+		discountRate := getAvailableBlindBoxPropDiscountRateTx(txOrDB(tx), userId, BlindBoxPropTypeSubscriptionDiscount90)
+		if discountRate > 0 {
+			preview.AppliedBlindBoxDiscountRate = discountRate
+			preview.AmountDue = ApplyDiscountRateToMoney(preview.AmountDue, discountRate)
+		}
+	}
 	return preview, nil
+}
+
+func txOrDB(tx *gorm.DB) *gorm.DB {
+	if tx != nil {
+		return tx
+	}
+	return DB
 }
 
 func ResolveSubscriptionPurchasePreview(userId int, targetPlan *SubscriptionPlan) (*SubscriptionPurchasePreview, error) {
@@ -976,6 +997,30 @@ func ApplySubscriptionPurchaseTx(tx *gorm.DB, userId int, plan *SubscriptionPlan
 	return sub, preview, err
 }
 
+func CreatePendingSubscriptionOrderWithBlindBoxDiscount(order *SubscriptionOrder, baseMoney float64) (float64, error) {
+	if order == nil {
+		return 0, errors.New("order is nil")
+	}
+	if order.UserId <= 0 || strings.TrimSpace(order.TradeNo) == "" {
+		return 0, errors.New("invalid subscription order")
+	}
+	if baseMoney <= 0 {
+		baseMoney = order.Money
+	}
+	appliedRate := 0.0
+	err := DB.Transaction(func(tx *gorm.DB) error {
+		order.Money = math.Round(baseMoney*100) / 100
+		if prop, err := ReserveBlindBoxSubscriptionDiscountPropTx(tx, order.UserId, order.TradeNo); err != nil {
+			return err
+		} else if prop != nil {
+			appliedRate = prop.DiscountRate
+			order.Money = ApplyDiscountRateToMoney(baseMoney, prop.DiscountRate)
+		}
+		return tx.Create(order).Error
+	})
+	return appliedRate, err
+}
+
 // Complete a subscription order (idempotent). Creates a UserSubscription snapshot from the plan.
 // expectedPaymentProvider guards against cross-gateway callback attacks (empty skips the check).
 // actualPaymentMethod updates the order's PaymentMethod to reflect the real payment type used (empty skips update).
@@ -1037,6 +1082,9 @@ func CompleteSubscriptionOrder(tradeNo string, providerPayload string, expectedP
 			return err
 		}
 		if err := AwardReferralSubscriptionResetOpportunityTx(tx, order.UserId, purchaseType, "subscription_order", order.TradeNo); err != nil {
+			return err
+		}
+		if err := ConsumeReservedBlindBoxPropByTradeNoTx(tx, tradeNo, BlindBoxPropOrderTypeSubscription); err != nil {
 			return err
 		}
 		order.Status = common.TopUpStatusSuccess
@@ -1126,7 +1174,10 @@ func ExpireSubscriptionOrder(tradeNo string, expectedPaymentProvider string) err
 		}
 		order.Status = common.TopUpStatusExpired
 		order.CompleteTime = common.GetTimestamp()
-		return tx.Save(&order).Error
+		if err := tx.Save(&order).Error; err != nil {
+			return err
+		}
+		return ReleaseReservedBlindBoxPropByTradeNoTx(tx, tradeNo, BlindBoxPropOrderTypeSubscription)
 	})
 }
 

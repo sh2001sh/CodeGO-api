@@ -1,0 +1,6 @@
+# import config
+packagefile internal/race=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b027\_pkg_.a
+packagefile internal/sync=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b037\_pkg_.a
+packagefile internal/synctest=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b039\_pkg_.a
+packagefile runtime=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b009\_pkg_.a
+packagefile sync/atomic=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b038\_pkg_.a

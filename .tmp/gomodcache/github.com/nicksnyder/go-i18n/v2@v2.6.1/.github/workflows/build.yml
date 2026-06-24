@@ -1,0 +1,43 @@
+name: Build
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+jobs:
+  build:
+    name: Build (go:${{ matrix.go-version.name }})
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        go-version:
+        - name: latest
+          version: 1.25.x
+        - name: previous
+          version: 1.24.x
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v6
+        with:
+          go-version: ${{ matrix.go-version.version }}
+      - name: Git checkout
+        uses: actions/checkout@v6
+      - name: Build
+        uses: goreleaser/goreleaser-action@v6
+        with:
+          version: latest
+          args: release --clean --snapshot
+      - name: Test
+        run: go test -race -coverprofile=coverage.txt -covermode=atomic ./...
+      - name: Upload coverage
+        uses: codecov/codecov-action@v5
+        if: matrix.go-version.name == 'latest'
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: true
+      - name: Lint
+        uses: golangci/golangci-lint-action@v9
+        if: matrix.go-version.name == 'latest'
+        with:
+          version: v2.6

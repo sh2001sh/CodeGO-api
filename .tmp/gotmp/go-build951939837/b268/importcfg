@@ -1,0 +1,5 @@
+# import config
+packagefile errors=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b003\_pkg_.a
+packagefile golang.org/x/text/transform=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b269\_pkg_.a
+packagefile golang.org/x/text/unicode/bidi=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b270\_pkg_.a
+packagefile unicode/utf8=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b042\_pkg_.a

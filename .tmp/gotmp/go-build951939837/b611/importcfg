@@ -1,0 +1,6 @@
+# import config
+packagefile fmt=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b056\_pkg_.a
+packagefile github.com/aws/aws-sdk-go-v2/aws=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b564\_pkg_.a
+packagefile github.com/aws/smithy-go/logging=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b572\_pkg_.a
+packagefile regexp=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b233\_pkg_.a
+packagefile strings=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b078\_pkg_.a

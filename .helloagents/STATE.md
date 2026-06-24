@@ -1,35 +1,23 @@
-Main goal: manually port selected upstream QuantumNous/new-api changes into local fork without losing local custom features.
+# 主线目标
+修复老盲盒临时额度迁移在服务启动阶段触发的空指针崩溃，确保数据库迁移先于 Redis 初始化时也能正常启动。
 
-Current work:
-- User requested porting recommendation items 1-7 from upstream.
-- Local branch is `main`; official upstream is available as `official/main` at `d2576ddc`.
-- Working tree has unrelated untracked runtime logs/temp files; do not add them.
-- Item 2 has been ported and committed locally as `15358fab` (`Limit anonymous request body size`), preserving local xunhu/blind-box/point-mall/people-plan routes.
-- Item 4 has been ported and committed locally as `6822ec86` (`Reuse configured stream scanner buffers`).
-- Item 5 has been ported and committed locally as `a9bc7ec9` (`Truncate oversized upstream error logs`).
-- Item 3 has been ported and committed locally as `a7f5412a` (`Reduce heap usage for large relay bodies`).
-- Item 1 has been ported and committed locally as `8a74f1ff` (`Support OpenAI image streaming and edits`).
-- Item 6 has been ported and committed locally as `b5a2ae36` (`Add Claude Opus 4.8 support`).
-- Item 7 has been ported and committed locally as `c3ae343b` (`Improve model pricing editor save behavior`), focused on six-decimal steps and committing the open visual pricing draft before save.
-- Follow-up compatibility fix committed locally as `90b98d1f` (`Handle OpenAI file content for Claude conversion`) after Claude package tests exposed local OpenAI file conversion behavior.
+# 当前状态
+已完成代码修复：
+- `common/redis.go` 新增 `RedisReady()`，所有 Redis 公共读写入口在 `RDB == nil` 时不再解引用空指针。
+- `model/user_cache.go`、`model/token_cache.go`、`model/utils.go` 改为按 Redis 实际就绪状态判断，而不是只看 `RedisEnabled`。
+- `model/task_cas_test.go` 新增回归测试，覆盖“Redis 开关为真但客户端未初始化”时执行 `MigrateBlindBoxLegacyCredits()` 不会 panic。
 
-Selected upstream items:
-- 1 `d2576ddc`: OpenAI streaming image relay and image edit for images API.
-- 2 `d2f7f9ee`: limit anonymous request body.
-- 3 `fddf54cc`: reduce heap residency for large base64 relay requests.
-- 4 `32805849`: reuse stream scanner buffer in channel handlers.
-- 5 `12880281`: truncate oversized upstream error logs.
-- 6 `0c7aceb8`: add Claude opus 4.8 support.
-- 7 frontend model pricing editor precision/UX fixes: evaluate and port safe parts.
+# 验证结果
+- `gofmt -w` 已完成。
+- `go test "./model" -run "^TestMigrateBlindBoxLegacyCredits_SkipsCacheInvalidationWhenRedisClientNotReady$" -count=1 -v` 未完成验证，原因是当前环境访问 `proxy.golang.org` 超时，依赖下载失败，不是已知编译报错。
 
-Key context:
-- Do not directly merge/rebase upstream; upstream deletes local custom modules such as people-plan, point-mall, image-workspace, Claude wallet/quota features.
-- Preserve local Claude quota billing/logging changes from commit `80fcd9ee`.
-- Preserve local workflow cosign fixes and all unrelated custom business features.
-- Unrelated modified files remain in working tree and were not committed: `setting/operation_setting/general_setting.go`, `web/classic/src/components/settings/ModelSetting.jsx`, `web/classic/src/pages/Setting/Model/SettingGlobalModel.jsx`, `web/default/src/features/models/components/drawers/model-mutate-drawer.tsx`, `web/default/src/features/system-settings/models/index.tsx`. They only flip `general_setting.ping_interval_enabled` default false->true.
+# 关键上下文
+- 崩溃链路为：`MigrateBlindBoxLegacyCredits()` -> `invalidateUserCache()` -> `common.RedisDelKey()`，启动时 `RedisEnabled == true` 但 `common.RDB == nil`。
+- 当前仓库是 `E:\sh\Coding\cpa_bussiness\new-api`。
+- 工作树仍有大量无关缓存和状态文件，当前只修改了与本次崩溃修复直接相关的 5 个源码文件。
 
-Next step:
-- Push the 8 local migration commits to `origin/main` if requested. Do not include unrelated working-tree files.
+# 下一步
+如需继续，优先提交这 5 个修复文件并推送；若要本地补验证，需要先解决 Go 依赖下载网络问题或切换可用 GOPROXY。
 
-Blockers:
-- No blocker.
+# 阻塞项
+- 当前环境无法稳定访问 `https://proxy.golang.org`，导致 Go 定向测试无法完成。

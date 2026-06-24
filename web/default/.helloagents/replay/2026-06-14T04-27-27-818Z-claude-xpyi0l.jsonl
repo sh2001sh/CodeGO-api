@@ -1,3 +1,0 @@
-{"ts":"2026-06-14T04:27:27.819Z","event":"semantic_route_prompted","host":"claude","source":"route","sessionId":"2026-06-14T04-27-27-818Z-claude-xpyi0l"}
-{"ts":"2026-06-14T07:27:50.348Z","event":"semantic_route_prompted","host":"claude","source":"route","sessionId":"2026-06-14T04-27-27-818Z-claude-xpyi0l"}
-{"ts":"2026-06-14T07:28:41.490Z","event":"pre_compact_snapshot","host":"claude","source":"pre-compact","sessionId":"2026-06-14T04-27-27-818Z-claude-xpyi0l","details":{"bootstrapFile":"bootstrap.md","installMode":"standby"}}

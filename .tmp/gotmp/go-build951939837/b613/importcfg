@@ -1,0 +1,4 @@
+# import config
+packagefile github.com/aws/smithy-go=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b574\_pkg_.a
+packagefile net/http=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b186\_pkg_.a
+packagefile net/url=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b164\_pkg_.a

@@ -1,0 +1,13 @@
+# import config
+packagefile bytes=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b002\_pkg_.a
+packagefile encoding/base64=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b156\_pkg_.a
+packagefile encoding/binary=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b139\_pkg_.a
+packagefile encoding/hex=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b154\_pkg_.a
+packagefile encoding/json=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b166\_pkg_.a
+packagefile fmt=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b056\_pkg_.a
+packagefile github.com/aws/smithy-go/logging=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b572\_pkg_.a
+packagefile hash=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b073\_pkg_.a
+packagefile hash/crc32=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b189\_pkg_.a
+packagefile io=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b035\_pkg_.a
+packagefile strconv=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b060\_pkg_.a
+packagefile time=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b049\_pkg_.a

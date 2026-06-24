@@ -28,6 +28,7 @@ func requestXunhuPayment(c *gin.Context, req EpayRequest) {
 		return
 	}
 	payMoney := getTopupPayMoney(req.Amount, group, walletType)
+	payMoney = applyTopupBlindBoxDiscount(userId, payMoney)
 	if payMoney < 0.01 {
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "payment amount is too low"})
 		return
@@ -45,13 +46,6 @@ func requestXunhuPayment(c *gin.Context, req EpayRequest) {
 	notifyURL := callbackAddress + "/api/user/xunhu/notify"
 	returnURL := callbackAddress + "/api/user/xunhu/return?trade_no=" + tradeNo
 
-	order, err := createXunhuOrder(tradeNo, fmt.Sprintf("TUC%d", req.Amount), payMoney, notifyURL, returnURL)
-	if err != nil {
-		logger.LogError(c.Request.Context(), fmt.Sprintf("xunhu create topup order failed user_id=%d trade_no=%s error=%q", userId, tradeNo, err.Error()))
-		c.JSON(http.StatusOK, gin.H{"message": "error", "data": formatXunhuCreatePaymentError(err)})
-		return
-	}
-
 	amount := normalizeStoredTopupAmount(req.Amount, walletType)
 	topup := &model.TopUp{
 		UserId:          userId,
@@ -64,9 +58,17 @@ func requestXunhuPayment(c *gin.Context, req EpayRequest) {
 		CreateTime:      time.Now().Unix(),
 		Status:          common.TopUpStatusPending,
 	}
-	if err := topup.Insert(); err != nil {
+	_, err = model.CreatePendingTopUpOrderWithBlindBoxDiscount(topup)
+	if err != nil {
 		logger.LogError(c.Request.Context(), fmt.Sprintf("xunhu create topup db order failed user_id=%d trade_no=%s error=%q", userId, tradeNo, err.Error()))
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "failed to create order"})
+		return
+	}
+	order, err := createXunhuOrder(tradeNo, fmt.Sprintf("TUC%d", req.Amount), topup.Money, notifyURL, returnURL)
+	if err != nil {
+		_ = model.UpdatePendingTopUpStatus(tradeNo, model.PaymentProviderXunhu, common.TopUpStatusFailed)
+		logger.LogError(c.Request.Context(), fmt.Sprintf("xunhu create topup order failed user_id=%d trade_no=%s error=%q", userId, tradeNo, err.Error()))
+		c.JSON(http.StatusOK, gin.H{"message": "error", "data": formatXunhuCreatePaymentError(err)})
 		return
 	}
 

@@ -3,6 +3,7 @@ package model
 import (
 	"errors"
 	"fmt"
+	"math"
 	"strings"
 
 	"github.com/QuantumNous/new-api/common"
@@ -92,13 +93,47 @@ func calculateTopUpQuotaToAdd(topUp *TopUp) int {
 	if topUp.NormalizedWalletType() == WalletTypeClaude {
 		return int(decimal.NewFromInt(topUp.Amount).Mul(dQuotaPerUnit).IntPart())
 	}
-	if topUp.PaymentProvider == PaymentProviderStripe {
-		return int(decimal.NewFromFloat(topUp.Money).Mul(dQuotaPerUnit).IntPart())
-	}
 	if topUp.PaymentProvider == PaymentProviderCreem {
 		return int(topUp.Amount)
 	}
 	return int(decimal.NewFromInt(topUp.Amount).Mul(dQuotaPerUnit).IntPart())
+}
+
+func ApplyDiscountRateToMoney(amount float64, discountRate float64) float64 {
+	if amount <= 0 {
+		return 0
+	}
+	if discountRate <= 0 {
+		return math.Round(amount*100) / 100
+	}
+	if discountRate >= 1 {
+		discountRate = 0.99
+	}
+	discounted := math.Round(amount*(1-discountRate)*100) / 100
+	if discounted < 0.01 {
+		return 0.01
+	}
+	return discounted
+}
+
+func CreatePendingTopUpOrderWithBlindBoxDiscount(topUp *TopUp) (float64, error) {
+	if topUp == nil {
+		return 0, errors.New("topup is nil")
+	}
+	if topUp.UserId <= 0 || strings.TrimSpace(topUp.TradeNo) == "" {
+		return 0, errors.New("invalid topup order")
+	}
+	appliedRate := 0.0
+	err := DB.Transaction(func(tx *gorm.DB) error {
+		if prop, err := ReserveBlindBoxTopupDiscountPropTx(tx, topUp.UserId, topUp.TradeNo); err != nil {
+			return err
+		} else if prop != nil {
+			appliedRate = prop.DiscountRate
+			topUp.Money = ApplyDiscountRateToMoney(topUp.Money, prop.DiscountRate)
+		}
+		return tx.Create(topUp).Error
+	})
+	return appliedRate, err
 }
 
 func CompleteTopUpByTradeNo(tradeNo string, expectedPaymentProvider string, actualPaymentMethod string, customerId string, customerEmail string) (*TopUp, int, error) {
@@ -143,6 +178,9 @@ func CompleteTopUpByTradeNo(tradeNo string, expectedPaymentProvider string, actu
 			return err
 		}
 		if err := creditTopUpQuotaTx(tx, topUp, quotaToAdd, customerId, customerEmail); err != nil {
+			return err
+		}
+		if err := ConsumeReservedBlindBoxPropByTradeNoTx(tx, tradeNo, BlindBoxPropOrderTypeTopup); err != nil {
 			return err
 		}
 		completedTopUp = topUp
@@ -252,7 +290,13 @@ func UpdatePendingTopUpStatus(tradeNo string, expectedPaymentProvider string, ta
 		}
 
 		topUp.Status = targetStatus
-		return tx.Save(topUp).Error
+		if err := tx.Save(topUp).Error; err != nil {
+			return err
+		}
+		if targetStatus != common.TopUpStatusSuccess {
+			return ReleaseReservedBlindBoxPropByTradeNoTx(tx, tradeNo, BlindBoxPropOrderTypeTopup)
+		}
+		return nil
 	})
 }
 
@@ -292,6 +336,9 @@ func Recharge(referenceId string, customerId string, callerIp string) (err error
 
 		quotaToAdd = calculateTopUpQuotaToAdd(topUp)
 		if err := creditTopUpQuotaTx(tx, topUp, quotaToAdd, customerId, ""); err != nil {
+			return err
+		}
+		if err := ConsumeReservedBlindBoxPropByTradeNoTx(tx, referenceId, BlindBoxPropOrderTypeTopup); err != nil {
 			return err
 		}
 
@@ -516,6 +563,9 @@ func ManualCompleteTopUp(tradeNo string, callerIp string) error {
 		if err := creditTopUpQuotaTx(tx, topUp, quotaToAdd, "", ""); err != nil {
 			return err
 		}
+		if err := ConsumeReservedBlindBoxPropByTradeNoTx(tx, tradeNo, BlindBoxPropOrderTypeTopup); err != nil {
+			return err
+		}
 
 		userId = topUp.UserId
 		payMoney = topUp.Money
@@ -597,6 +647,9 @@ func RechargeCreem(referenceId string, customerEmail string, customerName string
 		if err != nil {
 			return err
 		}
+		if err := ConsumeReservedBlindBoxPropByTradeNoTx(tx, referenceId, BlindBoxPropOrderTypeTopup); err != nil {
+			return err
+		}
 		if topUp.NormalizedWalletType() == WalletTypeClaude {
 			_ = cacheIncrUserClaudeQuota(topUp.UserId, int64(quotaToAdd))
 		} else {
@@ -661,6 +714,9 @@ func RechargeWaffo(tradeNo string, callerIp string) (err error) {
 		if err := creditTopUpQuotaTx(tx, topUp, quotaToAdd, "", ""); err != nil {
 			return err
 		}
+		if err := ConsumeReservedBlindBoxPropByTradeNoTx(tx, tradeNo, BlindBoxPropOrderTypeTopup); err != nil {
+			return err
+		}
 
 		return nil
 	})
@@ -720,6 +776,9 @@ func RechargeWaffoPancake(tradeNo string) (err error) {
 		}
 
 		if err := creditTopUpQuotaTx(tx, topUp, quotaToAdd, "", ""); err != nil {
+			return err
+		}
+		if err := ConsumeReservedBlindBoxPropByTradeNoTx(tx, tradeNo, BlindBoxPropOrderTypeTopup); err != nil {
 			return err
 		}
 

@@ -1,0 +1,12 @@
+# import config
+packagefile crypto=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b072\_pkg_.a
+packagefile crypto/internal/fips140/ed25519=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b131\_pkg_.a
+packagefile crypto/internal/fips140cache=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b123\_pkg_.a
+packagefile crypto/internal/fips140only=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b095\_pkg_.a
+packagefile crypto/internal/rand=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b102\_pkg_.a
+packagefile crypto/rand=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b101\_pkg_.a
+packagefile crypto/subtle=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b097\_pkg_.a
+packagefile errors=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b003\_pkg_.a
+packagefile internal/godebug=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b050\_pkg_.a
+packagefile io=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b035\_pkg_.a
+packagefile strconv=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b060\_pkg_.a

@@ -1,0 +1,17 @@
+# import config
+packagefile crypto=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b072\_pkg_.a
+packagefile crypto/ecdsa=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b118\_pkg_.a
+packagefile crypto/elliptic=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b119\_pkg_.a
+packagefile crypto/rand=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b101\_pkg_.a
+packagefile crypto/rsa=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b148\_pkg_.a
+packagefile crypto/sha1=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b107\_pkg_.a
+packagefile crypto/sha256=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b108\_pkg_.a
+packagefile crypto/sha512=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b125\_pkg_.a
+packagefile crypto/x509=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b151\_pkg_.a
+packagefile crypto/x509/pkix=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b153\_pkg_.a
+packagefile encoding/asn1=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b127\_pkg_.a
+packagefile errors=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b003\_pkg_.a
+packagefile fmt=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b056\_pkg_.a
+packagefile math/big=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b105\_pkg_.a
+packagefile strconv=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b060\_pkg_.a
+packagefile time=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b049\_pkg_.a

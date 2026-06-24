@@ -2,8 +2,10 @@ import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { ArrowRight } from 'lucide-react'
+import { motion, useReducedMotion, type Variants } from 'motion/react'
 import { api } from '@/lib/api'
 import { getLobeIcon } from '@/lib/lobe-icon'
+import { MOTION_TRANSITION } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { PublicLayout } from '@/components/layout'
@@ -79,7 +81,32 @@ function ModelMarquee({
   )
 }
 
+const HERO_STAGGER: Variants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.12, delayChildren: 0.08 } },
+}
+
+const HERO_ITEM: Variants = {
+  hidden: { opacity: 0, y: 22, filter: 'blur(6px)' },
+  visible: {
+    opacity: 1,
+    y: 0,
+    filter: 'blur(0px)',
+    transition: MOTION_TRANSITION.slow,
+  },
+}
+
+const MARQUEE_REVEAL: Variants = {
+  hidden: { opacity: 0, y: 28 },
+  visible: {
+    opacity: 1,
+    y: 0,
+    transition: MOTION_TRANSITION.slow,
+  },
+}
+
 export function BrandHome() {
+  const shouldReduceMotion = Boolean(useReducedMotion())
   const { data: pricingData } = useQuery({
     queryKey: ['pricing'],
     queryFn: async () => {
@@ -147,40 +174,74 @@ export function BrandHome() {
 
           <div className='relative z-10 mx-auto flex min-h-[calc(100svh-1.5rem)] max-w-7xl flex-col px-5 py-10 md:px-10 md:py-12'>
             <div className='flex flex-1 items-center justify-center pt-16 pb-28 text-center md:pt-[4.5rem] md:pb-32'>
-              <div className='max-w-5xl'>
-                <h1 className='text-[clamp(3.3rem,7.4vw,7.1rem)] leading-[1.1] font-semibold tracking-[-0.04em] text-balance text-slate-950'>
+              <motion.div
+                className='max-w-5xl'
+                variants={HERO_STAGGER}
+                initial={shouldReduceMotion ? false : 'hidden'}
+                animate='visible'
+              >
+                <motion.h1
+                  variants={HERO_ITEM}
+                  className='text-[clamp(3.3rem,7.4vw,7.1rem)] leading-[1.1] font-semibold tracking-[-0.04em] text-balance text-slate-950'
+                >
                   让 AI Coding
                   <br />
                   的每一步，都算数
-                </h1>
-                <p className='mx-auto mt-6 max-w-3xl text-base leading-8 text-slate-700/82 md:text-lg'>
+                </motion.h1>
+                <motion.p
+                  variants={HERO_ITEM}
+                  className='mx-auto mt-6 max-w-3xl text-base leading-8 text-slate-700/82 md:text-lg'
+                >
                   面向 Codex API、Claude Code API、Codex中转、Claude中转，
                   把接入、调用、免费模型试用和持续使用接成同一条主线。
-                </p>
-                <div className='mt-8 flex flex-wrap justify-center gap-3'>
-                  <Button
-                    size='lg'
-                    className='h-12 rounded-full bg-orange-600 px-6 text-sm font-semibold text-white shadow-[0_12px_26px_rgba(217,106,57,0.24)] hover:bg-orange-700'
-                    render={
-                      <Link to='/sign-in' search={{ redirect: '/keys' }} />
-                    }
+                </motion.p>
+                <motion.div
+                  variants={HERO_ITEM}
+                  className='mt-8 flex flex-wrap justify-center gap-3'
+                >
+                  <motion.div
+                    whileHover={shouldReduceMotion ? undefined : { scale: 1.04 }}
+                    whileTap={shouldReduceMotion ? undefined : { scale: 0.97 }}
+                    transition={MOTION_TRANSITION.fast}
+                    className='inline-flex'
                   >
-                    配置 Key
-                    <ArrowRight className='ml-2 size-4' />
-                  </Button>
-                  <Button
-                    size='lg'
-                    variant='outline'
-                    className='h-12 rounded-full border-white/70 bg-white/50 px-6 text-sm font-semibold text-slate-900 backdrop-blur hover:bg-white/70'
-                    render={<Link to='/pricing' />}
+                    <Button
+                      size='lg'
+                      className='h-12 rounded-full bg-orange-600 px-6 text-sm font-semibold text-white shadow-[0_12px_26px_rgba(217,106,57,0.24)] hover:bg-orange-700'
+                      render={
+                        <Link to='/sign-in' search={{ redirect: '/keys' }} />
+                      }
+                    >
+                      配置 Key
+                      <ArrowRight className='ml-2 size-4' />
+                    </Button>
+                  </motion.div>
+                  <motion.div
+                    whileHover={shouldReduceMotion ? undefined : { scale: 1.04 }}
+                    whileTap={shouldReduceMotion ? undefined : { scale: 0.97 }}
+                    transition={MOTION_TRANSITION.fast}
+                    className='inline-flex'
                   >
-                    查看模型
-                  </Button>
-                </div>
-              </div>
+                    <Button
+                      size='lg'
+                      variant='outline'
+                      className='h-12 rounded-full border-white/70 bg-white/50 px-6 text-sm font-semibold text-slate-900 backdrop-blur hover:bg-white/70'
+                      render={<Link to='/pricing' />}
+                    >
+                      查看模型
+                    </Button>
+                  </motion.div>
+                </motion.div>
+              </motion.div>
             </div>
 
-            <div className='relative z-10 pb-2'>
+            <motion.div
+              className='relative z-10 pb-2'
+              variants={MARQUEE_REVEAL}
+              initial={shouldReduceMotion ? false : 'hidden'}
+              whileInView='visible'
+              viewport={{ once: true, margin: '-80px' }}
+            >
               <div className='mb-3 flex items-center justify-between gap-4'>
                 <div className='text-sm font-semibold text-slate-800'>
                   当前模型储备
@@ -212,7 +273,7 @@ export function BrandHome() {
                 或 Claude。当前也覆盖 DeepSeek、GLM、Kimi、Qwen
                 等免费模型入口，方便先完成第一轮整理、改写和轻量代码任务。
               </div>
-            </div>
+            </motion.div>
           </div>
         </section>
       </main>

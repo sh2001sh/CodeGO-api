@@ -1,0 +1,22 @@
+# import config
+packagefile bytes=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b002\_pkg_.a
+packagefile database/sql=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b306\_pkg_.a
+packagefile database/sql/driver=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b174\_pkg_.a
+packagefile encoding/binary=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b139\_pkg_.a
+packagefile encoding/hex=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b154\_pkg_.a
+packagefile encoding/json=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b166\_pkg_.a
+packagefile encoding/xml=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b183\_pkg_.a
+packagefile errors=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b003\_pkg_.a
+packagefile fmt=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b056\_pkg_.a
+packagefile github.com/jackc/pgx/v5/internal/pgio=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b496\_pkg_.a
+packagefile io=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b035\_pkg_.a
+packagefile math=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b059\_pkg_.a
+packagefile math/big=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b105\_pkg_.a
+packagefile net=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b158\_pkg_.a
+packagefile net/netip=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b162\_pkg_.a
+packagefile reflect=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b058\_pkg_.a
+packagefile strconv=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b060\_pkg_.a
+packagefile strings=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b078\_pkg_.a
+packagefile sync=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b036\_pkg_.a
+packagefile time=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b049\_pkg_.a
+packagefile unicode=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b041\_pkg_.a

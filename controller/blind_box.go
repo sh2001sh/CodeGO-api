@@ -29,6 +29,15 @@ type BlindBoxOpenRequest struct {
 	Count int `json:"count"`
 }
 
+func getBlindBoxPropsOrFail(c *gin.Context, userId int) ([]model.BlindBoxProp, bool) {
+	props, err := model.ListUserBlindBoxProps(userId)
+	if err != nil {
+		common.ApiError(c, err)
+		return nil, false
+	}
+	return props, true
+}
+
 func getBlindBoxPayMethods(c *gin.Context) []map[string]string {
 	if !operation_setting.IsPaymentComplianceConfirmed() {
 		return []map[string]string{}
@@ -61,14 +70,19 @@ func getBlindBoxPayMethods(c *gin.Context) []map[string]string {
 func GetBlindBoxSelf(c *gin.Context) {
 	setting := operation_setting.GetBlindBoxSetting()
 	enabled := operation_setting.IsPaymentComplianceConfirmed() && setting.Enabled
-	overview, err := model.GetUserBlindBoxOverview(c.GetInt("id"), 20)
+	userId := c.GetInt("id")
+	overview, err := model.GetUserBlindBoxOverview(userId, 20)
 	if err != nil {
 		common.ApiError(c, err)
 		return
 	}
-	firstPurchaseEligible, err := model.IsBlindBoxFirstPurchaseEligible(c.GetInt("id"))
+	firstPurchaseEligible, err := model.IsBlindBoxFirstPurchaseEligible(userId)
 	if err != nil {
 		common.ApiError(c, err)
+		return
+	}
+	props, ok := getBlindBoxPropsOrFail(c, userId)
+	if !ok {
 		return
 	}
 	common.ApiSuccess(c, gin.H{
@@ -88,6 +102,7 @@ func GetBlindBoxSelf(c *gin.Context) {
 		"low_reward_threshold_usd":          setting.LowRewardThresholdUSD,
 		"pay_methods":                       getBlindBoxPayMethods(c),
 		"overview":                          overview,
+		"props":                             props,
 	})
 }
 
@@ -109,6 +124,10 @@ func AdminGetBlindBoxUserOverview(c *gin.Context) {
 		common.ApiError(c, err)
 		return
 	}
+	props, ok := getBlindBoxPropsOrFail(c, userId)
+	if !ok {
+		return
+	}
 	common.ApiSuccess(c, gin.H{
 		"enabled":                           enabled,
 		"unit_price":                        setting.UnitPrice,
@@ -125,6 +144,23 @@ func AdminGetBlindBoxUserOverview(c *gin.Context) {
 		"pity_guarantee_usd":                setting.PityGuaranteeUSD,
 		"low_reward_threshold_usd":          setting.LowRewardThresholdUSD,
 		"overview":                          overview,
+		"props":                             props,
+	})
+}
+
+func UseBlindBoxProp(c *gin.Context) {
+	propId, err := strconv.Atoi(c.Param("id"))
+	if err != nil || propId <= 0 {
+		common.ApiErrorMsg(c, "invalid blind box prop id")
+		return
+	}
+	prop, err := model.ActivateBlindBoxProp(c.GetInt("id"), propId)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	common.ApiSuccess(c, gin.H{
+		"prop": prop,
 	})
 }
 

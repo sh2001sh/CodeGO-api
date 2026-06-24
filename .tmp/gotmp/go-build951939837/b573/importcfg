@@ -1,0 +1,26 @@
+# import config
+packagefile context=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b069\_pkg_.a
+packagefile crypto/md5=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b146\_pkg_.a
+packagefile crypto/tls=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b109\_pkg_.a
+packagefile encoding/base64=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b156\_pkg_.a
+packagefile errors=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b003\_pkg_.a
+packagefile fmt=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b056\_pkg_.a
+packagefile github.com/aws/smithy-go=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b574\_pkg_.a
+packagefile github.com/aws/smithy-go/auth=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b575\_pkg_.a
+packagefile github.com/aws/smithy-go/logging=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b572\_pkg_.a
+packagefile github.com/aws/smithy-go/metrics=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b576\_pkg_.a
+packagefile github.com/aws/smithy-go/middleware=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b571\_pkg_.a
+packagefile github.com/aws/smithy-go/time=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b577\_pkg_.a
+packagefile github.com/aws/smithy-go/tracing=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b578\_pkg_.a
+packagefile github.com/aws/smithy-go/transport/http/internal/io=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b579\_pkg_.a
+packagefile io=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b035\_pkg_.a
+packagefile net=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b158\_pkg_.a
+packagefile net/http=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b186\_pkg_.a
+packagefile net/http/httptrace=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b203\_pkg_.a
+packagefile net/http/httputil=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b275\_pkg_.a
+packagefile net/url=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b164\_pkg_.a
+packagefile strconv=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b060\_pkg_.a
+packagefile strings=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b078\_pkg_.a
+packagefile sync/atomic=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b038\_pkg_.a
+packagefile time=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b049\_pkg_.a
+packagefile unicode=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b041\_pkg_.a

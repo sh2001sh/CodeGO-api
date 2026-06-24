@@ -1,0 +1,11 @@
+# import config
+packagefile crypto/rand=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b101\_pkg_.a
+packagefile encoding/base32=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b328\_pkg_.a
+packagefile github.com/pquerna/otp=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b321\_pkg_.a
+packagefile github.com/pquerna/otp/hotp=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b329\_pkg_.a
+packagefile github.com/pquerna/otp/internal=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b330\_pkg_.a
+packagefile io=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b035\_pkg_.a
+packagefile math=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b059\_pkg_.a
+packagefile net/url=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b164\_pkg_.a
+packagefile strconv=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b060\_pkg_.a
+packagefile time=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b049\_pkg_.a

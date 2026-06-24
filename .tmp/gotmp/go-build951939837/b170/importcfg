@@ -1,0 +1,15 @@
+# import config
+packagefile bytes=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b002\_pkg_.a
+packagefile encoding/binary=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b139\_pkg_.a
+packagefile errors=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b003\_pkg_.a
+packagefile fmt=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b056\_pkg_.a
+packagefile github.com/abema/go-mp4/internal/bitio=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b171\_pkg_.a
+packagefile github.com/abema/go-mp4/internal/util=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b172\_pkg_.a
+packagefile github.com/google/uuid=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b173\_pkg_.a
+packagefile io=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b035\_pkg_.a
+packagefile math=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b059\_pkg_.a
+packagefile os=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b061\_pkg_.a
+packagefile reflect=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b058\_pkg_.a
+packagefile sort=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b165\_pkg_.a
+packagefile strconv=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b060\_pkg_.a
+packagefile strings=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b078\_pkg_.a

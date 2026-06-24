@@ -1,0 +1,15 @@
+# import config
+packagefile errors=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b003\_pkg_.a
+packagefile internal/asan=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b025\_pkg_.a
+packagefile internal/bytealg=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b010\_pkg_.a
+packagefile internal/msan=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b026\_pkg_.a
+packagefile internal/oserror=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b045\_pkg_.a
+packagefile internal/race=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b027\_pkg_.a
+packagefile internal/strconv=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b031\_pkg_.a
+packagefile internal/syscall/windows/sysdll=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b053\_pkg_.a
+packagefile runtime=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b009\_pkg_.a
+packagefile slices=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b047\_pkg_.a
+packagefile sync=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b036\_pkg_.a
+packagefile sync/atomic=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b038\_pkg_.a
+packagefile unicode/utf16=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b055\_pkg_.a
+packagefile unicode/utf8=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b042\_pkg_.a

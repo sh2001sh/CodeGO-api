@@ -1,0 +1,5 @@
+# import config
+packagefile crypto/internal/fips140deps/time=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b093\_pkg_.a
+packagefile errors=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b003\_pkg_.a
+packagefile math/bits=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b032\_pkg_.a
+packagefile sync/atomic=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b038\_pkg_.a

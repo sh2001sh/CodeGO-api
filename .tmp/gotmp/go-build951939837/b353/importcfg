@@ -1,0 +1,8 @@
+# import config
+packagefile database/sql=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b306\_pkg_.a
+packagefile database/sql/driver=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b174\_pkg_.a
+packagefile go/ast=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b354\_pkg_.a
+packagefile reflect=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b058\_pkg_.a
+packagefile sort=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b165\_pkg_.a
+packagefile strconv=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b060\_pkg_.a
+packagefile strings=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b078\_pkg_.a

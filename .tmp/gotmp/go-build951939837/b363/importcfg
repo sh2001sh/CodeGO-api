@@ -1,0 +1,9 @@
+# import config
+packagefile crypto/md5=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b146\_pkg_.a
+packagefile fmt=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b056\_pkg_.a
+packagefile github.com/mitchellh/mapstructure=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b364\_pkg_.a
+packagefile github.com/samber/lo=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b331\_pkg_.a
+packagefile net/url=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b164\_pkg_.a
+packagefile path=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b046\_pkg_.a
+packagefile sort=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b165\_pkg_.a
+packagefile strings=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b078\_pkg_.a

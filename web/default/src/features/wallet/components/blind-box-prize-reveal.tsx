@@ -37,10 +37,10 @@ export function classifyReward(record: BlindBoxRecord): RewardRarity {
   if (record.reward_type === 'subscription') return 'legendary'
   if (record.is_pity) return 'legendary'
   if (record.reward_type === 'claude_quota') {
-    return record.reward_usd >= 20 ? 'epic' : 'common'
+    return record.reward_usd >= 2 ? 'epic' : 'common'
   }
   if (record.reward_type === 'quota') {
-    return record.reward_usd >= 12 ? 'epic' : 'common'
+    return record.reward_usd >= 30 ? 'epic' : 'common'
   }
   return 'common'
 }
@@ -103,6 +103,12 @@ function rewardTypeLabel(record: BlindBoxRecord) {
   return '额度'
 }
 
+function isManualUseProp(record: BlindBoxRecord) {
+  return ['consume_discount_95', 'consume_discount_90'].includes(
+    record.prop_type || ''
+  )
+}
+
 export function PrizeRevealHeader(props: {
   summary: string
   openCount: number
@@ -155,7 +161,6 @@ export function PrizeRevealHeader(props: {
 export function PrizeRevealList(props: {
   records: BlindBoxRecord[]
   onUseReward?: (record: BlindBoxRecord) => void
-  activePropKeys?: Record<string, number>
   formatTimestamp: (timestamp?: number) => string
 }) {
   const reduced = useReducedMotion()
@@ -174,7 +179,6 @@ export function PrizeRevealList(props: {
             record={record}
             reduced={!!reduced}
             onUseReward={props.onUseReward}
-            activePropKeys={props.activePropKeys}
             formatTimestamp={props.formatTimestamp}
           />
         ))}
@@ -187,13 +191,17 @@ function PrizeRevealCard(props: {
   record: BlindBoxRecord
   reduced: boolean
   onUseReward?: (record: BlindBoxRecord) => void
-  activePropKeys?: Record<string, number>
   formatTimestamp: (timestamp?: number) => string
 }) {
   const { record } = props
   const rarity = classifyReward(record)
   const badge = RARITY_BADGE[rarity]
-  const propActive = !!props.activePropKeys?.[record.reward_title]
+  const manualUseProp = record.reward_type === 'prop' && isManualUseProp(record)
+  const propActive =
+    manualUseProp &&
+    (record.prop_status === 'active' || record.prop_status === 'used')
+  const propAvailable =
+    manualUseProp && record.prop_status === 'available'
 
   return (
     <motion.div
@@ -229,23 +237,31 @@ function PrizeRevealCard(props: {
             {props.formatTimestamp(record.create_time)}
           </div>
         </div>
-        {record.reward_type === 'prop' && props.onUseReward ? (
+        {manualUseProp && props.onUseReward ? (
           <Button
             type='button'
             size='sm'
             variant={propActive ? 'secondary' : 'default'}
             onClick={() => props.onUseReward?.(record)}
-            disabled={propActive}
+            disabled={!propAvailable}
           >
-            {propActive ? '已启用' : '立即使用'}
+            {propActive ? '已启用' : propAvailable ? '立即使用' : '不可用'}
           </Button>
         ) : null}
       </div>
       {record.reward_type === 'prop' ? (
         <div className='text-muted-foreground mt-3 text-xs leading-5'>
-          {propActive
+          {manualUseProp
+            ? propActive
             ? '已启用，持续 24 小时自动生效'
-            : '点击立即使用后生效，持续 24 小时'}
+            : propAvailable
+              ? '点击立即使用后生效，持续 24 小时'
+              : '该道具已失效'
+            : record.prop_status === 'used'
+              ? '已用于最近一次符合条件的订单'
+              : record.prop_status === 'reserved'
+                ? '已锁定到待支付订单，支付完成后自动使用'
+                : '下次满足条件时自动抵扣一次'}
         </div>
       ) : record.reward_type === 'claude_quota' ? (
         <div className='text-muted-foreground mt-3 text-xs leading-5'>

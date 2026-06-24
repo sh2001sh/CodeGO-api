@@ -1,0 +1,9 @@
+# import config
+packagefile crypto/sha3=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b100\_pkg_.a
+packagefile crypto/subtle=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b097\_pkg_.a
+packagefile encoding/binary=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b139\_pkg_.a
+packagefile errors=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b003\_pkg_.a
+packagefile golang.org/x/sys/cpu=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b228\_pkg_.a
+packagefile hash=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b073\_pkg_.a
+packagefile io=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b035\_pkg_.a
+packagefile math/bits=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b032\_pkg_.a

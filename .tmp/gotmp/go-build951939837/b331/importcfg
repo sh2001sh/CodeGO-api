@@ -1,0 +1,19 @@
+# import config
+packagefile context=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b069\_pkg_.a
+packagefile errors=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b003\_pkg_.a
+packagefile fmt=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b056\_pkg_.a
+packagefile github.com/samber/lo/internal/constraints=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b332\_pkg_.a
+packagefile github.com/samber/lo/internal/xrand=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b333\_pkg_.a
+packagefile github.com/samber/lo/internal/xtime=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b334\_pkg_.a
+packagefile github.com/samber/lo/mutable=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b335\_pkg_.a
+packagefile golang.org/x/text/cases=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b336\_pkg_.a
+packagefile golang.org/x/text/language=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b229\_pkg_.a
+packagefile math=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b059\_pkg_.a
+packagefile reflect=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b058\_pkg_.a
+packagefile regexp=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b233\_pkg_.a
+packagefile sort=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b165\_pkg_.a
+packagefile strings=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b078\_pkg_.a
+packagefile sync=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b036\_pkg_.a
+packagefile time=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b049\_pkg_.a
+packagefile unicode=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b041\_pkg_.a
+packagefile unicode/utf8=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b042\_pkg_.a

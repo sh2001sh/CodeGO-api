@@ -11,13 +11,11 @@ import {
   FlaskConical,
   Footprints,
   Gem,
-  Gift,
   MessageSquare,
   Radio,
   RefreshCcw,
   ScrollText,
   Settings,
-  ShoppingBag,
   Ticket,
   User,
   Users,
@@ -70,25 +68,9 @@ export function useSidebarData(): SidebarData {
             icon: Compass,
           },
           {
-            title: '活动中心',
-            icon: Gift,
-            items: [
-              {
-                title: '活动总览',
-                url: '/activities',
-                icon: Gift,
-              },
-              {
-                title: '邀请与刷新',
-                url: '/invite-rewards',
-                icon: RefreshCcw,
-              },
-              {
-                title: '积分商城',
-                url: '/point-mall',
-                icon: ShoppingBag,
-              },
-            ],
+            title: '邀请与刷新',
+            url: '/invite-rewards',
+            icon: RefreshCcw,
           },
           {
             title: '模型',

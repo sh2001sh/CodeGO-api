@@ -112,7 +112,7 @@ func SubscriptionRequestCreemPay(c *gin.Context) {
 		CreateTime:      time.Now().Unix(),
 		Status:          common.TopUpStatusPending,
 	}
-	if err := order.Insert(); err != nil {
+	if _, err := model.CreatePendingSubscriptionOrderWithBlindBoxDiscount(order, preview.BaseAmountDue); err != nil {
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "failed to create order"})
 		return
 	}
@@ -129,13 +129,14 @@ func SubscriptionRequestCreemPay(c *gin.Context) {
 	product := &CreemProduct{
 		ProductId: plan.CreemProductId,
 		Name:      plan.Title,
-		Price:     preview.AmountDue,
+		Price:     order.Money,
 		Currency:  currency,
 		Quota:     0,
 	}
 
-	checkoutUrl, err := genCreemLink(c.Request.Context(), referenceId, product, user.Email, user.Username)
+	checkoutUrl, err := genCreemLink(c.Request.Context(), referenceId, product, user.Email, user.Username, order.Money)
 	if err != nil {
+		_ = model.ExpireSubscriptionOrder(referenceId, model.PaymentProviderCreem)
 		logger.LogError(c.Request.Context(), fmt.Sprintf("Creem subscription checkout creation failed trade_no=%s product_id=%s error=%q", referenceId, product.ProductId, err.Error()))
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "failed to create payment"})
 		return

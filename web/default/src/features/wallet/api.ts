@@ -43,6 +43,7 @@ import type {
   BlindBoxOpenRequest,
   BlindBoxOpenResponse,
   BlindBoxOrderStatusResponse,
+  BlindBoxProp,
 } from './types'
 
 // ============================================================================
@@ -271,5 +272,12 @@ export async function openBlindBoxes(
   request: BlindBoxOpenRequest
 ): Promise<BlindBoxOpenResponse> {
   const res = await api.post('/api/blind-box/open', request)
+  return res.data
+}
+
+export async function useBlindBoxProp(
+  propId: number
+): Promise<ApiResponse<{ prop: BlindBoxProp }>> {
+  const res = await api.post(`/api/blind-box/props/${propId}/use`)
   return res.data
 }

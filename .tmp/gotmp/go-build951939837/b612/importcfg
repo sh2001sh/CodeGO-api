@@ -1,0 +1,6 @@
+# import config
+packagefile fmt=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b056\_pkg_.a
+packagefile github.com/aws/aws-sdk-go-v2/service/bedrockruntime/document=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b603\_pkg_.a
+packagefile github.com/aws/smithy-go=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b574\_pkg_.a
+packagefile github.com/aws/smithy-go/document=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b605\_pkg_.a
+packagefile time=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b049\_pkg_.a

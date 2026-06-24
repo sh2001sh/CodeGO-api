@@ -1,0 +1,6 @@
+# import config
+packagefile crypto/internal/fips140/pbkdf2=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b501\_pkg_.a
+packagefile crypto/internal/fips140hash=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b099\_pkg_.a
+packagefile crypto/internal/fips140only=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b095\_pkg_.a
+packagefile errors=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b003\_pkg_.a
+packagefile hash=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b073\_pkg_.a

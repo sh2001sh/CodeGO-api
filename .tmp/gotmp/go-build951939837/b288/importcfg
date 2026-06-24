@@ -1,0 +1,11 @@
+# import config
+packagefile bufio=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b182\_pkg_.a
+packagefile context=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b069\_pkg_.a
+packagefile errors=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b003\_pkg_.a
+packagefile fmt=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b056\_pkg_.a
+packagefile github.com/go-redis/redis/v8/internal=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b283\_pkg_.a
+packagefile github.com/go-redis/redis/v8/internal/proto=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b289\_pkg_.a
+packagefile net=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b158\_pkg_.a
+packagefile sync=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b036\_pkg_.a
+packagefile sync/atomic=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b038\_pkg_.a
+packagefile time=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b049\_pkg_.a

@@ -1,0 +1,21 @@
+# import config
+packagefile bufio=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b182\_pkg_.a
+packagefile bytes=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b002\_pkg_.a
+packagefile context=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b069\_pkg_.a
+packagefile fmt=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b056\_pkg_.a
+packagefile html=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b245\_pkg_.a
+packagefile internal/godebug=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b050\_pkg_.a
+packagefile internal/goexperiment=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b016\_pkg_.a
+packagefile internal/profile=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b684\_pkg_.a
+packagefile io=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b035\_pkg_.a
+packagefile log=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b177\_pkg_.a
+packagefile net/http=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b186\_pkg_.a
+packagefile net/url=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b164\_pkg_.a
+packagefile os=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b061\_pkg_.a
+packagefile runtime=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b009\_pkg_.a
+packagefile runtime/pprof=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b299\_pkg_.a
+packagefile runtime/trace=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b685\_pkg_.a
+packagefile slices=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b047\_pkg_.a
+packagefile strconv=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b060\_pkg_.a
+packagefile strings=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b078\_pkg_.a
+packagefile time=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b049\_pkg_.a

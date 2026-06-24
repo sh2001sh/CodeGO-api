@@ -1,0 +1,6 @@
+# import config
+packagefile github.com/prometheus/client_golang/prometheus=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b380\_pkg_.a
+packagefile github.com/samber/hot/pkg/base=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b410\_pkg_.a
+packagefile strconv=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b060\_pkg_.a
+packagefile sync/atomic=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b038\_pkg_.a
+packagefile time=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b049\_pkg_.a

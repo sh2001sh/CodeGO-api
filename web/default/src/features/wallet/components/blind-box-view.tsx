@@ -59,10 +59,21 @@ function formatBlindBoxTierLabel(tier: BlindBoxTier) {
   return `${amountText} 普通额度`
 }
 
+function groupBlindBoxTiers(tiers: BlindBoxTier[]) {
+  return {
+    quota: tiers.filter((tier) => resolveTierRewardType(tier) === 'quota'),
+    claude: tiers.filter(
+      (tier) => resolveTierRewardType(tier) === 'claude_quota'
+    ),
+    props: tiers.filter((tier) => resolveTierRewardType(tier) === 'prop'),
+  }
+}
+
 export function BlindBoxCardView(props: BlindBoxCardViewProps) {
   const firstPurchaseStartUSD = props.data?.first_purchase_guarantee_usd ?? 0
   const firstPurchaseEligible =
     props.data?.first_purchase_guarantee_eligible ?? false
+  const groupedTiers = groupBlindBoxTiers(props.data?.tiers || [])
 
   return (
     <div className='space-y-5'>
@@ -194,7 +205,7 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
       {props.showPrizeNotice ? (
         <div className='app-subtle-panel p-4'>
           <div className='mb-3 flex items-center justify-between gap-3'>
-            <div className='text-foreground text-sm font-semibold'>奖池概率</div>
+            <div className='text-foreground text-sm font-semibold'>盲盒奖池</div>
             <Button
               type='button'
               variant='ghost'
@@ -205,30 +216,137 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
               收起
             </Button>
           </div>
-          <div className='space-y-2 text-sm'>
-            {(props.data?.tiers || []).map((tier) => (
-              <div key={tier.name} className='flex items-center justify-between'>
-                <span className='text-foreground'>{formatBlindBoxTierLabel(tier)}</span>
+          <div className='space-y-4 text-sm'>
+            <div className='rounded-xl border border-amber-500/20 bg-amber-500/5 p-3'>
+              <div className='text-foreground text-sm font-semibold'>大奖包含</div>
+              <div className='text-muted-foreground mt-1 text-xs leading-5'>
+                80-120 美元普通额度、40-80 Claude 额度、隐藏款
+                {` ${props.data?.subscription_plan_title || 'Lite 月卡'}`}
+              </div>
+            </div>
+
+            <div>
+              <div className='text-foreground text-sm font-semibold'>
+                奖励到账说明
+              </div>
+              <div className='text-muted-foreground mt-2 space-y-1.5 text-xs leading-5'>
+                <div>普通额度会直接进入钱包，永久有效。</div>
+                <div>Claude 额度会直接进入 Claude 钱包，永久有效。</div>
+                <div>道具会进入盲盒页，按规则自动生效或手动启用。</div>
+              </div>
+            </div>
+
+            <div>
+              <div className='text-foreground text-sm font-semibold'>常规奖池</div>
+              <div className='mt-2 space-y-3'>
+                <div>
+                  <div className='text-foreground text-xs font-medium'>
+                    普通额度
+                  </div>
+                  <div className='mt-1.5 space-y-2'>
+                    {groupedTiers.quota.map((tier) => (
+                      <div
+                        key={tier.name}
+                        className='flex items-center justify-between'
+                      >
+                        <span className='text-foreground'>
+                          {formatBlindBoxTierLabel(tier)}
+                        </span>
+                        <span className='text-muted-foreground font-medium tabular-nums'>
+                          {(tier.probability * 100).toFixed(1)}%
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <div className='text-foreground text-xs font-medium'>
+                    Claude 额度
+                  </div>
+                  <div className='mt-1.5 space-y-2'>
+                    {groupedTiers.claude.map((tier) => (
+                      <div
+                        key={tier.name}
+                        className='flex items-center justify-between'
+                      >
+                        <span className='text-foreground'>
+                          {formatBlindBoxTierLabel(tier)}
+                        </span>
+                        <span className='text-muted-foreground font-medium tabular-nums'>
+                          {(tier.probability * 100).toFixed(1)}%
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <div className='text-foreground text-xs font-medium'>道具</div>
+                  <div className='mt-1.5 space-y-2'>
+                    {groupedTiers.props.map((tier) => (
+                      <div
+                        key={tier.name}
+                        className='flex items-center justify-between'
+                      >
+                        <span className='text-foreground'>{tier.name}</span>
+                        <span className='text-muted-foreground font-medium tabular-nums'>
+                          {(tier.probability * 100).toFixed(1)}%
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div className='text-foreground text-sm font-semibold'>隐藏款</div>
+              <div className='mt-2 flex items-center justify-between'>
+                <span className='text-foreground'>
+                  {(props.data?.subscription_plan_title || 'Lite 月卡') + '（隐藏款）'}
+                </span>
                 <span className='text-muted-foreground font-medium tabular-nums'>
-                  {(tier.probability * 100).toFixed(1)}%
+                  {((props.data?.subscription_prize_probability || 0) * 100).toFixed(
+                    1
+                  )}
+                  %
                 </span>
               </div>
-            ))}
-            <div className='flex items-center justify-between'>
-              <span className='text-foreground'>
-                {(props.data?.subscription_plan_title || '月卡') + '（隐藏款）'}
-              </span>
-              <span className='text-muted-foreground font-medium tabular-nums'>
-                {((props.data?.subscription_prize_probability || 0) * 100).toFixed(
-                  1
-                )}
-                %
-              </span>
             </div>
-          </div>
-          <div className='text-muted-foreground border-border/50 mt-3 border-t pt-3 text-xs leading-5'>
-            连续 {props.data?.pity_threshold || 0} 次未中高价值奖励后，下次保底 $
-            {props.data?.pity_guarantee_usd || 0}
+
+            <div>
+              <div className='text-foreground text-sm font-semibold'>
+                道具使用规则
+              </div>
+              <div className='text-muted-foreground mt-2 space-y-1.5 text-xs leading-5'>
+                <div>充值九折卡：下次充值自动抵扣一次，仅生效 1 次。</div>
+                <div>套餐九折卡：下次购买套餐自动抵扣一次，仅生效 1 次。</div>
+                <div>0.95 倍率卡：在盲盒页点击使用后生效，持续 24 小时。</div>
+                <div>0.9 倍率卡：在盲盒页点击使用后生效，持续 24 小时。</div>
+              </div>
+            </div>
+
+            <div>
+              <div className='text-foreground text-sm font-semibold'>保底规则</div>
+              <div className='text-muted-foreground mt-2 space-y-1.5 text-xs leading-5'>
+                <div>
+                  连续 {props.data?.pity_threshold || 0} 次未获得高价值奖励后，下次将触发保底。
+                </div>
+                <div>
+                  保底奖励按 ${(props.data?.pity_guarantee_usd || 0).toFixed(0)}{' '}
+                  美元档位及以上发放。
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <div className='text-foreground text-sm font-semibold'>首抽奖励</div>
+              <div className='text-muted-foreground mt-2 text-xs leading-5'>
+                首次购买盲盒后，首抽奖励从 $
+                {firstPurchaseStartUSD.toFixed(0)} 档位起跳。
+              </div>
+            </div>
           </div>
         </div>
       ) : null}

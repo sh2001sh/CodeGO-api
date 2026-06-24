@@ -24,7 +24,6 @@ import {
   Settings,
   Shield,
   ShieldAlert,
-  ShoppingBag,
   Wrench,
 } from 'lucide-react'
 import { getAuthSectionNavItems } from '@/features/system-settings/auth/section-registry.tsx'
@@ -82,11 +81,6 @@ export function getSystemSettingsNavGroups(t: TFunction): NavGroup[] {
           title: t('Operations'),
           icon: Wrench,
           items: getOperationsSectionNavItems(t),
-        },
-        {
-          title: '积分商城',
-          icon: ShoppingBag,
-          url: '/system-settings/point-mall',
         },
       ],
     },

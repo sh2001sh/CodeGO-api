@@ -1,0 +1,22 @@
+# import config
+importmap golang.org/x/crypto/chacha20poly1305=vendor/golang.org/x/crypto/chacha20poly1305
+packagefile bytes=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b002\_pkg_.a
+packagefile crypto=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b072\_pkg_.a
+packagefile crypto/cipher=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b074\_pkg_.a
+packagefile crypto/ecdh=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b113\_pkg_.a
+packagefile crypto/fips140=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b096\_pkg_.a
+packagefile crypto/hkdf=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b133\_pkg_.a
+packagefile crypto/internal/fips140/aes=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b075\_pkg_.a
+packagefile crypto/internal/fips140/aes/gcm=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b090\_pkg_.a
+packagefile crypto/internal/fips140/drbg=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b091\_pkg_.a
+packagefile crypto/internal/rand=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b102\_pkg_.a
+packagefile crypto/mlkem=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b136\_pkg_.a
+packagefile crypto/sha256=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b108\_pkg_.a
+packagefile crypto/sha3=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b100\_pkg_.a
+packagefile crypto/sha512=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b125\_pkg_.a
+packagefile errors=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b003\_pkg_.a
+packagefile fmt=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b056\_pkg_.a
+packagefile vendor/golang.org/x/crypto/chacha20poly1305=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b138\_pkg_.a
+packagefile hash=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b073\_pkg_.a
+packagefile internal/byteorder=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b012\_pkg_.a
+packagefile slices=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b047\_pkg_.a

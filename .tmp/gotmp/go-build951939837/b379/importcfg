@@ -1,0 +1,22 @@
+# import config
+packagefile errors=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b003\_pkg_.a
+packagefile github.com/prometheus/client_golang/prometheus=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b380\_pkg_.a
+packagefile github.com/samber/go-singleflightx=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b405\_pkg_.a
+packagefile github.com/samber/hot/internal=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b406\_pkg_.a
+packagefile github.com/samber/hot/pkg/arc=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b407\_pkg_.a
+packagefile github.com/samber/hot/pkg/base=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b410\_pkg_.a
+packagefile github.com/samber/hot/pkg/fifo=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b411\_pkg_.a
+packagefile github.com/samber/hot/pkg/lfu=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b412\_pkg_.a
+packagefile github.com/samber/hot/pkg/lru=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b413\_pkg_.a
+packagefile github.com/samber/hot/pkg/metrics=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b414\_pkg_.a
+packagefile github.com/samber/hot/pkg/safe=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b415\_pkg_.a
+packagefile github.com/samber/hot/pkg/sharded=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b416\_pkg_.a
+packagefile github.com/samber/hot/pkg/sieve=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b417\_pkg_.a
+packagefile github.com/samber/hot/pkg/tinylfu=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b418\_pkg_.a
+packagefile github.com/samber/hot/pkg/twoqueue=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b420\_pkg_.a
+packagefile github.com/samber/hot/pkg/wtinylfu=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b421\_pkg_.a
+packagefile math=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b059\_pkg_.a
+packagefile math/rand/v2=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b104\_pkg_.a
+packagefile reflect=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b058\_pkg_.a
+packagefile sync=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b036\_pkg_.a
+packagefile time=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b049\_pkg_.a

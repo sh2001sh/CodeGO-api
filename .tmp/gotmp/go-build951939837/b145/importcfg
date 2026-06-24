@@ -1,0 +1,9 @@
+# import config
+packagefile bytes=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b002\_pkg_.a
+packagefile crypto/internal/fips140=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b076\_pkg_.a
+packagefile crypto/internal/fips140/check=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b080\_pkg_.a
+packagefile crypto/internal/fips140/hkdf=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b134\_pkg_.a
+packagefile crypto/internal/fips140/sha256=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b082\_pkg_.a
+packagefile crypto/internal/fips140deps/byteorder=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b083\_pkg_.a
+packagefile errors=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b003\_pkg_.a
+packagefile hash=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b073\_pkg_.a

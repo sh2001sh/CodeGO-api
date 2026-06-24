@@ -65,9 +65,9 @@ export function ResetOpportunityEntryCard(
       <Button
         className={cn('mt-3 w-full justify-between', props.compact && 'h-9')}
         variant='outline'
-        render={<Link to='/activities' />}
+        render={<Link to='/invite-rewards' />}
       >
-        <span>前往活动中心</span>
+        <span>前往邀请与刷新</span>
         <ArrowRight data-icon='inline-end' />
       </Button>
     </div>

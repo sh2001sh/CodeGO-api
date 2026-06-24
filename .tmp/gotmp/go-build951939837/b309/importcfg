@@ -1,0 +1,12 @@
+# import config
+packagefile encoding/binary=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b139\_pkg_.a
+packagefile errors=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b003\_pkg_.a
+packagefile fmt=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b056\_pkg_.a
+packagefile github.com/mewkiz/flac/internal/bits=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b310\_pkg_.a
+packagefile github.com/mewkiz/flac/internal/hashutil=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b311\_pkg_.a
+packagefile github.com/mewkiz/flac/internal/hashutil/crc16=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b312\_pkg_.a
+packagefile github.com/mewkiz/flac/internal/hashutil/crc8=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b313\_pkg_.a
+packagefile github.com/mewkiz/flac/internal/utf8=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b314\_pkg_.a
+packagefile hash=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b073\_pkg_.a
+packagefile io=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b035\_pkg_.a
+packagefile log=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b177\_pkg_.a

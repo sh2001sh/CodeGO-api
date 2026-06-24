@@ -1,0 +1,7 @@
+# import config
+packagefile errors=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b003\_pkg_.a
+packagefile hash=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b073\_pkg_.a
+packagefile internal/byteorder=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b012\_pkg_.a
+packagefile internal/cpu=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b011\_pkg_.a
+packagefile sync=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b036\_pkg_.a
+packagefile sync/atomic=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b038\_pkg_.a

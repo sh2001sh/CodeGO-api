@@ -1,0 +1,8 @@
+# import config
+packagefile context=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b069\_pkg_.a
+packagefile crypto/tls=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b109\_pkg_.a
+packagefile internal/nettrace=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b160\_pkg_.a
+packagefile net=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b158\_pkg_.a
+packagefile net/textproto=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b196\_pkg_.a
+packagefile reflect=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b058\_pkg_.a
+packagefile time=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b049\_pkg_.a

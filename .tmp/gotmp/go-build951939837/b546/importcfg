@@ -1,0 +1,6 @@
+# import config
+packagefile github.com/gin-gonic/gin=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b181\_pkg_.a
+packagefile github.com/gorilla/context=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b547\_pkg_.a
+packagefile github.com/gorilla/sessions=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b548\_pkg_.a
+packagefile log=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b177\_pkg_.a
+packagefile net/http=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b186\_pkg_.a

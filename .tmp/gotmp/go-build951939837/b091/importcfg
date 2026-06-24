@@ -1,0 +1,14 @@
+# import config
+packagefile bytes=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b002\_pkg_.a
+packagefile crypto/internal/entropy/v1.0.0=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b092\_pkg_.a
+packagefile crypto/internal/fips140=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b076\_pkg_.a
+packagefile crypto/internal/fips140/aes=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b075\_pkg_.a
+packagefile crypto/internal/fips140/check=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b080\_pkg_.a
+packagefile crypto/internal/fips140/subtle=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b087\_pkg_.a
+packagefile crypto/internal/fips140deps/byteorder=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b083\_pkg_.a
+packagefile crypto/internal/sysrand=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b094\_pkg_.a
+packagefile errors=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b003\_pkg_.a
+packagefile io=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b035\_pkg_.a
+packagefile math/bits=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b032\_pkg_.a
+packagefile sync=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b036\_pkg_.a
+packagefile sync/atomic=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b038\_pkg_.a

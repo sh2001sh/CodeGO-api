@@ -1,0 +1,9 @@
+# import config
+packagefile fmt=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b056\_pkg_.a
+packagefile github.com/expr-lang/expr/ast=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b425\_pkg_.a
+packagefile github.com/expr-lang/expr/builtin=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b427\_pkg_.a
+packagefile github.com/expr-lang/expr/checker/nature=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b426\_pkg_.a
+packagefile github.com/expr-lang/expr/internal/deref=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b428\_pkg_.a
+packagefile github.com/expr-lang/expr/types=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b435\_pkg_.a
+packagefile github.com/expr-lang/expr/vm/runtime=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b429\_pkg_.a
+packagefile reflect=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b058\_pkg_.a

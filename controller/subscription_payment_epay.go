@@ -113,7 +113,7 @@ func SubscriptionRequestEpay(c *gin.Context) {
 		CreateTime:      time.Now().Unix(),
 		Status:          common.TopUpStatusPending,
 	}
-	if err := order.Insert(); err != nil {
+	if _, err := model.CreatePendingSubscriptionOrderWithBlindBoxDiscount(order, preview.BaseAmountDue); err != nil {
 		common.ApiErrorMsg(c, "failed to create order")
 		return
 	}
@@ -122,7 +122,7 @@ func SubscriptionRequestEpay(c *gin.Context) {
 		Type:           req.PaymentMethod,
 		ServiceTradeNo: tradeNo,
 		Name:           fmt.Sprintf("SUB:%s", plan.Title),
-		Money:          strconv.FormatFloat(preview.AmountDue, 'f', 2, 64),
+		Money:          strconv.FormatFloat(order.Money, 'f', 2, 64),
 		Device:         epay.PC,
 		NotifyUrl:      notifyUrl,
 		ReturnUrl:      returnUrl,
@@ -138,7 +138,7 @@ func SubscriptionRequestEpay(c *gin.Context) {
 		"data": gin.H{
 			"form":       params,
 			"order_id":   tradeNo,
-			"amount_due": preview.AmountDue,
+			"amount_due": order.Money,
 			"action":     preview.Action,
 		},
 		"url": uri,

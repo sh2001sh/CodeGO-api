@@ -1,0 +1,9 @@
+# import config
+packagefile bytes=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b002\_pkg_.a
+packagefile errors=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b003\_pkg_.a
+packagefile golang.org/x/image/riff=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b531\_pkg_.a
+packagefile golang.org/x/image/vp8=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b532\_pkg_.a
+packagefile golang.org/x/image/vp8l=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b533\_pkg_.a
+packagefile image=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b323\_pkg_.a
+packagefile image/color=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b324\_pkg_.a
+packagefile io=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b035\_pkg_.a

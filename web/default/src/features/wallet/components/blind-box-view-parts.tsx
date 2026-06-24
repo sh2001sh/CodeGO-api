@@ -98,10 +98,11 @@ export function PityStatusCard(props: {
           </div>
           <div className='min-w-0 flex-1'>
             <div className='text-foreground text-sm font-semibold'>
-              首抽保底 ${props.firstPurchaseUsd.toFixed(0)} 生效中
+              首抽奖励已提升
             </div>
             <div className='text-muted-foreground mt-1 text-sm leading-6'>
-              首次抽奖必得更高价值奖励，开奖后进入常规奖池
+              首次购买盲盒后，首抽奖励从 $
+              {props.firstPurchaseUsd.toFixed(0)} 档位起跳，开奖后进入常规奖池
             </div>
           </div>
         </div>
@@ -137,8 +138,8 @@ export function PityStatusCard(props: {
       <div className='mt-2.5 flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5'>
         <span className='text-muted-foreground text-xs'>
           {props.remainingPity > 0
-            ? `还需 ${props.remainingPity} 次触发保底`
-            : '下次必出保底奖励'}
+            ? `再抽 ${props.remainingPity} 次可触发保底`
+            : '下次开启将触发保底奖励'}
         </span>
         {buffAnnotation ? (
           <span className='inline-flex items-center gap-1 rounded-full border border-amber-500/25 bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-300'>

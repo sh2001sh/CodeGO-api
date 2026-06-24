@@ -1,0 +1,8 @@
+# import config
+packagefile errors=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b003\_pkg_.a
+packagefile internal/bytealg=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b010\_pkg_.a
+packagefile internal/stringslite=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b033\_pkg_.a
+packagefile internal/syscall/windows=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b063\_pkg_.a
+packagefile io/fs=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b044\_pkg_.a
+packagefile slices=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b047\_pkg_.a
+packagefile syscall=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b054\_pkg_.a

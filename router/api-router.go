@@ -111,8 +111,8 @@ func SetApiRouter(router *gin.Engine) {
 				selfRoute.POST("/creem/pay", middleware.CriticalRateLimit(), controller.RequestCreemPay)
 				selfRoute.POST("/waffo/amount", controller.RequestWaffoAmount)
 				selfRoute.POST("/waffo/pay", middleware.CriticalRateLimit(), controller.RequestWaffoPay)
-				//selfRoute.POST("/waffo-pancake/amount", controller.RequestWaffoPancakeAmount)
-				//selfRoute.POST("/waffo-pancake/pay", middleware.CriticalRateLimit(), controller.RequestWaffoPancakePay)
+				selfRoute.POST("/waffo-pancake/amount", controller.RequestWaffoPancakeAmount)
+				selfRoute.POST("/waffo-pancake/pay", middleware.CriticalRateLimit(), controller.RequestWaffoPancakePay)
 				selfRoute.POST("/aff_transfer", controller.TransferAffQuota)
 				selfRoute.PUT("/setting", controller.UpdateUserSetting)
 
@@ -227,6 +227,7 @@ func SetApiRouter(router *gin.Engine) {
 			blindBoxRoute.POST("/amount", controller.BlindBoxRequestAmount)
 			blindBoxRoute.POST("/pay", middleware.CriticalRateLimit(), controller.BlindBoxRequestPay)
 			blindBoxRoute.POST("/open", middleware.CriticalRateLimit(), controller.BlindBoxOpen)
+			blindBoxRoute.POST("/props/:id/use", middleware.CriticalRateLimit(), controller.UseBlindBoxProp)
 		}
 		blindBoxAdminRoute := apiRouter.Group("/blind-box/admin")
 		blindBoxAdminRoute.Use(middleware.AdminAuth())

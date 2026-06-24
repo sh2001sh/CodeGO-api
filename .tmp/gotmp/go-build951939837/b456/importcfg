@@ -1,0 +1,18 @@
+# import config
+packagefile context=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b069\_pkg_.a
+packagefile database/sql=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b306\_pkg_.a
+packagefile database/sql/driver=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b174\_pkg_.a
+packagefile fmt=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b056\_pkg_.a
+packagefile io=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b035\_pkg_.a
+packagefile log=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b177\_pkg_.a
+packagefile math=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b059\_pkg_.a
+packagefile modernc.org/libc=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b457\_pkg_.a
+packagefile modernc.org/libc/sys/types=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b468\_pkg_.a
+packagefile modernc.org/sqlite/lib=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b475\_pkg_.a
+packagefile net/url=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b164\_pkg_.a
+packagefile reflect=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b058\_pkg_.a
+packagefile strconv=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b060\_pkg_.a
+packagefile strings=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b078\_pkg_.a
+packagefile sync=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b036\_pkg_.a
+packagefile sync/atomic=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b038\_pkg_.a
+packagefile time=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b049\_pkg_.a

@@ -71,12 +71,12 @@ func requestSubscriptionXunhuPay(c *gin.Context, planId int) {
 		CreateTime:      time.Now().Unix(),
 		Status:          common.TopUpStatusPending,
 	}
-	if err := order.Insert(); err != nil {
+	if _, err := model.CreatePendingSubscriptionOrderWithBlindBoxDiscount(order, preview.BaseAmountDue); err != nil {
 		common.ApiErrorMsg(c, "failed to create order")
 		return
 	}
 
-	payResult, err := createXunhuOrder(tradeNo, fmt.Sprintf("SUB:%s", plan.Title), preview.AmountDue, notifyURL, returnURL)
+	payResult, err := createXunhuOrder(tradeNo, fmt.Sprintf("SUB:%s", plan.Title), order.Money, notifyURL, returnURL)
 	if err != nil {
 		logger.LogError(c.Request.Context(), fmt.Sprintf("xunhu create subscription order failed user_id=%d trade_no=%s plan_id=%d error=%q", userId, tradeNo, plan.Id, err.Error()))
 		_ = model.ExpireSubscriptionOrder(tradeNo, model.PaymentProviderXunhu)
@@ -90,7 +90,7 @@ func requestSubscriptionXunhuPay(c *gin.Context, planId int) {
 			"pay_url":    payResult.PayURL,
 			"qrcode_url": payResult.QRCodeURL,
 			"order_id":   tradeNo,
-			"amount_due": preview.AmountDue,
+			"amount_due": order.Money,
 			"action":     preview.Action,
 		},
 	})

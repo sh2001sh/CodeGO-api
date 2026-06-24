@@ -1,0 +1,9 @@
+# import config
+packagefile bufio=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b182\_pkg_.a
+packagefile compress/flate=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b187\_pkg_.a
+packagefile encoding/binary=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b139\_pkg_.a
+packagefile errors=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b003\_pkg_.a
+packagefile fmt=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b056\_pkg_.a
+packagefile hash=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b073\_pkg_.a
+packagefile hash/adler32=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b218\_pkg_.a
+packagefile io=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b035\_pkg_.a

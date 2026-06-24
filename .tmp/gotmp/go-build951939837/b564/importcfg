@@ -1,0 +1,16 @@
+# import config
+packagefile context=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b069\_pkg_.a
+packagefile fmt=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b056\_pkg_.a
+packagefile github.com/aws/aws-sdk-go-v2/internal/rand=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b565\_pkg_.a
+packagefile github.com/aws/aws-sdk-go-v2/internal/sdk=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b566\_pkg_.a
+packagefile github.com/aws/aws-sdk-go-v2/internal/sync/singleflight=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b567\_pkg_.a
+packagefile github.com/aws/smithy-go/auth/bearer=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b568\_pkg_.a
+packagefile github.com/aws/smithy-go/logging=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b572\_pkg_.a
+packagefile github.com/aws/smithy-go/middleware=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b571\_pkg_.a
+packagefile github.com/aws/smithy-go/ptr=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b580\_pkg_.a
+packagefile github.com/aws/smithy-go/transport/http=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b573\_pkg_.a
+packagefile net/http=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b186\_pkg_.a
+packagefile reflect=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b058\_pkg_.a
+packagefile strings=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b078\_pkg_.a
+packagefile sync/atomic=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b038\_pkg_.a
+packagefile time=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b049\_pkg_.a

@@ -337,6 +337,26 @@ export interface BlindBoxTier {
   wallet_type?: 'default' | 'claude' | string
 }
 
+export interface BlindBoxProp {
+  id: number
+  user_id: number
+  open_record_id: number
+  prop_type: string
+  title: string
+  status: 'available' | 'active' | 'reserved' | 'used' | 'expired' | string
+  discount_rate: number
+  multiplier: number
+  duration_seconds: number
+  activated_at?: number
+  expires_at?: number
+  reserved_at?: number
+  used_at?: number
+  reserved_order_type?: string
+  reserved_order_trade_no?: string
+  created_at: number
+  updated_at: number
+}
+
 export interface BlindBoxRecord {
   id: number
   reward_type: 'quota' | 'claude_quota' | 'subscription' | string
@@ -348,6 +368,10 @@ export interface BlindBoxRecord {
   user_subscription_id?: number
   is_pity?: boolean
   create_time: number
+  prop_id?: number
+  prop_type?: string
+  prop_status?: string
+  prop_expires_at?: number
 }
 
 export interface BlindBoxOverview {
@@ -380,6 +404,7 @@ export interface BlindBoxSelfData {
   low_reward_threshold_usd: number
   pay_methods: PaymentMethod[]
   overview: BlindBoxOverview
+  props: BlindBoxProp[]
 }
 
 export interface BlindBoxOrderStatus {

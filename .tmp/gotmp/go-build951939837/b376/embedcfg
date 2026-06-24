@@ -1,0 +1,10 @@
+{
+	"Patterns": {
+		"lua/rate_limit.lua": [
+			"lua/rate_limit.lua"
+		]
+	},
+	"Files": {
+		"lua/rate_limit.lua": "E:\\sh\\Coding\\cpa_bussiness\\new-api\\common\\limiter\\lua\\rate_limit.lua"
+	}
+}

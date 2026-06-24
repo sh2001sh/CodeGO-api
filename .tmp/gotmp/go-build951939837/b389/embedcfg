@@ -1,0 +1,10 @@
+{
+	"Patterns": {
+		"editions_defaults.binpb": [
+			"editions_defaults.binpb"
+		]
+	},
+	"Files": {
+		"editions_defaults.binpb": "E:\\sh\\Coding\\cpa_bussiness\\new-api\\.tmp\\gomodcache\\google.golang.org\\protobuf@v1.36.5\\internal\\editiondefaults\\editions_defaults.binpb"
+	}
+}

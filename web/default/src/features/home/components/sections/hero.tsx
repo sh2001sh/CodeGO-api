@@ -72,7 +72,7 @@ const advantages = [
   {
     icon: <Gift className='h-4 w-4 text-amber-600' />,
     title: '活动福利多',
-    description: '盲盒首抽奖励、积分商城、邀请刷新，多重福利叠加。',
+    description: '盲盒首抽奖励、邀请刷新、额度加成，多重福利叠加。',
   },
   {
     icon: <Layers className='h-4 w-4 text-sky-600' />,

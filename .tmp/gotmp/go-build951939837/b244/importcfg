@@ -1,0 +1,22 @@
+# import config
+packagefile bytes=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b002\_pkg_.a
+packagefile encoding/json=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b166\_pkg_.a
+packagefile fmt=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b056\_pkg_.a
+packagefile html=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b245\_pkg_.a
+packagefile internal/godebug=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b050\_pkg_.a
+packagefile io=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b035\_pkg_.a
+packagefile io/fs=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b044\_pkg_.a
+packagefile maps=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b157\_pkg_.a
+packagefile os=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b061\_pkg_.a
+packagefile path=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b046\_pkg_.a
+packagefile path/filepath=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b202\_pkg_.a
+packagefile reflect=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b058\_pkg_.a
+packagefile regexp=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b233\_pkg_.a
+packagefile slices=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b047\_pkg_.a
+packagefile strconv=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b060\_pkg_.a
+packagefile strings=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b078\_pkg_.a
+packagefile sync=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b036\_pkg_.a
+packagefile text/template=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b246\_pkg_.a
+packagefile text/template/parse=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b247\_pkg_.a
+packagefile unicode=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b041\_pkg_.a
+packagefile unicode/utf8=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b042\_pkg_.a

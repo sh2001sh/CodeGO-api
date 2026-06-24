@@ -1,0 +1,14 @@
+# import config
+packagefile crypto/md5=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b146\_pkg_.a
+packagefile crypto/sha1=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b107\_pkg_.a
+packagefile crypto/sha256=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b108\_pkg_.a
+packagefile crypto/sha512=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b125\_pkg_.a
+packagefile errors=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b003\_pkg_.a
+packagefile fmt=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b056\_pkg_.a
+packagefile github.com/boombuler/barcode=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b322\_pkg_.a
+packagefile github.com/boombuler/barcode/qr=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b325\_pkg_.a
+packagefile hash=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b073\_pkg_.a
+packagefile image=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b323\_pkg_.a
+packagefile net/url=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b164\_pkg_.a
+packagefile strconv=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b060\_pkg_.a
+packagefile strings=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b078\_pkg_.a
