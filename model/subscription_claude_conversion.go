@@ -204,7 +204,7 @@ func ConvertSubscriptionQuotaToClaudeQuota(requestId string, userId int, subscri
 			if err := tx.Where("id = ?", existing.UserSubscriptionId).First(&sub).Error; err != nil {
 				return err
 			}
-			claudeQuotaAfter, err := getUserClaudeQuotaTx(tx, userId)
+			claudeQuotaAfter, err := getSubscriptionClaudeQuotaTx(tx, userId)
 			if err != nil {
 				return err
 			}
@@ -278,7 +278,7 @@ func ConvertSubscriptionQuotaToClaudeQuota(requestId string, userId int, subscri
 			return err
 		}
 
-		claudeQuotaAfter, err := getUserClaudeQuotaTx(tx, userId)
+		claudeQuotaAfter, err := getSubscriptionClaudeQuotaTx(tx, userId)
 		if err != nil {
 			return err
 		}
@@ -296,7 +296,7 @@ func ConvertSubscriptionQuotaToClaudeQuota(requestId string, userId int, subscri
 	return result, nil
 }
 
-func getUserClaudeQuotaTx(tx *gorm.DB, userId int) (int, error) {
+func getSubscriptionClaudeQuotaTx(tx *gorm.DB, userId int) (int, error) {
 	var quota int
 	err := tx.Model(&User{}).Where("id = ?", userId).Select("claude_quota").Find(&quota).Error
 	if err != nil {

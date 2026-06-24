@@ -18,7 +18,7 @@ var (
 	maskDomainPattern = regexp.MustCompile(`\b(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}\b`)
 	maskIPPattern     = regexp.MustCompile(`\b(?:\d{1,3}\.){3}\d{1,3}\b`)
 	// maskApiKeyPattern matches patterns like 'api_key:xxx' or "api_key:xxx" to mask the API key value
-	maskApiKeyPattern = regexp.MustCompile(`(['"]?)api_key:([^\s'"]+)(['"]?)`)
+	maskApiKeyPattern        = regexp.MustCompile(`(['"]?)api_key:([^\s'"]+)(['"]?)`)
 	upstreamQuotaLeakPattern = regexp.MustCompile(`(?i)(status_code\s*=\s*403.*(?:预扣费额度失败|用户剩余额度|需要预扣费额度)|(?:预扣费额度失败|用户剩余额度|需要预扣费额度).*(?:request id\s*:|status_code\s*=)|insufficient\s+quota.*(?:request id\s*:|status_code\s*=)|pre-?consume.*quota.*(?:request id\s*:|status_code\s*=))`)
 )
 
@@ -377,6 +377,9 @@ func MaskSensitiveInfo(str string) string {
 func SanitizeUpstreamQuotaErrorMessage(message string) string {
 	if message == "" {
 		return ""
+	}
+	if strings.Contains(strings.ToLower(message), "status_code=429") || strings.Contains(strings.ToLower(message), "cooling down via provider") {
+		return "status_code=429"
 	}
 	if upstreamQuotaLeakPattern.MatchString(message) {
 		return UpstreamQuotaGenericMessage

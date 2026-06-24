@@ -60,17 +60,32 @@ export function DateTimePicker({
   const [open, setOpen] = React.useState(false)
   const [date, setDate] = React.useState<Date | undefined>(value)
   const [month, setMonth] = React.useState<Date | undefined>(value)
-  const [time, setTime] = React.useState<string>('00:00')
-
-  React.useEffect(() => {
-    setDate(value)
-    setMonth(value)
+  const [time, setTime] = React.useState<string>(() => {
     if (value) {
       const hours = value.getHours().toString().padStart(2, '0')
       const minutes = value.getMinutes().toString().padStart(2, '0')
-      setTime(`${hours}:${minutes}`)
+      return `${hours}:${minutes}`
     }
-  }, [value])
+    return '00:00'
+  })
+
+  React.useEffect(() => {
+    if (value !== date) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setDate(value)
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setMonth(value)
+      if (value) {
+        const hours = value.getHours().toString().padStart(2, '0')
+        const minutes = value.getMinutes().toString().padStart(2, '0')
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setTime(`${hours}:${minutes}`)
+      } else {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setTime('00:00')
+      }
+    }
+  }, [value, date])
 
   const handleDateSelect = (selectedDate: Date | undefined) => {
     if (selectedDate) {

@@ -8,12 +8,54 @@ import {
   MousePointerClick,
   Wallet,
 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
+import { motion, useReducedMotion, type Variants } from 'motion/react'
 import { getLobeIcon } from '@/lib/lobe-icon'
+import { Button } from '@/components/ui/button'
 
 interface HeroProps {
   className?: string
   isAuthenticated?: boolean
+}
+
+const EASE_OUT_QUINT = [0.22, 1, 0.36, 1] as const
+
+const heroStagger: Variants = {
+  initial: {},
+  animate: { transition: { staggerChildren: 0.08, delayChildren: 0.08 } },
+}
+
+const heroItem: Variants = {
+  initial: { opacity: 0, y: 18, filter: 'blur(6px)' },
+  animate: {
+    opacity: 1,
+    y: 0,
+    filter: 'blur(0px)',
+    transition: { duration: 0.55, ease: EASE_OUT_QUINT },
+  },
+}
+
+const heroShell: Variants = {
+  initial: { opacity: 0, y: 24, scale: 0.98 },
+  animate: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { duration: 0.6, ease: EASE_OUT_QUINT, delay: 0.18 },
+  },
+}
+
+const shellList: Variants = {
+  initial: {},
+  animate: { transition: { staggerChildren: 0.07, delayChildren: 0.42 } },
+}
+
+const shellItem: Variants = {
+  initial: { opacity: 0, y: 10 },
+  animate: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.4, ease: EASE_OUT_QUINT },
+  },
 }
 
 const models = [
@@ -27,11 +69,11 @@ const advantages = [
     title: '价格更耐用',
     description: '人民币付费，按美元信用额度计费，长期调用更划算。',
   },
-    {
-      icon: <Gift className='h-4 w-4 text-amber-600' />,
-      title: '活动福利多',
-      description: '盲盒首抽奖励、积分商城、邀请刷新，多重福利叠加。',
-    },
+  {
+    icon: <Gift className='h-4 w-4 text-amber-600' />,
+    title: '活动福利多',
+    description: '盲盒首抽奖励、积分商城、邀请刷新，多重福利叠加。',
+  },
   {
     icon: <Layers className='h-4 w-4 text-sky-600' />,
     title: '多模型接入',
@@ -52,17 +94,20 @@ const usagePaths = [
     title: '统一调用模型',
     description: '一套 API 接入主流模型，盲盒、订阅与余额的扣费顺序自己可调。',
   },
-    {
-      step: '3',
-      icon: <Gift className='h-4 w-4 text-amber-600' />,
-      title: '领取活动福利',
-      description: '开盲盒抽随机奖励、用积分兑权益、邀请好友得额度刷新。',
-    },
+  {
+    step: '3',
+    icon: <Gift className='h-4 w-4 text-amber-600' />,
+    title: '领取活动福利',
+    description: '开盲盒抽随机奖励、用积分兑权益、邀请好友得额度刷新。',
+  },
 ]
 
 export function Hero(props: HeroProps) {
+  const shouldReduce = useReducedMotion()
+  const initial = shouldReduce ? false : 'initial'
+
   return (
-    <section className='relative flex min-h-screen items-center overflow-hidden px-6 pb-20 pt-28 md:px-10 md:pb-24 md:pt-32'>
+    <section className='relative flex min-h-screen items-center overflow-hidden px-6 pt-28 pb-20 md:px-10 md:pt-32 md:pb-24'>
       <div
         aria-hidden
         className='absolute inset-0'
@@ -73,26 +118,41 @@ export function Hero(props: HeroProps) {
       />
       <div
         aria-hidden
-        className='pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-b from-transparent to-background'
+        className='to-background pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-b from-transparent'
       />
 
       <div className='relative mx-auto w-full max-w-7xl'>
         <div className='grid items-center gap-10 lg:grid-cols-[minmax(0,1.05fr)_minmax(400px,0.95fr)]'>
-          <div className='max-w-2xl'>
-            <div className='ios-pill inline-flex items-center gap-2 px-3 py-1 text-xs font-semibold text-[#2f5ea3] dark:text-[#98c0ff]'>
+          <motion.div
+            className='max-w-2xl'
+            variants={heroStagger}
+            initial={initial}
+            animate='animate'
+          >
+            <motion.div
+              variants={heroItem}
+              className='ios-pill inline-flex items-center gap-2 px-3 py-1 text-xs font-semibold text-[#2f5ea3] dark:text-[#98c0ff]'
+            >
               <Layers className='h-3.5 w-3.5' />
               Code Go · 多模型 AI 接入平台
-            </div>
-            <h1 className='mt-5 text-[clamp(2.4rem,4.8vw,4rem)] font-semibold leading-[1.08] tracking-[-0.03em] text-slate-950 dark:text-white'>
+            </motion.div>
+            <motion.h1
+              variants={heroItem}
+              className='mt-5 text-[clamp(2.4rem,4.8vw,4rem)] leading-[1.08] font-semibold tracking-[-0.03em] text-balance text-slate-950 dark:text-white'
+            >
               一个 API，
               <br className='hidden sm:block' />
               接入主流大模型
-            </h1>
-            <p className='mt-5 max-w-xl text-lg leading-8 text-slate-600 dark:text-slate-300'>
-              面向开发者的多模型 AI 接入平台。盲盒开奖励、积分兑权益、邀请换刷新，多重活动福利让你的额度越用越多。
-            </p>
+            </motion.h1>
+            <motion.p
+              variants={heroItem}
+              className='mt-5 max-w-xl text-lg leading-8 text-slate-600 dark:text-slate-300'
+            >
+              面向开发者的多模型 AI
+              接入平台。盲盒开奖励、积分兑权益、邀请换刷新，多重活动福利让你的额度越用越多。
+            </motion.p>
 
-            <div className='mt-7'>
+            <motion.div variants={heroItem} className='mt-7'>
               <div className='text-xs font-medium tracking-[0.16em] text-slate-400 dark:text-slate-500'>
                 已接入主流模型
               </div>
@@ -109,9 +169,12 @@ export function Hero(props: HeroProps) {
                   </div>
                 ))}
               </div>
-            </div>
+            </motion.div>
 
-            <div className='mt-8 flex flex-wrap items-center gap-3'>
+            <motion.div
+              variants={heroItem}
+              className='mt-8 flex flex-wrap items-center gap-3'
+            >
               {props.isAuthenticated ? (
                 <>
                   <Button
@@ -147,10 +210,15 @@ export function Hero(props: HeroProps) {
                   </Button>
                 </>
               )}
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
 
-          <div className='ios-floating-shell overflow-hidden p-6 md:p-7'>
+          <motion.div
+            className='ios-floating-shell overflow-hidden p-6 md:p-7'
+            variants={heroShell}
+            initial={initial}
+            animate='animate'
+          >
             <div className='flex items-center justify-between'>
               <div>
                 <div className='text-sm font-semibold text-slate-900 dark:text-white'>
@@ -165,9 +233,18 @@ export function Hero(props: HeroProps) {
               </span>
             </div>
 
-            <div className='mt-5 space-y-3'>
+            <motion.div
+              className='mt-5 space-y-3'
+              variants={shellList}
+              initial={initial}
+              animate='animate'
+            >
               {usagePaths.map((path) => (
-                <div key={path.step} className='ios-pill flex items-start gap-3 p-4'>
+                <motion.div
+                  key={path.step}
+                  variants={shellItem}
+                  className='ios-pill flex items-start gap-3 p-4'
+                >
                   <span className='bg-primary/12 text-primary flex size-8 shrink-0 items-center justify-center rounded-full text-sm font-semibold'>
                     {path.step}
                   </span>
@@ -180,13 +257,18 @@ export function Hero(props: HeroProps) {
                       {path.description}
                     </div>
                   </div>
-                </div>
+                </motion.div>
               ))}
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         </div>
 
-        <div className='mt-12 grid gap-4 sm:grid-cols-3'>
+        <motion.div
+          className='mt-12 grid gap-4 sm:grid-cols-3'
+          variants={heroStagger}
+          initial={initial}
+          animate='animate'
+        >
           {advantages.map((item) => (
             <HeroFact
               key={item.title}
@@ -195,7 +277,7 @@ export function Hero(props: HeroProps) {
               description={item.description}
             />
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   )
@@ -207,7 +289,7 @@ function HeroFact(props: {
   description: string
 }) {
   return (
-    <div className='ios-floating-shell p-5'>
+    <motion.div variants={heroItem} className='ios-floating-shell h-full p-5'>
       <div className='flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white'>
         {props.icon}
         {props.title}
@@ -215,6 +297,6 @@ function HeroFact(props: {
       <div className='mt-1.5 text-sm leading-6 text-slate-600 dark:text-slate-300'>
         {props.description}
       </div>
-    </div>
+    </motion.div>
   )
 }

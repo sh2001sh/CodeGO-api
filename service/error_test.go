@@ -184,3 +184,10 @@ func TestTaskErrorFromAPIErrorKeepsLocalQuotaMessage(t *testing.T) {
 	require.NotNil(t, taskErr)
 	require.Equal(t, "用户额度不足, 剩余额度: 0.000750", taskErr.Message)
 }
+
+func TestSanitizeUpstreamQuotaErrorMessageMaps429ToStatusCodeOnly(t *testing.T) {
+	t.Parallel()
+
+	require.Equal(t, "status_code=429", common.SanitizeUpstreamQuotaErrorMessage("status_code=429, All credentials for model deepseek-v4-flash are cooling down via provider openai-compatible-nvidia"))
+	require.Equal(t, "status_code=429", common.SanitizeUpstreamQuotaErrorMessage("All credentials for model some-other-model are cooling down via provider openai-compatible-nvidia"))
+}

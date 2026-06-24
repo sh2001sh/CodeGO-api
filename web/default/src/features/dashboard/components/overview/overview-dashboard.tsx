@@ -17,6 +17,12 @@ with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useState } from 'react'
+import {
+  CardStaggerContainer,
+  CardStaggerItem,
+  FadeIn,
+} from '@/components/page-transition'
+import { WorkshopOverviewSidebar } from '@/features/gamification'
 import { RedemptionCodePanel } from '@/features/wallet/components/redemption-code-panel'
 import { useRedemption } from '@/features/wallet/hooks/use-redemption'
 import { useTopupInfo } from '@/features/wallet/hooks/use-topup-info'
@@ -40,26 +46,44 @@ export function OverviewDashboard() {
 
   return (
     <div className='flex flex-col gap-4'>
-      <OverviewHeroPanel guide={setupGuide} />
+      <FadeIn>
+        <OverviewHeroPanel guide={setupGuide} />
+      </FadeIn>
 
-      <RedemptionCodePanel
-        title='兑换码'
-        description='有充值码、套餐码或活动码时可直接在这里兑换，无需再进入钱包页。'
-        topupLink={topupInfo?.topup_link}
-        redemptionCode={redemptionCode}
-        onRedemptionCodeChange={setRedemptionCode}
-        onRedeem={() => void handleRedeem()}
-        redeeming={redeeming}
-      />
+      <div className='grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(320px,340px)] xl:items-start'>
+        <CardStaggerContainer className='flex min-w-0 flex-col gap-4'>
+          <CardStaggerItem>
+            <SummaryCards />
+          </CardStaggerItem>
+          <CardStaggerItem>
+            <AnnouncementsPanel />
+          </CardStaggerItem>
+          <CardStaggerItem>
+            <FAQPanel />
+          </CardStaggerItem>
+        </CardStaggerContainer>
 
-      <SummaryCards />
-
-      <div className='grid gap-4 xl:grid-cols-[minmax(0,1.12fr)_minmax(320px,0.88fr)]'>
-        <AnnouncementsPanel />
-        <OverviewHealthPanel />
+        <CardStaggerContainer className='flex flex-col gap-4'>
+          <CardStaggerItem>
+            <OverviewHealthPanel />
+          </CardStaggerItem>
+          <CardStaggerItem>
+            <WorkshopOverviewSidebar />
+          </CardStaggerItem>
+          <CardStaggerItem>
+            <RedemptionCodePanel
+              compact
+              title='兑换码'
+              description='充值码、套餐码或活动码可直接在这里兑换。'
+              topupLink={topupInfo?.topup_link}
+              redemptionCode={redemptionCode}
+              onRedemptionCodeChange={setRedemptionCode}
+              onRedeem={() => void handleRedeem()}
+              redeeming={redeeming}
+            />
+          </CardStaggerItem>
+        </CardStaggerContainer>
       </div>
-
-      <FAQPanel />
     </div>
   )
 }

@@ -13,6 +13,10 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Skeleton } from '@/components/ui/skeleton'
 import { TitledCard } from '@/components/ui/titled-card'
+import {
+  CardStaggerContainer,
+  CardStaggerItem,
+} from '@/components/page-transition'
 import { getPublicPlans } from '@/features/subscriptions/api'
 import { SubscriptionPurchaseDialog } from '@/features/subscriptions/components/dialogs/subscription-purchase-dialog'
 import {
@@ -264,129 +268,130 @@ export function SubscriptionPlansCard({
       '当前已有更高等级的生效套餐，暂不支持降级订阅。'
 
     return (
-      <Card
-        key={plan.id}
-        className={cn(
-          'border-border bg-card flex h-full flex-col overflow-hidden rounded-[20px] shadow-none',
-          isRecommended && 'border-primary/50 ring-primary/15 ring-2'
-        )}
-      >
-        <CardContent className='flex flex-1 flex-col gap-4 p-5'>
-          <div className='flex items-start justify-between gap-3'>
-            <div className='min-w-0'>
-              <p className='text-primary text-[11px] font-medium'>
-                {getSubscriptionPlanSubtitle(plan)}
-              </p>
-              <div className='mt-1.5 flex flex-wrap items-center gap-2'>
-                <h4 className='text-foreground truncate text-xl font-semibold tracking-tight'>
-                  {title}
-                </h4>
-                <span className='border-border bg-accent text-accent-foreground rounded-full border px-2.5 py-1 text-[11px]'>
-                  {presentation.badge}
-                </span>
-              </div>
-              <p className='text-muted-foreground mt-2 text-sm leading-6'>
-                {presentation.summary}
-              </p>
-            </div>
-
-            <div className='shrink-0 text-right'>
-              {isRecommended ? (
-                <div className='bg-primary/10 text-primary mb-2 inline-flex items-center rounded-full px-3 py-1 text-xs font-medium'>
-                  <Sparkles className='mr-1 h-3.5 w-3.5' />
-                  推荐
+      <CardStaggerItem key={plan.id} className='h-full'>
+        <Card
+          className={cn(
+            'border-border bg-card flex h-full flex-col overflow-hidden rounded-[20px] shadow-none',
+            isRecommended && 'border-primary/50 ring-primary/15 ring-2'
+          )}
+        >
+          <CardContent className='flex flex-1 flex-col gap-4 p-5'>
+            <div className='flex items-start justify-between gap-3'>
+              <div className='min-w-0'>
+                <p className='text-primary text-[11px] font-medium'>
+                  {getSubscriptionPlanSubtitle(plan)}
+                </p>
+                <div className='mt-1.5 flex flex-wrap items-center gap-2'>
+                  <h4 className='text-foreground truncate text-xl font-semibold tracking-tight'>
+                    {title}
+                  </h4>
+                  <span className='border-border bg-accent text-accent-foreground rounded-full border px-2.5 py-1 text-[11px]'>
+                    {presentation.badge}
+                  </span>
                 </div>
-              ) : null}
-              <div className='text-primary text-2xl font-semibold tracking-tight'>
-                {displayPrice}
+                <p className='text-muted-foreground mt-2 text-sm leading-6'>
+                  {presentation.summary}
+                </p>
               </div>
-              <div className='text-muted-foreground mt-1 text-xs'>
-                人民币 / 套餐
-              </div>
-              {effectiveAmount !== priceAmount ? (
-                <div className='text-muted-foreground mt-1 text-xs line-through'>
-                  {formatSubscriptionPlanPrice(priceAmount, plan.currency)}
+
+              <div className='shrink-0 text-right'>
+                {isRecommended ? (
+                  <div className='bg-primary/10 text-primary mb-2 inline-flex items-center rounded-full px-3 py-1 text-xs font-medium'>
+                    <Sparkles className='mr-1 h-3.5 w-3.5' />
+                    推荐
+                  </div>
+                ) : null}
+                <div className='text-primary text-2xl font-semibold tracking-tight'>
+                  {displayPrice}
                 </div>
-              ) : null}
+                <div className='text-muted-foreground mt-1 text-xs'>
+                  人民币 / 套餐
+                </div>
+                {effectiveAmount !== priceAmount ? (
+                  <div className='text-muted-foreground mt-1 text-xs line-through'>
+                    {formatSubscriptionPlanPrice(priceAmount, plan.currency)}
+                  </div>
+                ) : null}
+              </div>
             </div>
-          </div>
 
-          {discountText ? (
-            <div className='border-border bg-background/80 text-foreground inline-flex w-fit rounded-full border px-3 py-1 text-[12px] font-semibold'>
-              {discountText}
-            </div>
-          ) : null}
+            {discountText ? (
+              <div className='border-border bg-background/80 text-foreground inline-flex w-fit rounded-full border px-3 py-1 text-[12px] font-semibold'>
+                {discountText}
+              </div>
+            ) : null}
 
-          <div className='border-border bg-muted/40 divide-border divide-y rounded-2xl border'>
-            <SpecRow label='有效期' value={formatDuration(plan, t)} />
-            <SpecRow
-              label={
-                isMonthlyPlan
-                  ? '本月可用额度'
-                  : periodAmount > 0
-                    ? '周期额度'
-                    : '套餐额度'
-              }
-              value={
-                !isMonthlyPlan && periodAmount > 0
-                  ? formatSubscriptionQuotaAmount(periodAmount)
-                  : totalAmount > 0
-                    ? formatSubscriptionQuotaAmount(totalAmount)
-                    : '不限'
-              }
-            />
-            {!isMonthlyPlan ? (
+            <div className='border-border bg-muted/40 divide-border divide-y rounded-2xl border'>
+              <SpecRow label='有效期' value={formatDuration(plan, t)} />
               <SpecRow
-                label='总额度'
+                label={
+                  isMonthlyPlan
+                    ? '本月可用额度'
+                    : periodAmount > 0
+                      ? '周期额度'
+                      : '套餐额度'
+                }
                 value={
-                  totalAmount > 0
-                    ? formatSubscriptionQuotaAmount(totalAmount)
-                    : '不限'
+                  !isMonthlyPlan && periodAmount > 0
+                    ? formatSubscriptionQuotaAmount(periodAmount)
+                    : totalAmount > 0
+                      ? formatSubscriptionQuotaAmount(totalAmount)
+                      : '不限'
                 }
               />
-            ) : null}
-            <SpecRow
-              label='套餐类型'
-              value={isDayPassPlan(plan) ? '独立日卡' : '月卡'}
-            />
-          </div>
-
-          <div className='space-y-1.5'>
-            <p className='text-muted-foreground text-sm leading-6'>
-              {summaryText}
-            </p>
-            <p className='text-muted-foreground text-xs leading-5'>
-              {detailText}
-            </p>
-          </div>
-
-          <div className='mt-auto space-y-2 pt-1'>
-            <Button
-              className='w-full rounded-full'
-              disabled={limitReached || record.action === 'disabled'}
-              onClick={() => {
-                setSelectedPlan(record)
-                setPurchaseOpen(true)
-              }}
-            >
-              {limitReached ? '已达购买上限' : actionLabel}
-              {!limitReached && record.action !== 'disabled' ? (
-                <ArrowRight className='ml-1 h-4 w-4' />
+              {!isMonthlyPlan ? (
+                <SpecRow
+                  label='总额度'
+                  value={
+                    totalAmount > 0
+                      ? formatSubscriptionQuotaAmount(totalAmount)
+                      : '不限'
+                  }
+                />
               ) : null}
-            </Button>
-            {limitReached ? (
-              <p className='text-warning-foreground dark:text-warning text-xs'>
-                已达到该套餐购买上限（{count}/{limit}）。
+              <SpecRow
+                label='套餐类型'
+                value={isDayPassPlan(plan) ? '独立日卡' : '月卡'}
+              />
+            </div>
+
+            <div className='space-y-1.5'>
+              <p className='text-muted-foreground text-sm leading-6'>
+                {summaryText}
               </p>
-            ) : null}
-            {record.action === 'disabled' ? (
-              <p className='text-warning-foreground dark:text-warning text-xs'>
-                {blockedReason}
+              <p className='text-muted-foreground text-xs leading-5'>
+                {detailText}
               </p>
-            ) : null}
-          </div>
-        </CardContent>
-      </Card>
+            </div>
+
+            <div className='mt-auto space-y-2 pt-1'>
+              <Button
+                className='w-full rounded-full'
+                disabled={limitReached || record.action === 'disabled'}
+                onClick={() => {
+                  setSelectedPlan(record)
+                  setPurchaseOpen(true)
+                }}
+              >
+                {limitReached ? '已达购买上限' : actionLabel}
+                {!limitReached && record.action !== 'disabled' ? (
+                  <ArrowRight className='ml-1 h-4 w-4' />
+                ) : null}
+              </Button>
+              {limitReached ? (
+                <p className='text-warning-foreground dark:text-warning text-xs'>
+                  已达到该套餐购买上限（{count}/{limit}）。
+                </p>
+              ) : null}
+              {record.action === 'disabled' ? (
+                <p className='text-warning-foreground dark:text-warning text-xs'>
+                  {blockedReason}
+                </p>
+              ) : null}
+            </div>
+          </CardContent>
+        </Card>
+      </CardStaggerItem>
     )
   }
 
@@ -421,112 +426,72 @@ export function SubscriptionPlansCard({
             Claude 额度。
           </div>
 
-          <PlanSection
-            title='月卡套餐'
-            description='适合长期使用 GPT 系列模型。月卡有效期 1 个月，购买的总额度就是本月可用额度，一个月内可自由使用。'
-            loading={loadingPlans}
-            emptyText='当前没有可购买的月卡套餐。'
-          >
-            {groupedPlans.monthPlans.map((record, index) =>
-              renderPlanCard(record, index)
-            )}
-          </PlanSection>
-
-          <PlanSection
-            title='日卡套餐'
-            description='适合临时补量。日卡额度独立结算，不并入月卡总额度，扣费时默认优先于月卡。'
-            loading={loadingPlans}
-            emptyText='当前没有可购买的日卡套餐。'
-          >
-            {groupedPlans.dayPlans.map((record, index) =>
-              renderPlanCard(record, index)
-            )}
-          </PlanSection>
-
-          <Card className='border-border bg-card rounded-[20px] shadow-none'>
-            <CardContent className='space-y-4 p-4'>
+          {allSubscriptions.length > 0 ? (
+            <section className='app-subtle-panel space-y-4 p-4 shadow-none'>
               <div>
-                <div className='text-foreground text-base font-semibold'>
-                  已购套餐使用情况
+                <div className='text-foreground text-base font-semibold tracking-tight'>
+                  我的订阅
                 </div>
-                <p className='text-muted-foreground mt-1 text-sm'>
-                  在这里查看每一份订阅的剩余天数和额度使用进度。月卡只展示本月可用额度，不展示周期重置。
+                <p className='text-muted-foreground mt-1 text-sm leading-6'>
+                  先确认当前生效的订阅与额度，再决定是否加购。月卡只展示本月可用额度，不展示周期重置。
                 </p>
               </div>
 
-              {subscriptionLoading ? (
-                <div className='grid gap-3 xl:grid-cols-2'>
-                  {Array.from({ length: 2 }).map((_, index) => (
-                    <Skeleton key={index} className='h-36 w-full rounded-2xl' />
-                  ))}
-                </div>
-              ) : allSubscriptions.length === 0 ? (
-                <div className='border-border text-muted-foreground rounded-2xl border border-dashed px-4 py-6 text-sm'>
-                  当前还没有任何订阅记录。购买套餐后，这里会显示每一份套餐的额度使用进度。
-                </div>
-              ) : (
-                <div className='grid gap-3 xl:grid-cols-2'>
-                  {allSubscriptions.map((record) => {
-                    const subscription = record.subscription
-                    const title =
-                      planTitleMap.get(subscription.plan_id) ||
-                      `订阅 #${subscription.id}`
-                    const relatedPlan = planMap.get(subscription.plan_id)
-                    const totalAmount = Number(subscription.amount_total || 0)
-                    const usedAmount = Number(subscription.amount_used || 0)
-                    const totalRemain =
-                      totalAmount > 0
-                        ? Math.max(0, totalAmount - usedAmount)
-                        : 0
-                    const periodAmount = Number(subscription.period_amount || 0)
-                    const periodUsed = Number(subscription.period_used || 0)
-                    const periodRemain =
-                      periodAmount > 0
-                        ? Math.max(0, periodAmount - periodUsed)
-                        : 0
-                    const isMonthlyPlan = isMonthlyCardPlan(relatedPlan)
-                    const isDayPass = isDayPassPlan(relatedPlan)
-                    const totalPercent = getUsagePercent(
-                      usedAmount,
-                      totalAmount
-                    )
-                    const periodPercent = getUsagePercent(
-                      periodUsed,
-                      periodAmount
-                    )
-                    const remainDays = getRemainingDays(record)
-                    const active =
-                      subscription.status === 'active' &&
-                      subscription.end_time > Date.now() / 1000
-                    const totalExhausted = totalAmount > 0 && totalRemain <= 0
-                    const periodExhausted =
-                      !isMonthlyPlan &&
-                      periodAmount > 0 &&
-                      periodRemain <= 0 &&
-                      totalRemain > 0
-                    const statusLabel = active
-                      ? totalExhausted
-                        ? '额度已用完'
-                        : periodExhausted
-                          ? '等待下次重置'
-                          : '生效中'
-                      : subscription.status === 'cancelled'
-                        ? '已取消'
-                        : '已过期'
-                    const scopedUsageLabel = isMonthlyPlan
-                      ? '本月可用额度'
-                      : '周期额度'
-                    const totalUsageLabel = isMonthlyPlan
-                      ? '本月可用额度'
-                      : isDayPass
-                        ? '日卡额度'
-                        : '总额度'
+              <CardStaggerContainer className='grid gap-3 xl:grid-cols-2'>
+                {allSubscriptions.map((record) => {
+                  const subscription = record.subscription
+                  const title =
+                    planTitleMap.get(subscription.plan_id) ||
+                    `订阅 #${subscription.id}`
+                  const relatedPlan = planMap.get(subscription.plan_id)
+                  const totalAmount = Number(subscription.amount_total || 0)
+                  const usedAmount = Number(subscription.amount_used || 0)
+                  const totalRemain =
+                    totalAmount > 0 ? Math.max(0, totalAmount - usedAmount) : 0
+                  const periodAmount = Number(subscription.period_amount || 0)
+                  const periodUsed = Number(subscription.period_used || 0)
+                  const periodRemain =
+                    periodAmount > 0
+                      ? Math.max(0, periodAmount - periodUsed)
+                      : 0
+                  const isMonthlyPlan = isMonthlyCardPlan(relatedPlan)
+                  const isDayPass = isDayPassPlan(relatedPlan)
+                  const totalPercent = getUsagePercent(usedAmount, totalAmount)
+                  const periodPercent = getUsagePercent(
+                    periodUsed,
+                    periodAmount
+                  )
+                  const remainDays = getRemainingDays(record)
+                  const active =
+                    subscription.status === 'active' &&
+                    subscription.end_time > Date.now() / 1000
+                  const totalExhausted = totalAmount > 0 && totalRemain <= 0
+                  const periodExhausted =
+                    !isMonthlyPlan &&
+                    periodAmount > 0 &&
+                    periodRemain <= 0 &&
+                    totalRemain > 0
+                  const statusLabel = active
+                    ? totalExhausted
+                      ? '额度已用完'
+                      : periodExhausted
+                        ? '等待下次重置'
+                        : '生效中'
+                    : subscription.status === 'cancelled'
+                      ? '已取消'
+                      : '已过期'
+                  const scopedUsageLabel = isMonthlyPlan
+                    ? '本月可用额度'
+                    : '周期额度'
+                  const totalUsageLabel = isMonthlyPlan
+                    ? '本月可用额度'
+                    : isDayPass
+                      ? '日卡额度'
+                      : '总额度'
 
-                    return (
-                      <Card
-                        key={subscription.id}
-                        className='app-subtle-panel shadow-none'
-                      >
+                  return (
+                    <CardStaggerItem key={subscription.id} className='h-full'>
+                      <Card className='border-border bg-card h-full shadow-none'>
                         <CardContent className='space-y-3 p-4'>
                           <div className='flex flex-wrap items-start justify-between gap-2'>
                             <div>
@@ -596,12 +561,34 @@ export function SubscriptionPlansCard({
                           </div>
                         </CardContent>
                       </Card>
-                    )
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                    </CardStaggerItem>
+                  )
+                })}
+              </CardStaggerContainer>
+            </section>
+          ) : null}
+
+          <PlanSection
+            title='月卡套餐'
+            description='适合长期使用 GPT 系列模型。月卡有效期 1 个月，购买的总额度就是本月可用额度，一个月内可自由使用。'
+            loading={loadingPlans}
+            emptyText='当前没有可购买的月卡套餐。'
+          >
+            {groupedPlans.monthPlans.map((record, index) =>
+              renderPlanCard(record, index)
+            )}
+          </PlanSection>
+
+          <PlanSection
+            title='日卡套餐'
+            description='适合临时补量。日卡额度独立结算，不并入月卡总额度，扣费时默认优先于月卡。'
+            loading={loadingPlans}
+            emptyText='当前没有可购买的日卡套餐。'
+          >
+            {groupedPlans.dayPlans.map((record, index) =>
+              renderPlanCard(record, index)
+            )}
+          </PlanSection>
         </TitledCard>
       </div>
 
@@ -663,9 +650,9 @@ function PlanSection(props: {
           ))}
         </div>
       ) : childArray.length > 0 ? (
-        <div className='grid grid-cols-1 gap-3 md:grid-cols-2 2xl:grid-cols-3'>
+        <CardStaggerContainer className='grid grid-cols-1 gap-3 md:grid-cols-2 2xl:grid-cols-3'>
           {childArray}
-        </div>
+        </CardStaggerContainer>
       ) : (
         <div className='border-border text-muted-foreground rounded-2xl border border-dashed px-4 py-8 text-sm'>
           {props.emptyText}

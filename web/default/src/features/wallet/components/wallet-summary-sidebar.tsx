@@ -18,16 +18,21 @@ export function WalletSummarySidebar(props: WalletSummarySidebarProps) {
           <WalletCards className='text-primary h-4 w-4' />
           钱包余额
         </div>
-        <div className='text-foreground mt-3 font-mono text-3xl font-bold tracking-tight tabular-nums'>
-          {formatUsdAmount(quotaUnitsToUsd(props.user?.quota ?? 0))}
+        <div className='mt-3 grid grid-cols-2 gap-2'>
+          <div className='app-subtle-panel min-w-0 px-3 py-3'>
+            <div className='text-muted-foreground text-xs'>普通余额</div>
+            <div className='text-foreground mt-1 truncate font-mono text-xl font-bold tracking-tight tabular-nums'>
+              {formatUsdAmount(quotaUnitsToUsd(props.user?.quota ?? 0))}
+            </div>
+          </div>
+          <div className='app-subtle-panel min-w-0 px-3 py-3'>
+            <div className='text-muted-foreground text-xs'>Claude 余额</div>
+            <div className='text-foreground mt-1 truncate font-mono text-xl font-bold tracking-tight tabular-nums'>
+              {formatUsdAmount(quotaUnitsToUsd(props.user?.claude_quota ?? 0))}
+            </div>
+          </div>
         </div>
-        <div className='mt-4 grid gap-2'>
-          <WalletStatItem
-            label='Claude 余额'
-            value={formatUsdAmount(
-              quotaUnitsToUsd(props.user?.claude_quota ?? 0)
-            )}
-          />
+        <div className='mt-2 grid gap-2'>
           <WalletStatItem
             label='累计消耗'
             value={formatUsdAmount(

@@ -629,7 +629,7 @@ func respondTaskError(c *gin.Context, taskErr *dto.TaskError) {
 		taskErr.StatusCode = http.StatusServiceUnavailable
 	}
 	if taskErr.StatusCode == http.StatusTooManyRequests {
-		taskErr.Message = "当前分组上游负载已饱和，请稍后再试"
+		taskErr.Message = "status_code=429"
 	}
 	c.JSON(taskErr.StatusCode, taskErr)
 }

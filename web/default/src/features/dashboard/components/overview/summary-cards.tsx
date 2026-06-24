@@ -1,14 +1,10 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { Link } from '@tanstack/react-router'
-import { ArrowRight, Gift } from 'lucide-react'
 import { useAuthStore } from '@/stores/auth-store'
 import { formatNumber, formatUsdAmount, quotaUnitsToUsd } from '@/lib/format'
-import { Button } from '@/components/ui/button'
 import { computeTimeRange } from '@/lib/time'
 import { getUserQuotaDates } from '@/features/dashboard/api'
 import type { QuotaDataItem } from '@/features/dashboard/types'
-import { getGamificationDashboard } from '@/features/gamification/api'
 import {
   getPublicPlans,
   getSelfSubscriptionFull,
@@ -26,6 +22,7 @@ import {
   BalanceWorkspace,
   PackageStatusCard,
   StatusInfoCard,
+  type BalanceSegment,
   type MetricDef,
 } from './summary-sections'
 
@@ -100,12 +97,6 @@ export function SummaryCards() {
     staleTime: 60 * 1000,
   })
 
-  const gamificationQuery = useQuery({
-    queryKey: ['gamification', 'dashboard', 'overview-light-summary'],
-    queryFn: getGamificationDashboard,
-    staleTime: 60 * 1000,
-  })
-
   const usageRows = usageTrendQuery.data?.data ?? []
   const chartValues = usageRows.map(
     (item: QuotaDataItem) => Number(item.quota) || 0
@@ -123,6 +114,23 @@ export function SummaryCards() {
   const recentUsageUsd = quotaUnitsToUsd(recentUsage)
   const usedQuotaUsd = quotaUnitsToUsd(usedQuota)
   const blindBoxQuotaUsd = quotaUnitsToUsd(blindBoxQuota)
+
+  const balanceSegments: BalanceSegment[] = [
+    {
+      label: '钱包',
+      display: formatUsdAmount(walletUsd),
+      value: walletUsd,
+      dot: 'bg-primary',
+      bar: 'bg-primary',
+    },
+    {
+      label: '盲盒',
+      display: formatUsdAmount(blindBoxQuotaUsd),
+      value: blindBoxQuotaUsd,
+      dot: 'bg-amber-500',
+      bar: 'bg-amber-500',
+    },
+  ]
 
   const planMetaMap = useMemo(() => {
     const map = new Map<
@@ -192,9 +200,8 @@ export function SummaryCards() {
       <div className='grid gap-4 xl:grid-cols-[minmax(0,1.12fr)_minmax(320px,0.88fr)]'>
         <BalanceWorkspace
           available={formatUsdAmount(availableUsd)}
-          walletQuota={formatUsdAmount(walletUsd)}
+          segments={balanceSegments}
           claudeQuota={formatUsdAmount(claudeUsd)}
-          blindBoxQuota={formatUsdAmount(blindBoxQuotaUsd)}
           metrics={heroMetrics}
         />
 
@@ -234,55 +241,6 @@ export function SummaryCards() {
           />
         </PackageStatusCard>
       </div>
-
-      <section className='overview-glass-card p-5 xl:p-6'>
-        <div className='grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(280px,320px)] xl:items-center'>
-          <div className='min-w-0'>
-            <div className='text-foreground flex items-center gap-2 text-base font-semibold'>
-              <Gift className='text-primary size-4' />
-              活动与成长
-            </div>
-            <p className='text-muted-foreground mt-1 max-w-xl text-sm leading-6'>
-              这里显示邀请、积分和任务摘要，盲盒入口已单独放到导航中。
-            </p>
-
-            <div className='mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3'>
-              <div className='overview-soft-card px-3 py-3'>
-                <div className='text-muted-foreground text-[11px] font-medium'>
-                  已邀请人数
-                </div>
-                <div className='text-foreground mt-1 text-base font-semibold'>
-                  {formatNumber(Number(user?.aff_count ?? 0))}
-                </div>
-              </div>
-              <div className='overview-soft-card px-3 py-3'>
-                <div className='text-muted-foreground text-[11px] font-medium'>
-                  可用刷新
-                </div>
-                <div className='text-foreground mt-1 text-base font-semibold'>
-                  {subscriptionsQuery.data?.reset_opportunity?.available_count ?? 0} 次
-                </div>
-              </div>
-              <div className='overview-soft-card px-3 py-3'>
-                <div className='text-muted-foreground text-[11px] font-medium'>
-                  活动摘要
-                </div>
-                <div className='text-foreground mt-1 text-base font-semibold'>
-                  {gamificationQuery.data?.data?.daily_missions?.length ?? 0} 项
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <Button
-            className='h-full min-h-28 w-full justify-between rounded-2xl'
-            render={<Link to='/activities' />}
-          >
-            <span>进入活动中心</span>
-            <ArrowRight data-icon='inline-end' />
-          </Button>
-        </div>
-      </section>
 
       <UsageChart points={chartPoints} />
     </div>

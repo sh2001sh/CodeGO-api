@@ -29,7 +29,6 @@ const tierSchema = z.object({
 const schema = z.object({
   enabled: z.boolean(),
   unitPrice: z.coerce.number().min(0),
-  expireDays: z.coerce.number().int().min(1),
   dailyLimit: z.coerce.number().int().min(1),
   monthlyLimit: z.coerce.number().int().min(1),
   dailyOpenLimit: z.coerce.number().int().min(1),
@@ -113,7 +112,6 @@ export function BlindBoxSettingsSection({
   defaultValues: {
     enabled: boolean
     unitPrice: number
-    expireDays: number
     dailyLimit: number
     monthlyLimit: number
     dailyOpenLimit: number
@@ -134,7 +132,6 @@ export function BlindBoxSettingsSection({
     defaultValues: {
       enabled: defaultValues.enabled,
       unitPrice: defaultValues.unitPrice,
-      expireDays: defaultValues.expireDays,
       dailyLimit: defaultValues.dailyLimit,
       monthlyLimit: defaultValues.monthlyLimit,
       dailyOpenLimit: defaultValues.dailyOpenLimit,
@@ -175,11 +172,6 @@ export function BlindBoxSettingsSection({
       'blind_box_setting.unit_price',
       values.unitPrice,
       defaultValues.unitPrice
-    )
-    pushIfChanged(
-      'blind_box_setting.expire_days',
-      values.expireDays,
-      defaultValues.expireDays
     )
     pushIfChanged(
       'blind_box_setting.daily_limit',
@@ -295,19 +287,6 @@ export function BlindBoxSettingsSection({
                   <FormLabel>单盒售价（USD）</FormLabel>
                   <FormControl>
                     <Input type='number' step='0.01' min={0} {...field} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name='expireDays'
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>盲盒额度有效期（天）</FormLabel>
-                  <FormControl>
-                    <Input type='number' min={1} {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>

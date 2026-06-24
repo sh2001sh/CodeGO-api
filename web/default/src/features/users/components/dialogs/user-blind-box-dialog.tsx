@@ -79,7 +79,7 @@ export function UserBlindBoxDialog(props: Props) {
               <div className='font-medium'>{t('Quota metric note')}</div>
               <div className='text-muted-foreground'>
                 {t(
-                  'Dashboard used quota is the user-wide cumulative consumption. Subscription used quota is package-local usage. Blind box short-term quota is a temporary balance bucket consumed before subscription and wallet.'
+                  'Dashboard used quota is the user-wide cumulative consumption. Subscription used quota is package-local usage. Blind box rewards are credited directly to the matching wallet.'
                 )}
               </div>
             </div>
@@ -92,11 +92,11 @@ export function UserBlindBoxDialog(props: Props) {
           <div className='grid gap-3 md:grid-cols-2 xl:grid-cols-4'>
             <MetricCard label={t('Feature status')} value={data?.enabled ? t('Enabled') : t('Disabled')} />
             <MetricCard label={t('Available boxes')} value={String(data?.overview?.available_boxes || 0)} />
-            <MetricCard label={t('Short-term quota')} value={formatQuota(data?.overview?.remaining_quota || 0)} />
+            <MetricCard label={t('Wallet balance')} value={formatQuota(data?.overview?.remaining_quota || 0)} />
+            <MetricCard label={t('Claude balance')} value={formatQuota(data?.overview?.claude_quota || 0)} />
             <MetricCard label={t('User used quota')} value={formatQuota(props.user?.usedQuota || 0)} />
             <MetricCard label={t('Pending boxes')} value={String(data?.overview?.pending_boxes || 0)} />
             <MetricCard label={t('Pity progress')} value={`${data?.overview?.pity_progress || 0}/${data?.pity_threshold || 0}`} />
-            <MetricCard label={t('Next expiry')} value={formatTime(data?.overview?.next_expire_at)} />
             <MetricCard label={t('Subscription prize')} value={`${((data?.subscription_prize_probability || 0) * 100).toFixed(2)}%`} />
           </div>
 
@@ -149,14 +149,13 @@ export function UserBlindBoxDialog(props: Props) {
 
             <div className='space-y-4'>
               <div className='rounded-lg border p-4'>
-                <div className='text-sm font-medium'>{t('Current rules')}</div>
-                <div className='mt-3 space-y-2 text-sm text-muted-foreground'>
-                  <div>{t('Unit price')}: {(data?.unit_price || 0).toFixed(2)} USD</div>
-                  <div>{t('Quota expiry days')}: {data?.expire_days || 0}</div>
-                  <div>{t('Daily purchase limit')}: {data?.daily_limit || 0}</div>
-                  <div>{t('Monthly purchase limit')}: {data?.monthly_limit || 0}</div>
-                  <div>{t('Daily open limit')}: {data?.daily_open_limit || 0}</div>
-                  <div>{t('Pity guarantee')}: {(data?.pity_guarantee_usd || 0).toFixed(2)} USD</div>
+              <div className='text-sm font-medium'>{t('Current rules')}</div>
+              <div className='mt-3 space-y-2 text-sm text-muted-foreground'>
+                <div>{t('Unit price')}: {(data?.unit_price || 0).toFixed(2)} USD</div>
+                <div>{t('Daily purchase limit')}: {data?.daily_limit || 0}</div>
+                <div>{t('Monthly purchase limit')}: {data?.monthly_limit || 0}</div>
+                <div>{t('Daily open limit')}: {data?.daily_open_limit || 0}</div>
+                <div>{t('Pity guarantee')}: {(data?.pity_guarantee_usd || 0).toFixed(2)} USD</div>
                 </div>
               </div>
 

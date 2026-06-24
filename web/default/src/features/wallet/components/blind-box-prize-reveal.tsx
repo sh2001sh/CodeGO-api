@@ -1,0 +1,261 @@
+/*
+Copyright (C) 2023-2026 QuantumNous
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+For commercial licensing, please contact support@quantumnous.com
+*/
+import { AnimatePresence, motion, useReducedMotion } from 'motion/react'
+import type { Variants } from 'motion/react'
+import { Sparkles, Star } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import type { BlindBoxRecord } from '../types'
+
+const EASE_OUT_QUINT = [0.22, 1, 0.36, 1] as const
+
+/**
+ * Reward rarity classification drives reveal drama: legendary rewards
+ * (subscription / pity / high-value) get glow + scale punch, common rewards
+ * get a quiet entrance. Keeping this isolated from the dialog so the reveal
+ * choreography stays self-contained.
+ */
+export type RewardRarity = 'legendary' | 'epic' | 'common'
+
+export function classifyReward(record: BlindBoxRecord): RewardRarity {
+  if (record.reward_type === 'subscription') return 'legendary'
+  if (record.is_pity) return 'legendary'
+  if (record.reward_type === 'claude_quota') {
+    return record.reward_usd >= 20 ? 'epic' : 'common'
+  }
+  if (record.reward_type === 'quota') {
+    return record.reward_usd >= 12 ? 'epic' : 'common'
+  }
+  return 'common'
+}
+
+function highestRarity(records: BlindBoxRecord[]): RewardRarity {
+  if (records.some((r) => classifyReward(r) === 'legendary')) return 'legendary'
+  if (records.some((r) => classifyReward(r) === 'epic')) return 'epic'
+  return 'common'
+}
+
+const REVEAL_CONTAINER: Variants = {
+  initial: {},
+  animate: { transition: { staggerChildren: 0.12, delayChildren: 0.08 } },
+}
+
+const REVEAL_ITEM: Variants = {
+  initial: { opacity: 0, y: 18, scale: 0.94 },
+  animate: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { duration: 0.42, ease: EASE_OUT_QUINT },
+  },
+}
+
+const REDUCED_CONTAINER: Variants = {
+  initial: {},
+  animate: { transition: { staggerChildren: 0 } },
+}
+
+const REDUCED_ITEM: Variants = {
+  initial: { opacity: 0 },
+  animate: { opacity: 1, transition: { duration: 0.18 } },
+}
+
+const RARITY_RING: Record<RewardRarity, string> = {
+  legendary:
+    'border-amber-400/50 bg-gradient-to-br from-amber-500/12 via-orange-500/8 to-transparent shadow-[0_0_22px_-6px_rgba(245,158,11,0.55)]',
+  epic: 'border-violet-400/40 bg-gradient-to-br from-violet-500/10 to-transparent',
+  common: 'border-border/70 bg-background/72',
+}
+
+const RARITY_BADGE: Record<RewardRarity, { label: string; cls: string } | null> =
+  {
+    legendary: {
+      label: '稀有',
+      cls: 'border-amber-500/40 bg-amber-500/15 text-amber-700 dark:text-amber-300',
+    },
+    epic: {
+      label: '精品',
+      cls: 'border-violet-500/40 bg-violet-500/15 text-violet-700 dark:text-violet-300',
+    },
+    common: null,
+  }
+
+function rewardTypeLabel(record: BlindBoxRecord) {
+  if (record.reward_type === 'subscription') return '套餐'
+  if (record.reward_type === 'claude_quota') return 'Claude'
+  if (record.reward_type === 'prop') return '道具'
+  return '额度'
+}
+
+export function PrizeRevealHeader(props: {
+  summary: string
+  openCount: number
+  records: BlindBoxRecord[]
+}) {
+  const reduced = useReducedMotion()
+  const rarity = highestRarity(props.records)
+  const celebratory = rarity === 'legendary'
+
+  return (
+    <motion.div
+      initial={reduced ? { opacity: 0 } : { opacity: 0, y: 10, scale: 0.97 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ duration: reduced ? 0.18 : 0.4, ease: EASE_OUT_QUINT }}
+      className={cn(
+        'relative overflow-hidden rounded-xl border p-4',
+        celebratory
+          ? 'border-amber-400/50 bg-gradient-to-br from-amber-500/12 via-orange-500/8 to-transparent'
+          : 'app-subtle-panel'
+      )}
+    >
+      {celebratory && !reduced ? (
+        <motion.div
+          aria-hidden
+          className='pointer-events-none absolute -right-6 -top-6 text-amber-400/30'
+          initial={{ opacity: 0, rotate: -20, scale: 0.6 }}
+          animate={{ opacity: 1, rotate: 0, scale: 1 }}
+          transition={{ duration: 0.6, ease: EASE_OUT_QUINT, delay: 0.1 }}
+        >
+          <Sparkles className='size-24' />
+        </motion.div>
+      ) : null}
+      <div className='relative'>
+        <div className='flex items-center gap-2'>
+          {celebratory ? (
+            <Star className='size-5 shrink-0 fill-amber-400 text-amber-400' />
+          ) : null}
+          <div className='text-foreground text-lg font-semibold'>
+            {celebratory ? `恭喜！${props.summary}` : props.summary}
+          </div>
+        </div>
+        <div className='text-muted-foreground mt-1 text-sm'>
+          共抽取 {props.openCount} 次，奖励已到账
+        </div>
+      </div>
+    </motion.div>
+  )
+}
+
+export function PrizeRevealList(props: {
+  records: BlindBoxRecord[]
+  onUseReward?: (record: BlindBoxRecord) => void
+  activePropKeys?: Record<string, number>
+  formatTimestamp: (timestamp?: number) => string
+}) {
+  const reduced = useReducedMotion()
+
+  return (
+    <motion.div
+      className='grid gap-3'
+      variants={reduced ? REDUCED_CONTAINER : REVEAL_CONTAINER}
+      initial='initial'
+      animate='animate'
+    >
+      <AnimatePresence>
+        {props.records.map((record) => (
+          <PrizeRevealCard
+            key={record.id}
+            record={record}
+            reduced={!!reduced}
+            onUseReward={props.onUseReward}
+            activePropKeys={props.activePropKeys}
+            formatTimestamp={props.formatTimestamp}
+          />
+        ))}
+      </AnimatePresence>
+    </motion.div>
+  )
+}
+
+function PrizeRevealCard(props: {
+  record: BlindBoxRecord
+  reduced: boolean
+  onUseReward?: (record: BlindBoxRecord) => void
+  activePropKeys?: Record<string, number>
+  formatTimestamp: (timestamp?: number) => string
+}) {
+  const { record } = props
+  const rarity = classifyReward(record)
+  const badge = RARITY_BADGE[rarity]
+  const propActive = !!props.activePropKeys?.[record.reward_title]
+
+  return (
+    <motion.div
+      variants={props.reduced ? REDUCED_ITEM : REVEAL_ITEM}
+      className={cn('relative rounded-xl border p-4', RARITY_RING[rarity])}
+    >
+      <div className='flex flex-wrap items-start justify-between gap-3'>
+        <div className='min-w-0 flex-1'>
+          <div className='flex flex-wrap items-center gap-2'>
+            <div className='text-foreground text-base font-semibold'>
+              {record.reward_title}
+            </div>
+            <div className='border-border/70 bg-background/60 text-muted-foreground rounded-full border px-2.5 py-0.5 text-xs font-medium'>
+              {rewardTypeLabel(record)}
+            </div>
+            {badge ? (
+              <div
+                className={cn(
+                  'rounded-full border px-2.5 py-0.5 text-xs font-medium',
+                  badge.cls
+                )}
+              >
+                {badge.label}
+              </div>
+            ) : null}
+            {record.is_pity ? (
+              <div className='border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400 rounded-full border px-2.5 py-0.5 text-xs font-medium'>
+                保底
+              </div>
+            ) : null}
+          </div>
+          <div className='text-muted-foreground mt-1.5 text-xs'>
+            {props.formatTimestamp(record.create_time)}
+          </div>
+        </div>
+        {record.reward_type === 'prop' && props.onUseReward ? (
+          <Button
+            type='button'
+            size='sm'
+            variant={propActive ? 'secondary' : 'default'}
+            onClick={() => props.onUseReward?.(record)}
+            disabled={propActive}
+          >
+            {propActive ? '已启用' : '立即使用'}
+          </Button>
+        ) : null}
+      </div>
+      {record.reward_type === 'prop' ? (
+        <div className='text-muted-foreground mt-3 text-xs leading-5'>
+          {propActive
+            ? '已启用，持续 24 小时自动生效'
+            : '点击立即使用后生效，持续 24 小时'}
+        </div>
+      ) : record.reward_type === 'claude_quota' ? (
+        <div className='text-muted-foreground mt-3 text-xs leading-5'>
+          已进入 Claude 钱包，永久有效
+        </div>
+      ) : record.reward_type === 'quota' ? (
+        <div className='text-muted-foreground mt-3 text-xs leading-5'>
+          已进入可用余额，永久有效
+        </div>
+      ) : null}
+    </motion.div>
+  )
+}

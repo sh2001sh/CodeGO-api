@@ -27,7 +27,7 @@ func getBlindBoxSubscriptionPlanTx(tx *gorm.DB) (*SubscriptionPlan, error) {
 }
 
 func formatFirstPurchaseBlindBoxRewardTitle(amount float64) string {
-	return fmt.Sprintf("首购专属奖励：%.2f 美元临时额度", amount)
+	return fmt.Sprintf("首购专属奖励：%.2f 美元", amount)
 }
 
 func buildFirstPurchaseBlindBoxTiers(
@@ -51,6 +51,7 @@ func buildFirstPurchaseBlindBoxTiers(
 			MinUSD:      currentMin,
 			MaxUSD:      currentMax,
 			Probability: tier.Probability,
+			WalletType:  tier.WalletType,
 		})
 		if index < len(tiers)-1 {
 			currentMin = math.Round((currentMax+0.1)*100) / 100
@@ -245,6 +246,9 @@ func openBlindBoxesTx(tx *gorm.DB, userId int, count int, orderId *int) ([]Blind
 			pityTriggered := pityState.ConsecutiveLowRewards >= effectivePityThreshold
 			rewardUSD := 0.0
 			tierName := "pity"
+			var tier operation_setting.BlindBoxTierSetting
+			rewardType := BlindBoxRewardTypeQuota
+			tierWalletType := BlindBoxRewardWalletTypeDefault
 			if pityTriggered {
 				rewardUSD = setting.PityGuaranteeUSD + blindBoxPityGuaranteeUSD
 			} else {
@@ -253,50 +257,94 @@ func openBlindBoxesTx(tx *gorm.DB, userId int, count int, orderId *int) ([]Blind
 					rewardTiers = firstPurchaseTiers
 					tierName = "first_purchase"
 				}
-				tier := pickBlindBoxTier(rewardTiers)
+				tier = pickBlindBoxTier(rewardTiers)
 				if tierName != "first_purchase" {
 					tierName = tier.Name
 				}
 				rewardUSD = randomTierRewardUSD(tier)
+				rewardType = operation_setting.NormalizeBlindBoxRewardType(tier.RewardType)
+				tierWalletType = normalizeBlindBoxRewardWalletType(tier.WalletType)
 			}
-			if blindBoxRewardRate > 0 {
+			if blindBoxRewardRate > 0 && rewardType != BlindBoxRewardTypeProp {
 				rewardUSD = math.Round(rewardUSD*(1+blindBoxRewardRate)*100) / 100
 			}
-			baseCreditAmount := quotaUnitsFromBlindBoxUSD(rewardUSD)
-			creditAmount := baseCreditAmount + blindBoxBonusQuota
-			if creditAmount <= 0 {
-				return nil, fmt.Errorf("invalid blind box reward amount: %.2f", rewardUSD)
-			}
 			totalRewardUSD := rewardUSD + float64(blindBoxBonusQuota)/common.QuotaPerUnit
-			record.RewardType = BlindBoxRewardTypeQuota
-			record.RewardUSD = totalRewardUSD
-			record.CreditAmount = creditAmount
-			record.RewardTier = tierName
-			record.IsPity = pityTriggered
-			if tierName == "first_purchase" {
-				record.RewardTitle = formatFirstPurchaseBlindBoxRewardTitle(totalRewardUSD)
-			} else {
-				record.RewardTitle = fmt.Sprintf("%.2f 美元临时额度", totalRewardUSD)
+			switch rewardType {
+			case BlindBoxRewardTypeProp:
+				record.RewardType = BlindBoxRewardTypeProp
+				record.RewardTitle = tier.Name
+				if record.RewardTitle == "" {
+					record.RewardTitle = "实用道具奖励"
+				}
+				record.RewardTier = tierName
+				record.RewardUSD = 0
+				record.CreditAmount = 0
+				record.RewardWalletType = ""
+				record.IsPity = false
+			case BlindBoxRewardTypeClaudeQuota:
+				creditAmount := quotaUnitsFromBlindBoxUSD(totalRewardUSD)
+				if creditAmount <= 0 {
+					return nil, fmt.Errorf("invalid blind box reward amount: %.2f", totalRewardUSD)
+				}
+				record.RewardType = BlindBoxRewardTypeClaudeQuota
+				record.RewardWalletType = string(BlindBoxRewardWalletTypeClaude)
+				record.RewardUSD = totalRewardUSD
+				record.CreditAmount = creditAmount
+				record.RewardTier = tierName
+				record.IsPity = pityTriggered
+				if tierName == "first_purchase" {
+					record.RewardTitle = formatFirstPurchaseBlindBoxRewardTitle(totalRewardUSD)
+				} else {
+					record.RewardTitle = fmt.Sprintf("%.2f Claude 额度奖励", totalRewardUSD)
+				}
+				if err := tx.Create(&record).Error; err != nil {
+					return nil, err
+				}
+				if err := applyBlindBoxWalletRewardTx(tx, userId, creditAmount, BlindBoxRewardWalletTypeClaude); err != nil {
+					return nil, err
+				}
+				if rewardUSD >= setting.LowRewardThresholdUSD {
+					pityState.ConsecutiveLowRewards = 0
+				} else {
+					pityState.ConsecutiveLowRewards++
+				}
+				records = append(records, record)
+				continue
+			default:
+				baseCreditAmount := quotaUnitsFromBlindBoxUSD(totalRewardUSD)
+				creditAmount := baseCreditAmount + blindBoxBonusQuota
+				if creditAmount <= 0 {
+					return nil, fmt.Errorf("invalid blind box reward amount: %.2f", totalRewardUSD)
+				}
+				record.RewardType = BlindBoxRewardTypeQuota
+				record.RewardWalletType = string(tierWalletType)
+				record.RewardUSD = totalRewardUSD
+				record.CreditAmount = creditAmount
+				record.RewardTier = tierName
+				record.IsPity = pityTriggered
+				if tierName == "first_purchase" {
+					record.RewardTitle = formatFirstPurchaseBlindBoxRewardTitle(totalRewardUSD)
+				} else if tierWalletType == BlindBoxRewardWalletTypeClaude {
+					record.RewardTitle = fmt.Sprintf("%.2f Claude 额度奖励", totalRewardUSD)
+				} else {
+					record.RewardTitle = fmt.Sprintf("%.2f 美元奖励", totalRewardUSD)
+				}
+				if err := tx.Create(&record).Error; err != nil {
+					return nil, err
+				}
+				if err := applyBlindBoxWalletRewardTx(tx, userId, creditAmount, tierWalletType); err != nil {
+					return nil, err
+				}
+				if rewardUSD >= setting.LowRewardThresholdUSD {
+					pityState.ConsecutiveLowRewards = 0
+				} else {
+					pityState.ConsecutiveLowRewards++
+				}
+				records = append(records, record)
+				continue
 			}
 			if err := tx.Create(&record).Error; err != nil {
 				return nil, err
-			}
-			credit := BlindBoxCredit{
-				UserId:          userId,
-				OpenRecordId:    record.Id,
-				OriginalAmount:  creditAmount,
-				RemainingAmount: creditAmount,
-				RewardUSD:       totalRewardUSD,
-				ExpiresAt:       now + int64(setting.ExpireDays)*24*3600,
-				Status:          BlindBoxCreditStatusActive,
-			}
-			if err := tx.Create(&credit).Error; err != nil {
-				return nil, err
-			}
-			if rewardUSD >= setting.LowRewardThresholdUSD {
-				pityState.ConsecutiveLowRewards = 0
-			} else {
-				pityState.ConsecutiveLowRewards++
 			}
 			records = append(records, record)
 			continue

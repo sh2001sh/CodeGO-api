@@ -100,14 +100,18 @@ export function ForgotPasswordForm({
             <FormItem>
               <FormLabel>{t('Email')}</FormLabel>
               <FormControl>
-                <Input placeholder={t('name@example.com')} {...field} />
+                <Input
+                  type='email'
+                  placeholder={t('name@example.com')}
+                  {...field}
+                />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        <Button className='mt-2' disabled={isLoading || isActive}>
+        <Button type='submit' className='mt-2' disabled={isLoading || isActive}>
           {isActive
             ? t('Resend ({{seconds}}s)', { seconds: secondsLeft })
             : t('Send reset email')}

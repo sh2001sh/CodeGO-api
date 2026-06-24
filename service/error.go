@@ -111,6 +111,10 @@ func RelayErrorHandler(ctx context.Context, resp *http.Response, showBodyWhenFai
 		}
 		return
 	}
+	if resp.StatusCode == http.StatusTooManyRequests {
+		newApiErr.Err = fmt.Errorf("status_code=429")
+		return
+	}
 
 	if common.GetJsonType(errResponse.Error) == "object" {
 		// General format error (OpenAI, Anthropic, Gemini, etc.)
@@ -192,6 +196,9 @@ func TaskErrorWrapperLocal(err error, code string, statusCode int) *dto.TaskErro
 
 func TaskErrorWrapper(err error, code string, statusCode int) *dto.TaskError {
 	text := err.Error()
+	if statusCode == http.StatusTooManyRequests {
+		text = "status_code=429"
+	}
 	lowerText := strings.ToLower(text)
 	if strings.Contains(lowerText, "post") || strings.Contains(lowerText, "dial") || strings.Contains(lowerText, "http") {
 		common.SysLog(fmt.Sprintf("error: %s", text))
@@ -215,9 +222,13 @@ func TaskErrorFromAPIError(apiErr *types.NewAPIError) *dto.TaskError {
 	if apiErr == nil {
 		return nil
 	}
+	message := common.SanitizeUpstreamQuotaErrorMessage(apiErr.Err.Error())
+	if apiErr.StatusCode == http.StatusTooManyRequests {
+		message = "status_code=429"
+	}
 	return &dto.TaskError{
 		Code:       string(apiErr.GetErrorCode()),
-		Message:    common.SanitizeUpstreamQuotaErrorMessage(apiErr.Err.Error()),
+		Message:    message,
 		StatusCode: apiErr.StatusCode,
 		Error:      apiErr.Err,
 	}

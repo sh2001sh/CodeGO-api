@@ -7,6 +7,7 @@ import {
   Sparkles,
   Wallet,
 } from 'lucide-react'
+import { AnimateInView } from '@/components/animate-in-view'
 
 interface FeaturesProps {
   className?: string
@@ -55,41 +56,42 @@ export function Features(_props: FeaturesProps) {
   return (
     <section className='px-6 py-20 md:px-10 md:py-24'>
       <div className='mx-auto max-w-7xl'>
-        <div className='mx-auto max-w-3xl text-center'>
+        <AnimateInView className='mx-auto max-w-3xl text-center'>
           <div className='ios-pill inline-flex items-center gap-2 px-3 py-1 text-xs font-semibold text-[#2f5ea3] dark:text-[#98c0ff]'>
             <Sparkles className='h-3.5 w-3.5' />
             平台福利
           </div>
-          <h2 className='mt-4 text-[clamp(2rem,4.4vw,3.2rem)] font-semibold tracking-[-0.03em] text-slate-950 dark:text-white'>
+          <h2 className='mt-4 text-[clamp(2rem,4.4vw,3.2rem)] font-semibold tracking-[-0.03em] text-balance text-slate-950 dark:text-white'>
             充值之外，还有这些拿额度的方式
           </h2>
           <p className='text-muted-foreground mt-4 text-base leading-7 dark:text-slate-300'>
             盲盒、积分、邀请刷新各自独立，又都能换成可用额度。挑一个顺手的开始。
           </p>
-        </div>
+        </AnimateInView>
 
         <div className='mt-12 grid gap-5 md:grid-cols-2'>
-          {activityCards.map((card) => (
-            <Link
-              key={card.tag}
-              to={card.to}
-              className='ios-floating-shell group flex flex-col p-6 transition-transform duration-200 hover:-translate-y-0.5'
-            >
-              <div className='flex items-center gap-2 text-xs font-semibold tracking-[0.16em] text-slate-500 dark:text-slate-400'>
-                {card.icon}
-                {card.tag}
-              </div>
-              <h3 className='mt-3 text-xl font-semibold tracking-[-0.02em] text-slate-950 dark:text-white'>
-                {card.title}
-              </h3>
-              <p className='text-muted-foreground mt-2 flex-1 text-sm leading-6 dark:text-slate-300'>
-                {card.description}
-              </p>
-              <span className='text-primary mt-4 inline-flex items-center gap-1 text-sm font-medium'>
-                {card.cta}
-                <ArrowRight className='size-4 transition-transform duration-200 group-hover:translate-x-0.5' />
-              </span>
-            </Link>
+          {activityCards.map((card, i) => (
+            <AnimateInView key={card.tag} delay={i * 110} className='h-full'>
+              <Link
+                to={card.to}
+                className='ios-floating-shell group flex h-full flex-col p-6 transition-transform duration-200 hover:-translate-y-0.5'
+              >
+                <div className='flex items-center gap-2 text-xs font-semibold tracking-[0.16em] text-slate-500 dark:text-slate-400'>
+                  {card.icon}
+                  {card.tag}
+                </div>
+                <h3 className='mt-3 text-xl font-semibold tracking-[-0.02em] text-slate-950 dark:text-white'>
+                  {card.title}
+                </h3>
+                <p className='text-muted-foreground mt-2 flex-1 text-sm leading-6 dark:text-slate-300'>
+                  {card.description}
+                </p>
+                <span className='text-primary mt-4 inline-flex items-center gap-1 text-sm font-medium'>
+                  {card.cta}
+                  <ArrowRight className='size-4 transition-transform duration-200 group-hover:translate-x-0.5' />
+                </span>
+              </Link>
+            </AnimateInView>
           ))}
         </div>
       </div>

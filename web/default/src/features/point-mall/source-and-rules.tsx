@@ -30,7 +30,7 @@ export function SourceAndRules() {
           <div>
             <div className='font-medium'>盲盒券</div>
             <p className='text-muted-foreground mt-1'>
-              兑换后立即到账，开出的临时额度会写入兑换记录。
+              兑换后立即到账，开出的额度会直接进入对应钱包。
             </p>
           </div>
           <div>

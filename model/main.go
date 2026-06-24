@@ -319,6 +319,9 @@ func migrateDB() error {
 	if err := SeedDefaultSubscriptionPlans(); err != nil {
 		return err
 	}
+	if err := MigrateBlindBoxLegacyCredits(); err != nil {
+		return err
+	}
 	if err := SeedDefaultPointMallProducts(); err != nil {
 		return err
 	}
@@ -414,6 +417,9 @@ func migrateDBFast() error {
 		}
 	}
 	if err := SeedDefaultSubscriptionPlans(); err != nil {
+		return err
+	}
+	if err := MigrateBlindBoxLegacyCredits(); err != nil {
 		return err
 	}
 	if err := SeedDefaultPointMallProducts(); err != nil {

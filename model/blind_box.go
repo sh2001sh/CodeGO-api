@@ -13,6 +13,8 @@ import (
 
 const (
 	BlindBoxRewardTypeQuota        = "quota"
+	BlindBoxRewardTypeClaudeQuota  = "claude_quota"
+	BlindBoxRewardTypeProp         = "prop"
 	BlindBoxRewardTypeSubscription = "subscription"
 
 	BlindBoxCreditStatusActive    = "active"
@@ -52,16 +54,25 @@ type BlindBoxOrder struct {
 type BlindBoxCredit struct {
 	Id int `json:"id"`
 
-	UserId          int     `json:"user_id" gorm:"index"`
-	OpenRecordId    int     `json:"open_record_id" gorm:"index"`
-	OriginalAmount  int64   `json:"original_amount" gorm:"type:bigint;not null;default:0"`
-	RemainingAmount int64   `json:"remaining_amount" gorm:"type:bigint;not null;default:0;index"`
-	RewardUSD       float64 `json:"reward_usd"`
-	ExpiresAt       int64   `json:"expires_at" gorm:"bigint;index"`
-	Status          string  `json:"status" gorm:"type:varchar(32);index"`
-	CreatedAt       int64   `json:"created_at" gorm:"bigint"`
-	UpdatedAt       int64   `json:"updated_at" gorm:"bigint"`
+	UserId             int     `json:"user_id" gorm:"index"`
+	OpenRecordId       int     `json:"open_record_id" gorm:"index"`
+	OriginalAmount     int64   `json:"original_amount" gorm:"type:bigint;not null;default:0"`
+	RemainingAmount    int64   `json:"remaining_amount" gorm:"type:bigint;not null;default:0;index"`
+	RewardUSD          float64 `json:"reward_usd"`
+	ExpiresAt          int64   `json:"expires_at" gorm:"bigint;index"`
+	Status             string  `json:"status" gorm:"type:varchar(32);index"`
+	MigratedAt         int64   `json:"migrated_at" gorm:"bigint;index;default:0"`
+	MigratedWalletType string  `json:"migrated_wallet_type" gorm:"type:varchar(32);default:''"`
+	CreatedAt          int64   `json:"created_at" gorm:"bigint"`
+	UpdatedAt          int64   `json:"updated_at" gorm:"bigint"`
 }
+
+type BlindBoxRewardWalletType string
+
+const (
+	BlindBoxRewardWalletTypeDefault BlindBoxRewardWalletType = "default"
+	BlindBoxRewardWalletTypeClaude  BlindBoxRewardWalletType = "claude"
+)
 
 type BlindBoxOpenRecord struct {
 	Id int `json:"id"`
@@ -69,6 +80,7 @@ type BlindBoxOpenRecord struct {
 	UserId             int     `json:"user_id" gorm:"index"`
 	OrderId            int     `json:"order_id" gorm:"index"`
 	RewardType         string  `json:"reward_type" gorm:"type:varchar(32);index"`
+	RewardWalletType   string  `json:"reward_wallet_type" gorm:"type:varchar(32);default:'default';index"`
 	RewardUSD          float64 `json:"reward_usd"`
 	CreditAmount       int64   `json:"credit_amount" gorm:"type:bigint;not null;default:0"`
 	RewardTitle        string  `json:"reward_title" gorm:"type:varchar(255)"`
@@ -104,16 +116,14 @@ type BlindBoxPreConsumeRecord struct {
 type BlindBoxOverview struct {
 	AvailableBoxes         int                  `json:"available_boxes"`
 	PendingBoxes           int                  `json:"pending_boxes"`
-	ActiveCreditCount      int                  `json:"active_credit_count"`
 	RemainingQuota         int64                `json:"remaining_quota"`
-	NextExpireAt           int64                `json:"next_expire_at"`
+	ClaudeQuota            int64                `json:"claude_quota"`
 	PityProgress           int                  `json:"pity_progress"`
 	PityThreshold          int                  `json:"pity_threshold"`
 	EffectivePityThreshold int                  `json:"effective_pity_threshold"`
 	PurchasedToday         int                  `json:"purchased_today"`
 	PurchasedThisMonth     int                  `json:"purchased_this_month"`
 	RecentRecords          []BlindBoxOpenRecord `json:"recent_records"`
-	ActiveCredits          []BlindBoxCredit     `json:"active_credits"`
 }
 
 func (c *BlindBoxCredit) BeforeCreate(tx *gorm.DB) error {
@@ -168,12 +178,62 @@ func quotaUnitsFromBlindBoxUSD(amount float64) int64 {
 	return quotaUnitsFromUSD(amount)
 }
 
+func increaseUserQuotaTx(tx *gorm.DB, userId int, quota int64) error {
+	if tx == nil {
+		return errors.New("transaction is required")
+	}
+	if userId <= 0 || quota <= 0 {
+		return errors.New("invalid quota increase")
+	}
+	return tx.Model(&User{}).Where("id = ?", userId).Update("quota", gorm.Expr("quota + ?", quota)).Error
+}
+
+func increaseUserClaudeQuotaTx(tx *gorm.DB, userId int, quota int64) error {
+	if tx == nil {
+		return errors.New("transaction is required")
+	}
+	if userId <= 0 || quota <= 0 {
+		return errors.New("invalid claude quota increase")
+	}
+	return tx.Model(&User{}).Where("id = ?", userId).Update("claude_quota", gorm.Expr("claude_quota + ?", quota)).Error
+}
+
+func normalizeBlindBoxRewardWalletType(value string) BlindBoxRewardWalletType {
+	switch strings.TrimSpace(value) {
+	case string(BlindBoxRewardWalletTypeClaude):
+		return BlindBoxRewardWalletTypeClaude
+	default:
+		return BlindBoxRewardWalletTypeDefault
+	}
+}
+
+func applyBlindBoxWalletRewardTx(tx *gorm.DB, userId int, amount int64, walletType BlindBoxRewardWalletType) error {
+	if amount <= 0 {
+		return errors.New("invalid blind box reward amount")
+	}
+	switch walletType {
+	case BlindBoxRewardWalletTypeClaude:
+		return increaseUserClaudeQuotaTx(tx, userId, amount)
+	default:
+		return increaseUserQuotaTx(tx, userId, amount)
+	}
+}
+
 func normalizeBlindBoxOpenRecordDisplay(record *BlindBoxOpenRecord) {
 	if record == nil {
 		return
 	}
 	if record.RewardTier == "first_purchase" {
 		record.RewardTitle = formatFirstPurchaseBlindBoxRewardTitle(record.RewardUSD)
+	}
+	if record.RewardType == BlindBoxRewardTypeQuota && record.RewardTitle == "" {
+		record.RewardTitle = fmt.Sprintf("%.2f 美元奖励", record.RewardUSD)
+	}
+	if record.RewardType == BlindBoxRewardTypeClaudeQuota && record.RewardTitle == "" {
+		record.RewardTitle = fmt.Sprintf("%.2f Claude 额度奖励", record.RewardUSD)
+	}
+	if record.RewardType == BlindBoxRewardTypeProp && record.RewardTitle == "" {
+		record.RewardTitle = "实用道具奖励"
 	}
 }
 
@@ -228,6 +288,14 @@ func GetUserBlindBoxOverview(userId int, recentLimit int) (*BlindBoxOverview, er
 		return nil, errors.New("invalid userId")
 	}
 	now := common.GetTimestamp()
+	userQuota, err := GetUserQuota(userId, false)
+	if err != nil {
+		return nil, err
+	}
+	claudeQuota, err := GetUserClaudeQuota(userId, false)
+	if err != nil {
+		return nil, err
+	}
 	var orders []BlindBoxOrder
 	if err := DB.Where("user_id = ? AND status = ?", userId, common.TopUpStatusSuccess).
 		Order("id desc").
@@ -259,18 +327,8 @@ func GetUserBlindBoxOverview(userId int, recentLimit int) (*BlindBoxOverview, er
 	for index := range overview.RecentRecords {
 		normalizeBlindBoxOpenRecordDisplay(&overview.RecentRecords[index])
 	}
-	credits, err := GetActiveBlindBoxCredits(userId)
-	if err != nil {
-		return nil, err
-	}
-	overview.ActiveCredits = credits
-	overview.ActiveCreditCount = len(credits)
-	for _, credit := range credits {
-		overview.RemainingQuota += credit.RemainingAmount
-		if overview.NextExpireAt == 0 || credit.ExpiresAt < overview.NextExpireAt {
-			overview.NextExpireAt = credit.ExpiresAt
-		}
-	}
+	overview.RemainingQuota = int64(userQuota)
+	overview.ClaudeQuota = int64(claudeQuota)
 	var pity BlindBoxPityState
 	if err := DB.Where("user_id = ?", userId).First(&pity).Error; err == nil {
 		overview.PityProgress = pity.ConsecutiveLowRewards
@@ -297,13 +355,20 @@ func GetUserBlindBoxOverview(userId int, recentLimit int) (*BlindBoxOverview, er
 	return overview, nil
 }
 
-func GetActiveBlindBoxCredits(userId int) ([]BlindBoxCredit, error) {
-	now := common.GetTimestamp()
-	var credits []BlindBoxCredit
-	err := DB.Where("user_id = ? AND remaining_amount > 0 AND expires_at > ?", userId, now).
-		Order("expires_at asc, id asc").
-		Find(&credits).Error
-	return credits, err
+func getBlindBoxUserQuotaTx(tx *gorm.DB, userId int) (int, error) {
+	var quota int
+	if err := tx.Model(&User{}).Where("id = ?", userId).Select("quota").Find(&quota).Error; err != nil {
+		return 0, err
+	}
+	return quota, nil
+}
+
+func getBlindBoxUserClaudeQuotaTx(tx *gorm.DB, userId int) (int, error) {
+	var quota int
+	if err := tx.Model(&User{}).Where("id = ?", userId).Select("claude_quota").Find(&quota).Error; err != nil {
+		return 0, err
+	}
+	return quota, nil
 }
 
 func CompleteBlindBoxOrder(tradeNo string, providerPayload string, expectedPaymentProvider string, actualPaymentMethod string) error {

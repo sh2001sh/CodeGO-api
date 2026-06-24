@@ -98,7 +98,7 @@ export function getFundingSourceLabel(
 ): string {
   switch (source) {
     case 'blind_box':
-      return '盲盒额度'
+      return '盲盒奖励'
     case 'subscription':
       return '订阅额度'
     case 'wallet':
@@ -114,7 +114,7 @@ export function getFundingSourceDescription(
 ): string {
   switch (source) {
     case 'blind_box':
-      return '开盲盒获得的临时额度'
+      return '开盲盒获得的额度会直接进入对应钱包'
     case 'subscription':
       return '按订阅顺序逐个消耗的套餐额度'
     case 'wallet':

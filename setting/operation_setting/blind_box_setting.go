@@ -2,6 +2,7 @@ package operation_setting
 
 import (
 	"sort"
+	"strings"
 
 	"github.com/QuantumNous/new-api/setting/config"
 )
@@ -11,6 +12,8 @@ type BlindBoxTierSetting struct {
 	MinUSD      float64 `json:"min_usd"`
 	MaxUSD      float64 `json:"max_usd"`
 	Probability float64 `json:"probability"`
+	RewardType  string  `json:"reward_type,omitempty"`
+	WalletType  string  `json:"wallet_type,omitempty"`
 }
 
 type BlindBoxSetting struct {
@@ -45,13 +48,16 @@ var blindBoxSetting = BlindBoxSetting{
 	SubscriptionPlanTitle:        "Standard月卡",
 	CountOptions:                 []int{1, 5, 10, 20, 50},
 	Tiers: []BlindBoxTierSetting{
-		{Name: "starter", MinUSD: 1.0, MaxUSD: 2.5, Probability: 0.16},
-		{Name: "steady", MinUSD: 2.6, MaxUSD: 4.8, Probability: 0.18},
-		{Name: "core", MinUSD: 5.0, MaxUSD: 8.0, Probability: 0.30},
-		{Name: "boost", MinUSD: 8.1, MaxUSD: 12.0, Probability: 0.20},
-		{Name: "lucky", MinUSD: 12.1, MaxUSD: 18.0, Probability: 0.10},
-		{Name: "epic", MinUSD: 18.1, MaxUSD: 30.0, Probability: 0.05},
-		{Name: "legendary", MinUSD: 30.1, MaxUSD: 50.0, Probability: 0.01},
+		{Name: "5 美元普通额度", MinUSD: 5.0, MaxUSD: 5.0, Probability: 0.10, RewardType: "quota", WalletType: "default"},
+		{Name: "8 美元普通额度", MinUSD: 8.0, MaxUSD: 8.0, Probability: 0.16, RewardType: "quota", WalletType: "default"},
+		{Name: "12 美元普通额度", MinUSD: 12.0, MaxUSD: 12.0, Probability: 0.18, RewardType: "quota", WalletType: "default"},
+		{Name: "20 美元 Claude 额度", MinUSD: 20.0, MaxUSD: 20.0, Probability: 0.20, RewardType: "claude_quota", WalletType: "claude"},
+		{Name: "30 美元 Claude 额度", MinUSD: 30.0, MaxUSD: 30.0, Probability: 0.14, RewardType: "claude_quota", WalletType: "claude"},
+		{Name: "充值九折卡", MinUSD: 0, MaxUSD: 0, Probability: 0.08, RewardType: "prop"},
+		{Name: "套餐九折卡", MinUSD: 0, MaxUSD: 0, Probability: 0.07, RewardType: "prop"},
+		{Name: "0.95 倍率卡", MinUSD: 0, MaxUSD: 0, Probability: 0.04, RewardType: "prop"},
+		{Name: "0.9 倍率卡", MinUSD: 0, MaxUSD: 0, Probability: 0.03, RewardType: "prop"},
+		{Name: "免费调用次数卡（10 次）", MinUSD: 0, MaxUSD: 0, Probability: 0.02, RewardType: "prop"},
 	},
 }
 
@@ -86,6 +92,41 @@ func defaultBlindBoxTiers() []BlindBoxTierSetting {
 	copied := make([]BlindBoxTierSetting, len(blindBoxSetting.Tiers))
 	copy(copied, blindBoxSetting.Tiers)
 	return copied
+}
+
+func normalizeBlindBoxWalletType(walletType string) string {
+	switch strings.TrimSpace(walletType) {
+	case "claude":
+		return "claude"
+	default:
+		return "default"
+	}
+}
+
+func normalizeBlindBoxTierSettings(tiers []BlindBoxTierSetting) []BlindBoxTierSetting {
+	if len(tiers) == 0 {
+		return defaultBlindBoxTiers()
+	}
+	result := make([]BlindBoxTierSetting, len(tiers))
+	for i, tier := range tiers {
+		result[i] = tier
+		result[i].RewardType = NormalizeBlindBoxRewardType(tier.RewardType)
+		result[i].WalletType = normalizeBlindBoxWalletType(tier.WalletType)
+	}
+	return result
+}
+
+func NormalizeBlindBoxRewardType(rewardType string) string {
+	switch strings.TrimSpace(rewardType) {
+	case "claude_quota":
+		return "claude_quota"
+	case "prop":
+		return "prop"
+	case "subscription":
+		return "subscription"
+	default:
+		return "quota"
+	}
 }
 
 func GetBlindBoxSetting() BlindBoxSetting {
@@ -130,5 +171,10 @@ func GetBlindBoxSetting() BlindBoxSetting {
 	if len(settingCopy.Tiers) == 0 {
 		settingCopy.Tiers = defaultBlindBoxTiers()
 	}
+	settingCopy.Tiers = normalizeBlindBoxTierSettings(settingCopy.Tiers)
 	return settingCopy
+}
+
+func SetBlindBoxSetting(setting BlindBoxSetting) {
+	blindBoxSetting = setting
 }

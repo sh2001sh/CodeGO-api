@@ -566,12 +566,12 @@ func checkAndSendBlindBoxQuotaNotify(relayInfo *relaycommon.RelayInfo) {
 		if overview.RemainingQuota >= int64(threshold) {
 			return
 		}
-		prompt := "您的盲盒短期额度即将用尽"
-		topUpLink := PaymentReturnURL("/console/topup#wallet-blind-box")
-		content := "{{value}}，当前盲盒短期剩余额度为 {{value}}，请及时使用或补充。<br/>活动入口：<a href='{{value}}'>{{value}}</a>"
+		prompt := "您的钱包余额即将用尽"
+		topUpLink := PaymentReturnURL("/console/topup#wallet")
+		content := "{{value}}，当前钱包余额为 {{value}}，请及时充值。<br/>充值入口：<a href='{{value}}'>{{value}}</a>"
 		values := []interface{}{prompt, logger.FormatQuota(int(overview.RemainingQuota)), topUpLink, topUpLink}
 		if err := NotifyUser(relayInfo.UserId, relayInfo.UserEmail, relayInfo.UserSetting, dto.NewNotify(dto.NotifyTypeQuotaExceed, prompt, content, values)); err != nil {
-			common.SysError(fmt.Sprintf("failed to send blind box quota notify to user %d: %s", relayInfo.UserId, err.Error()))
+			common.SysError(fmt.Sprintf("failed to send blind box wallet notify to user %d: %s", relayInfo.UserId, err.Error()))
 		}
 	})
 }

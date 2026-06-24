@@ -74,7 +74,6 @@ func GetBlindBoxSelf(c *gin.Context) {
 	common.ApiSuccess(c, gin.H{
 		"enabled":                           enabled,
 		"unit_price":                        setting.UnitPrice,
-		"expire_days":                       setting.ExpireDays,
 		"daily_limit":                       setting.DailyLimit,
 		"monthly_limit":                     setting.MonthlyLimit,
 		"daily_open_limit":                  setting.DailyOpenLimit,
@@ -113,7 +112,6 @@ func AdminGetBlindBoxUserOverview(c *gin.Context) {
 	common.ApiSuccess(c, gin.H{
 		"enabled":                           enabled,
 		"unit_price":                        setting.UnitPrice,
-		"expire_days":                       setting.ExpireDays,
 		"daily_limit":                       setting.DailyLimit,
 		"monthly_limit":                     setting.MonthlyLimit,
 		"daily_open_limit":                  setting.DailyOpenLimit,

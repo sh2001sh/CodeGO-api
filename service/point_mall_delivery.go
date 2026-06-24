@@ -233,7 +233,7 @@ func blindBoxRewardSummary(records []model.BlindBoxOpenRecord) string {
 			continue
 		}
 		if record.RewardUSD > 0 {
-			parts = append(parts, fmt.Sprintf("%.2f 美元临时额度", record.RewardUSD))
+			parts = append(parts, fmt.Sprintf("%.2f 美元奖励", record.RewardUSD))
 			continue
 		}
 		parts = append(parts, "已获得奖励")

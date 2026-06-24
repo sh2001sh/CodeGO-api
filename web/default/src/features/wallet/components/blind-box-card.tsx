@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'sonner'
 import { getGamificationDashboard } from '@/features/gamification/api'
 import { getPetProfile, type PetProfile } from '@/features/gamification/pet-catalog'
@@ -19,7 +19,6 @@ import type {
   PaymentMethod,
 } from '../types'
 import {
-  BlindBoxPaymentDialog,
   BlindBoxPrizeDialog,
   EMPTY_PAYMENT_STATE,
   EMPTY_PRIZE_STATE,
@@ -27,7 +26,9 @@ import {
   type BlindBoxPaymentState,
   type PrizeDialogState,
 } from './blind-box-dialogs'
+import { BlindBoxPaymentDialog } from './blind-box-payment-dialog'
 import { BlindBoxCardView } from './blind-box-view'
+import { BlindBoxSidebar } from './blind-box-sidebar'
 
 interface BlindBoxCardProps {
   onSubscriptionRefresh: () => Promise<void>
@@ -233,8 +234,15 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
             message: '订单已过期或支付未完成，请重新发起购买。',
           }))
         }
-      } catch {
-        // Keep polling until the state changes.
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : ''
+        if (errorMsg.includes('timeout') || errorMsg.includes('超时')) {
+          setPaymentState((current) => ({
+            ...current,
+            stage: 'failed',
+            message: '支付超时，请检查网络连接后重试',
+          }))
+        }
       }
     }
 
@@ -250,15 +258,13 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
   }, [paymentState, props])
 
   const availableBoxes = data?.overview?.available_boxes || 0
+  const pendingBoxes = data?.overview?.pending_boxes || 0
+  const remainingQuota = data?.overview?.remaining_quota || 0
+  const claudeQuota = data?.overview?.claude_quota || 0
   const effectivePityThreshold =
     data?.overview?.effective_pity_threshold || data?.pity_threshold || 1
   const pityProgress = data?.overview?.pity_progress || 0
   const remainingPity = Math.max(0, effectivePityThreshold - pityProgress)
-
-  const activeCredits = useMemo(
-    () => data?.overview?.active_credits?.slice(0, 3) || [],
-    [data?.overview?.active_credits]
-  )
 
   const startPendingPayment = useCallback(
     (args: {
@@ -270,6 +276,7 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
       qrCodeUrl?: string
       formUrl?: string
       formFields?: Record<string, unknown> | null
+      retryPayload?: { quantity: number; paymentMethod: string }
     }) => {
         setPaymentState({
         open: true,
@@ -283,6 +290,8 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
         formFields: args.formFields || null,
         quantity: args.quantity,
         message: '请在当前弹窗内扫码支付，付款完成后这里会自动显示结果。',
+        pollingStartTime: Date.now(),
+        retryPayload: args.retryPayload,
       })
     },
     []
@@ -301,7 +310,18 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
         payment_method: selectedPaymentMethod.type,
       })
       if (!isApiSuccess(response)) {
-        throw new Error(response.message || '发起支付失败')
+        const errorMsg = response.message || '发起支付失败'
+        let userFriendlyMsg = errorMsg
+
+        if (errorMsg.includes('余额不足') || errorMsg.includes('insufficient')) {
+          userFriendlyMsg = '余额不足，请先充值'
+        } else if (errorMsg.includes('超时') || errorMsg.includes('timeout')) {
+          userFriendlyMsg = '网络超时，请检查网络连接后重试'
+        } else if (errorMsg.includes('限额') || errorMsg.includes('limit')) {
+          userFriendlyMsg = '已达到购买限额，请稍后再试'
+        }
+
+        throw new Error(userFriendlyMsg)
       }
 
       const payload = isRecord(response.data) ? response.data : {}
@@ -316,9 +336,32 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
         qrCodeUrl: String(payload.qrcode_url || ''),
         formUrl: formFields ? String(response.url || '') : '',
         formFields,
+        retryPayload: {
+          quantity: selectedQuantity,
+          paymentMethod: selectedPaymentMethod.type,
+        },
       })
     } catch (error) {
-      toast.error(error instanceof Error ? error.message : '发起支付失败')
+      const errorMsg = error instanceof Error ? error.message : '发起支付失败'
+      toast.error(errorMsg)
+
+      setPaymentState({
+        open: true,
+        stage: 'failed',
+        orderId: '',
+        amountDue,
+        methodLabel: getBlindBoxMethodLabel(selectedPaymentMethod),
+        payUrl: '',
+        qrCodeUrl: '',
+        formUrl: '',
+        formFields: null,
+        quantity: selectedQuantity,
+        message: errorMsg,
+        retryPayload: {
+          quantity: selectedQuantity,
+          paymentMethod: selectedPaymentMethod.type,
+        },
+      })
     } finally {
       setPaying(false)
     }
@@ -371,39 +414,76 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
     }
   }, [paymentState.formFields, paymentState.formUrl, paymentState.payUrl])
 
+  const handleRetryPayment = useCallback(() => {
+    if (!paymentState.retryPayload) return
+
+    const method = data?.pay_methods?.find(
+      (m) => m.type === paymentState.retryPayload?.paymentMethod
+    )
+    if (!method) {
+      toast.error('支付方式不可用，请重新选择')
+      setPaymentState(EMPTY_PAYMENT_STATE)
+      return
+    }
+
+    setSelectedQuantity(paymentState.retryPayload.quantity)
+    setSelectedPaymentMethod(method)
+    setPaymentState(EMPTY_PAYMENT_STATE)
+
+    setTimeout(() => {
+      void handlePay()
+    }, 100)
+  }, [paymentState.retryPayload, data?.pay_methods, handlePay])
+
   return (
-    <div className='space-y-4'>
-      <BlindBoxCardView
-        data={data}
-        loading={loading}
-        selectedQuantity={selectedQuantity}
-        selectedPaymentMethod={selectedPaymentMethod}
-        amountDue={amountDue}
-        paying={paying}
-        openingCount={openingCount}
-        availableBoxes={availableBoxes}
-        effectivePityThreshold={effectivePityThreshold}
-        pityProgress={pityProgress}
-        remainingPity={remainingPity}
-        activeCredits={activeCredits}
-        showPrizeNotice={showPrizeNotice}
-        petProfile={petProfile}
-        petSkill={petSkill}
-        onQuantityChange={setSelectedQuantity}
-        onPaymentMethodChange={setSelectedPaymentMethod}
-        onPay={() => void handlePay()}
-        onManualOpen={(count) => void handleManualOpen(count)}
-        onTogglePrizeNotice={() => setShowPrizeNotice((current) => !current)}
-        onClosePrizeNotice={() => setShowPrizeNotice(false)}
-      />
+    <>
+      <div className='grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_320px]'>
+        <div className='app-page-shell min-w-0 p-5 sm:p-6'>
+          <BlindBoxCardView
+            data={data}
+            loading={loading}
+            selectedQuantity={selectedQuantity}
+            selectedPaymentMethod={selectedPaymentMethod}
+            amountDue={amountDue}
+            paying={paying}
+            openingCount={openingCount}
+            availableBoxes={availableBoxes}
+            effectivePityThreshold={effectivePityThreshold}
+            pityProgress={pityProgress}
+            remainingPity={remainingPity}
+            showPrizeNotice={showPrizeNotice}
+            petProfile={petProfile}
+            petSkill={petSkill}
+            onQuantityChange={setSelectedQuantity}
+            onPaymentMethodChange={setSelectedPaymentMethod}
+            onPay={() => void handlePay()}
+            onManualOpen={(count) => void handleManualOpen(count)}
+            onTogglePrizeNotice={() => setShowPrizeNotice((current) => !current)}
+            onClosePrizeNotice={() => setShowPrizeNotice(false)}
+          />
+        </div>
+
+        <BlindBoxSidebar
+          remainingQuota={remainingQuota}
+          claudeQuota={claudeQuota}
+          availableBoxes={availableBoxes}
+          pendingBoxes={pendingBoxes}
+          petProfile={petProfile}
+          petSkill={petSkill}
+          records={data?.overview?.recent_records || []}
+        />
+      </div>
 
       <BlindBoxPaymentDialog
         state={paymentState}
         onOpenChange={(open) => {
-          if (!open && paymentState.stage === 'pending') return
           setPaymentState(open ? { ...paymentState, open } : EMPTY_PAYMENT_STATE)
         }}
         onOpenExternal={handleOpenExternal}
+        onContinueInBackground={() => {
+          toast.message('支付正在后台处理，完成后会自动同步结果')
+        }}
+        onRetry={handleRetryPayment}
       />
 
       <BlindBoxPrizeDialog
@@ -417,6 +497,6 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
         onUseReward={handleUseReward}
         activePropKeys={activeProps}
       />
-    </div>
+    </>
   )
 }

@@ -139,7 +139,7 @@ var achievementCatalog = []achievementDefinition{
 		Tier:              "common",
 		RewardUSD:         0.7,
 		RewardTitle:       "初开盲盒返礼",
-		RewardDescription: "奖励 0.7 美元额度，给第一次参与活动的用户一点甜头",
+		RewardDescription: "奖励 0.7 美元额度，直接进入普通钱包，给第一次参与活动的用户一点甜头",
 	},
 	{
 		Key:               "blind-box-regular",
@@ -150,7 +150,7 @@ var achievementCatalog = []achievementDefinition{
 		Tier:              "rare",
 		RewardUSD:         1.1,
 		RewardTitle:       "十开回馈包",
-		RewardDescription: "奖励 1.1 美元额度，鼓励继续体验盲盒活动",
+		RewardDescription: "奖励 1.1 美元额度，直接进入普通钱包，鼓励继续体验盲盒活动",
 	},
 	{
 		Key:               "lucky-star",
@@ -161,7 +161,7 @@ var achievementCatalog = []achievementDefinition{
 		Tier:              "legendary",
 		RewardUSD:         5,
 		RewardTitle:       "幸运星返场礼",
-		RewardDescription: "额外奖励 5 美元额度，放大奖励感",
+		RewardDescription: "额外奖励 5 美元额度，直接进入普通钱包，放大奖励感",
 	},
 	{
 		Key:               "social-crafter",
@@ -231,7 +231,7 @@ var missionCatalog = []missionDefinition{
 	{
 		Key:          "daily-blind-box",
 		Name:         "今日开启盲盒 1 次",
-		Description:  "今天开启一次盲盒，补充临时额度或抽中套餐大奖",
+		Description:  "今天开启一次盲盒，抽中额度直接进入对应钱包，也可能抽中套餐大奖",
 		Icon:         "gift",
 		RewardUSD:    0.20,
 		PetExpReward: 10,

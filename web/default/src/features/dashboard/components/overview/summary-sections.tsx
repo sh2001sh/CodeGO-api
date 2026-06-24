@@ -1,10 +1,10 @@
 import type { ReactNode } from 'react'
 import { Link } from '@tanstack/react-router'
-import { ArrowRight, Gift, WalletCards } from 'lucide-react'
+import { ArrowRight, WalletCards } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
+import { cn } from '@/lib/utils'
 import { formatSubscriptionQuotaAmount } from '@/features/subscriptions/lib'
-import type { SubscriptionResetOpportunitySummary } from '@/features/subscriptions/types'
 import { DataMetric } from './summary-card-parts'
 
 export type MetricDef = {
@@ -13,13 +13,26 @@ export type MetricDef = {
   hint?: string
 }
 
+export type BalanceSegment = {
+  label: string
+  display: string
+  value: number
+  dot: string
+  bar: string
+}
+
 export function BalanceWorkspace(props: {
   available: string
-  walletQuota: string
+  segments: BalanceSegment[]
   claudeQuota: string
-  blindBoxQuota?: string
   metrics: MetricDef[]
 }) {
+  const total = props.segments.reduce(
+    (sum, segment) => sum + Math.max(0, segment.value),
+    0
+  )
+  const activeSegments = props.segments.filter((segment) => segment.value > 0)
+
   return (
     <section className='overview-glass-card p-5 xl:p-6'>
       <div className='grid gap-6 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)] xl:items-stretch'>
@@ -27,7 +40,7 @@ export function BalanceWorkspace(props: {
           <div className='flex items-center gap-2'>
             <WalletCards className='text-primary size-4' />
             <span className='text-muted-foreground text-[11px] font-medium tracking-[0.16em] uppercase'>
-              账户余额
+              可用总额度
             </span>
             <span className='border-primary/30 bg-primary/10 text-primary ml-auto rounded-full border px-2.5 py-0.5 text-[11px] font-medium'>
               USD
@@ -38,18 +51,37 @@ export function BalanceWorkspace(props: {
             {props.available}
           </div>
 
-          <div className='mt-4 flex flex-wrap gap-2 text-xs'>
-            <span className='border-border/70 bg-background/72 text-muted-foreground rounded-full border px-2.5 py-1'>
-              钱包 {props.walletQuota}
-            </span>
-            <span className='border-accent/60 bg-accent text-accent-foreground rounded-full border px-2.5 py-1'>
-              Claude {props.claudeQuota}
-            </span>
-            {props.blindBoxQuota ? (
-              <span className='border-border/70 bg-background/72 text-muted-foreground rounded-full border px-2.5 py-1'>
-                盲盒 {props.blindBoxQuota}
+          <div className='bg-border/50 mt-5 flex h-2.5 overflow-hidden rounded-full'>
+            {total > 0 ? (
+              activeSegments.map((segment) => (
+                <div
+                  key={segment.label}
+                  className={cn('h-full', segment.bar)}
+                  style={{ width: `${(segment.value / total) * 100}%` }}
+                />
+              ))
+            ) : (
+              <div className='bg-border h-full w-full' />
+            )}
+          </div>
+
+          <div className='mt-3 flex flex-wrap gap-x-4 gap-y-1.5 text-xs'>
+            {props.segments.map((segment) => (
+              <div key={segment.label} className='flex items-center gap-1.5'>
+                <span className={cn('size-2 rounded-full', segment.dot)} />
+                <span className='text-muted-foreground'>{segment.label}</span>
+                <span className='text-foreground font-medium tabular-nums'>
+                  {segment.display}
+                </span>
+              </div>
+            ))}
+            <div className='flex items-center gap-1.5'>
+              <span className='size-2 rounded-full bg-violet-500' />
+              <span className='text-muted-foreground'>Claude</span>
+              <span className='text-foreground font-medium tabular-nums'>
+                {props.claudeQuota}
               </span>
-            ) : null}
+            </div>
           </div>
 
           <div className='mt-5 grid gap-2.5 sm:grid-cols-3'>
@@ -218,63 +250,5 @@ export function StatusInfoCard(props: {
         {props.hint}
       </div>
     </div>
-  )
-}
-
-export function ActivityOverviewPanel(props: {
-  availableBoxes: number
-  affCount: string
-  resetOpportunity: SubscriptionResetOpportunitySummary
-  missionProgress?: string
-  companionName?: string
-}) {
-  const highlights = [
-    { label: '待处理盲盒', value: `${props.availableBoxes} 个` },
-    { label: '已邀请人数', value: props.affCount },
-    { label: '可用刷新', value: `${props.resetOpportunity.available_count} 次` },
-    {
-      label: '每日任务',
-      value:
-        props.missionProgress && props.companionName
-          ? `${props.companionName} · ${props.missionProgress}`
-          : props.companionName || props.missionProgress || '暂无进行中任务',
-    },
-  ]
-
-  return (
-    <section className='overview-glass-card p-5 xl:p-6'>
-      <div className='grid gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(240px,300px)] xl:items-center'>
-        <div className='min-w-0'>
-          <div className='text-foreground flex items-center gap-2 text-base font-semibold'>
-            <Gift className='text-primary size-4' />
-            活动与成长
-          </div>
-          <p className='text-muted-foreground mt-1 max-w-xl text-sm leading-6'>
-            盲盒、邀请、积分与每日任务的进度概览，点击进入活动中心查看详情。
-          </p>
-
-          <div className='mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4'>
-            {highlights.map((item) => (
-              <div key={item.label} className='overview-soft-card px-3 py-3'>
-                <div className='text-muted-foreground text-[11px] font-medium'>
-                  {item.label}
-                </div>
-                <div className='text-foreground mt-1 text-base font-semibold'>
-                  {item.value}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <Button
-          className='h-full min-h-28 w-full justify-between rounded-2xl'
-          render={<Link to='/activities' />}
-        >
-          <span>进入活动中心</span>
-          <ArrowRight data-icon='inline-end' />
-        </Button>
-      </div>
-    </section>
   )
 }

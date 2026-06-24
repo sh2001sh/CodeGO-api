@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/QuantumNous/new-api/common"
+	"github.com/QuantumNous/new-api/setting/operation_setting"
 	"github.com/glebarez/sqlite"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -341,4 +342,150 @@ func TestRedeem_ClaudeQuotaCodeAddsClaudeQuotaOnly(t *testing.T) {
 	assert.Equal(t, common.RedemptionCodeStatusUsed, saved.Status)
 	assert.Equal(t, user.Id, saved.UsedUserId)
 	assert.NotZero(t, saved.RedeemedTime)
+}
+
+func TestOpenBlindBoxes_AddsQuotaToDefaultAndClaudeWallets(t *testing.T) {
+	truncateTables(t)
+
+	setting := operation_setting.GetBlindBoxSetting()
+	setting.Enabled = true
+	setting.SubscriptionPrizeProbability = 0
+	setting.PityThreshold = 999
+	setting.PityGuaranteeUSD = 0
+	setting.LowRewardThresholdUSD = 0
+	setting.Tiers = []operation_setting.BlindBoxTierSetting{
+		{Name: "default-tier", MinUSD: 1, MaxUSD: 1, Probability: 0.5, WalletType: "default"},
+		{Name: "claude-tier", MinUSD: 2, MaxUSD: 2, Probability: 0.5, WalletType: "claude"},
+	}
+	operation_setting.SetBlindBoxSetting(setting)
+
+	user := &User{
+		Id:          8803,
+		Username:    "blind_box_wallet_user",
+		Status:      common.UserStatusEnabled,
+		Quota:       100,
+		ClaudeQuota: 200,
+	}
+	require.NoError(t, DB.Create(user).Error)
+
+	order := &BlindBoxOrder{
+		UserId:          user.Id,
+		Quantity:        2,
+		Money:           5,
+		TradeNo:         "blind-box-wallet-order",
+		PaymentMethod:   "test",
+		PaymentProvider: "test",
+		Status:          common.TopUpStatusSuccess,
+		CreateTime:      time.Now().Unix(),
+	}
+	require.NoError(t, DB.Create(order).Error)
+
+	records, err := OpenBlindBoxOrderByTradeNo(order.TradeNo)
+	require.NoError(t, err)
+	require.Len(t, records, 2)
+
+	var savedUser User
+	require.NoError(t, DB.Where("id = ?", user.Id).First(&savedUser).Error)
+	assert.Equal(t, 200, savedUser.Quota)
+	assert.Equal(t, 400, savedUser.ClaudeQuota)
+	assert.Equal(t, 2, len(records))
+	assert.Contains(t, []string{BlindBoxRewardTypeQuota, BlindBoxRewardTypeClaudeQuota}, records[0].RewardType)
+	assert.NotEmpty(t, records[0].RewardWalletType)
+}
+
+func TestMigrateBlindBoxLegacyCredits_TerminatesToMatchingWallets(t *testing.T) {
+	truncateTables(t)
+
+	users := []*User{
+		{Id: 8804, Username: "legacy_wallet_user", Status: common.UserStatusEnabled, Quota: 100, ClaudeQuota: 200},
+		{Id: 8805, Username: "legacy_claude_user", Status: common.UserStatusEnabled, Quota: 300, ClaudeQuota: 400},
+	}
+	for _, user := range users {
+		require.NoError(t, DB.Create(user).Error)
+	}
+
+	records := []*BlindBoxOpenRecord{
+		{Id: 9901, UserId: users[0].Id, RewardType: BlindBoxRewardTypeQuota, RewardWalletType: string(BlindBoxRewardWalletTypeDefault)},
+		{Id: 9902, UserId: users[1].Id, RewardType: BlindBoxRewardTypeClaudeQuota, RewardWalletType: string(BlindBoxRewardWalletTypeClaude)},
+	}
+	for _, record := range records {
+		require.NoError(t, DB.Create(record).Error)
+	}
+
+	credits := []*BlindBoxCredit{
+		{UserId: users[0].Id, OpenRecordId: records[0].Id, OriginalAmount: 120, RemainingAmount: 120, RewardUSD: 1.2, ExpiresAt: time.Now().Add(24 * time.Hour).Unix(), Status: BlindBoxCreditStatusActive},
+		{UserId: users[1].Id, OpenRecordId: records[1].Id, OriginalAmount: 80, RemainingAmount: 80, RewardUSD: 0.8, ExpiresAt: time.Now().Add(24 * time.Hour).Unix(), Status: BlindBoxCreditStatusActive},
+	}
+	for _, credit := range credits {
+		require.NoError(t, DB.Create(credit).Error)
+	}
+
+	require.NoError(t, MigrateBlindBoxLegacyCredits())
+
+	var afterUsers []*User
+	require.NoError(t, DB.Order("id asc").Find(&afterUsers).Error)
+	require.Len(t, afterUsers, 2)
+	assert.Equal(t, 220, afterUsers[0].Quota)
+	assert.Equal(t, 200, afterUsers[0].ClaudeQuota)
+	assert.Equal(t, 300, afterUsers[1].Quota)
+	assert.Equal(t, 480, afterUsers[1].ClaudeQuota)
+
+	var afterCredits []BlindBoxCredit
+	require.NoError(t, DB.Order("id asc").Find(&afterCredits).Error)
+	require.Len(t, afterCredits, 2)
+	for _, credit := range afterCredits {
+		assert.Equal(t, int64(0), credit.RemainingAmount)
+		assert.Equal(t, BlindBoxCreditStatusExhausted, credit.Status)
+		assert.NotZero(t, credit.MigratedAt)
+		assert.NotEmpty(t, credit.MigratedWalletType)
+	}
+
+	require.NoError(t, MigrateBlindBoxLegacyCredits())
+
+	var finalUsers []*User
+	require.NoError(t, DB.Order("id asc").Find(&finalUsers).Error)
+	require.Len(t, finalUsers, 2)
+	assert.Equal(t, 220, finalUsers[0].Quota)
+	assert.Equal(t, 200, finalUsers[0].ClaudeQuota)
+	assert.Equal(t, 300, finalUsers[1].Quota)
+	assert.Equal(t, 480, finalUsers[1].ClaudeQuota)
+}
+
+func TestMigrateBlindBoxLegacyCredits_SkipsExpiredCredits(t *testing.T) {
+	truncateTables(t)
+
+	user := &User{Id: 8806, Username: "expired_legacy_user", Status: common.UserStatusEnabled, Quota: 100, ClaudeQuota: 200}
+	require.NoError(t, DB.Create(user).Error)
+
+	record := &BlindBoxOpenRecord{
+		Id:               9903,
+		UserId:           user.Id,
+		RewardType:       BlindBoxRewardTypeQuota,
+		RewardWalletType: string(BlindBoxRewardWalletTypeDefault),
+	}
+	require.NoError(t, DB.Create(record).Error)
+
+	credit := &BlindBoxCredit{
+		UserId:          user.Id,
+		OpenRecordId:    record.Id,
+		OriginalAmount:  90,
+		RemainingAmount: 90,
+		RewardUSD:       0.9,
+		ExpiresAt:       time.Now().Add(-time.Hour).Unix(),
+		Status:          BlindBoxCreditStatusActive,
+	}
+	require.NoError(t, DB.Create(credit).Error)
+
+	require.NoError(t, MigrateBlindBoxLegacyCredits())
+
+	var savedCredit BlindBoxCredit
+	require.NoError(t, DB.Where("id = ?", credit.Id).First(&savedCredit).Error)
+	assert.Equal(t, int64(90), savedCredit.RemainingAmount)
+	assert.Equal(t, BlindBoxCreditStatusActive, savedCredit.Status)
+	assert.Equal(t, int64(0), savedCredit.MigratedAt)
+
+	var savedUser User
+	require.NoError(t, DB.Where("id = ?", user.Id).First(&savedUser).Error)
+	assert.Equal(t, 100, savedUser.Quota)
+	assert.Equal(t, 200, savedUser.ClaudeQuota)
 }

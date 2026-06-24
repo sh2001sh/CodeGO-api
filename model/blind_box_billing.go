@@ -43,7 +43,7 @@ func preConsumeBlindBoxCreditsTx(tx *gorm.DB, userId int, amount int64) ([]Blind
 	now := common.GetTimestamp()
 	var credits []BlindBoxCredit
 	if err := tx.Set("gorm:query_option", "FOR UPDATE").
-		Where("user_id = ? AND remaining_amount > 0 AND expires_at > ?", userId, now).
+		Where("user_id = ? AND remaining_amount > 0 AND expires_at > ? AND migrated_at = 0", userId, now).
 		Order("expires_at asc, id asc").
 		Find(&credits).Error; err != nil {
 		return nil, err
@@ -90,6 +90,13 @@ func refundBlindBoxAllocationsTx(tx *gorm.DB, allocations []BlindBoxCreditAlloca
 			First(&credit).Error; err != nil {
 			return err
 		}
+		if credit.MigratedAt > 0 {
+			walletType := normalizeBlindBoxRewardWalletType(credit.MigratedWalletType)
+			if err := applyBlindBoxWalletRewardTx(tx, credit.UserId, allocation.Amount, walletType); err != nil {
+				return err
+			}
+			continue
+		}
 		credit.RemainingAmount += allocation.Amount
 		if credit.RemainingAmount > 0 {
 			credit.Status = BlindBoxCreditStatusActive
@@ -102,6 +109,61 @@ func refundBlindBoxAllocationsTx(tx *gorm.DB, allocations []BlindBoxCreditAlloca
 		}
 	}
 	return nil
+}
+
+func migrateBlindBoxLegacyCreditsTx(tx *gorm.DB) error {
+	if tx == nil {
+		return errors.New("transaction is required")
+	}
+
+	var pending []BlindBoxCredit
+	if err := tx.Set("gorm:query_option", "FOR UPDATE").
+		Where("remaining_amount > 0 AND migrated_at = 0 AND expires_at > ?", common.GetTimestamp()).
+		Order("id asc").
+		Find(&pending).Error; err != nil {
+		return err
+	}
+	for i := range pending {
+		credit := &pending[i]
+		if credit.RemainingAmount <= 0 {
+			continue
+		}
+		if credit.MigratedAt > 0 {
+			continue
+		}
+		if credit.OpenRecordId <= 0 {
+			continue
+		}
+
+		var record BlindBoxOpenRecord
+		if err := tx.Where("id = ?", credit.OpenRecordId).First(&record).Error; err != nil {
+			return err
+		}
+
+		walletType := normalizeBlindBoxRewardWalletType(record.RewardWalletType)
+		if record.RewardType == BlindBoxRewardTypeClaudeQuota {
+			walletType = BlindBoxRewardWalletTypeClaude
+		}
+		if err := applyBlindBoxWalletRewardTx(tx, credit.UserId, credit.RemainingAmount, walletType); err != nil {
+			return err
+		}
+
+		credit.RemainingAmount = 0
+		credit.Status = BlindBoxCreditStatusExhausted
+		credit.MigratedAt = common.GetTimestamp()
+		credit.MigratedWalletType = string(walletType)
+		if err := tx.Save(credit).Error; err != nil {
+			return err
+		}
+		_ = invalidateUserCache(credit.UserId)
+	}
+	return nil
+}
+
+func MigrateBlindBoxLegacyCredits() error {
+	return DB.Transaction(func(tx *gorm.DB) error {
+		return migrateBlindBoxLegacyCreditsTx(tx)
+	})
 }
 
 func PreConsumeBlindBoxCredits(requestId string, userId int, amount int64) (*BlindBoxPreConsumeResult, error) {

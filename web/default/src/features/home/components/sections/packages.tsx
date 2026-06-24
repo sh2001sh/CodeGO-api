@@ -1,10 +1,11 @@
+import { useEffect, useMemo, useState } from 'react'
 import type { TFunction } from 'i18next'
 import { Check, Crown } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Markdown } from '@/components/ui/markdown'
+import { AnimateInView } from '@/components/animate-in-view'
 import { StatusBadge } from '@/components/status-badge'
 import { getPublicPlans } from '@/features/subscriptions/api'
 import {
@@ -133,7 +134,7 @@ export function Packages({
         )}
       >
         <CardContent className='flex h-full flex-col p-0'>
-          <div className='bg-[radial-gradient(circle_at_top_right,rgba(240,138,88,0.14),transparent_38%),linear-gradient(135deg,rgba(255,255,255,0.92),rgba(237,243,250,0.88))] px-6 pb-4 pt-6 dark:bg-[radial-gradient(circle_at_top_right,rgba(240,138,88,0.16),transparent_38%),linear-gradient(135deg,rgba(18,24,33,0.92),rgba(23,29,40,0.88))]'>
+          <div className='bg-[radial-gradient(circle_at_top_right,rgba(240,138,88,0.14),transparent_38%),linear-gradient(135deg,rgba(255,255,255,0.92),rgba(237,243,250,0.88))] px-6 pt-6 pb-4 dark:bg-[radial-gradient(circle_at_top_right,rgba(240,138,88,0.16),transparent_38%),linear-gradient(135deg,rgba(18,24,33,0.92),rgba(23,29,40,0.88))]'>
             <div className='flex items-start justify-between gap-3'>
               <div className='min-w-0'>
                 <p className='text-muted-foreground text-xs font-semibold tracking-[0.16em]'>
@@ -157,12 +158,14 @@ export function Packages({
               )}
             </div>
 
-            <div className='flex flex-1 flex-col px-6 pb-6 pt-2'>
+            <div className='flex flex-1 flex-col px-6 pt-2 pb-6'>
               <div className='flex items-end gap-2'>
                 <span className='text-4xl font-semibold tracking-tight text-slate-950 dark:text-white'>
                   {formatSubscriptionPlanPrice(priceAmount, plan.currency)}
                 </span>
-                <span className='text-muted-foreground pb-1 text-sm'>/ 套餐</span>
+                <span className='text-muted-foreground pb-1 text-sm'>
+                  / 套餐
+                </span>
               </div>
 
               <div className='mt-5 space-y-2.5'>
@@ -214,25 +217,25 @@ export function Packages({
       />
 
       <div className='relative mx-auto max-w-7xl'>
-        <div className='mx-auto max-w-3xl text-center'>
+        <AnimateInView className='mx-auto max-w-3xl text-center'>
           <div className='ios-pill inline-flex items-center gap-2 px-3 py-1 text-xs font-semibold text-[#2f5ea3] dark:text-[#98c0ff]'>
             <Crown className='h-3.5 w-3.5' />
             套餐中心
           </div>
-          <h2 className='mt-4 text-[clamp(2rem,4.4vw,3.4rem)] font-semibold tracking-[-0.03em] text-slate-950 dark:text-white'>
+          <h2 className='mt-4 text-[clamp(2rem,4.4vw,3.4rem)] font-semibold tracking-[-0.03em] text-balance text-slate-950 dark:text-white'>
             月卡适合稳定开发，日卡适合短时冲量
           </h2>
           <p className='text-muted-foreground mt-4 text-base leading-7 md:text-lg dark:text-slate-300'>
             套餐价格按人民币支付，额度按美元信用值发放。可以根据长期主力使用或短时补量需求自由选择。
           </p>
-        </div>
+        </AnimateInView>
 
         {packageIntro ? (
-          <div className='ios-floating-shell mx-auto mt-8 max-w-4xl p-6'>
-            <Markdown className='prose prose-slate max-w-none text-left prose-p:leading-7'>
+          <AnimateInView className='ios-floating-shell mx-auto mt-8 max-w-4xl p-6'>
+            <Markdown className='prose prose-slate prose-p:leading-7 max-w-none text-left'>
               {packageIntro}
             </Markdown>
-          </div>
+          </AnimateInView>
         ) : null}
 
         <div
@@ -244,9 +247,9 @@ export function Packages({
           )}
         >
           {hasMonthPlans && (
-            <div className='ios-floating-shell p-5 md:p-6'>
+            <AnimateInView className='ios-floating-shell p-5 md:p-6'>
               <div className='mb-6'>
-                <p className='text-slate-500 text-xs font-semibold tracking-[0.16em]'>
+                <p className='text-xs font-semibold tracking-[0.16em] text-slate-500'>
                   月卡套餐
                 </p>
                 <h3 className='mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white'>
@@ -256,13 +259,16 @@ export function Packages({
               <div className='grid gap-5 lg:grid-cols-2'>
                 {groupedPlans.month.map(renderPlanCard)}
               </div>
-            </div>
+            </AnimateInView>
           )}
 
           {hasDayPlans && (
-            <div className='ios-floating-shell p-5 md:p-6'>
+            <AnimateInView
+              delay={hasMonthPlans ? 120 : 0}
+              className='ios-floating-shell p-5 md:p-6'
+            >
               <div className='mb-6'>
-                <p className='text-slate-500 text-xs font-semibold tracking-[0.16em]'>
+                <p className='text-xs font-semibold tracking-[0.16em] text-slate-500'>
                   日卡套餐
                 </p>
                 <h3 className='mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white'>
@@ -272,7 +278,7 @@ export function Packages({
               <div className='grid gap-5'>
                 {groupedPlans.day.map(renderPlanCard)}
               </div>
-            </div>
+            </AnimateInView>
           )}
         </div>
       </div>

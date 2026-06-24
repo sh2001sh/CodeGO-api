@@ -1,5 +1,8 @@
 import { useEffect } from 'react'
-import { formatUsdAmount, quotaUnitsToUsd } from '@/lib/format'
+import {
+  CardStaggerContainer,
+  CardStaggerItem,
+} from '@/components/page-transition'
 import { BillingHistoryDialog } from './components/dialogs/billing-history-dialog'
 import { CreemConfirmDialog } from './components/dialogs/creem-confirm-dialog'
 import { PaymentConfirmDialog } from './components/dialogs/payment-confirm-dialog'
@@ -44,96 +47,61 @@ export function Wallet(props: WalletProps) {
         }
         framedMain={false}
         main={
-          <div className='space-y-4'>
-            <div className='app-page-shell p-4 sm:p-5'>
-              <div className='app-section-kicker'>充值工作区</div>
-              <div className='mt-2 grid gap-3 lg:grid-cols-[minmax(0,1fr)_280px] lg:items-start'>
-                <div>
-                  <div className='text-foreground text-lg font-semibold tracking-tight'>
-                    先确认余额和支付方式，再完成充值
-                  </div>
-                  <div className='text-muted-foreground mt-1 text-sm leading-6'>
-                    钱包页优先解决普通余额和 Claude
-                    额度充值。套餐转换、额度刷新与扣费顺序统一放在下方，避免右侧反复重复表单。
-                  </div>
-                </div>
-                <div className='app-subtle-panel grid gap-2 px-4 py-3 text-sm'>
-                  <div className='flex items-center justify-between gap-3'>
-                    <span className='text-muted-foreground'>普通余额</span>
-                    <span className='font-semibold'>
-                      {formatUsdAmount(
-                        quotaUnitsToUsd(workspace.user?.quota ?? 0)
-                      )}
-                    </span>
-                  </div>
-                  <div className='flex items-center justify-between gap-3'>
-                    <span className='text-muted-foreground'>Claude 余额</span>
-                    <span className='font-semibold'>
-                      {formatUsdAmount(
-                        quotaUnitsToUsd(workspace.user?.claude_quota ?? 0)
-                      )}
-                    </span>
-                  </div>
-                  <div className='flex items-center justify-between gap-3'>
-                    <span className='text-muted-foreground'>生效订阅</span>
-                    <span className='font-semibold'>
-                      {workspace.subscriptionData?.subscriptions?.length ?? 0}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
+          <CardStaggerContainer className='flex min-w-0 flex-col gap-4'>
+            <CardStaggerItem>
+              <RechargeFormCard
+                topupInfo={workspace.topupInfo}
+                presetAmounts={workspace.presetAmounts}
+                selectedPreset={workspace.selectedPreset}
+                onSelectPreset={workspace.handleSelectPreset}
+                selectedWalletType={workspace.selectedWalletType}
+                onWalletTypeChange={workspace.handleWalletTypeChange}
+                topupAmount={workspace.topupAmount}
+                onTopupAmountChange={workspace.handleTopupAmountChange}
+                paymentAmount={workspace.paymentAmount}
+                calculating={workspace.calculating}
+                onPaymentMethodSelect={workspace.handlePaymentMethodSelect}
+                paymentLoading={workspace.paymentLoading}
+                redemptionCode={workspace.redemptionCode}
+                onRedemptionCodeChange={workspace.setRedemptionCode}
+                onRedeem={workspace.handleRedeem}
+                redeeming={workspace.redeeming}
+                topupLink={workspace.topupInfo?.topup_link}
+                loading={workspace.topupLoading}
+                showRedemptionSection={false}
+                priceRatio={(workspace.status?.price as number) || 1}
+                usdExchangeRate={workspace.effectiveUsdExchangeRate}
+                onOpenBilling={() => workspace.setBillingDialogOpen(true)}
+                creemProducts={workspace.topupInfo?.creem_products}
+                enableCreemTopup={workspace.topupInfo?.enable_creem_topup}
+                onCreemProductSelect={workspace.handleCreemProductSelect}
+                enableWaffoTopup={workspace.topupInfo?.enable_waffo_topup}
+                waffoPayMethods={workspace.topupInfo?.waffo_pay_methods}
+                waffoMinTopup={workspace.topupInfo?.waffo_min_topup}
+                onWaffoMethodSelect={workspace.handleWaffoMethodSelect}
+                enableWaffoPancakeTopup={
+                  workspace.topupInfo?.enable_waffo_pancake_topup
+                }
+                compact
+              />
+            </CardStaggerItem>
 
-            <RechargeFormCard
-              topupInfo={workspace.topupInfo}
-              presetAmounts={workspace.presetAmounts}
-              selectedPreset={workspace.selectedPreset}
-              onSelectPreset={workspace.handleSelectPreset}
-              selectedWalletType={workspace.selectedWalletType}
-              onWalletTypeChange={workspace.handleWalletTypeChange}
-              topupAmount={workspace.topupAmount}
-              onTopupAmountChange={workspace.handleTopupAmountChange}
-              paymentAmount={workspace.paymentAmount}
-              calculating={workspace.calculating}
-              onPaymentMethodSelect={workspace.handlePaymentMethodSelect}
-              paymentLoading={workspace.paymentLoading}
-              redemptionCode={workspace.redemptionCode}
-              onRedemptionCodeChange={workspace.setRedemptionCode}
-              onRedeem={workspace.handleRedeem}
-              redeeming={workspace.redeeming}
-              topupLink={workspace.topupInfo?.topup_link}
-              loading={workspace.topupLoading}
-              showRedemptionSection={false}
-              priceRatio={(workspace.status?.price as number) || 1}
-              usdExchangeRate={workspace.effectiveUsdExchangeRate}
-              onOpenBilling={() => workspace.setBillingDialogOpen(true)}
-              creemProducts={workspace.topupInfo?.creem_products}
-              enableCreemTopup={workspace.topupInfo?.enable_creem_topup}
-              onCreemProductSelect={workspace.handleCreemProductSelect}
-              enableWaffoTopup={workspace.topupInfo?.enable_waffo_topup}
-              waffoPayMethods={workspace.topupInfo?.waffo_pay_methods}
-              waffoMinTopup={workspace.topupInfo?.waffo_min_topup}
-              onWaffoMethodSelect={workspace.handleWaffoMethodSelect}
-              enableWaffoPancakeTopup={
-                workspace.topupInfo?.enable_waffo_pancake_topup
-              }
-              compact
-            />
-
-            <WalletPagePanels
-              user={workspace.user}
-              loading={workspace.userLoading}
-              topupLink={workspace.topupInfo?.topup_link}
-              redemptionCode={workspace.redemptionCode}
-              onRedemptionCodeChange={workspace.setRedemptionCode}
-              onRedeem={workspace.handleRedeem}
-              redeeming={workspace.redeeming}
-              subscriptionData={workspace.subscriptionData}
-              subscriptionLoading={workspace.subscriptionLoading}
-              onSubscriptionRefresh={workspace.fetchSubscriptionData}
-              showBalancePanels={false}
-            />
-          </div>
+            <CardStaggerItem>
+              <WalletPagePanels
+                user={workspace.user}
+                loading={workspace.userLoading}
+                topupLink={workspace.topupInfo?.topup_link}
+                redemptionCode={workspace.redemptionCode}
+                onRedemptionCodeChange={workspace.setRedemptionCode}
+                onRedeem={workspace.handleRedeem}
+                redeeming={workspace.redeeming}
+                subscriptionData={workspace.subscriptionData}
+                subscriptionLoading={workspace.subscriptionLoading}
+                onSubscriptionRefresh={workspace.fetchSubscriptionData}
+                showBalancePanels={false}
+              />
+            </CardStaggerItem>
+          </CardStaggerContainer>
         }
       />
 
