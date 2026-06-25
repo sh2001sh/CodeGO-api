@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -75,10 +76,27 @@ func GetLogByTokenId(tokenId int) (logs []*Log, err error) {
 }
 
 func RecordLog(userId int, logType int, content string) {
-	if logType == LogTypeConsume && !common.LogConsumeEnabled {
-		return
+	if err := RecordLogTx(nil, userId, logType, content); err != nil {
+		common.SysLog("failed to record log: " + err.Error())
 	}
-	username, _ := GetUsernameById(userId, false)
+}
+
+// RecordLogTx records a user log and uses the active transaction when logs share the main database.
+func RecordLogTx(tx *gorm.DB, userId int, logType int, content string) error {
+	if logType == LogTypeConsume && !common.LogConsumeEnabled {
+		return nil
+	}
+	targetDB := LOG_DB
+	if targetDB == nil {
+		targetDB = DB
+	}
+	if tx != nil && os.Getenv("LOG_SQL_DSN") == "" {
+		targetDB = tx
+	}
+	username := ""
+	if userId > 0 {
+		_ = targetDB.Model(&User{}).Where("id = ?", userId).Select("username").Find(&username).Error
+	}
 	log := &Log{
 		UserId:    userId,
 		Username:  username,
@@ -86,10 +104,7 @@ func RecordLog(userId int, logType int, content string) {
 		Type:      logType,
 		Content:   content,
 	}
-	err := LOG_DB.Create(log).Error
-	if err != nil {
-		common.SysLog("failed to record log: " + err.Error())
-	}
+	return targetDB.Create(log).Error
 }
 
 // RecordLogWithAdminInfo 记录操作日志，并将管理员相关信息存入 Other.admin_info，

@@ -386,12 +386,15 @@ func BuildCompanionPetBuff(achievementKey string, level int) CompanionPetBuff {
 	return buff
 }
 
-func GetUserEquippedCompanionPet(userId int) (*UserCompanionPet, error) {
+func getUserEquippedCompanionPetTx(tx *gorm.DB, userId int) (*UserCompanionPet, error) {
 	if userId <= 0 {
 		return nil, nil
 	}
+	if tx == nil {
+		tx = DB
+	}
 	var pet UserCompanionPet
-	err := DB.Where("user_id = ? AND equipped = ?", userId, true).
+	err := tx.Where("user_id = ? AND equipped = ?", userId, true).
 		Order("updated_at desc, id asc").
 		First(&pet).Error
 	if err != nil {
@@ -403,8 +406,12 @@ func GetUserEquippedCompanionPet(userId int) (*UserCompanionPet, error) {
 	return &pet, nil
 }
 
-func GetUserCompanionAppliedBonus(userId int) (*CompanionAppliedBonus, error) {
-	pet, err := GetUserEquippedCompanionPet(userId)
+func GetUserEquippedCompanionPet(userId int) (*UserCompanionPet, error) {
+	return getUserEquippedCompanionPetTx(nil, userId)
+}
+
+func getUserCompanionAppliedBonusTx(tx *gorm.DB, userId int) (*CompanionAppliedBonus, error) {
+	pet, err := getUserEquippedCompanionPetTx(tx, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -417,4 +424,8 @@ func GetUserCompanionAppliedBonus(userId int) (*CompanionAppliedBonus, error) {
 		Buff:           BuildCompanionPetBuff(pet.AchievementKey, level),
 		EffectiveLevel: level,
 	}, nil
+}
+
+func GetUserCompanionAppliedBonus(userId int) (*CompanionAppliedBonus, error) {
+	return getUserCompanionAppliedBonusTx(nil, userId)
 }
