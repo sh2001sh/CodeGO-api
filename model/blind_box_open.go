@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/QuantumNous/new-api/common"
+	"github.com/QuantumNous/new-api/logger"
 	"github.com/QuantumNous/new-api/setting/operation_setting"
 	"gorm.io/gorm"
 )
@@ -30,6 +31,35 @@ func formatFirstPurchaseBlindBoxRewardTitle(amount float64) string {
 	return fmt.Sprintf("首购专属奖励：%.2f 美元", amount)
 }
 
+const (
+	firstPurchaseBlindBoxMaxUSD  = 80.0
+	firstPurchaseBlindBoxTierGap = 0.1
+)
+
+func blindBoxWalletLogLabel(walletType BlindBoxRewardWalletType) string {
+	if walletType == BlindBoxRewardWalletTypeClaude {
+		return "Claude额度"
+	}
+	return "额度"
+}
+
+func recordBlindBoxRewardLogTx(tx *gorm.DB, userId int, amount int64, walletType BlindBoxRewardWalletType, record *BlindBoxOpenRecord) error {
+	if tx == nil {
+		return errors.New("transaction is required")
+	}
+	if userId <= 0 || amount <= 0 || record == nil {
+		return errors.New("invalid blind box reward log params")
+	}
+	content := fmt.Sprintf(
+		"盲盒开奖到账，钱包：%s，到账额度：%s，奖励：%s，开奖记录ID：%d",
+		blindBoxWalletLogLabel(walletType),
+		logger.LogQuota(int(amount)),
+		record.RewardTitle,
+		record.Id,
+	)
+	return RecordLogTx(tx, userId, LogTypeTopup, content)
+}
+
 func buildFirstPurchaseBlindBoxTiers(
 	tiers []operation_setting.BlindBoxTierSetting,
 	startUSD float64,
@@ -38,23 +68,69 @@ func buildFirstPurchaseBlindBoxTiers(
 		return tiers
 	}
 
-	remapped := make([]operation_setting.BlindBoxTierSetting, 0, len(tiers))
-	currentMin := math.Round(startUSD*100) / 100
-	for index, tier := range tiers {
+	monetaryTierCount := 0
+	totalMonetaryWidth := 0.0
+	for _, tier := range tiers {
+		if operation_setting.NormalizeBlindBoxRewardType(tier.RewardType) == BlindBoxRewardTypeProp {
+			continue
+		}
 		width := math.Round((tier.MaxUSD-tier.MinUSD)*100) / 100
 		if width < 0 {
 			width = 0
 		}
-		currentMax := math.Round((currentMin+width)*100) / 100
+		totalMonetaryWidth += width
+		monetaryTierCount++
+	}
+
+	availableWidth := firstPurchaseBlindBoxMaxUSD - startUSD
+	if monetaryTierCount > 1 {
+		availableWidth -= firstPurchaseBlindBoxTierGap * float64(monetaryTierCount-1)
+	}
+	if availableWidth <= 0 {
+		availableWidth = totalMonetaryWidth
+	}
+
+	scale := 1.0
+	if totalMonetaryWidth > 0 && availableWidth > 0 {
+		scale = availableWidth / totalMonetaryWidth
+	}
+
+	remapped := make([]operation_setting.BlindBoxTierSetting, 0, len(tiers))
+	currentMin := math.Round(startUSD*100) / 100
+	seenMonetaryTier := 0
+	for _, tier := range tiers {
+		if operation_setting.NormalizeBlindBoxRewardType(tier.RewardType) == BlindBoxRewardTypeProp {
+			remapped = append(remapped, operation_setting.BlindBoxTierSetting{
+				Name:        tier.Name,
+				MinUSD:      tier.MinUSD,
+				MaxUSD:      tier.MaxUSD,
+				Probability: tier.Probability,
+				RewardType:  operation_setting.NormalizeBlindBoxRewardType(tier.RewardType),
+				WalletType:  tier.WalletType,
+			})
+			continue
+		}
+
+		width := math.Round((tier.MaxUSD-tier.MinUSD)*100) / 100
+		if width < 0 {
+			width = 0
+		}
+		scaledWidth := math.Round(width*scale*100) / 100
+		currentMax := math.Round((currentMin+scaledWidth)*100) / 100
+		seenMonetaryTier++
+		if seenMonetaryTier == monetaryTierCount {
+			currentMax = firstPurchaseBlindBoxMaxUSD
+		}
 		remapped = append(remapped, operation_setting.BlindBoxTierSetting{
 			Name:        tier.Name,
 			MinUSD:      currentMin,
 			MaxUSD:      currentMax,
 			Probability: tier.Probability,
+			RewardType:  operation_setting.NormalizeBlindBoxRewardType(tier.RewardType),
 			WalletType:  tier.WalletType,
 		})
-		if index < len(tiers)-1 {
-			currentMin = math.Round((currentMax+0.1)*100) / 100
+		if seenMonetaryTier < monetaryTierCount {
+			currentMin = math.Round((currentMax+firstPurchaseBlindBoxTierGap)*100) / 100
 		}
 	}
 
@@ -173,7 +249,7 @@ func openBlindBoxesTx(tx *gorm.DB, userId int, count int, orderId *int) ([]Blind
 		setting.Tiers,
 		firstPurchaseStartUSD,
 	)
-	if appliedBonus, bonusErr := GetUserCompanionAppliedBonus(userId); bonusErr == nil &&
+	if appliedBonus, bonusErr := getUserCompanionAppliedBonusTx(tx, userId); bonusErr == nil &&
 		appliedBonus != nil {
 		if appliedBonus.Buff.BlindBoxPityReduction > 0 {
 			effectivePityThreshold -= appliedBonus.Buff.BlindBoxPityReduction
@@ -303,6 +379,9 @@ func openBlindBoxesTx(tx *gorm.DB, userId int, count int, orderId *int) ([]Blind
 				if err := applyBlindBoxWalletRewardTx(tx, userId, creditAmount, BlindBoxRewardWalletTypeClaude); err != nil {
 					return nil, err
 				}
+				if err := recordBlindBoxRewardLogTx(tx, userId, creditAmount, BlindBoxRewardWalletTypeClaude, &record); err != nil {
+					return nil, err
+				}
 				if isBlindBoxHighValueReward(record.RewardType, rewardUSD, setting.LowRewardThresholdUSD) {
 					pityState.ConsecutiveLowRewards = 0
 				} else {
@@ -333,6 +412,9 @@ func openBlindBoxesTx(tx *gorm.DB, userId int, count int, orderId *int) ([]Blind
 					return nil, err
 				}
 				if err := applyBlindBoxWalletRewardTx(tx, userId, creditAmount, tierWalletType); err != nil {
+					return nil, err
+				}
+				if err := recordBlindBoxRewardLogTx(tx, userId, creditAmount, tierWalletType, &record); err != nil {
 					return nil, err
 				}
 				if isBlindBoxHighValueReward(record.RewardType, rewardUSD, setting.LowRewardThresholdUSD) {

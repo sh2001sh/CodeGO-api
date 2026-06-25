@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/QuantumNous/new-api/common"
+	"github.com/QuantumNous/new-api/setting/operation_setting"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
@@ -164,4 +165,28 @@ func TestCreatePendingSubscriptionOrderWithBlindBoxDiscount_ReleasesReservedProp
 	var savedOrder SubscriptionOrder
 	require.NoError(t, DB.Where("trade_no = ?", order.TradeNo).First(&savedOrder).Error)
 	assert.Equal(t, common.TopUpStatusExpired, savedOrder.Status)
+}
+
+func TestBuildFirstPurchaseBlindBoxTiers_CapsMonetaryRewardsAndKeepsProps(t *testing.T) {
+	tiers := operation_setting.GetBlindBoxSetting().Tiers
+	remapped := buildFirstPurchaseBlindBoxTiers(tiers, 20)
+	require.Len(t, remapped, len(tiers))
+
+	maxMonetary := 0.0
+	propCount := 0
+	for _, tier := range remapped {
+		switch operation_setting.NormalizeBlindBoxRewardType(tier.RewardType) {
+		case BlindBoxRewardTypeProp:
+			propCount++
+			assert.Equal(t, 0.0, tier.MinUSD)
+			assert.Equal(t, 0.0, tier.MaxUSD)
+		default:
+			if tier.MaxUSD > maxMonetary {
+				maxMonetary = tier.MaxUSD
+			}
+		}
+	}
+
+	assert.Equal(t, 4, propCount)
+	assert.LessOrEqual(t, maxMonetary, 80.0)
 }
