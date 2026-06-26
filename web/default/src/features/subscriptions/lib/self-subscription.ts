@@ -5,7 +5,7 @@ import type {
 
 export const EMPTY_SUBSCRIPTIONS: SelfSubscriptionData = {
   billing_preference: 'subscription_first',
-  funding_source_order: ['blind_box', 'subscription', 'wallet'],
+  funding_source_order: ['subscription', 'wallet'],
   subscription_order_ids: [],
   subscriptions: [],
   all_subscriptions: [],

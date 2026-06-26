@@ -84,9 +84,6 @@ func (s *BillingSession) Settle(actualQuota int) error {
 	if s.funding.Source() == BillingSourceSubscription {
 		s.relayInfo.SubscriptionPostDelta += int64(delta)
 	}
-	if blind, ok := s.funding.(*BlindBoxFunding); ok {
-		s.relayInfo.BlindBoxRequestId = blind.requestId
-	}
 
 	s.settled = true
 	return tokenErr
@@ -203,9 +200,6 @@ func (s *BillingSession) needsRefundLocked() bool {
 	if sub, ok := s.funding.(*SubscriptionFunding); ok && sub.preConsumed > 0 {
 		return true
 	}
-	if blind, ok := s.funding.(*BlindBoxFunding); ok && blind.preConsumed > 0 {
-		return true
-	}
 	return false
 }
 
@@ -320,17 +314,6 @@ func (s *BillingSession) preConsume(c *gin.Context, quota int) *types.NewAPIErro
 
 func (s *BillingSession) reserveFunding(delta int) error {
 	switch funding := s.funding.(type) {
-	case *BlindBoxFunding:
-		if err := model.PostConsumeBlindBoxPreConsumeDelta(funding.requestId, int64(delta)); err != nil {
-			return types.NewErrorWithStatusCode(
-				fmt.Errorf("blind box quota insufficient: %s", err.Error()),
-				types.ErrorCodeInsufficientUserQuota,
-				http.StatusForbidden,
-				types.ErrOptionWithSkipRetry(),
-				types.ErrOptionWithNoRecordErrorLog(),
-			)
-		}
-		return nil
 	case *WalletFunding:
 		if err := model.DecreaseUserQuota(funding.userId, delta, false); err != nil {
 			return types.NewError(err, types.ErrorCodeUpdateDataError, types.ErrOptionWithSkipRetry())
@@ -365,10 +348,6 @@ func (s *BillingSession) reserveFunding(delta int) error {
 
 func (s *BillingSession) rollbackFundingReserve(delta int) {
 	switch funding := s.funding.(type) {
-	case *BlindBoxFunding:
-		if err := model.PostConsumeBlindBoxPreConsumeDelta(funding.requestId, -int64(delta)); err != nil {
-			common.SysLog("error rolling back blind box funding reserve: " + err.Error())
-		}
 	case *WalletFunding:
 		if err := model.IncreaseUserQuota(funding.userId, delta, false); err != nil {
 			common.SysLog("error rolling back wallet funding reserve: " + err.Error())
@@ -424,8 +403,6 @@ func (s *BillingSession) shouldTrust(c *gin.Context) bool {
 	}
 
 	switch s.funding.Source() {
-	case BillingSourceBlindBox:
-		return false
 	case BillingSourceWallet:
 		return s.relayInfo.UserQuota > trustQuota
 	case BillingSourceClaudeWallet:
@@ -459,12 +436,7 @@ func (s *BillingSession) syncRelayInfo() {
 		info.SubscriptionPlanId = 0
 		info.SubscriptionPlanTitle = ""
 	}
-
-	if blind, ok := s.funding.(*BlindBoxFunding); ok {
-		info.BlindBoxRequestId = blind.requestId
-	} else {
-		info.BlindBoxRequestId = ""
-	}
+	info.BlindBoxRequestId = ""
 }
 
 func NewBillingSession(c *gin.Context, relayInfo *relaycommon.RelayInfo, preConsumedQuota int) (*BillingSession, *types.NewAPIError) {
@@ -560,27 +532,6 @@ func NewBillingSession(c *gin.Context, relayInfo *relaycommon.RelayInfo, preCons
 		return session, nil
 	}
 
-	tryBlindBox := func() (*BillingSession, *types.NewAPIError) {
-		if relayInfo.ForcePreConsume || preConsumedQuota <= 0 {
-			return nil, nil
-		}
-
-		session := &BillingSession{
-			relayInfo: relayInfo,
-			funding: &BlindBoxFunding{
-				requestId: relayInfo.RequestId,
-				userId:    relayInfo.UserId,
-			},
-		}
-		if apiErr := session.preConsume(c, preConsumedQuota); apiErr != nil {
-			if apiErr.GetErrorCode() == types.ErrorCodeInsufficientUserQuota {
-				return nil, nil
-			}
-			return nil, apiErr
-		}
-		return session, nil
-	}
-
 	trySubscription := func() (*BillingSession, *types.NewAPIError) {
 		subConsume := int64(preConsumedQuota)
 		if subConsume <= 0 {
@@ -614,8 +565,6 @@ func NewBillingSession(c *gin.Context, relayInfo *relaycommon.RelayInfo, preCons
 		)
 
 		switch source {
-		case BillingSourceBlindBox:
-			session, apiErr = tryBlindBox()
 		case BillingSourceSubscription:
 			session, apiErr = trySubscription()
 		case BillingSourceWallet:

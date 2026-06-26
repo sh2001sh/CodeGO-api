@@ -217,7 +217,7 @@ export interface SelfSubscriptionData {
   recent_conversions: SubscriptionClaudeConversionRecord[]
 }
 
-export type FundingSource = 'blind_box' | 'subscription' | 'wallet'
+export type FundingSource = 'subscription' | 'wallet'
 
 // ============================================================================
 // Dialog Types

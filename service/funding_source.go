@@ -13,42 +13,6 @@ type FundingSource interface {
 	Refund() error
 }
 
-type BlindBoxFunding struct {
-	requestId   string
-	userId      int
-	preConsumed int64
-}
-
-func (b *BlindBoxFunding) Source() string { return BillingSourceBlindBox }
-
-func (b *BlindBoxFunding) PreConsume(amount int) error {
-	if amount <= 0 {
-		return nil
-	}
-	res, err := model.PreConsumeBlindBoxCredits(b.requestId, b.userId, int64(amount))
-	if err != nil {
-		return err
-	}
-	b.preConsumed = res.PreConsumed
-	return nil
-}
-
-func (b *BlindBoxFunding) Settle(delta int) error {
-	if delta == 0 {
-		return nil
-	}
-	return model.PostConsumeBlindBoxPreConsumeDelta(b.requestId, int64(delta))
-}
-
-func (b *BlindBoxFunding) Refund() error {
-	if b.preConsumed <= 0 {
-		return nil
-	}
-	return refundWithRetry(func() error {
-		return model.RefundBlindBoxPreConsume(b.requestId)
-	})
-}
-
 type WalletFunding struct {
 	userId   int
 	consumed int

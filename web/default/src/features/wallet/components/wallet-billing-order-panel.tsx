@@ -43,7 +43,7 @@ export function WalletBillingOrderPanel(props: WalletBillingOrderPanelProps) {
         <div>
           <div className='text-foreground text-sm font-semibold'>扣费顺序</div>
           <div className='text-muted-foreground mt-1 text-xs leading-5'>
-            盲盒奖励、订阅额度和钱包余额共用同一套优先级，下面可以直接调整。
+            订阅额度和钱包余额共用同一套优先级，下面可以直接调整。
           </div>
         </div>
         <div className='flex gap-2'>
@@ -88,20 +88,14 @@ export function WalletBillingOrderPanel(props: WalletBillingOrderPanelProps) {
                   </div>
                 </div>
                 <div className='flex shrink-0 items-center gap-1'>
-                  {source === 'blind_box' ? (
-                    <span className='border-border bg-background/80 text-muted-foreground rounded-full border px-2 py-1 text-[11px]'>
-                      固定启用
-                    </span>
-                  ) : (
-                    <Button
-                      variant='outline'
-                      size='sm'
-                      onClick={() => props.onToggleFundingSource(source)}
-                      disabled={props.saving}
-                    >
-                      停用
-                    </Button>
-                  )}
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    onClick={() => props.onToggleFundingSource(source)}
+                    disabled={props.saving}
+                  >
+                    停用
+                  </Button>
                   <Button
                     variant='outline'
                     size='icon'

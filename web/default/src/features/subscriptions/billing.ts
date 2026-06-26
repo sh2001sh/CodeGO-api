@@ -25,14 +25,14 @@ export function getDefaultFundingSourceOrder(
 ): FundingSource[] {
   switch (normalizeBillingPreference(preference)) {
     case 'wallet_first':
-      return ['blind_box', 'wallet', 'subscription']
+      return ['wallet', 'subscription']
     case 'subscription_only':
-      return ['blind_box', 'subscription']
+      return ['subscription']
     case 'wallet_only':
-      return ['blind_box', 'wallet']
+      return ['wallet']
     case 'subscription_first':
     default:
-      return ['blind_box', 'subscription', 'wallet']
+      return ['subscription', 'wallet']
   }
 }
 
@@ -45,11 +45,7 @@ export function normalizeFundingSourceOrder(
     return [...fallback]
   }
 
-  const validSources = new Set<FundingSource>([
-    'blind_box',
-    'subscription',
-    'wallet',
-  ])
+  const validSources = new Set<FundingSource>(['subscription', 'wallet'])
   const result: FundingSource[] = []
   for (const item of order) {
     if (!validSources.has(item as FundingSource)) {
@@ -62,9 +58,6 @@ export function normalizeFundingSourceOrder(
   }
   if (!result.length) {
     return [...fallback]
-  }
-  if (!result.includes('blind_box')) {
-    result.unshift('blind_box')
   }
   if (!result.some((item) => item === 'subscription' || item === 'wallet')) {
     return [...fallback]
@@ -97,8 +90,6 @@ export function getFundingSourceLabel(
   _t: Translate
 ): string {
   switch (source) {
-    case 'blind_box':
-      return '盲盒奖励'
     case 'subscription':
       return '订阅额度'
     case 'wallet':
@@ -113,8 +104,6 @@ export function getFundingSourceDescription(
   _t: Translate
 ): string {
   switch (source) {
-    case 'blind_box':
-      return '开盲盒获得的额度会直接进入对应钱包'
     case 'subscription':
       return '按订阅顺序逐个消耗的套餐额度'
     case 'wallet':

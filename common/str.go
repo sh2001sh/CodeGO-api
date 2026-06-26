@@ -132,15 +132,15 @@ func NormalizeBillingPreference(pref string) string {
 func DefaultFundingSourceOrderFromBillingPreference(pref string) []string {
 	switch NormalizeBillingPreference(pref) {
 	case "wallet_first":
-		return []string{"blind_box", "wallet", "subscription"}
+		return []string{"wallet", "subscription"}
 	case "subscription_only":
-		return []string{"blind_box", "subscription"}
+		return []string{"subscription"}
 	case "wallet_only":
-		return []string{"blind_box", "wallet"}
+		return []string{"wallet"}
 	case "subscription_first":
 		fallthrough
 	default:
-		return []string{"blind_box", "subscription", "wallet"}
+		return []string{"subscription", "wallet"}
 	}
 }
 
@@ -151,7 +151,6 @@ func NormalizeFundingSourceOrder(order []string, pref string) []string {
 	}
 
 	validSources := map[string]struct{}{
-		"blind_box":    {},
 		"subscription": {},
 		"wallet":       {},
 	}
@@ -169,22 +168,6 @@ func NormalizeFundingSourceOrder(order []string, pref string) []string {
 		result = append(result, normalized)
 	}
 	if len(result) == 0 {
-		return append([]string(nil), fallback...)
-	}
-
-	hasBlindBox := false
-	hasSpendableSource := false
-	for _, source := range result {
-		if source == "blind_box" {
-			hasBlindBox = true
-			continue
-		}
-		hasSpendableSource = true
-	}
-	if !hasBlindBox {
-		result = append([]string{"blind_box"}, result...)
-	}
-	if !hasSpendableSource {
 		return append([]string(nil), fallback...)
 	}
 	return result

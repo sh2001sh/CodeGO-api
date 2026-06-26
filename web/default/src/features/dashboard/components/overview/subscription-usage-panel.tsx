@@ -57,14 +57,13 @@ import type {
 import { SubscriptionClaudeConversionCard } from '@/features/wallet/components/subscription-claude-conversion-card'
 
 const ALL_FUNDING_SOURCES: FundingSource[] = [
-  'blind_box',
   'subscription',
   'wallet',
 ]
 
 const EMPTY_SUBSCRIPTION_DATA = {
   billing_preference: 'subscription_first',
-  funding_source_order: ['blind_box', 'subscription', 'wallet'],
+  funding_source_order: ['subscription', 'wallet'],
   subscription_order_ids: [],
   subscriptions: [],
   all_subscriptions: [],
@@ -172,7 +171,7 @@ function getSubscriptionUsageStatus(
 export function SubscriptionUsagePanel() {
   const [draftFundingSourceOrder, setDraftFundingSourceOrder] = useState<
     FundingSource[]
-  >(['blind_box', 'subscription', 'wallet'])
+  >(['subscription', 'wallet'])
   const [draftOrderIds, setDraftOrderIds] = useState<number[]>([])
   const [saving, setSaving] = useState(false)
 
@@ -257,7 +256,6 @@ export function SubscriptionUsagePanel() {
   }
 
   const toggleFundingSource = (source: FundingSource) => {
-    if (source === 'blind_box') return
     setDraftFundingSourceOrder((current) => {
       if (current.includes(source)) {
         const next = current.filter((item) => item !== source)
@@ -291,7 +289,7 @@ export function SubscriptionUsagePanel() {
   }
 
   const resetFundingSourceOrder = () => {
-    setDraftFundingSourceOrder(['blind_box', 'subscription', 'wallet'])
+    setDraftFundingSourceOrder(['subscription', 'wallet'])
   }
 
   const handleSave = async () => {
@@ -363,7 +361,7 @@ export function SubscriptionUsagePanel() {
                 扣费顺序
               </div>
               <p className='text-muted-foreground text-sm leading-6'>
-                盲盒奖励、订阅额度和钱包余额现在共用一套扣费顺序。
+                订阅额度和钱包余额现在共用一套扣费顺序。
               </p>
             </div>
 
@@ -414,20 +412,14 @@ export function SubscriptionUsagePanel() {
                       </p>
                     </div>
                     <div className='flex items-center gap-2'>
-                      {source === 'blind_box' ? (
-                        <span className='border-border bg-background text-muted-foreground rounded-full border px-2 py-0.5 text-[11px]'>
-                          固定启用
-                        </span>
-                      ) : (
-                        <Button
-                          variant='outline'
-                          size='sm'
-                          onClick={() => toggleFundingSource(source)}
-                          disabled={saving}
-                        >
-                          停用
-                        </Button>
-                      )}
+                      <Button
+                        variant='outline'
+                        size='sm'
+                        onClick={() => toggleFundingSource(source)}
+                        disabled={saving}
+                      >
+                        停用
+                      </Button>
                       <Button
                         variant='outline'
                         size='icon'

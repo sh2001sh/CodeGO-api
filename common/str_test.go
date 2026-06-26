@@ -13,31 +13,31 @@ func TestNormalizeFundingSourceOrder(t *testing.T) {
 			name:     "falls back to legacy preference when empty",
 			order:    nil,
 			pref:     "wallet_first",
-			expected: []string{"blind_box", "wallet", "subscription"},
+			expected: []string{"wallet", "subscription"},
 		},
 		{
-			name:     "keeps requested order with blind box moved last",
-			order:    []string{"subscription", "wallet", "blind_box"},
+			name:     "keeps requested order",
+			order:    []string{"subscription", "wallet"},
 			pref:     "subscription_first",
-			expected: []string{"subscription", "wallet", "blind_box"},
+			expected: []string{"subscription", "wallet"},
 		},
 		{
-			name:     "prepends blind box for old payloads",
+			name:     "supports wallet first order",
 			order:    []string{"wallet", "subscription"},
 			pref:     "wallet_first",
-			expected: []string{"blind_box", "wallet", "subscription"},
+			expected: []string{"wallet", "subscription"},
 		},
 		{
 			name:     "supports wallet only mode",
-			order:    []string{"blind_box", "wallet"},
+			order:    []string{"wallet"},
 			pref:     "wallet_only",
-			expected: []string{"blind_box", "wallet"},
+			expected: []string{"wallet"},
 		},
 		{
-			name:     "rejects blind box only order",
-			order:    []string{"blind_box"},
+			name:     "rejects empty after filtering",
+			order:    []string{},
 			pref:     "subscription_only",
-			expected: []string{"blind_box", "subscription"},
+			expected: []string{"subscription"},
 		},
 	}
 
@@ -64,22 +64,22 @@ func TestBillingPreferenceFromFundingSourceOrder(t *testing.T) {
 	}{
 		{
 			name:     "projects subscription first order",
-			order:    []string{"subscription", "blind_box", "wallet"},
+			order:    []string{"subscription", "wallet"},
 			expected: "subscription_first",
 		},
 		{
 			name:     "projects wallet first order",
-			order:    []string{"blind_box", "wallet", "subscription"},
+			order:    []string{"wallet", "subscription"},
 			expected: "wallet_first",
 		},
 		{
 			name:     "projects subscription only order",
-			order:    []string{"blind_box", "subscription"},
+			order:    []string{"subscription"},
 			expected: "subscription_only",
 		},
 		{
 			name:     "projects wallet only order",
-			order:    []string{"blind_box", "wallet"},
+			order:    []string{"wallet"},
 			expected: "wallet_only",
 		},
 	}

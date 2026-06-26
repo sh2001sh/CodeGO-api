@@ -28,7 +28,6 @@ import {
 import { WalletResetOpportunityPanel } from './wallet-reset-opportunity-panel'
 
 const ALL_FUNDING_SOURCES: FundingSource[] = [
-  'blind_box',
   'subscription',
   'wallet',
 ]
@@ -50,7 +49,7 @@ interface WalletPagePanelsProps {
 export function WalletPagePanels(props: WalletPagePanelsProps) {
   const [draftFundingSourceOrder, setDraftFundingSourceOrder] = useState<
     FundingSource[]
-  >(['blind_box', 'subscription', 'wallet'])
+  >(['subscription', 'wallet'])
   const [draftOrderIds, setDraftOrderIds] = useState<number[]>([])
   const [saving, setSaving] = useState(false)
   const [usingResetOpportunity, setUsingResetOpportunity] = useState(false)
@@ -160,7 +159,6 @@ export function WalletPagePanels(props: WalletPagePanelsProps) {
   }
 
   const toggleFundingSource = (source: FundingSource) => {
-    if (source === 'blind_box') return
     setDraftFundingSourceOrder((current) => {
       if (current.includes(source)) {
         const next = current.filter((item) => item !== source)
@@ -190,7 +188,7 @@ export function WalletPagePanels(props: WalletPagePanelsProps) {
   }
 
   const resetFundingSourceOrder = () => {
-    setDraftFundingSourceOrder(['blind_box', 'subscription', 'wallet'])
+    setDraftFundingSourceOrder(['subscription', 'wallet'])
   }
 
   const resetSubscriptionOrder = () => {

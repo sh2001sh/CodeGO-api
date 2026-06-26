@@ -130,8 +130,14 @@ func appendBillingInfo(relayInfo *relaycommon.RelayInfo, other map[string]interf
 		if relayInfo.FinalPreConsumedQuota > 0 {
 			other["claude_quota_pre_consumed"] = relayInfo.FinalPreConsumedQuota
 		}
+	case BillingSourceSubscription:
+		break
 	case BillingSourceWallet:
 		other["billing_quota_field"] = "quota"
+	default:
+		if relayInfo.BillingSource != "" {
+			other["billing_quota_field"] = "quota"
+		}
 	}
 	if relayInfo.UserSetting.BillingPreference != "" {
 		other["billing_preference"] = relayInfo.UserSetting.BillingPreference
@@ -175,12 +181,6 @@ func appendBillingInfo(relayInfo *relaycommon.RelayInfo, other map[string]interf
 			other["subscription_consumed"] = consumed
 		}
 		// Wallet quota is not deducted when billed from subscription.
-		other["wallet_quota_deducted"] = 0
-	}
-	if relayInfo.BillingSource == BillingSourceBlindBox {
-		if relayInfo.BlindBoxRequestId != "" {
-			other["blind_box_request_id"] = relayInfo.BlindBoxRequestId
-		}
 		other["wallet_quota_deducted"] = 0
 	}
 }
