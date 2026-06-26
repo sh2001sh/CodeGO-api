@@ -116,28 +116,38 @@ func migrateBlindBoxLegacyCreditsTx(tx *gorm.DB) error {
 		return errors.New("transaction is required")
 	}
 
+	now := common.GetTimestamp()
 	var pending []BlindBoxCredit
 	if err := tx.Set("gorm:query_option", "FOR UPDATE").
-		Where("remaining_amount > 0 AND migrated_at = 0").
+		Where("migrated_at = 0").
 		Order("id asc").
 		Find(&pending).Error; err != nil {
 		return err
 	}
 	for i := range pending {
 		credit := &pending[i]
-		if credit.RemainingAmount <= 0 {
+		if credit.Id <= 0 {
 			continue
 		}
-		if credit.MigratedAt > 0 {
+		if credit.RemainingAmount <= 0 || (credit.ExpiresAt > 0 && credit.ExpiresAt <= now) {
+			if err := tx.Delete(&BlindBoxCredit{}, credit.Id).Error; err != nil {
+				return err
+			}
 			continue
 		}
 		if credit.OpenRecordId <= 0 {
+			if err := tx.Delete(&BlindBoxCredit{}, credit.Id).Error; err != nil {
+				return err
+			}
 			continue
 		}
 
 		var record BlindBoxOpenRecord
 		if err := tx.Where("id = ?", credit.OpenRecordId).First(&record).Error; err != nil {
-			return err
+			if err := tx.Delete(&BlindBoxCredit{}, credit.Id).Error; err != nil {
+				return err
+			}
+			continue
 		}
 
 		walletType := normalizeBlindBoxRewardWalletType(record.RewardWalletType)
@@ -152,7 +162,7 @@ func migrateBlindBoxLegacyCreditsTx(tx *gorm.DB) error {
 		credit.Status = BlindBoxCreditStatusExhausted
 		credit.MigratedAt = common.GetTimestamp()
 		credit.MigratedWalletType = string(walletType)
-		if err := tx.Save(credit).Error; err != nil {
+		if err := tx.Delete(&BlindBoxCredit{}, credit.Id).Error; err != nil {
 			return err
 		}
 		_ = invalidateUserCache(credit.UserId)

@@ -555,7 +555,7 @@ func TestOpenBlindBoxOrderByTradeNo_DoesNotDoubleCreditQuota(t *testing.T) {
 	assert.Contains(t, logs[0].Content, "盲盒开奖到账")
 }
 
-func TestMigrateBlindBoxLegacyCredits_TerminatesToMatchingWallets(t *testing.T) {
+func TestMigrateBlindBoxLegacyCredits_TerminatesToMatchingWalletsAndCleansRows(t *testing.T) {
 	truncateTables(t)
 
 	users := []*User{
@@ -594,13 +594,7 @@ func TestMigrateBlindBoxLegacyCredits_TerminatesToMatchingWallets(t *testing.T) 
 
 	var afterCredits []BlindBoxCredit
 	require.NoError(t, DB.Order("id asc").Find(&afterCredits).Error)
-	require.Len(t, afterCredits, 2)
-	for _, credit := range afterCredits {
-		assert.Equal(t, int64(0), credit.RemainingAmount)
-		assert.Equal(t, BlindBoxCreditStatusExhausted, credit.Status)
-		assert.NotZero(t, credit.MigratedAt)
-		assert.NotEmpty(t, credit.MigratedWalletType)
-	}
+	require.Len(t, afterCredits, 0)
 
 	require.NoError(t, MigrateBlindBoxLegacyCredits())
 
@@ -657,13 +651,10 @@ func TestMigrateBlindBoxLegacyCredits_SkipsCacheInvalidationWhenRedisClientNotRe
 	assert.Equal(t, 50, savedUser.ClaudeQuota)
 
 	var savedCredit BlindBoxCredit
-	require.NoError(t, DB.Where("id = ?", credit.Id).First(&savedCredit).Error)
-	assert.Equal(t, int64(0), savedCredit.RemainingAmount)
-	assert.Equal(t, BlindBoxCreditStatusExhausted, savedCredit.Status)
-	assert.NotZero(t, savedCredit.MigratedAt)
+	assert.ErrorIs(t, gorm.ErrRecordNotFound, DB.Where("id = ?", credit.Id).First(&savedCredit).Error)
 }
 
-func TestMigrateBlindBoxLegacyCredits_MigratesExpiredCreditsAndIsIdempotent(t *testing.T) {
+func TestMigrateBlindBoxLegacyCredits_DeletesExpiredCreditsWithoutWalletMigration(t *testing.T) {
 	truncateTables(t)
 
 	user := &User{Id: 8806, Username: "expired_legacy_user", Status: common.UserStatusEnabled, Quota: 100, ClaudeQuota: 200}
@@ -690,15 +681,47 @@ func TestMigrateBlindBoxLegacyCredits_MigratesExpiredCreditsAndIsIdempotent(t *t
 
 	require.NoError(t, MigrateBlindBoxLegacyCredits())
 
+	var savedUser User
+	require.NoError(t, DB.Where("id = ?", user.Id).First(&savedUser).Error)
+	assert.Equal(t, 100, savedUser.Quota)
+	assert.Equal(t, 200, savedUser.ClaudeQuota)
+
 	var savedCredit BlindBoxCredit
-	require.NoError(t, DB.Where("id = ?", credit.Id).First(&savedCredit).Error)
-	assert.Equal(t, int64(0), savedCredit.RemainingAmount)
-	assert.Equal(t, BlindBoxCreditStatusExhausted, savedCredit.Status)
-	assert.NotZero(t, savedCredit.MigratedAt)
-	assert.Equal(t, string(BlindBoxRewardWalletTypeDefault), savedCredit.MigratedWalletType)
+	assert.ErrorIs(t, gorm.ErrRecordNotFound, DB.Where("id = ?", credit.Id).First(&savedCredit).Error)
+}
+
+func TestMigrateBlindBoxLegacyCredits_DeletesExhaustedCredits(t *testing.T) {
+	truncateTables(t)
+
+	user := &User{Id: 8808, Username: "exhausted_legacy_user", Status: common.UserStatusEnabled, Quota: 500, ClaudeQuota: 600}
+	require.NoError(t, DB.Create(user).Error)
+
+	record := &BlindBoxOpenRecord{
+		Id:               9905,
+		UserId:           user.Id,
+		RewardType:       BlindBoxRewardTypeQuota,
+		RewardWalletType: string(BlindBoxRewardWalletTypeDefault),
+	}
+	require.NoError(t, DB.Create(record).Error)
+
+	credit := &BlindBoxCredit{
+		UserId:          user.Id,
+		OpenRecordId:    record.Id,
+		OriginalAmount:  100,
+		RemainingAmount: 0,
+		RewardUSD:       1.0,
+		ExpiresAt:       time.Now().Add(24 * time.Hour).Unix(),
+		Status:          BlindBoxCreditStatusExhausted,
+	}
+	require.NoError(t, DB.Create(credit).Error)
+
+	require.NoError(t, MigrateBlindBoxLegacyCredits())
 
 	var savedUser User
 	require.NoError(t, DB.Where("id = ?", user.Id).First(&savedUser).Error)
-	assert.Equal(t, 190, savedUser.Quota)
-	assert.Equal(t, 200, savedUser.ClaudeQuota)
+	assert.Equal(t, 500, savedUser.Quota)
+	assert.Equal(t, 600, savedUser.ClaudeQuota)
+
+	var savedCredit BlindBoxCredit
+	assert.ErrorIs(t, gorm.ErrRecordNotFound, DB.Where("id = ?", credit.Id).First(&savedCredit).Error)
 }
