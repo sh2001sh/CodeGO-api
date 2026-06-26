@@ -118,7 +118,7 @@ func migrateBlindBoxLegacyCreditsTx(tx *gorm.DB) error {
 
 	var pending []BlindBoxCredit
 	if err := tx.Set("gorm:query_option", "FOR UPDATE").
-		Where("remaining_amount > 0 AND migrated_at = 0 AND expires_at > ?", common.GetTimestamp()).
+		Where("remaining_amount > 0 AND migrated_at = 0").
 		Order("id asc").
 		Find(&pending).Error; err != nil {
 		return err

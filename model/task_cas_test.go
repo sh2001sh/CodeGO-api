@@ -2,6 +2,8 @@ package model
 
 import (
 	"encoding/json"
+	"fmt"
+	"math"
 	"os"
 	"sync"
 	"testing"
@@ -351,49 +353,120 @@ func TestOpenBlindBoxes_AddsQuotaToDefaultAndClaudeWallets(t *testing.T) {
 	truncateTables(t)
 
 	setting := operation_setting.GetBlindBoxSetting()
+	originalSetting := setting
 	setting.Enabled = true
 	setting.SubscriptionPrizeProbability = 0
 	setting.PityThreshold = 999
 	setting.PityGuaranteeUSD = 0
 	setting.LowRewardThresholdUSD = 0
-	setting.Tiers = []operation_setting.BlindBoxTierSetting{
-		{Name: "default-tier", MinUSD: 1, MaxUSD: 1, Probability: 0.5, WalletType: "default"},
-		{Name: "claude-tier", MinUSD: 2, MaxUSD: 2, Probability: 0.5, WalletType: "claude"},
+	setting.FirstPurchaseGuaranteeUSD = 0
+	t.Cleanup(func() {
+		operation_setting.SetBlindBoxSetting(originalSetting)
+	})
+
+	plan := &SubscriptionPlan{
+		Id:               9509,
+		Title:            setting.SubscriptionPlanTitle,
+		Subtitle:         "盲盒月卡",
+		PriceAmount:      99,
+		Currency:         "CNY",
+		DurationUnit:     SubscriptionDurationMonth,
+		DurationValue:    1,
+		Enabled:          true,
+		TotalAmount:      100000,
+		PeriodAmount:     100000,
+		QuotaResetPeriod: SubscriptionResetMonthly,
 	}
-	operation_setting.SetBlindBoxSetting(setting)
+	require.NoError(t, DB.Create(plan).Error)
+	t.Cleanup(func() {
+		DB.Exec("DELETE FROM subscription_plans")
+	})
 
-	user := &User{
-		Id:          8803,
-		Username:    "blind_box_wallet_user",
-		Status:      common.UserStatusEnabled,
-		Quota:       100,
-		ClaudeQuota: 200,
+	testCases := []struct {
+		name           string
+		userId         int
+		username       string
+		tradeNo        string
+		rewardUSD      float64
+		walletType     string
+		expectedLabel  string
+		expectedWallet BlindBoxRewardWalletType
+	}{
+		{
+			name:           "default wallet reward",
+			userId:         8803,
+			username:       "blind_box_default_wallet_user",
+			tradeNo:        "blind-box-default-wallet-order",
+			rewardUSD:      1,
+			walletType:     "default",
+			expectedLabel:  "钱包：额度",
+			expectedWallet: BlindBoxRewardWalletTypeDefault,
+		},
+		{
+			name:           "claude wallet reward",
+			userId:         8804,
+			username:       "blind_box_claude_wallet_user",
+			tradeNo:        "blind-box-claude-wallet-order",
+			rewardUSD:      2,
+			walletType:     "claude",
+			expectedLabel:  "钱包：Claude额度",
+			expectedWallet: BlindBoxRewardWalletTypeClaude,
+		},
 	}
-	require.NoError(t, DB.Create(user).Error)
 
-	order := &BlindBoxOrder{
-		UserId:          user.Id,
-		Quantity:        2,
-		Money:           5,
-		TradeNo:         "blind-box-wallet-order",
-		PaymentMethod:   "test",
-		PaymentProvider: "test",
-		Status:          common.TopUpStatusSuccess,
-		CreateTime:      time.Now().Unix(),
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			caseSetting := setting
+			caseSetting.Tiers = []operation_setting.BlindBoxTierSetting{
+				{Name: tc.name, MinUSD: tc.rewardUSD, MaxUSD: tc.rewardUSD, Probability: 1, WalletType: tc.walletType},
+			}
+			operation_setting.SetBlindBoxSetting(caseSetting)
+
+			user := &User{
+				Id:          tc.userId,
+				Username:    tc.username,
+				Status:      common.UserStatusEnabled,
+				Quota:       100,
+				ClaudeQuota: 200,
+			}
+			require.NoError(t, DB.Create(user).Error)
+
+			order := &BlindBoxOrder{
+				UserId:          user.Id,
+				Quantity:        1,
+				Money:           5,
+				TradeNo:         tc.tradeNo,
+				PaymentMethod:   "test",
+				PaymentProvider: "test",
+				Status:          common.TopUpStatusSuccess,
+				CreateTime:      time.Now().Unix(),
+			}
+			require.NoError(t, DB.Create(order).Error)
+
+			records, err := OpenBlindBoxOrderByTradeNo(order.TradeNo)
+			require.NoError(t, err)
+			require.Len(t, records, 1)
+			assert.Equal(t, string(tc.expectedWallet), records[0].RewardWalletType)
+
+			expectedCredit := int(math.Round(tc.rewardUSD * common.QuotaPerUnit))
+			var savedUser User
+			require.NoError(t, DB.Where("id = ?", user.Id).First(&savedUser).Error)
+			if tc.expectedWallet == BlindBoxRewardWalletTypeClaude {
+				assert.Equal(t, 100, savedUser.Quota)
+				assert.Equal(t, 200+expectedCredit, savedUser.ClaudeQuota)
+			} else {
+				assert.Equal(t, 100+expectedCredit, savedUser.Quota)
+				assert.Equal(t, 200, savedUser.ClaudeQuota)
+			}
+
+			var logs []Log
+			require.NoError(t, DB.Where("user_id = ? AND type = ?", user.Id, LogTypeTopup).Order("id asc").Find(&logs).Error)
+			require.Len(t, logs, 1)
+			assert.Contains(t, logs[0].Content, "盲盒开奖到账")
+			assert.Contains(t, logs[0].Content, tc.expectedLabel)
+			assert.Contains(t, logs[0].Content, fmt.Sprintf("开奖记录ID：%d", records[0].Id))
+		})
 	}
-	require.NoError(t, DB.Create(order).Error)
-
-	records, err := OpenBlindBoxOrderByTradeNo(order.TradeNo)
-	require.NoError(t, err)
-	require.Len(t, records, 2)
-
-	var savedUser User
-	require.NoError(t, DB.Where("id = ?", user.Id).First(&savedUser).Error)
-	assert.Equal(t, 200, savedUser.Quota)
-	assert.Equal(t, 400, savedUser.ClaudeQuota)
-	assert.Equal(t, 2, len(records))
-	assert.Contains(t, []string{BlindBoxRewardTypeQuota, BlindBoxRewardTypeClaudeQuota}, records[0].RewardType)
-	assert.NotEmpty(t, records[0].RewardWalletType)
 }
 
 func TestOpenBlindBoxOrderByTradeNo_DoesNotDoubleCreditQuota(t *testing.T) {
@@ -475,6 +548,11 @@ func TestOpenBlindBoxOrderByTradeNo_DoesNotDoubleCreditQuota(t *testing.T) {
 	var savedOrder BlindBoxOrder
 	require.NoError(t, DB.Where("id = ?", order.Id).First(&savedOrder).Error)
 	assert.Equal(t, 1, savedOrder.OpenedCount)
+
+	var logs []Log
+	require.NoError(t, DB.Where("user_id = ? AND type = ?", user.Id, LogTypeTopup).Find(&logs).Error)
+	require.Len(t, logs, 1)
+	assert.Contains(t, logs[0].Content, "盲盒开奖到账")
 }
 
 func TestMigrateBlindBoxLegacyCredits_TerminatesToMatchingWallets(t *testing.T) {
@@ -585,7 +663,7 @@ func TestMigrateBlindBoxLegacyCredits_SkipsCacheInvalidationWhenRedisClientNotRe
 	assert.NotZero(t, savedCredit.MigratedAt)
 }
 
-func TestMigrateBlindBoxLegacyCredits_SkipsExpiredCredits(t *testing.T) {
+func TestMigrateBlindBoxLegacyCredits_MigratesExpiredCreditsAndIsIdempotent(t *testing.T) {
 	truncateTables(t)
 
 	user := &User{Id: 8806, Username: "expired_legacy_user", Status: common.UserStatusEnabled, Quota: 100, ClaudeQuota: 200}
@@ -614,12 +692,13 @@ func TestMigrateBlindBoxLegacyCredits_SkipsExpiredCredits(t *testing.T) {
 
 	var savedCredit BlindBoxCredit
 	require.NoError(t, DB.Where("id = ?", credit.Id).First(&savedCredit).Error)
-	assert.Equal(t, int64(90), savedCredit.RemainingAmount)
-	assert.Equal(t, BlindBoxCreditStatusActive, savedCredit.Status)
-	assert.Equal(t, int64(0), savedCredit.MigratedAt)
+	assert.Equal(t, int64(0), savedCredit.RemainingAmount)
+	assert.Equal(t, BlindBoxCreditStatusExhausted, savedCredit.Status)
+	assert.NotZero(t, savedCredit.MigratedAt)
+	assert.Equal(t, string(BlindBoxRewardWalletTypeDefault), savedCredit.MigratedWalletType)
 
 	var savedUser User
 	require.NoError(t, DB.Where("id = ?", user.Id).First(&savedUser).Error)
-	assert.Equal(t, 100, savedUser.Quota)
+	assert.Equal(t, 190, savedUser.Quota)
 	assert.Equal(t, 200, savedUser.ClaudeQuota)
 }
