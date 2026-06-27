@@ -98,11 +98,11 @@ export function PityStatusCard(props: {
           </div>
           <div className='min-w-0 flex-1'>
             <div className='text-foreground text-sm font-semibold'>
-              首抽奖励已提升
+              首购保底20刀普通额度
             </div>
             <div className='text-muted-foreground mt-1 text-sm leading-6'>
-              首次购买盲盒后，首抽奖励从 $
-              {props.firstPurchaseUsd.toFixed(0)} 档位起跳，开奖后进入常规奖池
+              首次购买盲盒后，首抽普通额度最低保底 $
+              {props.firstPurchaseUsd.toFixed(0)}
             </div>
           </div>
         </div>

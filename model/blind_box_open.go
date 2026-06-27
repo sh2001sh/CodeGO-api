@@ -31,11 +31,6 @@ func formatFirstPurchaseBlindBoxRewardTitle(amount float64) string {
 	return fmt.Sprintf("首购专属奖励：%.2f 美元", amount)
 }
 
-const (
-	firstPurchaseBlindBoxMaxUSD  = 80.0
-	firstPurchaseBlindBoxTierGap = 0.1
-)
-
 func blindBoxWalletLogLabel(walletType BlindBoxRewardWalletType) string {
 	if walletType == BlindBoxRewardWalletTypeClaude {
 		return "Claude额度"
@@ -60,110 +55,31 @@ func recordBlindBoxRewardLogTx(tx *gorm.DB, userId int, amount int64, walletType
 	return RecordLogTx(tx, userId, LogTypeTopup, content)
 }
 
-func buildFirstPurchaseBlindBoxTiers(
-	tiers []operation_setting.BlindBoxTierSetting,
-	startUSD float64,
-) []operation_setting.BlindBoxTierSetting {
-	if len(tiers) == 0 || startUSD <= 0 {
-		return tiers
-	}
-
-	monetaryTierCount := 0
-	totalMonetaryWidth := 0.0
-	for _, tier := range tiers {
-		if operation_setting.NormalizeBlindBoxRewardType(tier.RewardType) == BlindBoxRewardTypeProp {
-			continue
-		}
-		width := math.Round((tier.MaxUSD-tier.MinUSD)*100) / 100
-		if width < 0 {
-			width = 0
-		}
-		totalMonetaryWidth += width
-		monetaryTierCount++
-	}
-
-	availableWidth := firstPurchaseBlindBoxMaxUSD - startUSD
-	if monetaryTierCount > 1 {
-		availableWidth -= firstPurchaseBlindBoxTierGap * float64(monetaryTierCount-1)
-	}
-	if availableWidth <= 0 {
-		availableWidth = totalMonetaryWidth
-	}
-
-	scale := 1.0
-	if totalMonetaryWidth > 0 && availableWidth > 0 {
-		scale = availableWidth / totalMonetaryWidth
-	}
-
-	remapped := make([]operation_setting.BlindBoxTierSetting, 0, len(tiers))
-	currentMin := math.Round(startUSD*100) / 100
-	seenMonetaryTier := 0
-	for _, tier := range tiers {
-		if operation_setting.NormalizeBlindBoxRewardType(tier.RewardType) == BlindBoxRewardTypeProp {
-			remapped = append(remapped, operation_setting.BlindBoxTierSetting{
-				Name:        tier.Name,
-				MinUSD:      tier.MinUSD,
-				MaxUSD:      tier.MaxUSD,
-				Probability: tier.Probability,
-				RewardType:  operation_setting.NormalizeBlindBoxRewardType(tier.RewardType),
-				WalletType:  tier.WalletType,
-			})
-			continue
-		}
-
-		width := math.Round((tier.MaxUSD-tier.MinUSD)*100) / 100
-		if width < 0 {
-			width = 0
-		}
-		scaledWidth := math.Round(width*scale*100) / 100
-		currentMax := math.Round((currentMin+scaledWidth)*100) / 100
-		seenMonetaryTier++
-		if seenMonetaryTier == monetaryTierCount {
-			currentMax = firstPurchaseBlindBoxMaxUSD
-		}
-		remapped = append(remapped, operation_setting.BlindBoxTierSetting{
-			Name:        tier.Name,
-			MinUSD:      currentMin,
-			MaxUSD:      currentMax,
-			Probability: tier.Probability,
-			RewardType:  operation_setting.NormalizeBlindBoxRewardType(tier.RewardType),
-			WalletType:  tier.WalletType,
-		})
-		if seenMonetaryTier < monetaryTierCount {
-			currentMin = math.Round((currentMax+firstPurchaseBlindBoxTierGap)*100) / 100
-		}
-	}
-
-	applyFirstPurchaseTierProbabilityBoost(remapped)
-	return remapped
-}
-
-func applyFirstPurchaseTierProbabilityBoost(tiers []operation_setting.BlindBoxTierSetting) {
-	if len(tiers) == 0 {
+func applyFirstPurchaseMinimumGuarantee(
+	isFirstPurchaseOpen bool,
+	ordinaryMinimumUSD float64,
+	claudeMinimumUSD float64,
+	rewardUSD *float64,
+	rewardType *string,
+	walletType *BlindBoxRewardWalletType,
+) {
+	if !isFirstPurchaseOpen || rewardUSD == nil ||
+		rewardType == nil || walletType == nil {
 		return
 	}
-
-	weighted := make([]float64, len(tiers))
-	totalWeight := 0.0
-	lastIndex := len(tiers) - 1
-	for index, tier := range tiers {
-		if tier.Probability <= 0 {
-			continue
+	switch *rewardType {
+	case BlindBoxRewardTypeQuota:
+		if ordinaryMinimumUSD > 0 && *rewardUSD < ordinaryMinimumUSD {
+			*rewardUSD = ordinaryMinimumUSD
+			*walletType = BlindBoxRewardWalletTypeDefault
 		}
-		boost := 1.0
-		if lastIndex > 0 {
-			progress := float64(index) / float64(lastIndex)
-			boost = 0.45 + math.Pow(progress, 1.35)*2.55
+	case BlindBoxRewardTypeClaudeQuota:
+		if claudeMinimumUSD > 0 && *rewardUSD < claudeMinimumUSD {
+			*rewardUSD = claudeMinimumUSD
+			*walletType = BlindBoxRewardWalletTypeClaude
 		}
-		weighted[index] = tier.Probability * boost
-		totalWeight += weighted[index]
-	}
-	if totalWeight <= 0 {
+	default:
 		return
-	}
-
-	for index := range tiers {
-		tiers[index].Probability = weighted[index] / totalWeight
 	}
 }
 
@@ -245,10 +161,6 @@ func openBlindBoxesTx(tx *gorm.DB, userId int, count int, orderId *int) ([]Blind
 	blindBoxRewardRate := 0.0
 	blindBoxPityGuaranteeUSD := 0.0
 	firstPurchaseStartUSD := setting.FirstPurchaseGuaranteeUSD
-	firstPurchaseTiers := buildFirstPurchaseBlindBoxTiers(
-		setting.Tiers,
-		firstPurchaseStartUSD,
-	)
 	if appliedBonus, bonusErr := getUserCompanionAppliedBonusTx(tx, userId); bonusErr == nil &&
 		appliedBonus != nil {
 		if appliedBonus.Buff.BlindBoxPityReduction > 0 {
@@ -328,18 +240,24 @@ func openBlindBoxesTx(tx *gorm.DB, userId int, count int, orderId *int) ([]Blind
 			if pityTriggered {
 				rewardUSD = setting.PityGuaranteeUSD + blindBoxPityGuaranteeUSD
 			} else {
-				rewardTiers := setting.Tiers
-				if isFirstPurchaseOpen && len(firstPurchaseTiers) > 0 {
-					rewardTiers = firstPurchaseTiers
+				if isFirstPurchaseOpen {
 					tierName = "first_purchase"
 				}
-				tier = pickBlindBoxTier(rewardTiers)
+				tier = pickBlindBoxTier(setting.Tiers)
 				if tierName != "first_purchase" {
 					tierName = tier.Name
 				}
 				rewardUSD = randomTierRewardUSD(tier)
 				rewardType = operation_setting.NormalizeBlindBoxRewardType(tier.RewardType)
 				tierWalletType = normalizeBlindBoxRewardWalletType(tier.WalletType)
+				applyFirstPurchaseMinimumGuarantee(
+					isFirstPurchaseOpen,
+					firstPurchaseStartUSD,
+					firstPurchaseStartUSD/4,
+					&rewardUSD,
+					&rewardType,
+					&tierWalletType,
+				)
 			}
 			if blindBoxRewardRate > 0 && rewardType != BlindBoxRewardTypeProp {
 				rewardUSD = math.Round(rewardUSD*(1+blindBoxRewardRate)*100) / 100

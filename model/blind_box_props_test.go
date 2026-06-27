@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/QuantumNous/new-api/common"
-	"github.com/QuantumNous/new-api/setting/operation_setting"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
@@ -167,26 +166,87 @@ func TestCreatePendingSubscriptionOrderWithBlindBoxDiscount_ReleasesReservedProp
 	assert.Equal(t, common.TopUpStatusExpired, savedOrder.Status)
 }
 
-func TestBuildFirstPurchaseBlindBoxTiers_CapsMonetaryRewardsAndKeepsProps(t *testing.T) {
-	tiers := operation_setting.GetBlindBoxSetting().Tiers
-	remapped := buildFirstPurchaseBlindBoxTiers(tiers, 20)
-	require.Len(t, remapped, len(tiers))
-
-	maxMonetary := 0.0
-	propCount := 0
-	for _, tier := range remapped {
-		switch operation_setting.NormalizeBlindBoxRewardType(tier.RewardType) {
-		case BlindBoxRewardTypeProp:
-			propCount++
-			assert.Equal(t, 0.0, tier.MinUSD)
-			assert.Equal(t, 0.0, tier.MaxUSD)
-		default:
-			if tier.MaxUSD > maxMonetary {
-				maxMonetary = tier.MaxUSD
-			}
-		}
+func TestApplyFirstPurchaseMinimumGuarantee(t *testing.T) {
+	tests := []struct {
+		name               string
+		isFirstPurchase    bool
+		rewardUSD          float64
+		rewardType         string
+		walletType         BlindBoxRewardWalletType
+		expectedRewardUSD  float64
+		expectedRewardType string
+		expectedWalletType BlindBoxRewardWalletType
+	}{
+		{
+			name:               "raises low ordinary quota",
+			isFirstPurchase:    true,
+			rewardUSD:          5,
+			rewardType:         BlindBoxRewardTypeQuota,
+			walletType:         BlindBoxRewardWalletTypeDefault,
+			expectedRewardUSD:  20,
+			expectedRewardType: BlindBoxRewardTypeQuota,
+			expectedWalletType: BlindBoxRewardWalletTypeDefault,
+		},
+		{
+			name:               "raises low claude quota",
+			isFirstPurchase:    true,
+			rewardUSD:          2,
+			rewardType:         BlindBoxRewardTypeClaudeQuota,
+			walletType:         BlindBoxRewardWalletTypeClaude,
+			expectedRewardUSD:  5,
+			expectedRewardType: BlindBoxRewardTypeClaudeQuota,
+			expectedWalletType: BlindBoxRewardWalletTypeClaude,
+		},
+		{
+			name:               "keeps prop reward",
+			isFirstPurchase:    true,
+			rewardUSD:          0,
+			rewardType:         BlindBoxRewardTypeProp,
+			walletType:         BlindBoxRewardWalletTypeDefault,
+			expectedRewardUSD:  0,
+			expectedRewardType: BlindBoxRewardTypeProp,
+			expectedWalletType: BlindBoxRewardWalletTypeDefault,
+		},
+		{
+			name:               "keeps high claude quota",
+			isFirstPurchase:    true,
+			rewardUSD:          25,
+			rewardType:         BlindBoxRewardTypeClaudeQuota,
+			walletType:         BlindBoxRewardWalletTypeClaude,
+			expectedRewardUSD:  25,
+			expectedRewardType: BlindBoxRewardTypeClaudeQuota,
+			expectedWalletType: BlindBoxRewardWalletTypeClaude,
+		},
+		{
+			name:               "skips non first purchase",
+			isFirstPurchase:    false,
+			rewardUSD:          5,
+			rewardType:         BlindBoxRewardTypeQuota,
+			walletType:         BlindBoxRewardWalletTypeDefault,
+			expectedRewardUSD:  5,
+			expectedRewardType: BlindBoxRewardTypeQuota,
+			expectedWalletType: BlindBoxRewardWalletTypeDefault,
+		},
 	}
 
-	assert.Equal(t, 4, propCount)
-	assert.LessOrEqual(t, maxMonetary, 80.0)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			rewardUSD := tt.rewardUSD
+			rewardType := tt.rewardType
+			walletType := tt.walletType
+
+			applyFirstPurchaseMinimumGuarantee(
+				tt.isFirstPurchase,
+				20,
+				5,
+				&rewardUSD,
+				&rewardType,
+				&walletType,
+			)
+
+			assert.Equal(t, tt.expectedRewardUSD, rewardUSD)
+			assert.Equal(t, tt.expectedRewardType, rewardType)
+			assert.Equal(t, tt.expectedWalletType, walletType)
+		})
+	}
 }

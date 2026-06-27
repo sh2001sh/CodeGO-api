@@ -343,8 +343,8 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
             <div>
               <div className='text-foreground text-sm font-semibold'>首抽奖励</div>
               <div className='text-muted-foreground mt-2 text-xs leading-5'>
-                首次购买盲盒后，首抽奖励从 $
-                {firstPurchaseStartUSD.toFixed(0)} 档位起跳。
+                首购保底20刀普通额度。首次购买盲盒后，首抽普通额度最低保底 $
+                {firstPurchaseStartUSD.toFixed(0)}。
               </div>
             </div>
           </div>
