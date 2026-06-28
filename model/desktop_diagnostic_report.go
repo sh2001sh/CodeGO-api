@@ -8,7 +8,7 @@ type DesktopDiagnosticReport struct {
 	ReportType string `json:"report_type" gorm:"type:varchar(32);index;not null"`
 	Source     string `json:"source" gorm:"type:varchar(64);default:''"`
 	Summary    string `json:"summary" gorm:"type:text"`
-	Payload    string `json:"payload" gorm:"type:longtext"`
+	Payload    string `json:"payload" gorm:"type:text"`
 	AppVersion string `json:"app_version" gorm:"type:varchar(64);default:''"`
 	Platform   string `json:"platform" gorm:"type:varchar(64);default:''"`
 	Locale     string `json:"locale" gorm:"type:varchar(32);default:''"`
