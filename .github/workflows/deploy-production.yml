@@ -66,6 +66,23 @@ jobs:
           touch "$HOME/.ssh/known_hosts"
           ssh-keyscan -p "${PRODUCTION_DEPLOY_PORT:-22}" -H "$PRODUCTION_DEPLOY_HOST" >> "$HOME/.ssh/known_hosts"
 
+      - name: Sync deployment compose file
+        if: steps.config.outputs.enabled == 'true'
+        shell: bash
+        env:
+          PRODUCTION_DEPLOY_HOST: ${{ secrets.PRODUCTION_DEPLOY_HOST }}
+          PRODUCTION_DEPLOY_PORT: ${{ secrets.PRODUCTION_DEPLOY_PORT }}
+          PRODUCTION_DEPLOY_USER: ${{ secrets.PRODUCTION_DEPLOY_USER }}
+          PRODUCTION_DEPLOY_PATH: ${{ secrets.PRODUCTION_DEPLOY_PATH }}
+        run: |
+          set -euo pipefail
+          port="${PRODUCTION_DEPLOY_PORT:-22}"
+          ssh_key="$HOME/.ssh/new-api-production"
+          ssh_target="${PRODUCTION_DEPLOY_USER}@${PRODUCTION_DEPLOY_HOST}"
+
+          ssh -i "$ssh_key" -p "$port" "$ssh_target" "mkdir -p '$PRODUCTION_DEPLOY_PATH'"
+          scp -i "$ssh_key" -P "$port" "docker-compose.yml" "$ssh_target:$PRODUCTION_DEPLOY_PATH/docker-compose.yml"
+
       - name: Deploy docker compose service
         if: steps.config.outputs.enabled == 'true'
         shell: bash
