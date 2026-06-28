@@ -231,6 +231,21 @@ export function BrandHome() {
                       查看模型
                     </Button>
                   </motion.div>
+                  <motion.div
+                    whileHover={shouldReduceMotion ? undefined : { scale: 1.04 }}
+                    whileTap={shouldReduceMotion ? undefined : { scale: 0.97 }}
+                    transition={MOTION_TRANSITION.fast}
+                    className='inline-flex'
+                  >
+                    <Button
+                      size='lg'
+                      variant='outline'
+                      className='h-12 rounded-full border-slate-900/12 bg-slate-950 px-6 text-sm font-semibold text-white hover:bg-slate-800'
+                      render={<Link to='/download' />}
+                    >
+                      下载桌面端
+                    </Button>
+                  </motion.div>
                 </motion.div>
               </motion.div>
             </div>

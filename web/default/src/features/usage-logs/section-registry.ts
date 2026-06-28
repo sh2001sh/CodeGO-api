@@ -2,14 +2,14 @@
 Copyright (C) 2023-2026 QuantumNous
 
 This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU Affero General Public License as
-published by the Free Software Foundation, either version 3 of the
-License, or (at your option) any later version.
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, either version 3 of the License, or (at your
+option) any later version.
 
 This program is distributed in the hope that it will be useful,
 but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-GNU Affero General Public License for more details.
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU Affero
+General Public License for more details.
 
 You should have received a copy of the GNU Affero General Public License
 along with this program. If not, see <https://www.gnu.org/licenses/>.
@@ -17,32 +17,33 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { createSectionRegistry } from '@/features/system-settings/utils/section-registry'
+import {
+  USAGE_LOGS_DEFAULT_SECTION,
+  USAGE_LOGS_SECTION_IDS,
+  isUsageLogsSectionId as isUsageLogsSectionIdData,
+  type UsageLogsSectionId,
+} from './section-registry-data.ts'
 
-/**
- * Usage logs page section definitions
- */
 const USAGE_LOGS_SECTIONS = [
   {
     id: 'common',
     titleKey: 'Common Logs',
     descriptionKey: 'View and manage your API usage logs',
-    build: () => null, // Content is rendered directly in the page component
+    build: () => null,
   },
   {
     id: 'drawing',
     titleKey: 'Drawing Logs',
     descriptionKey: 'View and manage your drawing logs',
-    build: () => null, // Content is rendered directly in the page component
+    build: () => null,
   },
   {
     id: 'task',
     titleKey: 'Task Logs',
     descriptionKey: 'View and manage your task logs',
-    build: () => null, // Content is rendered directly in the page component
+    build: () => null,
   },
 ] as const
-
-export type UsageLogsSectionId = (typeof USAGE_LOGS_SECTIONS)[number]['id']
 
 const usageLogsRegistry = createSectionRegistry<
   UsageLogsSectionId,
@@ -50,16 +51,19 @@ const usageLogsRegistry = createSectionRegistry<
   []
 >({
   sections: USAGE_LOGS_SECTIONS,
-  defaultSection: 'common',
+  defaultSection: USAGE_LOGS_DEFAULT_SECTION,
   basePath: '/usage-logs',
   urlStyle: 'path',
 })
 
-export const USAGE_LOGS_SECTION_IDS = usageLogsRegistry.sectionIds
-export const USAGE_LOGS_DEFAULT_SECTION = usageLogsRegistry.defaultSection
-
-/** Type guard for validating section IDs without casting. Use with z.string().refine() or params checks. */
-export function isUsageLogsSectionId(s: string): s is UsageLogsSectionId {
-  return (USAGE_LOGS_SECTION_IDS as readonly string[]).includes(s)
+export {
+  USAGE_LOGS_SECTION_IDS,
+  USAGE_LOGS_DEFAULT_SECTION,
+  type UsageLogsSectionId,
 }
+
+export function isUsageLogsSectionId(s: string): s is UsageLogsSectionId {
+  return isUsageLogsSectionIdData(s)
+}
+
 export const getUsageLogsSectionNavItems = usageLogsRegistry.getSectionNavItems

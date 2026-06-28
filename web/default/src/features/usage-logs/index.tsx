@@ -31,40 +31,23 @@ import {
 } from './components/usage-logs-provider'
 import { UsageLogsTable } from './components/usage-logs-table'
 import {
+  getUsageLogsSectionMeta,
+  resolveUsageLogsSectionId,
+} from './section-meta'
+import {
   isUsageLogsSectionId,
-  USAGE_LOGS_DEFAULT_SECTION,
   type UsageLogsSectionId,
 } from './section-registry'
 
 const route = getRouteApi('/_authenticated/usage-logs/$section')
 const TASK_LOG_SECTIONS = ['drawing', 'task'] as const
 
-const SECTION_META: Record<
-  UsageLogsSectionId,
-  { titleKey: string; descriptionKey: string }
-> = {
-  common: {
-    titleKey: 'Common Logs',
-    descriptionKey: 'View and manage your API usage logs',
-  },
-  drawing: {
-    titleKey: 'Drawing Logs',
-    descriptionKey: 'View and manage your drawing logs',
-  },
-  task: {
-    titleKey: 'Task Logs',
-    descriptionKey: 'View and manage your task logs',
-  },
-}
-
 function UsageLogsContent() {
   const { t } = useTranslation()
   const navigate = useNavigate()
   const params = route.useParams()
-  const activeCategory: UsageLogsSectionId =
-    params.section && isUsageLogsSectionId(params.section)
-      ? params.section
-      : USAGE_LOGS_DEFAULT_SECTION
+  const activeCategory = resolveUsageLogsSectionId(params.section)
+  const pageMeta = getUsageLogsSectionMeta(activeCategory)
   const {
     selectedUserId,
     userInfoDialogOpen,
@@ -76,14 +59,14 @@ function UsageLogsContent() {
   const tabNavGroups = useMemo<NavGroup[]>(
     () => [
       {
-        title: 'Task Logs',
+        title: t('Task Logs'),
         items: TASK_LOG_SECTIONS.map((section) => ({
-          title: SECTION_META[section].titleKey,
+          title: t(getUsageLogsSectionMeta(section).titleKey),
           url: `/usage-logs/${section}`,
         })),
       },
     ],
-    []
+    [t]
   )
   const filteredTabGroups = useSidebarConfig(tabNavGroups)
   const visibleSections = useMemo(
@@ -109,8 +92,6 @@ function UsageLogsContent() {
     [navigate]
   )
 
-  const pageMeta =
-    activeCategory === 'common' ? SECTION_META.common : SECTION_META.task
   const showTaskSwitcher =
     activeCategory !== 'common' && visibleSections.length > 1
 
@@ -130,7 +111,7 @@ function UsageLogsContent() {
                 <TabsList className='h-auto max-w-full flex-wrap justify-start'>
                   {visibleSections.map((section) => (
                     <TabsTrigger key={section} value={section}>
-                      {t(SECTION_META[section].titleKey)}
+                      {t(getUsageLogsSectionMeta(section).titleKey)}
                     </TabsTrigger>
                   ))}
                 </TabsList>

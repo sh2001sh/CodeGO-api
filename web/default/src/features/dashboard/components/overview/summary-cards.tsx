@@ -16,7 +16,6 @@ import {
   isMonthlyCardPlan,
 } from '@/features/subscriptions/lib'
 import type { PlanRecord } from '@/features/subscriptions/types'
-import { getBlindBoxSelf } from '@/features/wallet/api'
 import { UsageChart } from './summary-card-parts'
 import {
   BalanceWorkspace,
@@ -88,15 +87,6 @@ export function SummaryCards() {
     staleTime: 5 * 60 * 1000,
   })
 
-  const blindBoxQuery = useQuery({
-    queryKey: ['dashboard', 'overview', 'blind-box-summary'],
-    queryFn: async () => {
-      const result = await getBlindBoxSelf()
-      return result.success ? (result.data ?? null) : null
-    },
-    staleTime: 60 * 1000,
-  })
-
   const usageRows = usageTrendQuery.data?.data ?? []
   const chartValues = usageRows.map(
     (item: QuotaDataItem) => Number(item.quota) || 0
@@ -106,14 +96,11 @@ export function SummaryCards() {
     value: Number(item.quota) || 0,
   }))
   const recentUsage = chartValues.reduce((total, value) => total + value, 0)
-  const blindBoxQuota = Number(blindBoxQuery.data?.overview?.remaining_quota ?? 0)
-  const totalAvailableQuota = remainQuota + blindBoxQuota
-  const availableUsd = quotaUnitsToUsd(totalAvailableQuota)
+  const availableUsd = quotaUnitsToUsd(remainQuota)
   const walletUsd = quotaUnitsToUsd(remainQuota)
   const claudeUsd = quotaUnitsToUsd(claudeQuota)
   const recentUsageUsd = quotaUnitsToUsd(recentUsage)
   const usedQuotaUsd = quotaUnitsToUsd(usedQuota)
-  const blindBoxQuotaUsd = quotaUnitsToUsd(blindBoxQuota)
 
   const balanceSegments: BalanceSegment[] = [
     {
@@ -122,13 +109,6 @@ export function SummaryCards() {
       value: walletUsd,
       dot: 'bg-primary',
       bar: 'bg-primary',
-    },
-    {
-      label: '盲盒',
-      display: formatUsdAmount(blindBoxQuotaUsd),
-      value: blindBoxQuotaUsd,
-      dot: 'bg-amber-500',
-      bar: 'bg-amber-500',
     },
   ]
 

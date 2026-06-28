@@ -3,6 +3,7 @@ package router
 import (
 	"github.com/QuantumNous/new-api/controller"
 	"github.com/QuantumNous/new-api/middleware"
+	"github.com/QuantumNous/new-api/model"
 
 	// Import oauth package to register providers via init()
 	_ "github.com/QuantumNous/new-api/oauth"
@@ -358,6 +359,77 @@ func SetApiRouter(router *gin.Engine) {
 			tokenRoute.DELETE("/:id", controller.DeleteToken)
 			tokenRoute.POST("/batch", controller.DeleteTokenBatch)
 			tokenRoute.POST("/batch/keys", middleware.CriticalRateLimit(), middleware.DisableCache(), controller.GetTokenKeysBatch)
+		}
+
+		apiRouter.GET("/desktop/import/config", controller.GetDesktopImportConfig)
+		apiRouter.GET("/desktop/release/latest", middleware.DisableCache(), controller.GetDesktopReleaseLatest)
+		apiRouter.GET("/desktop/release/latest.json", middleware.DisableCache(), controller.GetDesktopReleaseLatestJSON)
+
+		desktopRoute := apiRouter.Group("/desktop")
+		desktopRoute.Use(middleware.DesktopAuth())
+		{
+			desktopRoute.GET("/account/summary",
+				middleware.RequireDesktopScope(model.DesktopScopeAccountRead),
+				controller.GetDesktopAccountSummary,
+			)
+			desktopRoute.GET("/usage/logs",
+				middleware.RequireDesktopScope(model.DesktopScopeLogsRead),
+				controller.GetDesktopUsageLogs,
+			)
+			desktopRoute.GET("/usage/trends",
+				middleware.RequireDesktopScope(model.DesktopScopeLogsRead),
+				controller.GetDesktopUsageTrends,
+			)
+			desktopRoute.POST("/tokens/ensure",
+				middleware.RequireDesktopScope(model.DesktopScopeTokensWrite),
+				controller.EnsureDesktopToken,
+			)
+			desktopRoute.GET("/tokens/:id/config",
+				middleware.RequireDesktopScope(model.DesktopScopeTokensRead),
+				middleware.CriticalRateLimit(),
+				middleware.DisableCache(),
+				controller.GetDesktopTokenConfig,
+			)
+			desktopRoute.GET("/config/template",
+				middleware.RequireDesktopScope(model.DesktopScopeConfigRead),
+				controller.GetDesktopConfigTemplate,
+			)
+			desktopRoute.GET("/config/templates",
+				middleware.RequireDesktopScope(model.DesktopScopeConfigRead),
+				controller.GetDesktopConfigTemplates,
+			)
+			desktopRoute.GET("/service/status",
+				middleware.RequireDesktopScope(model.DesktopScopeAccountRead),
+				controller.GetDesktopServiceStatus,
+			)
+			desktopRoute.POST("/import/deeplink",
+				middleware.RequireDesktopScope(model.DesktopScopeConfigWrite),
+				controller.CreateDesktopImportConfig,
+			)
+			desktopRoute.POST("/diagnostics/report",
+				middleware.RequireDesktopScope(model.DesktopScopeConfigWrite),
+				controller.CreateDesktopDiagnosticReport,
+			)
+			desktopRoute.POST("/telemetry/events",
+				middleware.RequireDesktopScope(model.DesktopScopeTelemetryWrite),
+				controller.CreateDesktopTelemetryEvent,
+			)
+		}
+
+		desktopAuthRoute := apiRouter.Group("/desktop/auth")
+		{
+			desktopAuthRoute.POST("/session", middleware.CriticalRateLimit(), controller.StartDesktopAuthSession)
+			desktopAuthRoute.POST("/poll", middleware.CriticalRateLimit(), controller.PollDesktopAuthSession)
+			desktopAuthRoute.GET("/session", middleware.UserAuth(), controller.GetDesktopAuthSession)
+			desktopAuthRoute.POST("/approve", middleware.UserAuth(), middleware.CriticalRateLimit(), controller.ApproveDesktopAuthSession)
+			desktopAuthRoute.POST("/reject", middleware.UserAuth(), middleware.CriticalRateLimit(), controller.RejectDesktopAuthSession)
+		}
+
+		desktopDevicesRoute := apiRouter.Group("/desktop/devices")
+		desktopDevicesRoute.Use(middleware.UserAuth())
+		{
+			desktopDevicesRoute.GET("", controller.ListDesktopAuthorizedDevices)
+			desktopDevicesRoute.DELETE("/:id", middleware.CriticalRateLimit(), controller.RevokeDesktopAuthorizedDevice)
 		}
 
 		usageRoute := apiRouter.Group("/usage")

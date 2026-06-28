@@ -302,6 +302,10 @@ func migrateDB() error {
 		&SubscriptionClaudeConversion{},
 		&CustomOAuthProvider{},
 		&UserOAuthBinding{},
+		&DesktopAuthSession{},
+		&DesktopAuthorizedDevice{},
+		&DesktopDiagnosticReport{},
+		&DesktopTelemetryEvent{},
 		&PerfMetric{},
 		&ImageWorkspaceItem{},
 	)
@@ -383,6 +387,10 @@ func migrateDBFast() error {
 		{&SubscriptionClaudeConversion{}, "SubscriptionClaudeConversion"},
 		{&CustomOAuthProvider{}, "CustomOAuthProvider"},
 		{&UserOAuthBinding{}, "UserOAuthBinding"},
+		{&DesktopAuthSession{}, "DesktopAuthSession"},
+		{&DesktopAuthorizedDevice{}, "DesktopAuthorizedDevice"},
+		{&DesktopDiagnosticReport{}, "DesktopDiagnosticReport"},
+		{&DesktopTelemetryEvent{}, "DesktopTelemetryEvent"},
 		{&PerfMetric{}, "PerfMetric"},
 		{&ImageWorkspaceItem{}, "ImageWorkspaceItem"},
 	}

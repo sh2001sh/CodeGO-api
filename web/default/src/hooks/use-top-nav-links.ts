@@ -50,6 +50,8 @@ export function useTopNavLinks(): TopNavLink[] {
     links.push({ title: t('Usage guide'), href: '/guide' })
   }
 
+  links.push({ title: t('Download'), href: '/download' })
+
   if (modules?.about !== false) {
     links.push({ title: t('About'), href: '/about' })
   }

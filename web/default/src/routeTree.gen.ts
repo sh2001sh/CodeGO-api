@@ -21,11 +21,13 @@ import { Route as SetupIndexRouteImport } from './routes/setup/index'
 import { Route as RankingsIndexRouteImport } from './routes/rankings/index'
 import { Route as PricingIndexRouteImport } from './routes/pricing/index'
 import { Route as GuideIndexRouteImport } from './routes/guide/index'
+import { Route as DownloadIndexRouteImport } from './routes/download/index'
 import { Route as AboutIndexRouteImport } from './routes/about/index'
 import { Route as TopicsSlugRouteImport } from './routes/topics/$slug'
 import { Route as OauthProviderRouteImport } from './routes/oauth/$provider'
 import { Route as MiniappLandingRouteImport } from './routes/miniapp/landing'
 import { Route as GeneMapTokenRouteImport } from './routes/gene-map/$token'
+import { Route as DesktopAuthorizeRouteImport } from './routes/desktop/authorize'
 import { Route as ConsoleTopupRouteImport } from './routes/console/topup'
 import { Route as ConsoleLogRouteImport } from './routes/console/log'
 import { Route as AuthenticatedChat2linkRouteImport } from './routes/_authenticated/chat2link'
@@ -138,6 +140,11 @@ const GuideIndexRoute = GuideIndexRouteImport.update({
   path: '/guide/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DownloadIndexRoute = DownloadIndexRouteImport.update({
+  id: '/download/',
+  path: '/download/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AboutIndexRoute = AboutIndexRouteImport.update({
   id: '/about/',
   path: '/about/',
@@ -161,6 +168,11 @@ const MiniappLandingRoute = MiniappLandingRouteImport.update({
 const GeneMapTokenRoute = GeneMapTokenRouteImport.update({
   id: '/gene-map/$token',
   path: '/gene-map/$token',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DesktopAuthorizeRoute = DesktopAuthorizeRouteImport.update({
+  id: '/desktop/authorize',
+  path: '/desktop/authorize',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ConsoleTopupRoute = ConsoleTopupRouteImport.update({
@@ -484,11 +496,13 @@ export interface FileRoutesByFullPath {
   '/chat2link': typeof AuthenticatedChat2linkRoute
   '/console/log': typeof ConsoleLogRoute
   '/console/topup': typeof ConsoleTopupRoute
+  '/desktop/authorize': typeof DesktopAuthorizeRoute
   '/gene-map/$token': typeof GeneMapTokenRoute
   '/miniapp/landing': typeof MiniappLandingRoute
   '/oauth/$provider': typeof OauthProviderRoute
   '/topics/$slug': typeof TopicsSlugRoute
   '/about/': typeof AboutIndexRoute
+  '/download/': typeof DownloadIndexRoute
   '/guide/': typeof GuideIndexRoute
   '/pricing/': typeof PricingIndexRoute
   '/rankings/': typeof RankingsIndexRoute
@@ -553,11 +567,13 @@ export interface FileRoutesByTo {
   '/chat2link': typeof AuthenticatedChat2linkRoute
   '/console/log': typeof ConsoleLogRoute
   '/console/topup': typeof ConsoleTopupRoute
+  '/desktop/authorize': typeof DesktopAuthorizeRoute
   '/gene-map/$token': typeof GeneMapTokenRoute
   '/miniapp/landing': typeof MiniappLandingRoute
   '/oauth/$provider': typeof OauthProviderRoute
   '/topics/$slug': typeof TopicsSlugRoute
   '/about': typeof AboutIndexRoute
+  '/download': typeof DownloadIndexRoute
   '/guide': typeof GuideIndexRoute
   '/pricing': typeof PricingIndexRoute
   '/rankings': typeof RankingsIndexRoute
@@ -626,11 +642,13 @@ export interface FileRoutesById {
   '/_authenticated/chat2link': typeof AuthenticatedChat2linkRoute
   '/console/log': typeof ConsoleLogRoute
   '/console/topup': typeof ConsoleTopupRoute
+  '/desktop/authorize': typeof DesktopAuthorizeRoute
   '/gene-map/$token': typeof GeneMapTokenRoute
   '/miniapp/landing': typeof MiniappLandingRoute
   '/oauth/$provider': typeof OauthProviderRoute
   '/topics/$slug': typeof TopicsSlugRoute
   '/about/': typeof AboutIndexRoute
+  '/download/': typeof DownloadIndexRoute
   '/guide/': typeof GuideIndexRoute
   '/pricing/': typeof PricingIndexRoute
   '/rankings/': typeof RankingsIndexRoute
@@ -698,11 +716,13 @@ export interface FileRouteTypes {
     | '/chat2link'
     | '/console/log'
     | '/console/topup'
+    | '/desktop/authorize'
     | '/gene-map/$token'
     | '/miniapp/landing'
     | '/oauth/$provider'
     | '/topics/$slug'
     | '/about/'
+    | '/download/'
     | '/guide/'
     | '/pricing/'
     | '/rankings/'
@@ -767,11 +787,13 @@ export interface FileRouteTypes {
     | '/chat2link'
     | '/console/log'
     | '/console/topup'
+    | '/desktop/authorize'
     | '/gene-map/$token'
     | '/miniapp/landing'
     | '/oauth/$provider'
     | '/topics/$slug'
     | '/about'
+    | '/download'
     | '/guide'
     | '/pricing'
     | '/rankings'
@@ -839,11 +861,13 @@ export interface FileRouteTypes {
     | '/_authenticated/chat2link'
     | '/console/log'
     | '/console/topup'
+    | '/desktop/authorize'
     | '/gene-map/$token'
     | '/miniapp/landing'
     | '/oauth/$provider'
     | '/topics/$slug'
     | '/about/'
+    | '/download/'
     | '/guide/'
     | '/pricing/'
     | '/rankings/'
@@ -904,11 +928,13 @@ export interface RootRouteChildren {
   errors503Route: typeof errors503Route
   ConsoleLogRoute: typeof ConsoleLogRoute
   ConsoleTopupRoute: typeof ConsoleTopupRoute
+  DesktopAuthorizeRoute: typeof DesktopAuthorizeRoute
   GeneMapTokenRoute: typeof GeneMapTokenRoute
   MiniappLandingRoute: typeof MiniappLandingRoute
   OauthProviderRoute: typeof OauthProviderRoute
   TopicsSlugRoute: typeof TopicsSlugRoute
   AboutIndexRoute: typeof AboutIndexRoute
+  DownloadIndexRoute: typeof DownloadIndexRoute
   GuideIndexRoute: typeof GuideIndexRoute
   PricingIndexRoute: typeof PricingIndexRoute
   RankingsIndexRoute: typeof RankingsIndexRoute
@@ -1003,6 +1029,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof GuideIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/download/': {
+      id: '/download/'
+      path: '/download'
+      fullPath: '/download/'
+      preLoaderRoute: typeof DownloadIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/about/': {
       id: '/about/'
       path: '/about'
@@ -1036,6 +1069,13 @@ declare module '@tanstack/react-router' {
       path: '/gene-map/$token'
       fullPath: '/gene-map/$token'
       preLoaderRoute: typeof GeneMapTokenRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/desktop/authorize': {
+      id: '/desktop/authorize'
+      path: '/desktop/authorize'
+      fullPath: '/desktop/authorize'
+      preLoaderRoute: typeof DesktopAuthorizeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/console/topup': {
@@ -1565,11 +1605,13 @@ const rootRouteChildren: RootRouteChildren = {
   errors503Route: errors503Route,
   ConsoleLogRoute: ConsoleLogRoute,
   ConsoleTopupRoute: ConsoleTopupRoute,
+  DesktopAuthorizeRoute: DesktopAuthorizeRoute,
   GeneMapTokenRoute: GeneMapTokenRoute,
   MiniappLandingRoute: MiniappLandingRoute,
   OauthProviderRoute: OauthProviderRoute,
   TopicsSlugRoute: TopicsSlugRoute,
   AboutIndexRoute: AboutIndexRoute,
+  DownloadIndexRoute: DownloadIndexRoute,
   GuideIndexRoute: GuideIndexRoute,
   PricingIndexRoute: PricingIndexRoute,
   RankingsIndexRoute: RankingsIndexRoute,

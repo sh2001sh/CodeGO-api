@@ -25,6 +25,7 @@ import { TitledCard } from '@/components/ui/titled-card'
 import type { UserProfile } from '../types'
 import { AccessTokenDialog } from './dialogs/access-token-dialog'
 import { ChangePasswordDialog } from './dialogs/change-password-dialog'
+import { DesktopDevicesCard } from './desktop-devices-card'
 import { DeleteAccountDialog } from './dialogs/delete-account-dialog'
 
 // ============================================================================
@@ -125,6 +126,8 @@ export function ProfileSecurityCard({
           ))}
         </div>
       </TitledCard>
+
+      <DesktopDevicesCard />
 
       {/* Dialogs */}
       <ChangePasswordDialog

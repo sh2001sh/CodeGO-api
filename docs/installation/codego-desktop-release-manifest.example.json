@@ -1,0 +1,77 @@
+{
+  "tag_name": "v3.16.4",
+  "version": "3.16.4",
+  "html_url": "/download?version=v3.16.4",
+  "published_at": "2026-06-28T12:00:00Z",
+  "notes": "Code Go Companion Software v3.16.4",
+  "homebrew_url": "https://brew.sh/",
+  "assets": [
+    {
+      "name": "CodeGo_3.16.4_x64_en-US.msi",
+      "size": 91234567,
+      "digest": "sha256:replace-with-real-sha256",
+      "browser_download_url": "/downloads/codego/CodeGo_3.16.4_x64_en-US.msi",
+      "platform": "windows",
+      "arch": "x64",
+      "tauri_target": "windows-x86_64"
+    },
+    {
+      "name": "CodeGo_3.16.4_arm64_en-US.msi",
+      "size": 90234567,
+      "digest": "sha256:replace-with-real-sha256",
+      "browser_download_url": "/downloads/codego/CodeGo_3.16.4_arm64_en-US.msi",
+      "platform": "windows",
+      "arch": "arm64",
+      "tauri_target": "windows-aarch64"
+    },
+    {
+      "name": "CodeGo_3.16.4_universal.dmg",
+      "size": 102345678,
+      "digest": "sha256:replace-with-real-sha256",
+      "browser_download_url": "/downloads/codego/CodeGo_3.16.4_universal.dmg",
+      "platform": "macos",
+      "arch": "universal",
+      "tauri_target": "darwin-universal"
+    },
+    {
+      "name": "CodeGo_3.16.4_universal.app.tar.gz",
+      "size": 92345678,
+      "digest": "sha256:replace-with-real-sha256",
+      "browser_download_url": "/downloads/codego/CodeGo_3.16.4_universal.app.tar.gz",
+      "platform": "macos",
+      "arch": "universal",
+      "tauri_target": "darwin-universal"
+    },
+    {
+      "name": "CodeGo_3.16.4_x64.AppImage",
+      "size": 83234567,
+      "digest": "sha256:replace-with-real-sha256",
+      "browser_download_url": "/downloads/codego/CodeGo_3.16.4_x64.AppImage",
+      "platform": "linux",
+      "arch": "x64",
+      "tauri_target": "linux-x86_64"
+    }
+  ],
+  "platforms": {
+    "windows-x86_64": {
+      "signature": "replace-with-real-tauri-signature",
+      "url": "/downloads/codego/CodeGo_3.16.4_x64_en-US.msi"
+    },
+    "windows-aarch64": {
+      "signature": "replace-with-real-tauri-signature",
+      "url": "/downloads/codego/CodeGo_3.16.4_arm64_en-US.msi"
+    },
+    "darwin-aarch64": {
+      "signature": "replace-with-real-tauri-signature",
+      "url": "/downloads/codego/CodeGo_3.16.4_universal.app.tar.gz"
+    },
+    "darwin-x86_64": {
+      "signature": "replace-with-real-tauri-signature",
+      "url": "/downloads/codego/CodeGo_3.16.4_universal.app.tar.gz"
+    },
+    "linux-x86_64": {
+      "signature": "replace-with-real-tauri-signature",
+      "url": "/downloads/codego/CodeGo_3.16.4_x64.AppImage"
+    }
+  }
+}

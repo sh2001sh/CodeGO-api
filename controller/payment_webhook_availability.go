@@ -16,7 +16,8 @@ func isStripeTopUpEnabled() bool {
 		return false
 	}
 	return strings.TrimSpace(setting.StripeApiSecret) != "" &&
-		strings.TrimSpace(setting.StripeWebhookSecret) != ""
+		strings.TrimSpace(setting.StripeWebhookSecret) != "" &&
+		strings.TrimSpace(setting.StripePriceId) != ""
 }
 
 func isStripeWebhookConfigured() bool {

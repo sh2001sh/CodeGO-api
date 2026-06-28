@@ -121,6 +121,8 @@ type BlindBoxPreConsumeRecord struct {
 type BlindBoxOverview struct {
 	AvailableBoxes         int                  `json:"available_boxes"`
 	PendingBoxes           int                  `json:"pending_boxes"`
+	// RemainingQuota mirrors the user's main wallet quota after blind-box rewards
+	// are credited directly into users.quota. It is not a standalone blind-box pool.
 	RemainingQuota         int64                `json:"remaining_quota"`
 	ClaudeQuota            int64                `json:"claude_quota"`
 	PityProgress           int                  `json:"pity_progress"`

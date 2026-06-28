@@ -82,7 +82,6 @@ export function DataTableRowActions<TData>({
     setOpen,
     setCurrentRow,
     triggerRefresh,
-    setResolvedKey,
     resolveRealKey,
   } = useApiKeys()
   const isEnabled = apiKey.status === API_KEY_STATUS.ENABLED
@@ -263,15 +262,12 @@ export function DataTableRowActions<TData>({
             </DropdownMenuShortcut>
           </DropdownMenuItem>
           <DropdownMenuItem
-            onClick={async () => {
-              const realKey = await resolveRealKey(apiKey.id)
-              if (!realKey) return
-              setResolvedKey(realKey)
+            onClick={() => {
               setCurrentRow(apiKey)
               setOpen('cc-switch')
             }}
           >
-            {t('CC Switch')}
+            {t('Code Go Desktop')}
             <DropdownMenuShortcut>
               <ArrowRightLeft size={16} />
             </DropdownMenuShortcut>

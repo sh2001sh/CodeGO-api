@@ -28,6 +28,7 @@ import { useRedemption } from '@/features/wallet/hooks/use-redemption'
 import { useTopupInfo } from '@/features/wallet/hooks/use-topup-info'
 import { AnnouncementsPanel } from './announcements-panel'
 import { FAQPanel } from './faq-panel'
+import { CodeGoDesktopEntryPanel } from './overview-desktop-entry-panel'
 import { OverviewHealthPanel } from './overview-health-panel'
 import { OverviewHeroPanel } from './overview-hero-panel'
 import { useSetupGuide } from './setup-guide/use-setup-guide'
@@ -64,6 +65,9 @@ export function OverviewDashboard() {
         </CardStaggerContainer>
 
         <CardStaggerContainer className='flex flex-col gap-4'>
+          <CardStaggerItem>
+            <CodeGoDesktopEntryPanel />
+          </CardStaggerItem>
           <CardStaggerItem>
             <OverviewHealthPanel />
           </CardStaggerItem>

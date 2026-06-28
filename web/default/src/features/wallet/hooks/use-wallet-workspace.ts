@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { getSelf } from '@/lib/api'
 import { useStatus } from '@/hooks/use-status'
 import { useSystemConfig } from '@/hooks/use-system-config'
+import { useAuthStore, type AuthUser } from '@/stores/auth-store'
 import { getSelfSubscriptionFull } from '@/features/subscriptions/api'
 import type { SelfSubscriptionData } from '@/features/subscriptions/types'
 import { DEFAULT_DISCOUNT_RATE } from '../constants'
@@ -47,6 +48,8 @@ export function useWalletWorkspace(options: UseWalletWorkspaceOptions = {}) {
   const [creemDialogOpen, setCreemDialogOpen] = useState(false)
   const [selectedCreemProduct, setSelectedCreemProduct] =
     useState<CreemProduct | null>(null)
+  const authUser = useAuthStore((state) => state.auth.user)
+  const setAuthUser = useAuthStore((state) => state.auth.setUser)
 
   const { status } = useStatus()
   const { currency } = useSystemConfig()
@@ -76,14 +79,19 @@ export function useWalletWorkspace(options: UseWalletWorkspaceOptions = {}) {
       setUserLoading(true)
       const response = await getSelf()
       if (response.success && response.data) {
-        setUser(response.data as UserWalletData)
+        const userData = response.data as UserWalletData
+        setUser(userData)
+        setAuthUser({
+          ...(authUser ?? (response.data as AuthUser)),
+          ...(response.data as AuthUser),
+        })
       }
     } catch (_error) {
       // no-op
     } finally {
       setUserLoading(false)
     }
-  }, [])
+  }, [authUser, setAuthUser])
 
   const fetchSubscriptionData = useCallback(async () => {
     try {

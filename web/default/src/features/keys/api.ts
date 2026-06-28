@@ -26,6 +26,27 @@ import type {
   ApiKeyFormData,
 } from './types'
 
+export interface DesktopImportLinkRequest {
+  tool: 'claude' | 'codex' | 'gemini' | 'opencode' | 'openclaw' | 'hermes'
+  token_id: number
+  name: string
+  model: string
+  haiku_model?: string
+  sonnet_model?: string
+  opus_model?: string
+  enabled?: boolean
+}
+
+export interface DesktopImportLinkResponse {
+  code: string
+  deep_link: string
+  config_url: string
+  expires_in_seconds: number
+  tool: string
+  token_name: string
+  provider_name: string
+}
+
 // ============================================================================
 // API Key Management
 // ============================================================================
@@ -113,5 +134,12 @@ export async function fetchTokenKeysBatch(ids: number[]): Promise<{
   data?: { keys: Record<number, string> }
 }> {
   const res = await api.post('/api/token/batch/keys', { ids })
+  return res.data
+}
+
+export async function createDesktopImportLink(
+  data: DesktopImportLinkRequest
+): Promise<ApiResponse<DesktopImportLinkResponse>> {
+  const res = await api.post('/api/desktop/import/deeplink', data)
   return res.data
 }

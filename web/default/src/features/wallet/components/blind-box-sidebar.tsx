@@ -87,10 +87,10 @@ function AssetBoard(props: {
     <div className='app-subtle-panel p-4'>
       <div className='mb-3 flex items-center gap-2'>
         <Wallet className='text-muted-foreground size-4' />
-        <div className='text-foreground text-sm font-semibold'>盲盒资产</div>
+        <div className='text-foreground text-sm font-semibold'>开奖状态</div>
       </div>
       <div className='grid grid-cols-2 gap-2.5'>
-        <Tile label='可用额度' value={formatQuota(props.remainingQuota)} />
+        <Tile label='当前钱包额度' value={formatQuota(props.remainingQuota)} />
         <Tile label='Claude 额度' value={formatQuota(props.claudeQuota)} />
         <Tile
           label='待开盲盒'

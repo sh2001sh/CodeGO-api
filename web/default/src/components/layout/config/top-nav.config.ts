@@ -30,6 +30,7 @@ import { type TopNavLink } from '../types'
 export const defaultTopNavLinks: TopNavLink[] = [
   { title: 'Brand', href: '/brand' },
   { title: 'Guide', href: '/guide' },
+  { title: 'Download', href: '/download' },
   { title: 'Topics', href: '/topics' },
   { title: 'About', href: '/about' },
   { title: 'FAQ', href: '/faq' },

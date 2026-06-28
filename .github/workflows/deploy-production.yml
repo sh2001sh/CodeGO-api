@@ -1,0 +1,135 @@
+name: Deploy production
+
+on:
+  workflow_run:
+    workflows:
+      - Publish Docker image (Multi-arch)
+    types:
+      - completed
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (
+        github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.head_branch == 'main'
+      )
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Resolve deploy configuration
+        id: config
+        shell: bash
+        env:
+          PRODUCTION_DEPLOY_HOST: ${{ secrets.PRODUCTION_DEPLOY_HOST }}
+          PRODUCTION_DEPLOY_USER: ${{ secrets.PRODUCTION_DEPLOY_USER }}
+          PRODUCTION_DEPLOY_SSH_KEY: ${{ secrets.PRODUCTION_DEPLOY_SSH_KEY }}
+          PRODUCTION_DEPLOY_PATH: ${{ secrets.PRODUCTION_DEPLOY_PATH }}
+        run: |
+          set -euo pipefail
+          missing=()
+          for key in \
+            PRODUCTION_DEPLOY_HOST \
+            PRODUCTION_DEPLOY_USER \
+            PRODUCTION_DEPLOY_SSH_KEY \
+            PRODUCTION_DEPLOY_PATH; do
+            if [ -z "${!key:-}" ]; then
+              missing+=("$key")
+            fi
+          done
+
+          if [ "${#missing[@]}" -gt 0 ]; then
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "summary=Skipping production deploy because required secrets are missing: ${missing[*]}" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "enabled=true" >> "$GITHUB_OUTPUT"
+          echo "summary=Production deploy is configured." >> "$GITHUB_OUTPUT"
+
+      - name: Prepare SSH key
+        if: steps.config.outputs.enabled == 'true'
+        shell: bash
+        env:
+          PRODUCTION_DEPLOY_HOST: ${{ secrets.PRODUCTION_DEPLOY_HOST }}
+          PRODUCTION_DEPLOY_PORT: ${{ secrets.PRODUCTION_DEPLOY_PORT }}
+          PRODUCTION_DEPLOY_SSH_KEY: ${{ secrets.PRODUCTION_DEPLOY_SSH_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.ssh"
+          printf '%s\n' "$PRODUCTION_DEPLOY_SSH_KEY" > "$HOME/.ssh/new-api-production"
+          chmod 600 "$HOME/.ssh/new-api-production"
+          touch "$HOME/.ssh/known_hosts"
+          ssh-keyscan -p "${PRODUCTION_DEPLOY_PORT:-22}" -H "$PRODUCTION_DEPLOY_HOST" >> "$HOME/.ssh/known_hosts"
+
+      - name: Deploy docker compose service
+        if: steps.config.outputs.enabled == 'true'
+        shell: bash
+        env:
+          PRODUCTION_DEPLOY_HOST: ${{ secrets.PRODUCTION_DEPLOY_HOST }}
+          PRODUCTION_DEPLOY_PORT: ${{ secrets.PRODUCTION_DEPLOY_PORT }}
+          PRODUCTION_DEPLOY_USER: ${{ secrets.PRODUCTION_DEPLOY_USER }}
+          PRODUCTION_DEPLOY_PATH: ${{ secrets.PRODUCTION_DEPLOY_PATH }}
+          PRODUCTION_DEPLOY_SERVICE: ${{ secrets.PRODUCTION_DEPLOY_SERVICE }}
+          PRODUCTION_DEPLOY_POST_COMMAND: ${{ secrets.PRODUCTION_DEPLOY_POST_COMMAND }}
+        run: |
+          set -euo pipefail
+          port="${PRODUCTION_DEPLOY_PORT:-22}"
+          ssh_key="$HOME/.ssh/new-api-production"
+          ssh_target="${PRODUCTION_DEPLOY_USER}@${PRODUCTION_DEPLOY_HOST}"
+          service="${PRODUCTION_DEPLOY_SERVICE:-new-api}"
+          post_command="${PRODUCTION_DEPLOY_POST_COMMAND:-}"
+
+          printf -v q_path '%q' "$PRODUCTION_DEPLOY_PATH"
+          printf -v q_service '%q' "$service"
+          printf -v q_post '%q' "$post_command"
+
+          ssh -i "$ssh_key" -p "$port" "$ssh_target" \
+            "DEPLOY_PATH=$q_path DEPLOY_SERVICE=$q_service POST_COMMAND=$q_post bash -s" <<'EOF'
+          set -euo pipefail
+          cd "$DEPLOY_PATH"
+
+          docker compose pull "$DEPLOY_SERVICE"
+          docker compose up -d "$DEPLOY_SERVICE"
+
+          if [ -n "$POST_COMMAND" ]; then
+            eval "$POST_COMMAND"
+          fi
+          EOF
+
+      - name: Verify public health endpoint
+        if: steps.config.outputs.enabled == 'true'
+        shell: bash
+        env:
+          PRODUCTION_PUBLIC_BASE_URL: ${{ secrets.PRODUCTION_PUBLIC_BASE_URL }}
+        run: |
+          set -euo pipefail
+          base_url="${PRODUCTION_PUBLIC_BASE_URL:-https://shu26.cfd}"
+          base_url="${base_url%/}"
+
+          success=0
+          for _ in $(seq 1 24); do
+            if curl --fail --silent --show-error "${base_url}/api/status" >/tmp/new-api-status.json; then
+              if grep -Eq '"success"[[:space:]]*:[[:space:]]*true' /tmp/new-api-status.json; then
+                success=1
+                break
+              fi
+            fi
+            sleep 5
+          done
+
+          if [ "$success" -ne 1 ]; then
+            echo "Production health check failed for ${base_url}/api/status" >&2
+            cat /tmp/new-api-status.json 2>/dev/null || true
+            exit 1
+          fi
+
+      - name: Deployment summary
+        shell: bash
+        run: |
+          echo "### Production deploy" >> "$GITHUB_STEP_SUMMARY"
+          echo "${{ steps.config.outputs.summary }}" >> "$GITHUB_STEP_SUMMARY"

@@ -159,6 +159,19 @@ export interface CustomOAuthBinding {
   external_id?: string
 }
 
+export interface DesktopAuthorizedDevice {
+  id: number
+  device_name: string
+  platform: string
+  app_version: string
+  scopes: string[]
+  status: string
+  created_at: number
+  last_used_at: number
+  expires_at: number
+  revoked_at: number
+}
+
 /**
  * Get current user's custom OAuth bindings
  */
@@ -176,6 +189,51 @@ export async function unbindCustomOAuth(
   providerId: string
 ): Promise<ApiResponse> {
   const res = await api.delete(`/api/user/oauth/bindings/${providerId}`)
+  return res.data
+}
+
+export async function getDesktopAuthSession(params: {
+  sessionId: string
+  code: string
+}): Promise<ApiResponse> {
+  const res = await api.get('/api/desktop/auth/session', {
+    params: {
+      session_id: params.sessionId,
+      code: params.code,
+    },
+  })
+  return res.data
+}
+
+export async function approveDesktopAuthSession(
+  sessionId: string
+): Promise<ApiResponse> {
+  const res = await api.post('/api/desktop/auth/approve', {
+    session_id: sessionId,
+  })
+  return res.data
+}
+
+export async function rejectDesktopAuthSession(
+  sessionId: string
+): Promise<ApiResponse> {
+  const res = await api.post('/api/desktop/auth/reject', {
+    session_id: sessionId,
+  })
+  return res.data
+}
+
+export async function listDesktopAuthorizedDevices(): Promise<
+  ApiResponse<DesktopAuthorizedDevice[]>
+> {
+  const res = await api.get('/api/desktop/devices')
+  return res.data
+}
+
+export async function revokeDesktopAuthorizedDevice(
+  id: number
+): Promise<ApiResponse> {
+  const res = await api.delete(`/api/desktop/devices/${id}`)
   return res.data
 }
 

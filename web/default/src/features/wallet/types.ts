@@ -377,6 +377,8 @@ export interface BlindBoxRecord {
 export interface BlindBoxOverview {
   available_boxes: number
   pending_boxes: number
+  // Mirrors the user's main wallet quota. Blind-box rewards are credited
+  // into the normal wallet immediately, so this is not a separate pool.
   remaining_quota: number
   claude_quota: number
   pity_progress: number
