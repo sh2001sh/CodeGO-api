@@ -125,6 +125,27 @@ func InitEnv() {
 	SearchRateLimitEnable = GetEnvOrDefaultBool("SEARCH_RATE_LIMIT_ENABLE", true)
 	SearchRateLimitNum = GetEnvOrDefault("SEARCH_RATE_LIMIT", 10)
 	SearchRateLimitDuration = int64(GetEnvOrDefault("SEARCH_RATE_LIMIT_DURATION", 60))
+
+	trustedProxiesStr := GetEnvOrDefaultString("TRUSTED_PROXIES", "")
+	if trustedProxiesStr == "" {
+		TrustedProxies = []string{
+			"127.0.0.1",
+			"::1",
+			"10.0.0.0/8",
+			"172.16.0.0/12",
+			"192.168.0.0/16",
+			"fc00::/7",
+		}
+	} else {
+		var trustedProxies []string
+		for _, proxy := range strings.Split(trustedProxiesStr, ",") {
+			trimmedProxy := strings.TrimSpace(proxy)
+			if trimmedProxy != "" {
+				trustedProxies = append(trustedProxies, trimmedProxy)
+			}
+		}
+		TrustedProxies = trustedProxies
+	}
 	initConstantEnv()
 }
 

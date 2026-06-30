@@ -167,6 +167,7 @@ var RelayTimeout int // unit is second
 
 var RelayMaxIdleConns int
 var RelayMaxIdleConnsPerHost int
+var TrustedProxies []string
 
 var GeminiSafetySetting string
 

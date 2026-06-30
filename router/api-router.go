@@ -17,7 +17,7 @@ func SetApiRouter(router *gin.Engine) {
 	apiRouter.Use(middleware.RouteTag("api"))
 	apiRouter.Use(gzip.Gzip(gzip.DefaultCompression))
 	apiRouter.Use(middleware.BodyStorageCleanup()) // 清理请求体存储
-	apiRouter.Use(middleware.GlobalAPIRateLimit())
+	apiRouter.Use(middleware.GlobalAPIRateLimitExceptReadPaths())
 	anonymousRequestBodyLimit := middleware.AnonymousRequestBodyLimit()
 	{
 		apiRouter.GET("/setup", controller.GetSetup)
@@ -84,9 +84,9 @@ func SetApiRouter(router *gin.Engine) {
 			selfRoute := userRoute.Group("/")
 			selfRoute.Use(middleware.UserAuth())
 			{
-			selfRoute.GET("/self/groups", controller.GetUserGroups)
-			selfRoute.GET("/self/group-status", controller.GetUserGroupStatus)
-			selfRoute.GET("/self", controller.GetSelf)
+				selfRoute.GET("/self/groups", controller.GetUserGroups)
+				selfRoute.GET("/self/group-status", controller.GetUserGroupStatus)
+				selfRoute.GET("/self", controller.GetSelf)
 				selfRoute.GET("/models", controller.GetUserModels)
 				selfRoute.GET("/image-workspace/models", controller.GetImageWorkspaceModels)
 				selfRoute.GET("/image-workspace/items", controller.GetImageWorkspaceItems)

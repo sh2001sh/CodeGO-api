@@ -197,13 +197,16 @@ func Redeem(key string, userId int) (*RedemptionResult, error) {
 	err := DB.Transaction(func(tx *gorm.DB) error {
 		err := tx.Set("gorm:query_option", "FOR UPDATE").Where(keyCol+" = ?", key).First(redemption).Error
 		if err != nil {
-			return errors.New("invalid redemption code")
+			return ErrRedemptionInvalid
 		}
-		if redemption.Status != common.RedemptionCodeStatusEnabled {
-			return errors.New("redemption code is not available")
+		if redemption.Status == common.RedemptionCodeStatusUsed {
+			return ErrRedemptionUsed
 		}
 		if redemption.ExpiredTime != 0 && redemption.ExpiredTime < common.GetTimestamp() {
-			return errors.New("redemption code has expired")
+			return ErrRedemptionExpired
+		}
+		if redemption.Status != common.RedemptionCodeStatusEnabled {
+			return ErrRedemptionBusy
 		}
 
 		redeemType := NormalizeRedemptionType(redemption.RedeemType)
@@ -253,11 +256,23 @@ func Redeem(key string, userId int) (*RedemptionResult, error) {
 		redemption.RedeemedTime = common.GetTimestamp()
 		redemption.Status = common.RedemptionCodeStatusUsed
 		redemption.UsedUserId = userId
-		return tx.Save(redemption).Error
+		if err := tx.Save(redemption).Error; err != nil {
+			return ErrRedemptionBusy
+		}
+		return nil
 	})
 	if err != nil {
 		common.SysError("redemption failed: " + err.Error())
-		return nil, ErrRedeemFailed
+		switch {
+		case errors.Is(err, ErrRedemptionInvalid):
+			return nil, ErrRedemptionInvalid
+		case errors.Is(err, ErrRedemptionUsed):
+			return nil, ErrRedemptionUsed
+		case errors.Is(err, ErrRedemptionExpired):
+			return nil, ErrRedemptionExpired
+		default:
+			return nil, ErrRedemptionBusy
+		}
 	}
 
 	switch result.RedeemType {

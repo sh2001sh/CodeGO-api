@@ -349,6 +349,75 @@ func TestRedeem_ClaudeQuotaCodeAddsClaudeQuotaOnly(t *testing.T) {
 	assert.NotZero(t, saved.RedeemedTime)
 }
 
+func TestRedeemReturnsSpecificBusinessErrors(t *testing.T) {
+	truncateTables(t)
+
+	user := &User{
+		Id:       8810,
+		Username: "redeem_error_user",
+		Status:   common.UserStatusEnabled,
+	}
+	require.NoError(t, DB.Create(user).Error)
+
+	tests := []struct {
+		name       string
+		key        string
+		redemption Redemption
+		wantErr    error
+	}{
+		{
+			name: "invalid code",
+			key:  "missing-code",
+			redemption: Redemption{
+				Id:          9910,
+				Key:         "invalid-code",
+				Name:        "Invalid",
+				Status:      common.RedemptionCodeStatusEnabled,
+				CreatedTime: time.Now().Unix(),
+			},
+			wantErr: ErrRedemptionInvalid,
+		},
+		{
+			name: "used code",
+			redemption: Redemption{
+				Id:           9911,
+				Key:          "used-code",
+				Name:         "Used",
+				Status:       common.RedemptionCodeStatusUsed,
+				CreatedTime:  time.Now().Unix(),
+				RedeemedTime: time.Now().Unix(),
+				UsedUserId:   user.Id,
+			},
+			wantErr: ErrRedemptionUsed,
+		},
+		{
+			name: "expired code",
+			redemption: Redemption{
+				Id:          9912,
+				Key:         "expired-code",
+				Name:        "Expired",
+				Status:      common.RedemptionCodeStatusEnabled,
+				ExpiredTime: time.Now().Add(-time.Hour).Unix(),
+				CreatedTime: time.Now().Unix(),
+			},
+			wantErr: ErrRedemptionExpired,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.NoError(t, DB.Create(&tt.redemption).Error)
+			redeemKey := tt.redemption.Key
+			if tt.key != "" {
+				redeemKey = tt.key
+			}
+			_, err := Redeem(redeemKey, user.Id)
+			require.Error(t, err)
+			assert.ErrorIs(t, err, tt.wantErr)
+		})
+	}
+}
+
 func TestOpenBlindBoxes_AddsQuotaToDefaultAndClaudeWallets(t *testing.T) {
 	truncateTables(t)
 

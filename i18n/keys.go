@@ -66,6 +66,7 @@ const (
 	MsgRedemptionInvalid           = "redemption.invalid"
 	MsgRedemptionUsed              = "redemption.used"
 	MsgRedemptionExpired           = "redemption.expired"
+	MsgRedemptionBusy              = "redemption.busy"
 	MsgRedemptionFailed            = "redemption.failed"
 	MsgRedemptionNotProvided       = "redemption.not_provided"
 	MsgRedemptionExpireTimeInvalid = "redemption.expire_time_invalid"
