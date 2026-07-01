@@ -131,14 +131,14 @@ export function Hero(props: HeroProps) {
           >
             <motion.div
               variants={heroItem}
-              className='ios-pill inline-flex items-center gap-2 px-3 py-1 text-xs font-semibold text-[#2f5ea3] dark:text-[#98c0ff]'
+              className='ios-pill inline-flex items-center gap-2 px-3 py-1 text-xs font-semibold text-primary'
             >
               <Layers className='h-3.5 w-3.5' />
               Code Go · 多模型 AI 接入平台
             </motion.div>
             <motion.h1
               variants={heroItem}
-              className='mt-5 text-[clamp(2.4rem,4.8vw,4rem)] leading-[1.08] font-semibold tracking-[-0.03em] text-balance text-slate-950 dark:text-white'
+              className='text-foreground mt-5 text-[clamp(2.4rem,4.8vw,4rem)] leading-[1.08] font-semibold tracking-[-0.03em] text-balance'
             >
               一个 API，
               <br className='hidden sm:block' />
@@ -146,14 +146,14 @@ export function Hero(props: HeroProps) {
             </motion.h1>
             <motion.p
               variants={heroItem}
-              className='mt-5 max-w-xl text-lg leading-8 text-slate-600 dark:text-slate-300'
+              className='text-muted-foreground mt-5 max-w-xl text-lg leading-8'
             >
               面向开发者的多模型 AI
               接入平台。盲盒开奖励、积分兑权益、邀请换刷新，多重活动福利让你的额度越用越多。
             </motion.p>
 
             <motion.div variants={heroItem} className='mt-7'>
-              <div className='text-xs font-medium tracking-[0.16em] text-slate-400 dark:text-slate-500'>
+              <div className='text-muted-foreground text-xs font-medium tracking-[0.16em]'>
                 已接入主流模型
               </div>
               <div className='mt-3 flex flex-wrap items-center gap-2.5'>
@@ -163,7 +163,7 @@ export function Hero(props: HeroProps) {
                     className='ios-pill flex items-center gap-2 px-3 py-1.5'
                   >
                     {getLobeIcon(model.key, 18)}
-                    <span className='text-xs font-medium text-slate-700 dark:text-slate-200'>
+                    <span className='text-foreground text-xs font-medium'>
                       {model.label}
                     </span>
                   </div>
@@ -221,14 +221,14 @@ export function Hero(props: HeroProps) {
           >
             <div className='flex items-center justify-between'>
               <div>
-                <div className='text-sm font-semibold text-slate-900 dark:text-white'>
+                <div className='text-foreground text-sm font-semibold'>
                   三步开始使用
                 </div>
-                <div className='mt-1 text-xs leading-5 text-slate-500 dark:text-slate-400'>
+                <div className='text-muted-foreground mt-1 text-xs leading-5'>
                   从充值到领取福利，整个流程都很直接。
                 </div>
               </div>
-              <span className='ios-pill px-2.5 py-1 text-[11px] font-medium text-[#2f5ea3] dark:text-[#98c0ff]'>
+              <span className='ios-pill px-2.5 py-1 text-[11px] font-medium text-primary'>
                 Code Go
               </span>
             </div>
@@ -249,11 +249,11 @@ export function Hero(props: HeroProps) {
                     {path.step}
                   </span>
                   <div className='min-w-0'>
-                    <div className='flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white'>
+                    <div className='text-foreground flex items-center gap-2 text-sm font-semibold'>
                       {path.icon}
                       {path.title}
                     </div>
-                    <div className='mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300'>
+                    <div className='text-muted-foreground mt-1 text-sm leading-6'>
                       {path.description}
                     </div>
                   </div>
@@ -290,11 +290,11 @@ function HeroFact(props: {
 }) {
   return (
     <motion.div variants={heroItem} className='ios-floating-shell h-full p-5'>
-      <div className='flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white'>
+      <div className='text-foreground flex items-center gap-2 text-sm font-semibold'>
         {props.icon}
         {props.title}
       </div>
-      <div className='mt-1.5 text-sm leading-6 text-slate-600 dark:text-slate-300'>
+      <div className='text-muted-foreground mt-1.5 text-sm leading-6'>
         {props.description}
       </div>
     </motion.div>

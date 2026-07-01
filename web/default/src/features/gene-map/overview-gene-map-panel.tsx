@@ -95,24 +95,24 @@ export function OverviewGeneMapPanel(props: OverviewGeneMapPanelProps) {
           type='button'
           onClick={() => setOpen(true)}
           className={cn(
-            'group rounded-[22px] border border-emerald-200 bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.18),transparent_30%),radial-gradient(circle_at_bottom_right,rgba(14,165,233,0.18),transparent_26%),linear-gradient(135deg,rgba(247,254,231,0.98),rgba(240,253,250,0.98),rgba(255,255,255,0.98))] p-4 text-left transition-transform hover:-translate-y-0.5 dark:border-emerald-500/20 dark:bg-[radial-gradient(circle_at_top_left,rgba(16,185,129,0.16),transparent_28%),radial-gradient(circle_at_bottom_right,rgba(14,165,233,0.16),transparent_24%),linear-gradient(135deg,rgba(34,27,43,0.96),rgba(23,19,30,0.95),rgba(34,27,43,0.96))]',
+            'group rounded-[22px] border border-border bg-card p-4 text-left transition-transform hover:-translate-y-0.5',
             props.className
           )}
         >
           <div className='flex items-start justify-between gap-3'>
             <div className='min-w-0'>
-              <div className='flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-emerald-700 dark:text-emerald-200'>
+              <div className='flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.24em] text-emerald-600 dark:text-emerald-300'>
                 <Dna className='size-4' />
                 基因测序
               </div>
-              <div className='mt-2 text-lg font-semibold tracking-tight text-slate-950 dark:text-foreground'>
+              <div className='mt-2 text-lg font-semibold tracking-tight text-foreground'>
                 生成一张可分享的调用基因图
               </div>
-              <div className='mt-1 text-sm leading-6 text-slate-600 dark:text-muted-foreground'>
+              <div className='mt-1 text-sm leading-6 text-muted-foreground'>
                 模型占比、活跃时段和稀有模型调用会压成一张图，扫码后还能进入双人对比页。
               </div>
             </div>
-            <span className='rounded-full border border-emerald-300 bg-white/80 px-3 py-1 text-xs font-medium text-emerald-700 dark:border-emerald-500/30 dark:bg-card/50 dark:text-emerald-200'>
+            <span className='rounded-full border border-emerald-300 bg-background px-3 py-1 text-xs font-medium text-emerald-700 dark:border-emerald-500/30 dark:bg-card/50 dark:text-emerald-200'>
               立即生成
             </span>
           </div>
@@ -120,20 +120,20 @@ export function OverviewGeneMapPanel(props: OverviewGeneMapPanelProps) {
       ) : (
         <div
           className={cn(
-            'overflow-hidden rounded-[28px] border border-slate-200 bg-[radial-gradient(circle_at_top_right,rgba(14,165,233,0.18),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(16,185,129,0.16),transparent_30%),linear-gradient(145deg,rgba(255,255,255,0.98),rgba(248,250,252,0.98),rgba(240,253,250,0.98))] p-4 shadow-[0_24px_80px_rgba(15,23,42,0.08)] dark:border-border dark:bg-[radial-gradient(circle_at_top_right,rgba(14,165,233,0.18),transparent_24%),radial-gradient(circle_at_bottom_left,rgba(16,185,129,0.16),transparent_30%),linear-gradient(145deg,rgba(34,27,43,0.96),rgba(23,19,30,0.96),rgba(34,27,43,0.94))]',
+            'overflow-hidden rounded-[28px] border border-border bg-card p-4 shadow-[0_24px_80px_rgba(15,23,42,0.08)] dark:bg-card',
             props.className
           )}
         >
           <div className='flex flex-wrap items-start justify-between gap-4'>
             <div className='max-w-2xl'>
-              <div className='flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.24em] text-slate-500 dark:text-muted-foreground'>
+              <div className='flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.24em] text-muted-foreground'>
                 <Dna className='size-4' />
                 分享裂变
               </div>
-              <h3 className='mt-2 text-2xl font-semibold tracking-tight text-slate-950 dark:text-foreground'>
+              <h3 className='mt-2 text-2xl font-semibold tracking-tight text-foreground'>
                 API 基因测序
               </h3>
-              <p className='mt-2 text-sm leading-6 text-slate-600 dark:text-muted-foreground'>
+              <p className='mt-2 text-sm leading-6 text-muted-foreground'>
                 把模型占比、调用时段和稀有模型痕迹压成一张可分享的调用基因图。好友扫码后可直接查看，登录后自动进入双人对比。
               </p>
             </div>
@@ -147,7 +147,7 @@ export function OverviewGeneMapPanel(props: OverviewGeneMapPanelProps) {
 
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className='flex max-h-[calc(100vh-1rem)] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-6xl'>
-          <DialogHeader className='border-b border-slate-200 px-5 py-4 dark:border-border'>
+          <DialogHeader className='border-b border-border px-5 py-4'>
             <DialogTitle className='flex items-center gap-2 text-lg'>
               <Dna className='size-5' />
               API 调用基因图
@@ -157,7 +157,7 @@ export function OverviewGeneMapPanel(props: OverviewGeneMapPanelProps) {
           <div className='flex-1 overflow-y-auto px-5 py-5'>
             <div className='space-y-4'>
               <div className='flex flex-wrap items-center justify-between gap-2'>
-                <div className='text-sm text-slate-500 dark:text-muted-foreground'>
+                <div className='text-sm text-muted-foreground'>
                   {snapshot
                     ? '图谱已生成，可以直接分享、复制文案或导出海报。'
                     : '正在读取最近 30 天的调用画像。'}
@@ -206,24 +206,24 @@ export function OverviewGeneMapPanel(props: OverviewGeneMapPanelProps) {
               {snapshot ? (
                 <GeneMapCard snapshot={snapshot} />
               ) : (
-                <div className='rounded-[28px] border border-dashed border-slate-300 px-6 py-20 text-center text-sm text-slate-500 dark:border-border dark:text-muted-foreground'>
+                <div className='rounded-[28px] border border-dashed border-border px-6 py-20 text-center text-sm text-muted-foreground'>
                   正在生成你的 API 调用基因图...
                 </div>
               )}
 
               {sharePayload ? (
                 <div className='grid gap-4 xl:grid-cols-[minmax(0,1fr)_320px]'>
-                  <div className='rounded-[24px] border border-slate-200 bg-white/80 p-4 dark:border-border dark:bg-card/60'>
-                    <div className='text-sm font-semibold text-slate-950 dark:text-foreground'>
+                  <div className='rounded-[24px] border border-border bg-card p-4'>
+                    <div className='text-sm font-semibold text-foreground'>
                       分享文案
                     </div>
-                    <div className='mt-2 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 text-sm leading-7 text-slate-700 dark:border-border dark:bg-muted/70 dark:text-foreground'>
+                    <div className='mt-2 rounded-2xl border border-border bg-muted/40 p-4 text-sm leading-7 text-foreground'>
                       {sharePayload.share_text}
                     </div>
                   </div>
 
-                  <div className='rounded-[24px] border border-slate-200 bg-white/80 p-4 dark:border-border dark:bg-card/60'>
-                    <div className='flex items-center gap-2 text-sm font-semibold text-slate-950 dark:text-foreground'>
+                  <div className='rounded-[24px] border border-border bg-card p-4'>
+                    <div className='flex items-center gap-2 text-sm font-semibold text-foreground'>
                       <QrCode className='size-4 text-emerald-500' />
                       分享二维码
                     </div>
@@ -231,10 +231,10 @@ export function OverviewGeneMapPanel(props: OverviewGeneMapPanelProps) {
                       ref={qrHostRef}
                       className='mt-4 flex flex-col items-center gap-3'
                     >
-                      <div className='rounded-[26px] border border-slate-200 bg-white p-4 shadow-sm dark:border-border'>
+                      <div className='rounded-[26px] border border-border bg-background p-4 shadow-sm'>
                         <QRCodeCanvas value={sharePayload.share_url} size={220} />
                       </div>
-                      <div className='break-all text-center text-xs leading-6 text-slate-500 dark:text-muted-foreground'>
+                      <div className='break-all text-center text-xs leading-6 text-muted-foreground'>
                         {sharePayload.share_url}
                       </div>
                     </div>

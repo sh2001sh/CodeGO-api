@@ -134,7 +134,7 @@ function ConversationBubble(props: {
       className={`flex items-start gap-3 ${isAssistant ? '' : 'justify-end'}`}
     >
       {isAssistant ? (
-        <div className='flex size-10 shrink-0 items-center justify-center rounded-2xl bg-slate-900 text-white dark:bg-slate-100 dark:text-slate-900'>
+        <div className='bg-foreground text-background flex size-10 shrink-0 items-center justify-center rounded-2xl dark:bg-slate-100 dark:text-slate-900'>
           <Icon className='size-4' />
         </div>
       ) : null}
@@ -142,7 +142,7 @@ function ConversationBubble(props: {
       <div
         className={`max-w-3xl rounded-[28px] border px-5 py-4 shadow-sm ${
           isAssistant
-            ? 'border-slate-200 bg-white text-slate-900 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100'
+            ? 'border-border bg-card text-card-foreground'
             : 'border-emerald-200 bg-emerald-50 text-slate-900 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-slate-100'
         }`}
       >
@@ -164,11 +164,11 @@ function ConversationBubble(props: {
 
 function InfoPill(props: { label: string; value: string }) {
   return (
-    <div className='rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/70'>
-      <div className='text-xs text-slate-500 dark:text-slate-400'>
+    <div className='rounded-2xl border border-border bg-muted/40 px-4 py-3'>
+      <div className='text-muted-foreground text-xs'>
         {props.label}
       </div>
-      <div className='mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100'>
+      <div className='text-foreground mt-1 text-sm font-semibold'>
         {props.value}
       </div>
     </div>
@@ -393,13 +393,13 @@ export function ImageWorkspace() {
     <>
       <div className='min-h-full bg-[radial-gradient(circle_at_top_left,rgba(14,165,233,0.16),transparent_26%),radial-gradient(circle_at_top_right,rgba(245,158,11,0.12),transparent_22%),linear-gradient(180deg,rgba(15,23,42,0.03),transparent_30%),var(--background)] p-4 md:p-6'>
         <div className='mx-auto max-w-[1580px] space-y-5'>
-          <div className='rounded-[34px] border border-slate-200 bg-[linear-gradient(135deg,#fffef7_0%,#f8fafc_44%,#eefbf7_100%)] p-5 shadow-[0_22px_70px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-[linear-gradient(135deg,rgba(15,23,42,0.98)_0%,rgba(2,6,23,0.98)_52%,rgba(6,95,70,0.2)_100%)]'>
+          <div className='rounded-[34px] border border-border bg-card p-5 shadow-[0_22px_70px_rgba(15,23,42,0.08)]'>
             <div className='mb-4 flex flex-wrap items-center justify-between gap-3'>
               <div>
-                <div className='text-xs font-medium tracking-[0.28em] text-slate-500 dark:text-slate-400'>
+                <div className='text-muted-foreground text-xs font-medium tracking-[0.28em]'>
                   生图工作台
                 </div>
-                <h1 className='mt-2 text-2xl font-semibold tracking-tight text-slate-950 dark:text-slate-50'>
+                <h1 className='text-foreground mt-2 text-2xl font-semibold tracking-tight'>
                   直接用中文对话的方式生成、续改和管理图片
                 </h1>
               </div>
@@ -453,12 +453,12 @@ export function ImageWorkspace() {
           </div>
 
           <div className='grid gap-4 xl:grid-cols-[minmax(0,1fr)_28rem]'>
-            <div className='rounded-[30px] border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950'>
-              <div className='flex items-center gap-2 text-base font-semibold text-slate-950 dark:text-slate-50'>
+            <div className='rounded-[30px] border border-border bg-card p-5 shadow-sm'>
+              <div className='text-foreground flex items-center gap-2 text-base font-semibold'>
                 <Sparkles className='size-4' />
                 创作对话
               </div>
-              <div className='mt-1 text-sm text-slate-500 dark:text-slate-400'>
+              <div className='text-muted-foreground mt-1 text-sm'>
                 用中文描述需求，系统会按你当前选择的模型、分组和参数发起生图。
               </div>
 
@@ -489,7 +489,7 @@ export function ImageWorkspace() {
                     placeholder='例如：生成一张电影感的雨夜街头场景，主角撑着透明雨伞站在霓虹灯下，镜头低角度，反光地面细节丰富，整体偏青橙色调。'
                     className='min-h-40 rounded-3xl'
                   />
-                  <div className='text-xs leading-6 text-slate-500 dark:text-slate-400'>
+                  <div className='text-muted-foreground text-xs leading-6'>
                     写得越具体，结果越稳定。建议写清主体、环境、风格、镜头、构图和想保留的关键细节。
                   </div>
                 </div>
@@ -539,7 +539,7 @@ export function ImageWorkspace() {
                             <SelectItem key={item.value} value={item.value}>
                               <div className='flex items-center gap-2'>
                                 <span>{item.label}</span>
-                                <span className='text-xs text-slate-500'>
+                                <span className='text-muted-foreground text-xs'>
                                   倍率 x{item.ratio}
                                 </span>
                               </div>
@@ -549,7 +549,7 @@ export function ImageWorkspace() {
                       </SelectContent>
                     </Select>
                     {selectedGroup?.desc ? (
-                      <div className='text-xs leading-6 text-slate-500 dark:text-slate-400'>
+                      <div className='text-muted-foreground text-xs leading-6'>
                         {selectedGroup.desc}
                       </div>
                     ) : null}
@@ -637,13 +637,13 @@ export function ImageWorkspace() {
                 </div>
 
                 {form.mode === 'edit' && (
-                  <div className='rounded-[28px] border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/60'>
+                  <div className='rounded-[28px] border border-border bg-muted/40 p-4'>
                     <div className='flex items-center justify-between gap-3'>
                       <div>
-                        <div className='text-sm font-semibold text-slate-900 dark:text-slate-100'>
+                        <div className='text-foreground text-sm font-semibold'>
                           来源图片
                         </div>
-                        <div className='text-xs leading-6 text-slate-500 dark:text-slate-400'>
+                        <div className='text-muted-foreground text-xs leading-6'>
                           先从历史图片中选一张作为改图基础，再输入你要继续调整的方向。
                         </div>
                       </div>
@@ -659,10 +659,10 @@ export function ImageWorkspace() {
                             className='h-28 w-full rounded-2xl border object-cover'
                           />
                           <div className='space-y-2'>
-                            <div className='line-clamp-3 text-sm leading-6 text-slate-700 dark:text-slate-300'>
+                            <div className='text-foreground line-clamp-3 text-sm leading-6'>
                               {selectedSource.revised_prompt || selectedSource.prompt}
                             </div>
-                            <div className='text-xs text-slate-500 dark:text-slate-400'>
+                            <div className='text-muted-foreground text-xs'>
                               {selectedSource.model} ·{' '}
                               {dayjs.unix(selectedSource.created_at).format(
                                 'MM-DD HH:mm'
@@ -687,7 +687,7 @@ export function ImageWorkspace() {
                           </div>
                         </div>
                       ) : (
-                        <div className='text-sm text-slate-500 dark:text-slate-400'>
+                        <div className='text-sm text-muted-foreground'>
                           暂时没有可用来源图片。你可以先生成一张，再回来做改图。
                         </div>
                       )}
@@ -755,14 +755,14 @@ export function ImageWorkspace() {
               </div>
             </div>
 
-            <div className='rounded-[30px] border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950'>
+            <div className='rounded-[30px] border border-border bg-card p-5 shadow-sm'>
               <div className='flex items-end justify-between gap-3'>
                 <div>
-                  <div className='flex items-center gap-2 text-base font-semibold text-slate-950 dark:text-slate-50'>
+                  <div className='text-foreground flex items-center gap-2 text-base font-semibold'>
                     <Images className='size-4' />
                     作品记录
                   </div>
-                  <div className='mt-1 text-sm text-slate-500 dark:text-slate-400'>
+                  <div className='text-muted-foreground mt-1 text-sm'>
                     当前会话结果和最近历史都会保存在这里，直到自动清理为止。
                   </div>
                 </div>
@@ -869,7 +869,7 @@ function ImageGrid(props: {
         return (
           <div
             key={item.id}
-            className='rounded-[28px] border border-slate-200 bg-slate-50 p-4 dark:border-slate-800 dark:bg-slate-900/60'
+            className='rounded-[28px] border border-border bg-muted/40 p-4'
           >
             <div className='flex gap-4'>
               {isReady ? (
@@ -886,7 +886,7 @@ function ImageGrid(props: {
                 </button>
               ) : (
                 <div className='bg-muted flex size-28 items-center justify-center rounded-2xl border'>
-                  <div className='flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400'>
+                  <div className='text-muted-foreground flex items-center gap-2 text-sm'>
                     <AlertCircle className='size-4' />
                     {isExpired ? '已过期' : '不可用'}
                   </div>
@@ -896,10 +896,10 @@ function ImageGrid(props: {
               <div className='min-w-0 flex-1 space-y-3'>
                 <div className='flex items-start justify-between gap-3'>
                   <div className='min-w-0'>
-                    <div className='line-clamp-3 text-sm leading-6 text-slate-700 dark:text-slate-300'>
+                    <div className='text-foreground line-clamp-3 text-sm leading-6'>
                       {item.revised_prompt || item.prompt}
                     </div>
-                    <div className='mt-2 flex flex-wrap items-center gap-2 text-xs text-slate-500 dark:text-slate-400'>
+                    <div className='text-muted-foreground mt-2 flex flex-wrap items-center gap-2 text-xs'>
                       <span>{item.model}</span>
                       <span>·</span>
                       <span>{dayjs.unix(item.created_at).format('MM-DD HH:mm')}</span>

@@ -12,7 +12,7 @@ export function CTA(props: CTAProps) {
     <section className='px-6 py-20 md:px-10 md:py-24'>
       <AnimateInView
         animation='fade-up'
-        className='mx-auto max-w-6xl overflow-hidden rounded-[34px] border border-slate-200 bg-[linear-gradient(135deg,#0f172a,#1f3b6b_48%,#0f766e)] px-6 py-10 text-white shadow-[0_24px_70px_rgba(15,23,42,0.22)] md:px-10'
+        className='mx-auto max-w-6xl overflow-hidden rounded-[34px] border border-border bg-[linear-gradient(135deg,#0f172a,#1f3b6b_48%,#0f766e)] px-6 py-10 text-white shadow-[0_24px_70px_rgba(15,23,42,0.22)] md:px-10'
       >
         <div className='max-w-3xl'>
           <div className='inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-3 py-1 text-xs font-semibold text-white/90'>

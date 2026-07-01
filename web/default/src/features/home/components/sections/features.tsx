@@ -47,14 +47,14 @@ export function Features(_props: FeaturesProps) {
     <section className='px-6 py-20 md:px-10 md:py-24'>
       <div className='mx-auto max-w-7xl'>
         <AnimateInView className='mx-auto max-w-3xl text-center'>
-          <div className='ios-pill inline-flex items-center gap-2 px-3 py-1 text-xs font-semibold text-[#2f5ea3] dark:text-[#98c0ff]'>
+          <div className='ios-pill inline-flex items-center gap-2 px-3 py-1 text-xs font-semibold text-primary'>
             <Sparkles className='h-3.5 w-3.5' />
             平台福利
           </div>
-          <h2 className='mt-4 text-[clamp(2rem,4.4vw,3.2rem)] font-semibold tracking-[-0.03em] text-balance text-slate-950 dark:text-white'>
+          <h2 className='text-foreground mt-4 text-[clamp(2rem,4.4vw,3.2rem)] font-semibold tracking-[-0.03em] text-balance'>
             充值之外，还有这些拿额度的方式
           </h2>
-          <p className='text-muted-foreground mt-4 text-base leading-7 dark:text-slate-300'>
+          <p className='text-muted-foreground mt-4 text-base leading-7'>
             盲盒、积分、邀请刷新各自独立，又都能换成可用额度。挑一个顺手的开始。
           </p>
         </AnimateInView>
@@ -66,14 +66,14 @@ export function Features(_props: FeaturesProps) {
                 to={card.to}
                 className='ios-floating-shell group flex h-full flex-col p-6 transition-transform duration-200 hover:-translate-y-0.5'
               >
-                <div className='flex items-center gap-2 text-xs font-semibold tracking-[0.16em] text-slate-500 dark:text-slate-400'>
+                <div className='text-muted-foreground flex items-center gap-2 text-xs font-semibold tracking-[0.16em]'>
                   {card.icon}
                   {card.tag}
                 </div>
-                <h3 className='mt-3 text-xl font-semibold tracking-[-0.02em] text-slate-950 dark:text-white'>
+                <h3 className='text-foreground mt-3 text-xl font-semibold tracking-[-0.02em]'>
                   {card.title}
                 </h3>
-                <p className='text-muted-foreground mt-2 flex-1 text-sm leading-6 dark:text-slate-300'>
+                <p className='text-muted-foreground mt-2 flex-1 text-sm leading-6'>
                   {card.description}
                 </p>
                 <span className='text-primary mt-4 inline-flex items-center gap-1 text-sm font-medium'>

@@ -140,10 +140,10 @@ export function Packages({
                 <p className='text-muted-foreground text-xs font-semibold tracking-[0.16em]'>
                   {getSubscriptionPlanSubtitle(plan)}
                 </p>
-                <h3 className='mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white'>
+                <h3 className='text-foreground mt-2 text-2xl font-semibold tracking-[-0.03em]'>
                   {plan.title}
                 </h3>
-                <p className='text-muted-foreground mt-2 text-sm leading-6 dark:text-slate-300'>
+                <p className='text-muted-foreground mt-2 text-sm leading-6'>
                   {summary}
                 </p>
               </div>
@@ -160,7 +160,7 @@ export function Packages({
 
             <div className='flex flex-1 flex-col px-6 pt-2 pb-6'>
               <div className='flex items-end gap-2'>
-                <span className='text-4xl font-semibold tracking-tight text-slate-950 dark:text-white'>
+                <span className='text-foreground text-4xl font-semibold tracking-tight'>
                   {formatSubscriptionPlanPrice(priceAmount, plan.currency)}
                 </span>
                 <span className='text-muted-foreground pb-1 text-sm'>
@@ -180,11 +180,11 @@ export function Packages({
                 ))}
               </div>
 
-              <div className='mt-5 rounded-3xl border border-white/60 bg-white/55 p-4 dark:border-white/10 dark:bg-white/[0.05]'>
-                <div className='text-xs font-semibold tracking-[0.16em] text-slate-500 dark:text-slate-300'>
+              <div className='mt-5 rounded-3xl border border-border bg-background/60 p-4'>
+                <div className='text-muted-foreground text-xs font-semibold tracking-[0.16em]'>
                   套餐详情
                 </div>
-                <div className='mt-2 text-sm leading-6 text-slate-700 dark:text-slate-300'>
+                <div className='text-foreground mt-2 text-sm leading-6'>
                   {detailText}
                 </div>
               </div>
@@ -218,14 +218,14 @@ export function Packages({
 
       <div className='relative mx-auto max-w-7xl'>
         <AnimateInView className='mx-auto max-w-3xl text-center'>
-          <div className='ios-pill inline-flex items-center gap-2 px-3 py-1 text-xs font-semibold text-[#2f5ea3] dark:text-[#98c0ff]'>
+          <div className='ios-pill inline-flex items-center gap-2 px-3 py-1 text-xs font-semibold text-primary'>
             <Crown className='h-3.5 w-3.5' />
             套餐中心
           </div>
-          <h2 className='mt-4 text-[clamp(2rem,4.4vw,3.4rem)] font-semibold tracking-[-0.03em] text-balance text-slate-950 dark:text-white'>
+          <h2 className='text-foreground mt-4 text-[clamp(2rem,4.4vw,3.4rem)] font-semibold tracking-[-0.03em] text-balance'>
             月卡适合稳定开发，日卡适合短时冲量
           </h2>
-          <p className='text-muted-foreground mt-4 text-base leading-7 md:text-lg dark:text-slate-300'>
+          <p className='text-muted-foreground mt-4 text-base leading-7 md:text-lg'>
             套餐价格按人民币支付，额度按美元信用值发放。可以根据长期主力使用或短时补量需求自由选择。
           </p>
         </AnimateInView>
@@ -249,10 +249,10 @@ export function Packages({
           {hasMonthPlans && (
             <AnimateInView className='ios-floating-shell p-5 md:p-6'>
               <div className='mb-6'>
-                <p className='text-xs font-semibold tracking-[0.16em] text-slate-500'>
+                <p className='text-muted-foreground text-xs font-semibold tracking-[0.16em]'>
                   月卡套餐
                 </p>
-                <h3 className='mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white'>
+                <h3 className='text-foreground mt-2 text-2xl font-semibold tracking-[-0.03em]'>
                   适合长期 Code Go 使用，一个月内自由使用
                 </h3>
               </div>
@@ -268,10 +268,10 @@ export function Packages({
               className='ios-floating-shell p-5 md:p-6'
             >
               <div className='mb-6'>
-                <p className='text-xs font-semibold tracking-[0.16em] text-slate-500'>
+                <p className='text-muted-foreground text-xs font-semibold tracking-[0.16em]'>
                   日卡套餐
                 </p>
-                <h3 className='mt-2 text-2xl font-semibold tracking-[-0.03em] text-slate-950 dark:text-white'>
+                <h3 className='text-foreground mt-2 text-2xl font-semibold tracking-[-0.03em]'>
                   适合短时爆发使用，按天生效
                 </h3>
               </div>

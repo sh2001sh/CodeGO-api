@@ -316,8 +316,8 @@ export function downloadCodexSetupScript(
 
   const filename =
     platform === 'windows'
-      ? `windows-config-${keyLabel}.bat`
-      : `mac-linux-config-${keyLabel}.sh`
+      ? `windows-codex-config-${keyLabel}.bat`
+      : `linux-mac-codex-config-${keyLabel}.sh`
 
   const content =
     platform === 'windows'

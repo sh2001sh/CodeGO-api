@@ -58,7 +58,7 @@ export function FAQPage() {
               <Search className='size-3.5' />
               常见问题
             </div>
-            <h1 className='text-4xl font-semibold tracking-tight text-slate-950 dark:text-slate-50'>
+            <h1 className='text-4xl font-semibold tracking-tight text-foreground'>
               先回答最关键的问题
             </h1>
             <p className='text-base leading-8 text-muted-foreground'>
@@ -68,8 +68,11 @@ export function FAQPage() {
 
           <div className='mt-10 grid gap-4'>
             {faqs.map((item) => (
-              <section key={item.q} className='rounded-3xl border bg-background p-6'>
-                <div className='text-lg font-semibold text-slate-950 dark:text-slate-50'>
+              <section
+                key={item.q}
+                className='rounded-3xl border border-border bg-card p-6 text-card-foreground'
+              >
+                <div className='text-lg font-semibold text-foreground'>
                   {item.q}
                 </div>
                 <p className='mt-3 text-sm leading-7 text-muted-foreground'>
@@ -82,7 +85,7 @@ export function FAQPage() {
           <div className='mt-10 grid gap-4 md:grid-cols-2'>
             <Link
               to='/guide'
-              className='rounded-3xl border bg-background p-6 transition-colors hover:bg-muted/20'
+              className='rounded-3xl border border-border bg-card p-6 transition-colors hover:bg-muted/40'
             >
               <div className='flex items-center gap-2 text-sm font-semibold'>
                 <Code2 className='size-4 text-amber-600' />
@@ -98,7 +101,7 @@ export function FAQPage() {
             </Link>
             <Link
               to='/about'
-              className='rounded-3xl border bg-background p-6 transition-colors hover:bg-muted/20'
+              className='rounded-3xl border border-border bg-card p-6 transition-colors hover:bg-muted/40'
             >
               <div className='flex items-center gap-2 text-sm font-semibold'>
                 <MessageSquareQuote className='size-4 text-violet-600' />

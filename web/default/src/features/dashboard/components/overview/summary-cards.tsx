@@ -6,17 +6,13 @@ import { computeTimeRange } from '@/lib/time'
 import { getUserQuotaDates } from '@/features/dashboard/api'
 import type { QuotaDataItem } from '@/features/dashboard/types'
 import {
-  getPublicPlans,
-  getSelfSubscriptionFull,
-} from '@/features/subscriptions/api'
-import {
-  EMPTY_SUBSCRIPTIONS,
   getOrderedSubscriptions,
   getSubscriptionPlanSubtitle,
   isMonthlyCardPlan,
 } from '@/features/subscriptions/lib'
 import type { PlanRecord } from '@/features/subscriptions/types'
 import { UsageChart } from './summary-card-parts'
+import { useOverviewSubscriptionData } from './use-overview-subscription-data'
 import {
   BalanceWorkspace,
   PackageStatusCard,
@@ -44,6 +40,7 @@ function formatUsageHourLabel(timestamp?: number) {
 
 export function SummaryCards() {
   const user = useAuthStore((state) => state.auth.user)
+  const { subscriptionData, plans } = useOverviewSubscriptionData()
   const summaryTimeRange = useMemo(() => computeTimeRange(1), [])
   const remainQuota = Number(user?.quota ?? 0)
   const claudeQuota = Number(user?.claude_quota ?? 0)
@@ -67,26 +64,6 @@ export function SummaryCards() {
     staleTime: 60 * 1000,
   })
 
-  const subscriptionsQuery = useQuery({
-    queryKey: ['dashboard', 'overview', 'subscriptions'],
-    queryFn: async () => {
-      const result = await getSelfSubscriptionFull()
-      return result.success
-        ? (result.data ?? EMPTY_SUBSCRIPTIONS)
-        : EMPTY_SUBSCRIPTIONS
-    },
-    staleTime: 60 * 1000,
-  })
-
-  const plansQuery = useQuery({
-    queryKey: ['dashboard', 'overview', 'subscription-plans'],
-    queryFn: async () => {
-      const result = await getPublicPlans()
-      return result.success ? (result.data ?? []) : []
-    },
-    staleTime: 5 * 60 * 1000,
-  })
-
   const usageRows = usageTrendQuery.data?.data ?? []
   const chartValues = usageRows.map(
     (item: QuotaDataItem) => Number(item.quota) || 0
@@ -95,7 +72,10 @@ export function SummaryCards() {
     label: formatUsageHourLabel(item.created_at),
     value: Number(item.quota) || 0,
   }))
-  const recentUsage = chartValues.reduce((total, value) => total + value, 0)
+  const recentUsage = chartValues.reduce(
+    (total: number, value: number) => total + value,
+    0
+  )
   const availableUsd = quotaUnitsToUsd(remainQuota)
   const walletUsd = quotaUnitsToUsd(remainQuota)
   const claudeUsd = quotaUnitsToUsd(claudeQuota)
@@ -118,7 +98,7 @@ export function SummaryCards() {
       { title: string; subtitle: string; plan: PlanRecord['plan'] }
     >()
 
-    for (const item of plansQuery.data ?? []) {
+    for (const item of plans) {
       if (!item?.plan?.id) continue
       map.set(item.plan.id, {
         title: item.plan.title || '',
@@ -128,17 +108,16 @@ export function SummaryCards() {
     }
 
     return map
-  }, [plansQuery.data])
+  }, [plans])
 
   const orderedSubscriptions = useMemo(() => {
-    const data = subscriptionsQuery.data
-    const subscriptions = data?.subscriptions ?? []
+    const subscriptions = subscriptionData.subscriptions ?? []
     const fallbackIds = subscriptions.map((item) => item.subscription.id)
-    const orderIds = data?.subscription_order_ids?.length
-      ? data.subscription_order_ids
+    const orderIds = subscriptionData.subscription_order_ids?.length
+      ? subscriptionData.subscription_order_ids
       : fallbackIds
     return getOrderedSubscriptions(subscriptions, orderIds)
-  }, [subscriptionsQuery.data])
+  }, [subscriptionData])
 
   const primarySubscription = orderedSubscriptions[0]
   const primaryPlanMeta = primarySubscription

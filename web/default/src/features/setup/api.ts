@@ -20,12 +20,18 @@ import { api } from '@/lib/api'
 import type { SetupFormValues, SetupResponse } from './types'
 
 export async function getSetupStatus(): Promise<SetupResponse> {
-  const res = await api.get('/api/setup', {
-    // We want fresh status on every visit.
-    params: {
-      t: Date.now(),
-    },
-  })
+  const res = await api.get(
+    '/api/setup',
+    ({
+      // We want fresh status on every visit.
+      params: {
+        t: Date.now(),
+      },
+      // Route guards use this endpoint during navigation. Avoid surfacing
+      // transient gateway errors as global toasts on every page change.
+      skipErrorHandler: true,
+    } as unknown as Record<string, unknown>)
+  )
   return res.data
 }
 

@@ -460,12 +460,60 @@ For commercial licensing, please contact support@quantumnous.com
     animation: home-hero-lightfield 18s ease-in-out infinite alternate;
   }
 
+  .dark .home-immersive-hero {
+    @apply bg-[#0f141b];
+    background:
+      radial-gradient(
+        ellipse 58% 70% at 18% 58%,
+        rgb(240 138 88 / 0.2) 0%,
+        rgb(240 138 88 / 0.12) 28%,
+        transparent 60%
+      ),
+      radial-gradient(
+        ellipse 52% 72% at 88% 54%,
+        rgb(119 174 249 / 0.18) 0%,
+        rgb(119 174 249 / 0.1) 28%,
+        transparent 60%
+      ),
+      radial-gradient(
+        ellipse 42% 36% at 49% 27%,
+        rgb(90 146 214 / 0.22) 0%,
+        rgb(90 146 214 / 0.12) 30%,
+        transparent 66%
+      ),
+      radial-gradient(
+        ellipse 55% 42% at 48% 73%,
+        rgb(255 255 255 / 0.06) 0%,
+        rgb(240 138 88 / 0.06) 38%,
+        transparent 72%
+      ),
+      radial-gradient(
+        ellipse 42% 46% at 2% 92%,
+        rgb(88 144 168 / 0.12) 0%,
+        transparent 56%
+      ),
+      linear-gradient(
+        135deg,
+        #0f141b 0%,
+        #141b24 34%,
+        #17202b 64%,
+        #0f141b 100%
+      );
+  }
+
   .home-hero-grain {
     @apply pointer-events-none absolute inset-0 opacity-[0.11] mix-blend-multiply;
     background-image:
       linear-gradient(90deg, rgb(30 20 15 / 0.08) 1px, transparent 1px),
       linear-gradient(0deg, rgb(30 20 15 / 0.06) 1px, transparent 1px);
     background-size: 3px 3px;
+  }
+
+  .dark .home-hero-grain {
+    @apply opacity-[0.07] mix-blend-screen;
+    background-image:
+      linear-gradient(90deg, rgb(255 255 255 / 0.04) 1px, transparent 1px),
+      linear-gradient(0deg, rgb(255 255 255 / 0.03) 1px, transparent 1px);
   }
 
   .home-feature-panel {

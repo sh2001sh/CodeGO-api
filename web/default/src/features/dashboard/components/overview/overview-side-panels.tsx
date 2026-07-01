@@ -9,14 +9,14 @@ import {
   Trophy,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { getSelfSubscriptionFull } from '@/features/subscriptions/api'
 import {
-  EMPTY_SUBSCRIPTIONS,
   formatSubscriptionQuotaAmount,
   getOrderedSubscriptions,
   getSubscriptionPlanSubtitle,
 } from '@/features/subscriptions/lib'
 import { getGamificationDashboard } from '@/features/gamification/api'
+import type { DailyMissionItem } from '@/features/gamification/types'
+import { useOverviewSubscriptionData } from './use-overview-subscription-data'
 
 function formatDateTime(timestamp?: number): string {
   if (!timestamp) return '--'
@@ -24,26 +24,16 @@ function formatDateTime(timestamp?: number): string {
 }
 
 export function SubscriptionSummaryPanel() {
-  const subscriptionsQuery = useQuery({
-    queryKey: ['dashboard', 'overview', 'subscription-summary'],
-    queryFn: async () => {
-      const result = await getSelfSubscriptionFull()
-      return result.success
-        ? (result.data ?? EMPTY_SUBSCRIPTIONS)
-        : EMPTY_SUBSCRIPTIONS
-    },
-    staleTime: 60 * 1000,
-  })
+  const { subscriptionData } = useOverviewSubscriptionData()
 
   const orderedSubscriptions = useMemo(() => {
-    const data = subscriptionsQuery.data
-    const subscriptions = data?.subscriptions ?? []
+    const subscriptions = subscriptionData.subscriptions ?? []
     const fallbackIds = subscriptions.map((item) => item.subscription.id)
-    const orderIds = data?.subscription_order_ids?.length
-      ? data.subscription_order_ids
+    const orderIds = subscriptionData.subscription_order_ids?.length
+      ? subscriptionData.subscription_order_ids
       : fallbackIds
     return getOrderedSubscriptions(subscriptions, orderIds)
-  }, [subscriptionsQuery.data])
+  }, [subscriptionData])
 
   const topSubscription = orderedSubscriptions[0]?.subscription
 
@@ -129,7 +119,7 @@ export function CompanionSummaryPanel() {
   const companion = dashboardQuery.data?.data?.companion
   const dailyMissions = dashboardQuery.data?.data?.daily_missions ?? []
   const completedMissions = dailyMissions.filter(
-    (mission) => mission.claimed
+    (mission: DailyMissionItem) => mission.claimed
   ).length
 
   return (

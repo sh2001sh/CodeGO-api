@@ -2,9 +2,15 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { getSelf } from '@/lib/api'
 import { useStatus } from '@/hooks/use-status'
 import { useSystemConfig } from '@/hooks/use-system-config'
-import { useAuthStore, type AuthUser } from '@/stores/auth-store'
-import { getSelfSubscriptionFull } from '@/features/subscriptions/api'
-import type { SelfSubscriptionData } from '@/features/subscriptions/types'
+import { useAuthStore } from '@/stores/auth-store'
+import {
+  getPublicPlans,
+  getSelfSubscriptionFull,
+} from '@/features/subscriptions/api'
+import type {
+  PlanRecord,
+  SelfSubscriptionData,
+} from '@/features/subscriptions/types'
 import { DEFAULT_DISCOUNT_RATE } from '../constants'
 import {
   getDefaultPaymentType,
@@ -35,6 +41,8 @@ export function useWalletWorkspace(options: UseWalletWorkspaceOptions = {}) {
   const [subscriptionData, setSubscriptionData] =
     useState<SelfSubscriptionData | null>(null)
   const [subscriptionLoading, setSubscriptionLoading] = useState(true)
+  const [publicPlans, setPublicPlans] = useState<PlanRecord[]>([])
+  const [publicPlansLoading, setPublicPlansLoading] = useState(true)
   const [topupAmount, setTopupAmount] = useState(0)
   const [selectedWalletType, setSelectedWalletType] =
     useState<WalletType>(options.initialWalletType ?? 'default')
@@ -48,7 +56,6 @@ export function useWalletWorkspace(options: UseWalletWorkspaceOptions = {}) {
   const [creemDialogOpen, setCreemDialogOpen] = useState(false)
   const [selectedCreemProduct, setSelectedCreemProduct] =
     useState<CreemProduct | null>(null)
-  const authUser = useAuthStore((state) => state.auth.user)
   const setAuthUser = useAuthStore((state) => state.auth.setUser)
 
   const { status } = useStatus()
@@ -81,17 +88,14 @@ export function useWalletWorkspace(options: UseWalletWorkspaceOptions = {}) {
       if (response.success && response.data) {
         const userData = response.data as UserWalletData
         setUser(userData)
-        setAuthUser({
-          ...(authUser ?? (response.data as AuthUser)),
-          ...(response.data as AuthUser),
-        })
+        setAuthUser(response.data)
       }
     } catch (_error) {
       // no-op
     } finally {
       setUserLoading(false)
     }
-  }, [authUser, setAuthUser])
+  }, [setAuthUser])
 
   const fetchSubscriptionData = useCallback(async () => {
     try {
@@ -109,10 +113,23 @@ export function useWalletWorkspace(options: UseWalletWorkspaceOptions = {}) {
     }
   }, [])
 
+  const fetchPublicPlans = useCallback(async () => {
+    try {
+      setPublicPlansLoading(true)
+      const response = await getPublicPlans()
+      setPublicPlans(response.success ? response.data || [] : [])
+    } catch (_error) {
+      setPublicPlans([])
+    } finally {
+      setPublicPlansLoading(false)
+    }
+  }, [])
+
   useEffect(() => {
     void fetchUser()
     void fetchSubscriptionData()
-  }, [fetchSubscriptionData, fetchUser])
+    void fetchPublicPlans()
+  }, [fetchPublicPlans, fetchSubscriptionData, fetchUser])
 
   useEffect(() => {
     if (typeof window === 'undefined') return
@@ -120,6 +137,7 @@ export function useWalletWorkspace(options: UseWalletWorkspaceOptions = {}) {
     const handleSubscriptionChanged = () => {
       void fetchSubscriptionData()
       void fetchUser()
+      void fetchPublicPlans()
     }
 
     window.addEventListener('subscription:changed', handleSubscriptionChanged)
@@ -129,7 +147,7 @@ export function useWalletWorkspace(options: UseWalletWorkspaceOptions = {}) {
         handleSubscriptionChanged
       )
     }
-  }, [fetchSubscriptionData, fetchUser])
+  }, [fetchPublicPlans, fetchSubscriptionData, fetchUser])
 
   useEffect(() => {
     if (topupInfo && topupAmount === 0) {
@@ -293,6 +311,8 @@ export function useWalletWorkspace(options: UseWalletWorkspaceOptions = {}) {
     userLoading,
     subscriptionData,
     subscriptionLoading,
+    publicPlans,
+    publicPlansLoading,
     topupInfo,
     presetAmounts,
     topupLoading,
@@ -316,6 +336,7 @@ export function useWalletWorkspace(options: UseWalletWorkspaceOptions = {}) {
     creemProcessing,
     fetchUser,
     fetchSubscriptionData,
+    fetchPublicPlans,
     handleSelectPreset,
     handleTopupAmountChange,
     handleWalletTypeChange,

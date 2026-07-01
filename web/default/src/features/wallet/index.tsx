@@ -89,6 +89,8 @@ export function Wallet(props: WalletProps) {
             <CardStaggerItem>
               <WalletPagePanels
                 user={workspace.user}
+                plans={workspace.publicPlans}
+                plansLoading={workspace.publicPlansLoading}
                 loading={workspace.userLoading}
                 topupLink={workspace.topupInfo?.topup_link}
                 redemptionCode={workspace.redemptionCode}

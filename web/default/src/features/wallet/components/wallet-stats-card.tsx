@@ -1,8 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo } from 'react'
 import { Activity, WalletCards } from 'lucide-react'
 import { formatUsdAmount, quotaUnitsToUsd } from '@/lib/format'
 import { Skeleton } from '@/components/ui/skeleton'
-import { getPublicPlans } from '@/features/subscriptions/api'
 import { getSubscriptionPlanSubtitle } from '@/features/subscriptions/lib'
 import type { PlanRecord, SelfSubscriptionData } from '@/features/subscriptions/types'
 import type { UserWalletData } from '../types'
@@ -12,6 +11,7 @@ import { WalletStatItem } from './wallet-panel-primitives'
 
 interface WalletStatsCardProps {
   user: UserWalletData | null
+  plans: PlanRecord[]
   loading?: boolean
   subscriptionData?: SelfSubscriptionData | null
   subscriptionLoading?: boolean
@@ -19,8 +19,6 @@ interface WalletStatsCardProps {
 }
 
 export function WalletStatsCard(props: WalletStatsCardProps) {
-  const [planRecords, setPlanRecords] = useState<PlanRecord[]>([])
-
   const activeSubscriptions = props.subscriptionData?.subscriptions || []
   const resetOpportunity = props.subscriptionData?.reset_opportunity ?? {
     available_count: 0,
@@ -31,27 +29,9 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
     last_used_month: '',
   }
 
-  useEffect(() => {
-    let mounted = true
-    const run = async () => {
-      try {
-        const result = await getPublicPlans()
-        if (!mounted) return
-        setPlanRecords(result.success ? result.data || [] : [])
-      } catch {
-        if (!mounted) return
-        setPlanRecords([])
-      }
-    }
-    void run()
-    return () => {
-      mounted = false
-    }
-  }, [])
-
   const planTitles = useMemo(() => {
     const map: Record<number, { title: string; subtitle: string }> = {}
-    for (const item of planRecords) {
+    for (const item of props.plans) {
       if (!item?.plan?.id) continue
       map[item.plan.id] = {
         title: item.plan.title || `套餐 #${item.plan.id}`,
@@ -59,7 +39,7 @@ export function WalletStatsCard(props: WalletStatsCardProps) {
       }
     }
     return map
-  }, [planRecords])
+  }, [props.plans])
 
   if (props.loading) {
     return (

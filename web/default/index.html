@@ -46,8 +46,13 @@
     <meta name="theme-color" content="#fff" />
     <style>
       :root {
-        color: #0f172a;
-        background: #f4ede7;
+        color: #18202b;
+        background: #f4f7fb;
+      }
+
+      html.dark {
+        color: #f3f7fc;
+        background: #0f141b;
       }
 
       body {
@@ -57,7 +62,18 @@
           "Hiragino Sans GB",
           "Microsoft YaHei",
           sans-serif;
-        background: #f4ede7;
+        color: inherit;
+        background:
+          radial-gradient(circle at 10% 8%, rgba(217, 106, 57, 0.12) 0%, transparent 24%),
+          radial-gradient(circle at 90% 8%, rgba(62, 118, 210, 0.14) 0%, transparent 20%),
+          linear-gradient(180deg, #f7f9fc 0%, #f4f7fb 34%, #edf2f8 100%);
+      }
+
+      html.dark body {
+        background:
+          radial-gradient(circle at 10% 8%, rgba(240, 138, 88, 0.16) 0%, transparent 24%),
+          radial-gradient(circle at 90% 8%, rgba(119, 174, 249, 0.14) 0%, transparent 20%),
+          linear-gradient(180deg, #121821 0%, #0f141b 34%, #141b24 100%);
       }
 
       #seo-shell-hero {
@@ -65,7 +81,13 @@
         padding: 8rem 1.5rem 3rem;
         background:
           radial-gradient(circle at top, rgba(255, 255, 255, 0.72), transparent 44%),
-          linear-gradient(180deg, #f4ede7 0%, #efe3d7 100%);
+          linear-gradient(180deg, rgba(244, 247, 251, 0.94) 0%, rgba(237, 242, 248, 0.92) 100%);
+      }
+
+      html.dark #seo-shell-hero {
+        background:
+          radial-gradient(circle at top, rgba(255, 255, 255, 0.08), transparent 44%),
+          linear-gradient(180deg, rgba(15, 20, 27, 0.96) 0%, rgba(20, 27, 36, 0.94) 100%);
       }
 
       .seo-shell-inner {
@@ -89,6 +111,10 @@
         font-size: 1rem;
         line-height: 2;
         color: rgba(51, 65, 85, 0.9);
+      }
+
+      html.dark .seo-shell-copy {
+        color: rgba(219, 228, 240, 0.86);
       }
     </style>
     <script type="application/ld+json">

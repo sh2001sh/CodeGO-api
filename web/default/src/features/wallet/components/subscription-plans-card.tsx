@@ -1,6 +1,5 @@
 import {
   type ReactNode,
-  useCallback,
   useEffect,
   useMemo,
   useState,
@@ -17,7 +16,6 @@ import {
   CardStaggerContainer,
   CardStaggerItem,
 } from '@/components/page-transition'
-import { getPublicPlans } from '@/features/subscriptions/api'
 import { SubscriptionPurchaseDialog } from '@/features/subscriptions/components/dialogs/subscription-purchase-dialog'
 import {
   formatDuration,
@@ -41,10 +39,13 @@ import type { PaymentMethod, TopupInfo } from '../types'
 
 interface SubscriptionPlansCardProps {
   topupInfo: TopupInfo | null
+  plans: PlanRecord[]
+  plansLoading?: boolean
   subscriptionData?: SelfSubscriptionData | null
   subscriptionLoading?: boolean
   onAvailabilityChange?: (available: boolean) => void
   onSubscriptionRefresh?: () => Promise<void>
+  onPlansRefresh?: () => Promise<void>
 }
 
 interface PlanPresentation {
@@ -118,14 +119,15 @@ function getUsagePercent(used: number, total: number) {
 
 export function SubscriptionPlansCard({
   topupInfo,
+  plans,
+  plansLoading = false,
   subscriptionData,
   subscriptionLoading = false,
   onAvailabilityChange,
   onSubscriptionRefresh,
+  onPlansRefresh,
 }: SubscriptionPlansCardProps) {
   const { t } = useTranslation()
-  const [plans, setPlans] = useState<PlanRecord[]>([])
-  const [loadingPlans, setLoadingPlans] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const [purchaseOpen, setPurchaseOpen] = useState(false)
   const [selectedPlan, setSelectedPlan] = useState<PlanRecord | null>(null)
@@ -139,47 +141,17 @@ export function SubscriptionPlansCard({
   )
   const allSubscriptions = subscriptionData?.all_subscriptions || []
 
-  const fetchPlans = useCallback(async () => {
-    setLoadingPlans(true)
-    try {
-      const response = await getPublicPlans()
-      setPlans(response.success ? response.data || [] : [])
-    } catch {
-      setPlans([])
-    } finally {
-      setLoadingPlans(false)
-    }
-  }, [])
-
-  useEffect(() => {
-    void fetchPlans()
-  }, [fetchPlans])
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return
-    const handleSubscriptionChanged = () => {
-      void fetchPlans()
-    }
-    window.addEventListener('subscription:changed', handleSubscriptionChanged)
-    return () => {
-      window.removeEventListener(
-        'subscription:changed',
-        handleSubscriptionChanged
-      )
-    }
-  }, [fetchPlans])
-
   const handleRefresh = async () => {
     setRefreshing(true)
     try {
-      await Promise.all([fetchPlans(), onSubscriptionRefresh?.()])
+      await Promise.all([onPlansRefresh?.(), onSubscriptionRefresh?.()])
     } finally {
       setRefreshing(false)
     }
   }
 
   const isAvailable =
-    loadingPlans ||
+    plansLoading ||
     subscriptionLoading ||
     plans.length > 0 ||
     allSubscriptions.length > 0
@@ -429,7 +401,7 @@ export function SubscriptionPlansCard({
           <PlanSection
             title='月卡套餐'
             description='适合长期使用 GPT 系列模型。月卡有效期 1 个月，购买的总额度就是本月可用额度，一个月内可自由使用。'
-            loading={loadingPlans}
+            loading={plansLoading}
             emptyText='当前没有可购买的月卡套餐。'
           >
             {groupedPlans.monthPlans.map((record, index) =>
@@ -440,7 +412,7 @@ export function SubscriptionPlansCard({
           <PlanSection
             title='日卡套餐'
             description='适合临时补量。日卡额度独立结算，不并入月卡总额度，扣费时默认优先于月卡。'
-            loading={loadingPlans}
+            loading={plansLoading}
             emptyText='当前没有可购买的日卡套餐。'
           >
             {groupedPlans.dayPlans.map((record, index) =>
@@ -597,7 +569,7 @@ export function SubscriptionPlansCard({
         onOpenChange={(open) => {
           setPurchaseOpen(open)
           if (!open) {
-            void fetchPlans()
+            void onPlansRefresh?.()
             void onSubscriptionRefresh?.()
           }
         }}

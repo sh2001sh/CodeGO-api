@@ -62,24 +62,24 @@ Code Go 让 AI Coding 更适合长期使用。
 
 function SupportGroupCard() {
   return (
-    <div className='overflow-hidden rounded-3xl border border-slate-200/80 bg-white shadow-sm dark:border-border dark:bg-card'>
+    <div className='overflow-hidden rounded-3xl border border-border bg-card text-card-foreground shadow-sm'>
       <div className='grid gap-6 p-6 md:grid-cols-[minmax(0,1fr)_240px] md:items-center'>
         <div className='space-y-3'>
-          <div className='text-xs font-semibold uppercase tracking-[0.24em] text-sky-600 dark:text-sky-300'>
+          <div className='text-xs font-semibold uppercase tracking-[0.24em] text-primary'>
             售后支持
           </div>
-          <h2 className='text-2xl font-semibold tracking-tight text-slate-950 dark:text-slate-50'>
+          <h2 className='text-2xl font-semibold tracking-tight text-foreground'>
             售后 QQ 群
           </h2>
           <p className='text-sm leading-7 text-muted-foreground'>
             注册、套餐、盲盒、宠物升级、脚本配置或控制台使用遇到问题时，可以直接进群处理。
           </p>
-          <div className='rounded-2xl bg-slate-50 px-4 py-3 text-sm leading-7 text-slate-700 dark:bg-slate-900 dark:text-slate-200'>
+          <div className='rounded-2xl bg-muted/60 px-4 py-3 text-sm leading-7 text-foreground'>
             群号：<span className='font-semibold'>996040309</span>
           </div>
         </div>
 
-        <div className='mx-auto w-full max-w-[220px] rounded-3xl border border-slate-200/80 bg-slate-50 p-3 dark:border-slate-800 dark:bg-slate-900'>
+        <div className='mx-auto w-full max-w-[220px] rounded-3xl border border-border bg-background p-3'>
           <img
             src='/guide/16-support-qq-group.png'
             alt='Code Go 售后 QQ 群二维码'
@@ -113,10 +113,12 @@ function EmptyAboutState() {
     <div className='flex min-h-[60vh] items-center justify-center p-8'>
       <div className='max-w-2xl space-y-6 text-center'>
         <div className='flex justify-center'>
-          <Construction className='text-muted-foreground h-24 w-24' />
+          <Construction className='h-24 w-24 text-muted-foreground' />
         </div>
         <div className='space-y-2'>
-          <h2 className='text-2xl font-bold'>{t('No About Content Set')}</h2>
+          <h2 className='text-2xl font-bold text-foreground'>
+            {t('No About Content Set')}
+          </h2>
           <p className='text-muted-foreground'>
             {t(
               'The administrator has not configured any about content yet. You can set it in the settings page, supporting HTML or URL.'
@@ -229,11 +231,11 @@ export function About() {
           description='关于 Code Go：让 AI Coding 的每一步，都算数。一个围绕长期积累感构建的 AI Coding 平台。'
           canonicalPath='/about'
         />
-          <div className='mx-auto max-w-6xl space-y-6 px-4 py-8'>
-            <SupportGroupCard />
-            <Markdown className='prose-neutral dark:prose-invert max-w-none'>
-              {fallbackAboutMarkdown}
-            </Markdown>
+        <div className='mx-auto max-w-6xl space-y-6 px-4 py-8'>
+          <SupportGroupCard />
+          <Markdown className='prose-neutral dark:prose-invert max-w-none'>
+            {fallbackAboutMarkdown}
+          </Markdown>
           <EmptyAboutState />
         </div>
       </PublicLayout>

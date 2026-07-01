@@ -17,7 +17,6 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useEffect, useMemo, useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import {
   ArrowDown,
@@ -32,11 +31,7 @@ import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
-import {
-  getPublicPlans,
-  getSelfSubscriptionFull,
-  updateBillingPreference,
-} from '@/features/subscriptions/api'
+import { updateBillingPreference } from '@/features/subscriptions/api'
 import {
   getBillingPreferenceFromFundingSourceOrder,
   getFundingSourceDescription,
@@ -51,39 +46,15 @@ import {
 import type {
   FundingSource,
   PlanRecord,
-  SelfSubscriptionData,
   UserSubscriptionRecord,
 } from '@/features/subscriptions/types'
 import { SubscriptionClaudeConversionCard } from '@/features/wallet/components/subscription-claude-conversion-card'
+import { useOverviewSubscriptionData } from './use-overview-subscription-data'
 
 const ALL_FUNDING_SOURCES: FundingSource[] = [
   'subscription',
   'wallet',
 ]
-
-const EMPTY_SUBSCRIPTION_DATA = {
-  billing_preference: 'subscription_first',
-  funding_source_order: ['subscription', 'wallet'],
-  subscription_order_ids: [],
-  subscriptions: [],
-  all_subscriptions: [],
-  claude_quota: 0,
-  conversion_config: {
-    enabled: true,
-    ratio_numerator: 1,
-    ratio_denominator: 10,
-    exclude_day_pass: true,
-  },
-  recent_conversions: [],
-  reset_opportunity: {
-    available_count: 0,
-    earned_total: 0,
-    used_total: 0,
-    used_this_month: false,
-    current_month: '',
-    last_used_month: '',
-  },
-} satisfies SelfSubscriptionData
 
 function clampPercent(used: number, total: number): number {
   if (total <= 0) return 0
@@ -169,33 +140,20 @@ function getSubscriptionUsageStatus(
 }
 
 export function SubscriptionUsagePanel() {
+  const {
+    subscriptionData,
+    plans,
+    isLoading,
+    isFetching,
+    refetchSubscriptions,
+    refetchPlans,
+  } = useOverviewSubscriptionData()
   const [draftFundingSourceOrder, setDraftFundingSourceOrder] = useState<
     FundingSource[]
   >(['subscription', 'wallet'])
   const [draftOrderIds, setDraftOrderIds] = useState<number[]>([])
   const [saving, setSaving] = useState(false)
 
-  const subscriptionsQuery = useQuery({
-    queryKey: ['dashboard', 'overview', 'subscriptions'],
-    queryFn: async () => {
-      const result = await getSelfSubscriptionFull()
-      return result.success
-        ? (result.data ?? EMPTY_SUBSCRIPTION_DATA)
-        : EMPTY_SUBSCRIPTION_DATA
-    },
-    staleTime: 60 * 1000,
-  })
-
-  const plansQuery = useQuery({
-    queryKey: ['dashboard', 'overview', 'subscription-plans'],
-    queryFn: async () => {
-      const result = await getPublicPlans()
-      return result.success ? (result.data ?? []) : []
-    },
-    staleTime: 5 * 60 * 1000,
-  })
-
-  const subscriptionData = subscriptionsQuery.data
   const activeSubscriptions = subscriptionData?.subscriptions ?? []
   const hasActiveSubscriptions = activeSubscriptions.length > 0
 
@@ -220,7 +178,7 @@ export function SubscriptionUsagePanel() {
       number,
       { title: string; subtitle: string; plan: PlanRecord['plan'] }
     >()
-    for (const item of plansQuery.data ?? []) {
+    for (const item of plans) {
       if (!item?.plan?.id) continue
       map.set(item.plan.id, {
         title: item.plan.title || '',
@@ -229,7 +187,7 @@ export function SubscriptionUsagePanel() {
       })
     }
     return map
-  }, [plansQuery.data])
+  }, [plans])
 
   const orderedSubscriptions = useMemo(
     () => getOrderedSubscriptions(activeSubscriptions, draftOrderIds),
@@ -241,8 +199,6 @@ export function SubscriptionUsagePanel() {
   const disabledFundingSources = ALL_FUNDING_SOURCES.filter(
     (source) => !draftFundingSourceOrder.includes(source)
   )
-  const isLoading = subscriptionsQuery.isLoading || plansQuery.isLoading
-
   const moveFundingSource = (source: FundingSource, direction: -1 | 1) => {
     setDraftFundingSourceOrder((current) => {
       const next = [...current]
@@ -310,7 +266,7 @@ export function SubscriptionUsagePanel() {
         return
       }
       toast.success('扣费顺序已更新')
-      await subscriptionsQuery.refetch()
+      await refetchSubscriptions()
     } catch {
       toast.error('保存扣费顺序失败')
     } finally {
@@ -336,17 +292,14 @@ export function SubscriptionUsagePanel() {
           variant='outline'
           size='sm'
           onClick={() => {
-            void subscriptionsQuery.refetch()
-            void plansQuery.refetch()
+            void refetchSubscriptions()
+            void refetchPlans()
           }}
-          disabled={subscriptionsQuery.isFetching || plansQuery.isFetching}
+          disabled={isFetching}
         >
           <RotateCw
             data-icon='inline-start'
-            className={cn(
-              (subscriptionsQuery.isFetching || plansQuery.isFetching) &&
-                'animate-spin'
-            )}
+            className={cn(isFetching && 'animate-spin')}
           />
           刷新
         </Button>

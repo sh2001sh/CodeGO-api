@@ -168,8 +168,8 @@ export function DataTableRowActions<TData>({
     toast.success(
       t(
         platform === 'windows'
-          ? 'Downloaded Windows config script'
-          : 'Downloaded Mac/Linux config script'
+          ? 'Downloaded Windows Codex config script'
+          : 'Downloaded Linux/macOS Codex config script'
       )
     )
   }
@@ -274,13 +274,13 @@ export function DataTableRowActions<TData>({
           </DropdownMenuItem>
           <DropdownMenuSub>
             <DropdownMenuSubTrigger>
-              {t('Download Config Script')}
+              {t('Download Codex Config Script')}
             </DropdownMenuSubTrigger>
             <DropdownMenuSubContent>
               <DropdownMenuItem
                 onClick={() => handleDownloadCodexScript('windows')}
               >
-                {t('Windows Config Script Download')}
+                {t('Windows Codex Config Script Download')}
                 <DropdownMenuShortcut>
                   <Download size={16} />
                 </DropdownMenuShortcut>
@@ -288,7 +288,7 @@ export function DataTableRowActions<TData>({
               <DropdownMenuItem
                 onClick={() => handleDownloadCodexScript('linux')}
               >
-                {t('Mac/Linux Config Script Download')}
+                {t('Linux/macOS Codex Config Script Download')}
                 <DropdownMenuShortcut>
                   <Download size={16} />
                 </DropdownMenuShortcut>

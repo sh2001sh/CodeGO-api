@@ -3,18 +3,18 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
 import { ArrowRight } from 'lucide-react'
 import { motion, useReducedMotion, type Variants } from 'motion/react'
-import { api } from '@/lib/api'
 import { getLobeIcon } from '@/lib/lobe-icon'
 import { MOTION_TRANSITION } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { PublicLayout } from '@/components/layout'
 import { SiteSeo } from '@/components/seo'
+import { getPricing } from '@/features/pricing/api'
 import {
   countFreeModels,
   getFreeEligibleGroups,
 } from '@/features/pricing/lib/model-helpers'
-import type { PricingData, PricingModel } from '@/features/pricing/types'
+import type { PricingModel } from '@/features/pricing/types'
 
 type HomeModel = Pick<PricingModel, 'model_name' | 'vendor_icon' | 'tags'> &
   Partial<Pick<PricingModel, 'enable_groups'>>
@@ -109,10 +109,7 @@ export function BrandHome() {
   const shouldReduceMotion = Boolean(useReducedMotion())
   const { data: pricingData } = useQuery({
     queryKey: ['pricing'],
-    queryFn: async () => {
-      const res = await api.get<PricingData>('/api/pricing')
-      return res.data
-    },
+    queryFn: getPricing,
     staleTime: 5 * 60 * 1000,
   })
 
@@ -168,7 +165,7 @@ export function BrandHome() {
         ]}
       />
 
-      <main className='relative overflow-hidden bg-[#f4ede7] px-3 py-3'>
+      <main className='bg-background relative overflow-hidden px-3 py-3'>
         <section className='home-immersive-hero'>
           <div className='home-hero-grain' />
 
@@ -182,7 +179,7 @@ export function BrandHome() {
               >
                 <motion.h1
                   variants={HERO_ITEM}
-                  className='text-[clamp(3.3rem,7.4vw,7.1rem)] leading-[1.1] font-semibold tracking-[-0.04em] text-balance text-slate-950'
+                  className='text-foreground text-[clamp(3.3rem,7.4vw,7.1rem)] leading-[1.1] font-semibold tracking-[-0.04em] text-balance'
                 >
                   让 AI Coding
                   <br />
@@ -190,7 +187,7 @@ export function BrandHome() {
                 </motion.h1>
                 <motion.p
                   variants={HERO_ITEM}
-                  className='mx-auto mt-6 max-w-3xl text-base leading-8 text-slate-700/82 md:text-lg'
+                  className='text-muted-foreground mx-auto mt-6 max-w-3xl text-base leading-8 md:text-lg dark:text-slate-200/88'
                 >
                   面向 Codex API、Claude Code API、Codex中转、Claude中转，
                   把接入、调用、免费模型试用和持续使用接成同一条主线。
@@ -225,7 +222,7 @@ export function BrandHome() {
                     <Button
                       size='lg'
                       variant='outline'
-                      className='h-12 rounded-full border-white/70 bg-white/50 px-6 text-sm font-semibold text-slate-900 backdrop-blur hover:bg-white/70'
+                      className='h-12 rounded-full border-white/70 bg-white/50 px-6 text-sm font-semibold text-slate-900 backdrop-blur hover:bg-white/70 dark:border-white/10 dark:bg-white/[0.08] dark:text-slate-50 dark:hover:bg-white/[0.14]'
                       render={<Link to='/pricing' />}
                     >
                       查看模型
@@ -258,11 +255,11 @@ export function BrandHome() {
               viewport={{ once: true, margin: '-80px' }}
             >
               <div className='mb-3 flex items-center justify-between gap-4'>
-                <div className='text-sm font-semibold text-slate-800'>
+                <div className='text-foreground text-sm font-semibold dark:text-slate-100'>
                   当前模型储备
                 </div>
                 {freeCount > 0 ? (
-                  <div className='rounded-full border border-emerald-600/18 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-700'>
+                  <div className='rounded-full border border-emerald-600/18 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-500/12 dark:text-emerald-200'>
                     {freeCount} FREE
                   </div>
                 ) : null}
@@ -282,7 +279,7 @@ export function BrandHome() {
                   reverse
                 />
               </div>
-              <div className='mx-auto mt-6 max-w-4xl text-center text-sm leading-7 text-slate-700/78'>
+              <div className='text-muted-foreground mx-auto mt-6 max-w-4xl text-center text-sm leading-7 dark:text-slate-200/82'>
                 适合搜索 Codex中转、Claude中转、Codex API、Claude Code API
                 的开发者先看模型分组与免费模型，再决定什么时候切到 GPT
                 或 Claude。当前也覆盖 DeepSeek、GLM、Kimi、Qwen

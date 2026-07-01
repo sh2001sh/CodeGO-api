@@ -14,14 +14,18 @@ export function SubscriptionShopPage() {
       main={
         <SubscriptionPlansCard
           topupInfo={workspace.topupInfo}
+          plans={workspace.publicPlans}
+          plansLoading={workspace.publicPlansLoading}
           subscriptionData={workspace.subscriptionData}
           subscriptionLoading={workspace.subscriptionLoading}
           onSubscriptionRefresh={workspace.fetchSubscriptionData}
+          onPlansRefresh={workspace.fetchPublicPlans}
         />
       }
       sidebar={
         <WalletStatsCard
           user={workspace.user}
+          plans={workspace.publicPlans}
           loading={workspace.userLoading}
           subscriptionData={workspace.subscriptionData}
           subscriptionLoading={workspace.subscriptionLoading}

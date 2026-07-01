@@ -4538,6 +4538,11 @@
     "Mac/Linux Config Script Download": "Mac/Linux Config Script Download",
     "Downloaded Windows config script": "Downloaded Windows config script",
     "Downloaded Mac/Linux config script": "Downloaded Mac/Linux config script",
+    "Download Codex Config Script": "Download Codex Config Script",
+    "Windows Codex Config Script Download": "Windows Codex Config Script Download",
+    "Linux/macOS Codex Config Script Download": "Linux/macOS Codex Config Script Download",
+    "Downloaded Windows Codex config script": "Downloaded Windows Codex config script",
+    "Downloaded Linux/macOS Codex config script": "Downloaded Linux/macOS Codex config script",
     "Monthly Quota": "Monthly Quota",
     "Monthly cards only keep a monthly quota cap. Weekly quota has been removed.": "Monthly cards only keep a monthly quota cap. Weekly quota has been removed.",
     "Monthly cards only support monthly reset or no reset.": "Monthly cards only support monthly reset or no reset."

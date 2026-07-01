@@ -3,7 +3,6 @@ import { toast } from 'sonner'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
   consumeSubscriptionResetOpportunity,
-  getPublicPlans,
   updateBillingPreference,
 } from '@/features/subscriptions/api'
 import {
@@ -34,6 +33,8 @@ const ALL_FUNDING_SOURCES: FundingSource[] = [
 
 interface WalletPagePanelsProps {
   user: UserWalletData | null
+  plans: PlanRecord[]
+  plansLoading?: boolean
   loading?: boolean
   topupLink?: string
   redemptionCode: string
@@ -53,8 +54,6 @@ export function WalletPagePanels(props: WalletPagePanelsProps) {
   const [draftOrderIds, setDraftOrderIds] = useState<number[]>([])
   const [saving, setSaving] = useState(false)
   const [usingResetOpportunity, setUsingResetOpportunity] = useState(false)
-  const [planRecords, setPlanRecords] = useState<PlanRecord[]>([])
-  const [loadingPlans, setLoadingPlans] = useState(true)
   const showBalancePanels = props.showBalancePanels !== false
 
   const activeSubscriptions = useMemo(
@@ -62,30 +61,6 @@ export function WalletPagePanels(props: WalletPagePanelsProps) {
     [props.subscriptionData?.subscriptions]
   )
   const hasActiveSubscriptions = activeSubscriptions.length > 0
-
-  useEffect(() => {
-    let mounted = true
-    const run = async () => {
-      try {
-        setLoadingPlans(true)
-        const result = await getPublicPlans()
-        if (!mounted) return
-        setPlanRecords(result.success ? result.data || [] : [])
-      } catch {
-        if (!mounted) return
-        setPlanRecords([])
-      } finally {
-        if (mounted) {
-          setLoadingPlans(false)
-        }
-      }
-    }
-
-    void run()
-    return () => {
-      mounted = false
-    }
-  }, [])
 
   useEffect(() => {
     if (!props.subscriptionData) return
@@ -105,7 +80,7 @@ export function WalletPagePanels(props: WalletPagePanelsProps) {
 
   const planMetaMap = useMemo(() => {
     const map = new Map<number, WalletPlanMeta>()
-    for (const item of planRecords) {
+    for (const item of props.plans) {
       if (!item?.plan?.id) continue
       map.set(item.plan.id, {
         title: item.plan.title || '',
@@ -114,7 +89,7 @@ export function WalletPagePanels(props: WalletPagePanelsProps) {
       })
     }
     return map
-  }, [planRecords])
+  }, [props.plans])
 
   const orderedSubscriptions = useMemo(
     () => getOrderedSubscriptions(activeSubscriptions, draftOrderIds),
@@ -139,8 +114,9 @@ export function WalletPagePanels(props: WalletPagePanelsProps) {
   )
   const subscriptionModeEnabled =
     draftFundingSourceOrder.includes('subscription')
-  const isLoadingPanels =
-    props.loading || props.subscriptionLoading || loadingPlans
+  const isLoadingPanels = Boolean(
+    props.loading || props.subscriptionLoading || props.plansLoading
+  )
   const canUseResetOpportunity =
     resetOpportunity.available_count > 0 &&
     !resetOpportunity.used_this_month &&
@@ -315,7 +291,7 @@ export function WalletPagePanels(props: WalletPagePanelsProps) {
         planMetaMap={planMetaMap}
         saving={saving}
         isLoading={isLoadingPanels}
-        subscriptionLoading={props.subscriptionLoading}
+        subscriptionLoading={props.subscriptionLoading ?? false}
         onRefresh={() => void props.onSubscriptionRefresh?.()}
         onSave={() => void handleSave()}
         onResetFundingSourceOrder={resetFundingSourceOrder}

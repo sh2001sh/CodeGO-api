@@ -28,7 +28,6 @@ import { RouterProvider, createRouter } from '@tanstack/react-router'
 import i18next from 'i18next'
 import { toast } from 'sonner'
 import { useAuthStore } from '@/stores/auth-store'
-import { getStatus } from '@/lib/api'
 import { normalizeLogoUrl, normalizeSystemName } from '@/lib/branding'
 import '@/lib/dayjs'
 import { applyFaviconToDom } from '@/lib/dom-utils'
@@ -49,8 +48,13 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: (failureCount, error) => {
-        // eslint-disable-next-line no-console
-        if (import.meta.env.DEV) console.log({ failureCount, error })
+        if (import.meta.env.DEV && error instanceof AxiosError) {
+          const status = error.response?.status ?? 0
+          if (status !== 504) {
+            // eslint-disable-next-line no-console
+            console.log({ failureCount, error })
+          }
+        }
 
         if (failureCount >= 0 && import.meta.env.DEV) return false
         if (failureCount > 3 && import.meta.env.PROD) return false
@@ -114,7 +118,7 @@ const seoShellHero = document.getElementById('seo-shell-hero')
 if (seoShellHero) {
   seoShellHero.remove()
 }
-// Set document.title and favicon from cached status, then refresh from network
+// Set document.title and favicon from cached status.
 ;(function initSystemBranding() {
   try {
     if (typeof window === 'undefined' || typeof document === 'undefined') return
@@ -136,22 +140,6 @@ if (seoShellHero) {
     } catch {
       /* empty */
     }
-    // Background refresh
-    getStatus()
-      .then((s) => {
-        if (s?.system_name) {
-          apply(normalizeSystemName(s.system_name))
-          try {
-            localStorage.setItem('status', JSON.stringify(s))
-          } catch {
-            /* empty */
-          }
-        }
-        applyFaviconToDom(normalizeLogoUrl(s?.logo))
-      })
-      .catch(() => {
-        /* empty */
-      })
   } catch {
     /* empty */
   }
