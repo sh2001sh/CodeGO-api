@@ -130,7 +130,7 @@ func decodeDesktopGitHubReleaseManifest(body []byte) (*desktopReleaseManifest, e
 		if err != nil {
 			common.SysLog(fmt.Sprintf("desktop release GitHub latest.json fallback failed: %v", err))
 		} else {
-			applyDesktopUpdaterManifest(&manifest, updaterManifest)
+			applyDesktopUpdaterManifest(&manifest, updaterManifest, release.Assets)
 		}
 	}
 	if err := normalizeDesktopReleaseManifest(&manifest); err != nil {
@@ -177,7 +177,11 @@ func fetchDesktopGitHubUpdaterManifest(downloadURL string) (*desktopUpdaterManif
 	return &manifest, nil
 }
 
-func applyDesktopUpdaterManifest(releaseManifest *desktopReleaseManifest, updaterManifest *desktopUpdaterManifest) {
+func applyDesktopUpdaterManifest(
+	releaseManifest *desktopReleaseManifest,
+	updaterManifest *desktopUpdaterManifest,
+	assets []desktopGitHubAsset,
+) {
 	if releaseManifest == nil || updaterManifest == nil {
 		return
 	}
@@ -192,8 +196,57 @@ func applyDesktopUpdaterManifest(releaseManifest *desktopReleaseManifest, update
 		releaseManifest.PublishedAt = pubDate
 	}
 	if len(updaterManifest.Platforms) > 0 {
-		releaseManifest.Platforms = updaterManifest.Platforms
+		releaseManifest.Platforms = rewriteDesktopUpdaterPlatformURLs(updaterManifest.Platforms, assets)
 	}
+}
+
+func rewriteDesktopUpdaterPlatformURLs(
+	platforms map[string]desktopReleasePlatform,
+	assets []desktopGitHubAsset,
+) map[string]desktopReleasePlatform {
+	if len(platforms) == 0 {
+		return platforms
+	}
+	assetURLs := make(map[string]string, len(assets))
+	for _, asset := range assets {
+		name := strings.TrimSpace(asset.Name)
+		downloadURL := strings.TrimSpace(asset.BrowserDownloadURL)
+		if name != "" && downloadURL != "" {
+			assetURLs[name] = downloadURL
+		}
+	}
+
+	rewritten := make(map[string]desktopReleasePlatform, len(platforms))
+	for target, platform := range platforms {
+		platform.URL = rewriteDesktopUpdaterPlatformURL(platform.URL, assetURLs)
+		rewritten[target] = platform
+	}
+	return rewritten
+}
+
+func rewriteDesktopUpdaterPlatformURL(rawURL string, assetURLs map[string]string) string {
+	value := strings.TrimSpace(rawURL)
+	if value == "" || len(assetURLs) == 0 {
+		return value
+	}
+	if downloadURL, ok := assetURLs[desktopReleaseURLFileName(value)]; ok {
+		return downloadURL
+	}
+	return value
+}
+
+func desktopReleaseURLFileName(rawURL string) string {
+	value := strings.TrimSpace(rawURL)
+	if value == "" {
+		return ""
+	}
+	if index := strings.IndexAny(value, "?#"); index >= 0 {
+		value = value[:index]
+	}
+	if index := strings.LastIndex(value, "/"); index >= 0 {
+		value = value[index+1:]
+	}
+	return value
 }
 
 func buildDesktopReleaseAssetsFromGitHub(assets []desktopGitHubAsset) []desktopReleaseAsset {

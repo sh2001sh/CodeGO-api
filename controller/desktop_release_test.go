@@ -343,7 +343,7 @@ func TestGetDesktopReleaseLatestJSONUsesGitHubLatestAssetWhenConfiguredManifestI
 				"platforms":{
 					"windows-x86_64":{
 						"signature":"sig-105",
-						"url":"https://github.com/sh2001sh/CodeGO/releases/download/v1.0.5/CodeGo_1.0.5_x64_zh-CN.msi"
+						"url":"/downloads/codego/CodeGo_1.0.5_x64_zh-CN.msi"
 					}
 				}
 			}`))
@@ -385,6 +385,9 @@ func TestGetDesktopReleaseLatestJSONUsesGitHubLatestAssetWhenConfiguredManifestI
 	}
 	if payload.Platforms["windows-x86_64"].Signature != "sig-105" {
 		t.Fatalf("expected GitHub updater signature sig-105, got %q", payload.Platforms["windows-x86_64"].Signature)
+	}
+	if payload.Platforms["windows-x86_64"].URL != "https://github.com/sh2001sh/CodeGO/releases/download/v1.0.5/CodeGo_1.0.5_x64_zh-CN.msi" {
+		t.Fatalf("expected relative updater URL to be rewritten to GitHub asset URL, got %q", payload.Platforms["windows-x86_64"].URL)
 	}
 }
 
