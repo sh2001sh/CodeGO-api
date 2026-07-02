@@ -380,6 +380,45 @@ func SetApiRouter(router *gin.Engine) {
 				middleware.RequireDesktopScope(model.DesktopScopeLogsRead),
 				controller.GetDesktopUsageTrends,
 			)
+			desktopRoute.GET("/groups",
+				middleware.RequireDesktopScope(model.DesktopScopeAccountRead),
+				controller.GetDesktopGroups,
+			)
+			desktopRoute.GET("/authorized-devices",
+				middleware.RequireDesktopScope(model.DesktopScopeAccountRead),
+				controller.ListDesktopAuthorizedDevices,
+			)
+			desktopRoute.DELETE("/authorized-devices/:id",
+				middleware.RequireDesktopScope(model.DesktopScopeAccountRead),
+				middleware.CriticalRateLimit(),
+				controller.RevokeDesktopAuthorizedDevice,
+			)
+			desktopRoute.GET("/tokens",
+				middleware.RequireDesktopScope(model.DesktopScopeTokensRead),
+				controller.GetDesktopTokens,
+			)
+			desktopRoute.POST("/tokens",
+				middleware.RequireDesktopScope(model.DesktopScopeTokensWrite),
+				controller.AddToken,
+			)
+			desktopRoute.PUT("/tokens",
+				middleware.RequireDesktopScope(model.DesktopScopeTokensWrite),
+				controller.UpdateToken,
+			)
+			desktopRoute.DELETE("/tokens/:id",
+				middleware.RequireDesktopScope(model.DesktopScopeTokensWrite),
+				controller.DeleteToken,
+			)
+			desktopRoute.POST("/tokens/:id/key",
+				middleware.RequireDesktopScope(model.DesktopScopeTokensRead),
+				middleware.CriticalRateLimit(),
+				middleware.DisableCache(),
+				controller.GetDesktopTokenKey,
+			)
+			desktopRoute.PUT("/tokens/:id/group",
+				middleware.RequireDesktopScope(model.DesktopScopeTokensWrite),
+				controller.UpdateDesktopTokenGroup,
+			)
 			desktopRoute.POST("/tokens/ensure",
 				middleware.RequireDesktopScope(model.DesktopScopeTokensWrite),
 				controller.EnsureDesktopToken,

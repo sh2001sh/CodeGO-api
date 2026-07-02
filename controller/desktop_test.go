@@ -272,6 +272,137 @@ func TestEnsureDesktopTokenCreatesAndReusesNamedDesktopToken(t *testing.T) {
 	}
 }
 
+func TestGetDesktopTokensReturnsWebsiteKeyList(t *testing.T) {
+	db := setupDesktopControllerTestDB(t)
+
+	user := &model.User{
+		Id:          1,
+		Username:    "desktop-token-list",
+		Password:    "password123",
+		DisplayName: "Desktop Token List",
+		Role:        common.RoleCommonUser,
+		Status:      common.UserStatusEnabled,
+		Group:       "default",
+	}
+	if err := db.Create(user).Error; err != nil {
+		t.Fatalf("failed to seed user: %v", err)
+	}
+	token := seedToken(t, db, 1, "website-key", "websitekey1234567890")
+	seedToken(t, db, 2, "other-user-key", "otheruserkey123456")
+
+	ctx, recorder := newAuthenticatedContext(t, http.MethodGet, "/api/desktop/tokens?p=1&size=10", nil, 1)
+	GetDesktopTokens(ctx)
+
+	response := decodeAPIResponse(t, recorder)
+	if !response.Success {
+		t.Fatalf("expected success response, got message: %s", response.Message)
+	}
+
+	var page struct {
+		Total int                 `json:"total"`
+		Items []tokenResponseItem `json:"items"`
+	}
+	if err := common.Unmarshal(response.Data, &page); err != nil {
+		t.Fatalf("failed to decode desktop token page: %v", err)
+	}
+	if page.Total != 1 || len(page.Items) != 1 {
+		t.Fatalf("expected one desktop-visible website key, got total=%d items=%d", page.Total, len(page.Items))
+	}
+	if page.Items[0].Name != token.Name {
+		t.Fatalf("expected website token %q, got %q", token.Name, page.Items[0].Name)
+	}
+	if page.Items[0].Key != token.GetMaskedKey() {
+		t.Fatalf("expected masked key %q, got %q", token.GetMaskedKey(), page.Items[0].Key)
+	}
+	if strings.Contains(recorder.Body.String(), token.GetFullKey()) {
+		t.Fatalf("desktop token list leaked raw key: %s", recorder.Body.String())
+	}
+}
+
+func TestGetDesktopTokenKeyReturnsWebsiteKeyFullValue(t *testing.T) {
+	db := setupDesktopControllerTestDB(t)
+
+	user := &model.User{
+		Id:          1,
+		Username:    "desktop-key-owner",
+		Password:    "password123",
+		DisplayName: "Desktop Key Owner",
+		Role:        common.RoleCommonUser,
+		Status:      common.UserStatusEnabled,
+		Group:       "default",
+	}
+	if err := db.Create(user).Error; err != nil {
+		t.Fatalf("failed to seed user: %v", err)
+	}
+	token := seedToken(t, db, 1, "website-full-key", "websitefullkey1234567890")
+
+	ctx, recorder := newAuthenticatedContext(t, http.MethodPost, fmt.Sprintf("/api/desktop/tokens/%d/key", token.Id), nil, 1)
+	ctx.Params = gin.Params{{Key: "id", Value: strconv.Itoa(token.Id)}}
+	GetDesktopTokenKey(ctx)
+
+	response := decodeAPIResponse(t, recorder)
+	if !response.Success {
+		t.Fatalf("expected success response, got message: %s", response.Message)
+	}
+	var payload tokenKeyResponse
+	if err := common.Unmarshal(response.Data, &payload); err != nil {
+		t.Fatalf("failed to decode desktop token key response: %v", err)
+	}
+	if payload.Key != token.GetFullKey() {
+		t.Fatalf("expected full website key %q, got %q", token.GetFullKey(), payload.Key)
+	}
+}
+
+func TestGetDesktopGroupsReturnsUsableDropdownItems(t *testing.T) {
+	db := setupDesktopControllerTestDB(t)
+
+	user := &model.User{
+		Id:          1,
+		Username:    "desktop-groups",
+		Password:    "password123",
+		DisplayName: "Desktop Groups",
+		Role:        common.RoleCommonUser,
+		Status:      common.UserStatusEnabled,
+		Group:       "default",
+	}
+	if err := db.Create(user).Error; err != nil {
+		t.Fatalf("failed to seed user: %v", err)
+	}
+	if err := db.Create(&model.Ability{Group: "default", Model: "gpt-5.5", Enabled: true}).Error; err != nil {
+		t.Fatalf("failed to seed ability: %v", err)
+	}
+
+	ctx, recorder := newAuthenticatedContext(t, http.MethodGet, "/api/desktop/groups", nil, 1)
+	GetDesktopGroups(ctx)
+
+	response := decodeAPIResponse(t, recorder)
+	if !response.Success {
+		t.Fatalf("expected success response, got message: %s", response.Message)
+	}
+	var payload desktopGroupsResponse
+	if err := common.Unmarshal(response.Data, &payload); err != nil {
+		t.Fatalf("failed to decode desktop groups: %v", err)
+	}
+	if payload.Current != "default" {
+		t.Fatalf("expected current group default, got %q", payload.Current)
+	}
+	foundDefault := false
+	for _, item := range payload.Items {
+		if item.Name == "default" {
+			foundDefault = true
+			if !item.Current {
+				t.Fatalf("expected default group to be marked current")
+			}
+			if item.AvailableModelsCount != 1 {
+				t.Fatalf("expected default model count 1, got %d", item.AvailableModelsCount)
+			}
+		}
+	}
+	if !foundDefault {
+		t.Fatalf("expected default group in desktop group list: %#v", payload.Items)
+	}
+}
+
 func TestGetDesktopConfigTemplateReturnsToolSpecificEndpoints(t *testing.T) {
 	common.OptionMapRWMutex.Lock()
 	if common.OptionMap == nil {
@@ -522,6 +653,52 @@ func TestGetDesktopTokenConfigReturnsPerToolPayloads(t *testing.T) {
 	}
 	if payload.Tools["hermes"].Model != "gpt-5.5" {
 		t.Fatalf("expected hermes recommended model, got %q", payload.Tools["hermes"].Model)
+	}
+}
+
+func TestGetDesktopTokenConfigUsesTokenGroupModels(t *testing.T) {
+	db := setupDesktopControllerTestDB(t)
+
+	user := &model.User{
+		Id:          1,
+		Username:    "desktop-token-group-models",
+		Password:    "password123",
+		DisplayName: "Desktop Token Group Models",
+		Role:        common.RoleCommonUser,
+		Status:      common.UserStatusEnabled,
+		Group:       "default",
+	}
+	if err := db.Create(user).Error; err != nil {
+		t.Fatalf("failed to seed user: %v", err)
+	}
+
+	token := seedToken(t, db, 1, "vip-token", "viptokenkey1234567890")
+	if err := db.Model(&model.Token{}).Where("id = ?", token.Id).Update("group", "vip").Error; err != nil {
+		t.Fatalf("failed to set token group: %v", err)
+	}
+	if err := db.Create(&[]*model.Ability{
+		{Group: "default", Model: "gpt-5-default", Enabled: true},
+		{Group: "vip", Model: "gpt-5-vip", Enabled: true},
+	}).Error; err != nil {
+		t.Fatalf("failed to seed abilities: %v", err)
+	}
+
+	ctx, recorder := newAuthenticatedContext(t, http.MethodGet, "/api/desktop/tokens/1/config", nil, 1)
+	ctx.Params = gin.Params{{Key: "id", Value: strconv.Itoa(token.Id)}}
+	GetDesktopTokenConfig(ctx)
+
+	response := decodeAPIResponse(t, recorder)
+	if !response.Success {
+		t.Fatalf("expected success response, got message: %s", response.Message)
+	}
+	var payload struct {
+		Tools map[string]desktopImportConfigResponse `json:"tools"`
+	}
+	if err := common.Unmarshal(response.Data, &payload); err != nil {
+		t.Fatalf("failed to decode desktop token config response: %v", err)
+	}
+	if payload.Tools["codex"].Model != "gpt-5-vip" {
+		t.Fatalf("expected token group model gpt-5-vip, got %q", payload.Tools["codex"].Model)
 	}
 }
 

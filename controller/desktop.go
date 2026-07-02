@@ -14,6 +14,7 @@ import (
 	"github.com/QuantumNous/new-api/model"
 	"github.com/QuantumNous/new-api/pkg/cachex"
 	"github.com/QuantumNous/new-api/service"
+	"github.com/QuantumNous/new-api/setting/ratio_setting"
 	"github.com/QuantumNous/new-api/setting/system_setting"
 	"github.com/gin-gonic/gin"
 	"github.com/samber/hot"
@@ -91,6 +92,7 @@ type desktopAccountSummaryResponse struct {
 
 type desktopEnsureTokenRequest struct {
 	DeviceName string `json:"device_name"`
+	Group      string `json:"group"`
 }
 
 type desktopEnsureTokenResponse struct {
@@ -98,6 +100,23 @@ type desktopEnsureTokenResponse struct {
 	Created   bool         `json:"created"`
 	FullKey   string       `json:"full_key"`
 	TokenName string       `json:"token_name"`
+}
+
+type desktopGroupItem struct {
+	Name                 string `json:"name"`
+	Desc                 string `json:"desc"`
+	Ratio                any    `json:"ratio"`
+	Current              bool   `json:"current"`
+	AvailableModelsCount int    `json:"available_models_count"`
+}
+
+type desktopGroupsResponse struct {
+	Current string             `json:"current"`
+	Items   []desktopGroupItem `json:"items"`
+}
+
+type desktopUpdateTokenGroupRequest struct {
+	Group string `json:"group"`
 }
 
 type desktopConfigTemplate struct {
@@ -270,9 +289,17 @@ func getDesktopImportCache() *cachex.HybridCache[desktopImportConfigPayload] {
 
 func listDesktopAvailableModels(group string) []string {
 	groups := service.GetUserUsableGroups(group)
+	groupNames := make([]string, 0, len(groups))
+	for usableGroup := range groups {
+		groupNames = append(groupNames, usableGroup)
+	}
+	return listDesktopAvailableModelsForGroups(groupNames)
+}
+
+func listDesktopAvailableModelsForGroups(groupNames []string) []string {
 	modelSet := make(map[string]struct{})
 	models := make([]string, 0)
-	for usableGroup := range groups {
+	for _, usableGroup := range groupNames {
 		var groupModels []string
 		_ = model.DB.Table("abilities").
 			Where(map[string]any{
@@ -291,6 +318,76 @@ func listDesktopAvailableModels(group string) []string {
 	}
 	sort.Strings(models)
 	return models
+}
+
+func listDesktopAvailableModelsForTokenGroup(userGroup string, tokenGroup string) []string {
+	userGroup = strings.TrimSpace(userGroup)
+	if userGroup == "" {
+		userGroup = "default"
+	}
+	tokenGroup = strings.TrimSpace(tokenGroup)
+	if tokenGroup == "" {
+		tokenGroup = userGroup
+	}
+	if tokenGroup == "auto" {
+		autoGroups := service.GetUserAutoGroup(userGroup)
+		if len(autoGroups) > 0 {
+			return listDesktopAvailableModelsForGroups(autoGroups)
+		}
+	}
+	return listDesktopAvailableModelsForGroups([]string{tokenGroup})
+}
+
+func listDesktopGroups(user *model.User) desktopGroupsResponse {
+	currentGroup := strings.TrimSpace(user.Group)
+	if currentGroup == "" {
+		currentGroup = "default"
+	}
+
+	usableGroups := service.GetUserUsableGroups(currentGroup)
+	groupNames := make([]string, 0, len(usableGroups))
+	for groupName := range usableGroups {
+		groupNames = append(groupNames, groupName)
+	}
+	sort.Strings(groupNames)
+
+	ratios := ratio_setting.GetGroupRatioCopy()
+	items := make([]desktopGroupItem, 0, len(groupNames))
+	for _, groupName := range groupNames {
+		ratioValue := any(service.GetUserGroupRatio(currentGroup, groupName))
+		if groupName == "auto" {
+			ratioValue = "自动"
+		} else if _, ok := ratios[groupName]; !ok {
+			ratioValue = service.GetUserGroupRatio(currentGroup, groupName)
+		}
+		items = append(items, desktopGroupItem{
+			Name:                 groupName,
+			Desc:                 usableGroups[groupName],
+			Ratio:                ratioValue,
+			Current:              groupName == currentGroup,
+			AvailableModelsCount: len(listDesktopAvailableModels(groupName)),
+		})
+	}
+
+	return desktopGroupsResponse{
+		Current: currentGroup,
+		Items:   items,
+	}
+}
+
+func validateDesktopGroupForUser(user *model.User, requested string) (string, error) {
+	userGroup := strings.TrimSpace(user.Group)
+	if userGroup == "" {
+		userGroup = "default"
+	}
+	group := strings.TrimSpace(requested)
+	if group == "" {
+		group = userGroup
+	}
+	if _, ok := service.GetUserUsableGroups(userGroup)[group]; !ok {
+		return "", errors.New("group is not available for current user")
+	}
+	return group, nil
 }
 
 func desktopServiceStatusSummary() desktopServiceSummary {
@@ -785,6 +882,17 @@ func EnsureDesktopToken(c *gin.Context) {
 		return
 	}
 
+	user, err := model.GetUserById(userID, false)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	group, err := validateDesktopGroupForUser(user, req.Group)
+	if err != nil {
+		common.ApiErrorMsg(c, err.Error())
+		return
+	}
+
 	tokenName := buildDesktopTokenName(req.DeviceName)
 	if len(tokenName) > 50 {
 		common.ApiErrorMsg(c, "desktop token name is too long")
@@ -823,7 +931,7 @@ func EnsureDesktopToken(c *gin.Context) {
 		RemainQuota:        0,
 		UnlimitedQuota:     true,
 		ModelLimitsEnabled: false,
-		Group:              "default",
+		Group:              group,
 	}
 	if err := token.Insert(); err != nil {
 		common.ApiError(c, err)
@@ -836,6 +944,95 @@ func EnsureDesktopToken(c *gin.Context) {
 		FullKey:   token.GetFullKey(),
 		TokenName: token.Name,
 	})
+}
+
+func GetDesktopTokens(c *gin.Context) {
+	userID := c.GetInt("id")
+	pageInfo := common.GetPageQuery(c)
+	tokens, err := model.GetAllUserTokens(userID, pageInfo.GetStartIdx(), pageInfo.GetPageSize())
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	total, err := model.CountUserTokens(userID)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	pageInfo.SetTotal(int(total))
+	pageInfo.SetItems(buildMaskedTokenResponses(tokens))
+	common.ApiSuccess(c, pageInfo)
+}
+
+func GetDesktopTokenKey(c *gin.Context) {
+	userID := c.GetInt("id")
+	tokenID, err := strconv.Atoi(strings.TrimSpace(c.Param("id")))
+	if err != nil {
+		common.ApiErrorMsg(c, "invalid token id")
+		return
+	}
+	token, err := findDesktopTokenByID(userID, tokenID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			common.ApiErrorMsg(c, "token not found")
+			return
+		}
+		common.ApiError(c, err)
+		return
+	}
+	common.ApiSuccess(c, gin.H{"key": token.GetFullKey()})
+}
+
+func GetDesktopGroups(c *gin.Context) {
+	userID := c.GetInt("id")
+	user, err := model.GetUserById(userID, false)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	common.ApiSuccess(c, listDesktopGroups(user))
+}
+
+func UpdateDesktopTokenGroup(c *gin.Context) {
+	userID := c.GetInt("id")
+	tokenID, err := strconv.Atoi(strings.TrimSpace(c.Param("id")))
+	if err != nil {
+		common.ApiErrorMsg(c, "invalid token id")
+		return
+	}
+
+	var req desktopUpdateTokenGroupRequest
+	if err = c.ShouldBindJSON(&req); err != nil {
+		common.ApiErrorMsg(c, "invalid request")
+		return
+	}
+
+	user, err := model.GetUserById(userID, false)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	group, err := validateDesktopGroupForUser(user, req.Group)
+	if err != nil {
+		common.ApiErrorMsg(c, err.Error())
+		return
+	}
+
+	token, err := findDesktopTokenByID(userID, tokenID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			common.ApiErrorMsg(c, "token not found")
+			return
+		}
+		common.ApiError(c, err)
+		return
+	}
+	token.Group = group
+	if err = token.Update(); err != nil {
+		common.ApiError(c, err)
+		return
+	}
+	common.ApiSuccess(c, buildMaskedTokenResponse(token))
 }
 
 func GetDesktopConfigTemplate(c *gin.Context) {
@@ -896,7 +1093,10 @@ func GetDesktopTokenConfig(c *gin.Context) {
 		return
 	}
 
-	response, err := buildDesktopTokenConfigResponse(token, listDesktopAvailableModels(user.Group))
+	response, err := buildDesktopTokenConfigResponse(
+		token,
+		listDesktopAvailableModelsForTokenGroup(user.Group, token.Group),
+	)
 	if err != nil {
 		common.ApiError(c, err)
 		return
