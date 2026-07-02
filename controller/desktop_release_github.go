@@ -125,10 +125,75 @@ func decodeDesktopGitHubReleaseManifest(body []byte) (*desktopReleaseManifest, e
 	if manifest.Notes == "" {
 		manifest.Notes = "Code Go Desktop " + manifest.TagName
 	}
+	if latestJSONURL := findDesktopGitHubLatestJSONURL(release.Assets); latestJSONURL != "" {
+		updaterManifest, err := fetchDesktopGitHubUpdaterManifest(latestJSONURL)
+		if err != nil {
+			common.SysLog(fmt.Sprintf("desktop release GitHub latest.json fallback failed: %v", err))
+		} else {
+			applyDesktopUpdaterManifest(&manifest, updaterManifest)
+		}
+	}
 	if err := normalizeDesktopReleaseManifest(&manifest); err != nil {
 		return nil, err
 	}
 	return &manifest, nil
+}
+
+func findDesktopGitHubLatestJSONURL(assets []desktopGitHubAsset) string {
+	for _, asset := range assets {
+		if strings.EqualFold(strings.TrimSpace(asset.Name), "latest.json") {
+			return strings.TrimSpace(asset.BrowserDownloadURL)
+		}
+	}
+	return ""
+}
+
+func fetchDesktopGitHubUpdaterManifest(downloadURL string) (*desktopUpdaterManifest, error) {
+	req, err := http.NewRequest(http.MethodGet, downloadURL, nil)
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Accept", "application/json")
+	req.Header.Set("User-Agent", "CodeGoDesktopReleaseChannel")
+
+	resp, err := desktopReleaseHTTPClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to fetch desktop updater manifest from GitHub: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("GitHub updater manifest request failed with HTTP %d", resp.StatusCode)
+	}
+
+	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	if err != nil {
+		return nil, fmt.Errorf("failed to read GitHub updater manifest response: %w", err)
+	}
+
+	var manifest desktopUpdaterManifest
+	if err := json.Unmarshal(body, &manifest); err != nil {
+		return nil, fmt.Errorf("failed to decode GitHub updater manifest: %w", err)
+	}
+	return &manifest, nil
+}
+
+func applyDesktopUpdaterManifest(releaseManifest *desktopReleaseManifest, updaterManifest *desktopUpdaterManifest) {
+	if releaseManifest == nil || updaterManifest == nil {
+		return
+	}
+	if version := strings.TrimSpace(updaterManifest.Version); version != "" {
+		releaseManifest.Version = version
+		releaseManifest.TagName = "v" + version
+	}
+	if notes := strings.TrimSpace(updaterManifest.Notes); notes != "" {
+		releaseManifest.Notes = notes
+	}
+	if pubDate := strings.TrimSpace(updaterManifest.PubDate); pubDate != "" {
+		releaseManifest.PublishedAt = pubDate
+	}
+	if len(updaterManifest.Platforms) > 0 {
+		releaseManifest.Platforms = updaterManifest.Platforms
+	}
 }
 
 func buildDesktopReleaseAssetsFromGitHub(assets []desktopGitHubAsset) []desktopReleaseAsset {

@@ -311,6 +311,83 @@ func TestGetDesktopReleaseLatestUsesGitHubFallbackByDefault(t *testing.T) {
 	}
 }
 
+func TestGetDesktopReleaseLatestJSONUsesGitHubLatestAssetWhenConfiguredManifestIsStale(t *testing.T) {
+	var githubServer *httptest.Server
+	githubServer = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch r.URL.Path {
+		case "/repos/sh2001sh/CodeGO/releases/latest":
+			_, _ = w.Write([]byte(`{
+				"tag_name":"v1.0.5",
+				"name":"Code Go Desktop v1.0.5",
+				"html_url":"https://github.com/sh2001sh/CodeGO/releases/tag/v1.0.5",
+				"published_at":"2026-07-02T15:52:20Z",
+				"assets":[
+					{
+						"name":"CodeGo_1.0.5_x64_zh-CN.msi",
+						"size":16560128,
+						"browser_download_url":"https://github.com/sh2001sh/CodeGO/releases/download/v1.0.5/CodeGo_1.0.5_x64_zh-CN.msi"
+					},
+					{
+						"name":"latest.json",
+						"size":256,
+						"browser_download_url":"` + githubServer.URL + `/downloads/latest.json"
+					}
+				]
+			}`))
+		case "/downloads/latest.json":
+			_, _ = w.Write([]byte(`{
+				"version":"1.0.5",
+				"notes":"Code Go Desktop v1.0.5",
+				"pub_date":"2026-07-02T15:52:20Z",
+				"platforms":{
+					"windows-x86_64":{
+						"signature":"sig-105",
+						"url":"https://github.com/sh2001sh/CodeGO/releases/download/v1.0.5/CodeGo_1.0.5_x64_zh-CN.msi"
+					}
+				}
+			}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer githubServer.Close()
+
+	setDesktopReleaseGitHubServerForTest(t, githubServer)
+	t.Setenv(desktopReleaseGitHubRepoEnv, "sh2001sh/CodeGO")
+	t.Setenv(desktopReleaseManifestJSONEnv, `{
+		"tag_name":"v3.16.4",
+		"published_at":"2026-06-28T12:00:00Z",
+		"notes":"Code Go Desktop v3.16.4",
+		"assets":[
+			{
+				"name":"CodeGo_3.16.4_x64_en-US.msi",
+				"size":10485760,
+				"platform":"windows",
+				"arch":"x64",
+				"browser_download_url":"/downloads/codego/CodeGo_3.16.4_x64_en-US.msi"
+			}
+		],
+		"platforms":{
+			"windows-x86_64":{"signature":"sig-3164","url":"/downloads/codego/CodeGo_3.16.4_x64_en-US.msi"}
+		}
+	}`)
+
+	ctx, recorder := newAuthenticatedContext(t, http.MethodGet, "/api/desktop/release/latest.json", nil, 0)
+	GetDesktopReleaseLatestJSON(ctx)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected HTTP 200, got %d", recorder.Code)
+	}
+
+	payload := decodeDesktopReleasePayload[desktopReleaseLatestJSONPayload](t, recorder.Body.Bytes())
+	if payload.Version != "1.0.5" {
+		t.Fatalf("expected GitHub updater version 1.0.5, got %q", payload.Version)
+	}
+	if payload.Platforms["windows-x86_64"].Signature != "sig-105" {
+		t.Fatalf("expected GitHub updater signature sig-105, got %q", payload.Platforms["windows-x86_64"].Signature)
+	}
+}
+
 func TestGetDesktopReleaseLatestReloadsManifestFileWithoutRestart(t *testing.T) {
 	t.Setenv(desktopReleaseGitHubEnabledEnv, "false")
 	manifestPath := filepath.Join(t.TempDir(), "codego-desktop-release-manifest.json")
