@@ -236,7 +236,7 @@ func GetDesktopReleaseLatest(c *gin.Context) {
 // GetDesktopReleaseLatestJSON serves the updater-compatible latest.json
 // payload that the Tauri desktop app consumes for in-app updates.
 func GetDesktopReleaseLatestJSON(c *gin.Context) {
-	manifest, err := loadDesktopReleaseManifest()
+	manifest, err := loadDesktopUpdaterReleaseManifest()
 	if err != nil {
 		writeDesktopReleaseError(c, err)
 		return

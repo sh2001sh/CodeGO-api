@@ -72,6 +72,7 @@ func setDesktopReleaseGitHubServerForTest(t *testing.T, server *httptest.Server)
 }
 
 func TestGetDesktopReleaseLatestReturnsConfiguredManifest(t *testing.T) {
+	t.Setenv(desktopReleaseGitHubEnabledEnv, "false")
 	t.Setenv(desktopReleaseManifestJSONEnv, `{
 		"tag_name":"v3.16.3",
 		"html_url":"/download/releases/v3.16.3",
@@ -130,6 +131,7 @@ func TestGetDesktopReleaseLatestReturnsConfiguredManifest(t *testing.T) {
 }
 
 func TestGetDesktopReleaseLatestJSONReturnsUpdaterManifest(t *testing.T) {
+	t.Setenv(desktopReleaseGitHubEnabledEnv, "false")
 	t.Setenv(desktopReleaseManifestJSONEnv, `{
 		"version":"3.16.4",
 		"html_url":"https://shu26.cfd/download/releases/v3.16.4",
@@ -166,6 +168,7 @@ func TestGetDesktopReleaseLatestJSONReturnsUpdaterManifest(t *testing.T) {
 }
 
 func TestGetDesktopReleaseLatestReturnsServiceUnavailableWhenMissing(t *testing.T) {
+	t.Setenv(desktopReleaseGitHubEnabledEnv, "false")
 	t.Setenv(desktopReleaseManifestJSONEnv, "")
 	t.Setenv(desktopReleaseManifestFileEnv, "")
 
@@ -253,7 +256,63 @@ func TestGetDesktopReleaseLatestUsesNewerGitHubReleaseFallback(t *testing.T) {
 	}
 }
 
+func TestGetDesktopReleaseLatestUsesGitHubFallbackByDefault(t *testing.T) {
+	githubServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/repos/sh2001sh/CodeGO/releases/latest" {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{
+			"tag_name":"v1.0.3",
+			"name":"Code Go Desktop v1.0.3",
+			"html_url":"https://github.com/sh2001sh/CodeGO/releases/tag/v1.0.3",
+			"published_at":"2026-07-02T13:28:13Z",
+			"assets":[
+				{
+					"name":"CodeGo_1.0.3_x64_zh-CN.msi",
+					"size":16560128,
+					"browser_download_url":"https://github.com/sh2001sh/CodeGO/releases/download/v1.0.3/CodeGo_1.0.3_x64_zh-CN.msi"
+				}
+			]
+		}`))
+	}))
+	defer githubServer.Close()
+
+	setDesktopReleaseGitHubServerForTest(t, githubServer)
+	t.Setenv(desktopReleaseGitHubRepoEnv, "sh2001sh/CodeGO")
+	t.Setenv(desktopReleaseManifestJSONEnv, `{
+		"tag_name":"v3.16.4",
+		"published_at":"2026-06-28T12:00:00Z",
+		"notes":"Code Go Desktop v3.16.4",
+		"assets":[
+			{
+				"name":"CodeGo_3.16.4_x64_en-US.msi",
+				"size":10485760,
+				"platform":"windows",
+				"arch":"x64",
+				"browser_download_url":"/downloads/codego/CodeGo_3.16.4_x64_en-US.msi"
+			}
+		],
+		"platforms":{
+			"windows-x86_64":{"signature":"sig-3164","url":"/downloads/codego/CodeGo_3.16.4_x64_en-US.msi"}
+		}
+	}`)
+
+	ctx, recorder := newAuthenticatedContext(t, http.MethodGet, "/api/desktop/release/latest", nil, 0)
+	GetDesktopReleaseLatest(ctx)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected HTTP 200, got %d", recorder.Code)
+	}
+
+	payload := decodeDesktopReleasePayload[desktopReleaseLatestPayload](t, recorder.Body.Bytes())
+	if payload.Version != "1.0.3" {
+		t.Fatalf("expected default GitHub fallback version 1.0.3, got %q", payload.Version)
+	}
+}
+
 func TestGetDesktopReleaseLatestReloadsManifestFileWithoutRestart(t *testing.T) {
+	t.Setenv(desktopReleaseGitHubEnabledEnv, "false")
 	manifestPath := filepath.Join(t.TempDir(), "codego-desktop-release-manifest.json")
 	writeManifest := func(contents string) {
 		t.Helper()

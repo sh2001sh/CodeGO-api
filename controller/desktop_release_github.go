@@ -38,7 +38,13 @@ type desktopGitHubAsset struct {
 
 func desktopReleaseGitHubFallbackEnabled() bool {
 	value := strings.TrimSpace(os.Getenv(desktopReleaseGitHubEnabledEnv))
-	return strings.EqualFold(value, "true") || value == "1"
+	if value == "" {
+		return true
+	}
+	return !strings.EqualFold(value, "false") &&
+		!strings.EqualFold(value, "off") &&
+		!strings.EqualFold(value, "no") &&
+		value != "0"
 }
 
 func desktopReleaseGitHubRepository() string {
@@ -246,6 +252,38 @@ func loadDesktopReleaseManifest() (*desktopReleaseManifest, error) {
 			return configured, nil
 		}
 		return nil, githubErr
+	}
+	if err != nil && errors.Is(err, errDesktopReleaseNotConfigured) {
+		return githubManifest, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	if isDesktopReleaseManifestNewer(githubManifest, configured) {
+		return githubManifest, nil
+	}
+	return configured, nil
+}
+
+func loadDesktopUpdaterReleaseManifest() (*desktopReleaseManifest, error) {
+	configured, err := loadConfiguredDesktopReleaseManifest()
+	if !desktopReleaseGitHubFallbackEnabled() {
+		return configured, err
+	}
+
+	githubManifest, githubErr := fetchDesktopGitHubReleaseManifest()
+	if githubErr != nil {
+		if configured != nil {
+			common.SysLog(fmt.Sprintf("desktop release GitHub fallback failed: %v", githubErr))
+			return configured, nil
+		}
+		return nil, githubErr
+	}
+	if len(githubManifest.Platforms) == 0 {
+		if configured != nil {
+			return configured, nil
+		}
+		return githubManifest, nil
 	}
 	if err != nil && errors.Is(err, errDesktopReleaseNotConfigured) {
 		return githubManifest, nil
