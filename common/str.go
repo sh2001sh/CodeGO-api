@@ -19,7 +19,7 @@ var (
 	maskIPPattern     = regexp.MustCompile(`\b(?:\d{1,3}\.){3}\d{1,3}\b`)
 	// maskApiKeyPattern matches patterns like 'api_key:xxx' or "api_key:xxx" to mask the API key value
 	maskApiKeyPattern        = regexp.MustCompile(`(['"]?)api_key:([^\s'"]+)(['"]?)`)
-	upstreamQuotaLeakPattern = regexp.MustCompile(`(?i)(status_code\s*=\s*403.*(?:预扣费额度失败|用户剩余额度|需要预扣费额度)|(?:预扣费额度失败|用户剩余额度|需要预扣费额度).*(?:request id\s*:|status_code\s*=)|insufficient\s+quota.*(?:request id\s*:|status_code\s*=)|pre-?consume.*quota.*(?:request id\s*:|status_code\s*=))`)
+	upstreamQuotaLeakPattern = regexp.MustCompile(`(?i)(status_code\s*=\s*403.*(?:预扣费额度失败|用户剩余额度|需要预扣费额度)|(?:预扣费额度失败|用户剩余额度|需要预扣费额度).*(?:request id\s*:|status_code\s*=)|insufficient(?:\s|_)+(?:quota|balance).*(?:request id\s*:|status_code\s*=)|pre-?consume.*quota.*(?:request id\s*:|status_code\s*=))`)
 )
 
 const LocalLogContentLimit = 2048

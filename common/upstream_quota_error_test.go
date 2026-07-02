@@ -16,9 +16,19 @@ func TestSanitizeUpstreamQuotaErrorMessage(t *testing.T) {
 			expected: UpstreamQuotaGenericMessage,
 		},
 		{
+			name:     "sanitize upstream insufficient balance leak",
+			input:    "status_code=403, insufficient balance, remaining balance: 0.000750, required balance: 0.002364 (request id: abc)",
+			expected: UpstreamQuotaGenericMessage,
+		},
+		{
 			name:     "keep local user arrears message",
 			input:    "用户额度不足, 剩余额度: 0.000750",
 			expected: "用户额度不足, 剩余额度: 0.000750",
+		},
+		{
+			name:     "keep local site balance message",
+			input:    "站内余额不足, 当前余额: 0.000750, 本次所需: 0.002364 (request id: abc)",
+			expected: "站内余额不足, 当前余额: 0.000750, 本次所需: 0.002364 (request id: abc)",
 		},
 		{
 			name:     "keep ordinary error",
@@ -44,8 +54,14 @@ func TestIsUpstreamQuotaLeakMessage(t *testing.T) {
 	if !IsUpstreamQuotaLeakMessage("status_code=403, 预扣费额度失败, 用户剩余额度: 0.000750, 需要预扣费额度: 0.002364 (request id: abc)") {
 		t.Fatal("expected upstream quota leak message to be detected")
 	}
+	if !IsUpstreamQuotaLeakMessage("status_code=403, insufficient balance, remaining balance: 0.000750, required balance: 0.002364 (request id: abc)") {
+		t.Fatal("expected upstream balance leak message to be detected")
+	}
 	if IsUpstreamQuotaLeakMessage("用户额度不足, 剩余额度: 0.000750") {
 		t.Fatal("expected local user quota message not to be treated as upstream leak")
+	}
+	if IsUpstreamQuotaLeakMessage("站内余额不足, 当前余额: 0.000750, 本次所需: 0.002364 (request id: abc)") {
+		t.Fatal("expected local site balance message not to be treated as upstream leak")
 	}
 }
 
