@@ -384,6 +384,10 @@ func SetApiRouter(router *gin.Engine) {
 				middleware.RequireDesktopScope(model.DesktopScopeAccountRead),
 				controller.GetDesktopGroups,
 			)
+			desktopRoute.GET("/group-status",
+				middleware.RequireDesktopScope(model.DesktopScopeAccountRead),
+				controller.GetUserGroupStatus,
+			)
 			desktopRoute.GET("/authorized-devices",
 				middleware.RequireDesktopScope(model.DesktopScopeAccountRead),
 				controller.ListDesktopAuthorizedDevices,
