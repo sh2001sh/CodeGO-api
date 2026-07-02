@@ -38,14 +38,14 @@ type desktopReleasePlatform struct {
 }
 
 type desktopReleaseManifest struct {
-	TagName     string                             `json:"tag_name"`
-	Version     string                             `json:"version"`
-	HTMLURL     string                             `json:"html_url"`
-	PublishedAt string                             `json:"published_at,omitempty"`
-	Notes       string                             `json:"notes,omitempty"`
-	HomebrewURL string                             `json:"homebrew_url,omitempty"`
-	Assets      []desktopReleaseAsset              `json:"assets"`
-	Platforms   map[string]desktopReleasePlatform  `json:"platforms,omitempty"`
+	TagName     string                            `json:"tag_name"`
+	Version     string                            `json:"version"`
+	HTMLURL     string                            `json:"html_url"`
+	PublishedAt string                            `json:"published_at,omitempty"`
+	Notes       string                            `json:"notes,omitempty"`
+	HomebrewURL string                            `json:"homebrew_url,omitempty"`
+	Assets      []desktopReleaseAsset             `json:"assets"`
+	Platforms   map[string]desktopReleasePlatform `json:"platforms,omitempty"`
 }
 
 type desktopUpdaterManifest struct {
@@ -191,7 +191,7 @@ func normalizeDesktopReleaseManifest(manifest *desktopReleaseManifest) error {
 	return nil
 }
 
-func loadDesktopReleaseManifest() (*desktopReleaseManifest, error) {
+func loadConfiguredDesktopReleaseManifest() (*desktopReleaseManifest, error) {
 	content, err := readDesktopReleaseManifestSource()
 	if err != nil {
 		return nil, err

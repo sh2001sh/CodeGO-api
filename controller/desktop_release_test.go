@@ -2,6 +2,7 @@ package controller
 
 import (
 	"net/http"
+	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"testing"
@@ -55,6 +56,18 @@ func setDesktopReleaseServerAddressForTest(t *testing.T, value string) {
 	system_setting.ServerAddress = value
 	t.Cleanup(func() {
 		system_setting.ServerAddress = original
+	})
+}
+
+func setDesktopReleaseGitHubServerForTest(t *testing.T, server *httptest.Server) {
+	t.Helper()
+	originalBaseURL := desktopReleaseGitHubAPIBaseURL
+	originalClient := desktopReleaseHTTPClient
+	desktopReleaseGitHubAPIBaseURL = server.URL
+	desktopReleaseHTTPClient = server.Client()
+	t.Cleanup(func() {
+		desktopReleaseGitHubAPIBaseURL = originalBaseURL
+		desktopReleaseHTTPClient = originalClient
 	})
 }
 
@@ -161,6 +174,82 @@ func TestGetDesktopReleaseLatestReturnsServiceUnavailableWhenMissing(t *testing.
 
 	if recorder.Code != http.StatusServiceUnavailable {
 		t.Fatalf("expected HTTP 503 when manifest is missing, got %d", recorder.Code)
+	}
+}
+
+func TestGetDesktopReleaseLatestUsesNewerGitHubReleaseFallback(t *testing.T) {
+	githubServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/repos/sh2001sh/CodeGO/releases/latest" {
+			http.NotFound(w, r)
+			return
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{
+			"tag_name":"v1.0.1",
+			"name":"Code Go Desktop v1.0.1",
+			"html_url":"https://github.com/sh2001sh/CodeGO/releases/tag/v1.0.1",
+			"published_at":"2026-07-02T11:58:07Z",
+			"assets":[
+				{
+					"name":"CodeGo_1.0.1_x64_zh-CN.msi",
+					"size":16560128,
+					"browser_download_url":"https://github.com/sh2001sh/CodeGO/releases/download/v1.0.1/CodeGo_1.0.1_x64_zh-CN.msi"
+				},
+				{
+					"name":"CodeGo_1.0.1_x64.AppImage",
+					"size":95377912,
+					"browser_download_url":"https://github.com/sh2001sh/CodeGO/releases/download/v1.0.1/CodeGo_1.0.1_x64.AppImage"
+				},
+				{
+					"name":"latest.json",
+					"size":119,
+					"browser_download_url":"https://github.com/sh2001sh/CodeGO/releases/download/v1.0.1/latest.json"
+				}
+			]
+		}`))
+	}))
+	defer githubServer.Close()
+
+	setDesktopReleaseGitHubServerForTest(t, githubServer)
+	t.Setenv(desktopReleaseGitHubEnabledEnv, "true")
+	t.Setenv(desktopReleaseGitHubRepoEnv, "sh2001sh/CodeGO")
+	t.Setenv(desktopReleaseManifestFileEnv, "")
+	t.Setenv(desktopReleaseManifestJSONEnv, `{
+		"tag_name":"v3.16.4",
+		"published_at":"2026-06-28T12:00:00Z",
+		"notes":"Code Go Desktop v3.16.4",
+		"assets":[
+			{
+				"name":"CodeGo_3.16.4_x64_en-US.msi",
+				"size":10485760,
+				"platform":"windows",
+				"arch":"x64",
+				"browser_download_url":"/downloads/codego/CodeGo_3.16.4_x64_en-US.msi"
+			}
+		],
+		"platforms":{
+			"windows-x86_64":{"signature":"sig-3164","url":"/downloads/codego/CodeGo_3.16.4_x64_en-US.msi"}
+		}
+	}`)
+
+	ctx, recorder := newAuthenticatedContext(t, http.MethodGet, "/api/desktop/release/latest", nil, 0)
+	GetDesktopReleaseLatest(ctx)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("expected HTTP 200, got %d", recorder.Code)
+	}
+
+	payload := decodeDesktopReleasePayload[desktopReleaseLatestPayload](t, recorder.Body.Bytes())
+	if payload.Version != "1.0.1" {
+		t.Fatalf("expected GitHub fallback version 1.0.1, got %q", payload.Version)
+	}
+	if len(payload.Assets) != 2 {
+		t.Fatalf("expected two CodeGo release assets, got %d", len(payload.Assets))
+	}
+	if payload.Assets[0].BrowserDownloadURL != "https://github.com/sh2001sh/CodeGO/releases/download/v1.0.1/CodeGo_1.0.1_x64_zh-CN.msi" {
+		t.Fatalf("expected GitHub download URL, got %q", payload.Assets[0].BrowserDownloadURL)
+	}
+	if payload.Assets[0].Platform != "windows" || payload.Assets[0].Arch != "x64" {
+		t.Fatalf("expected inferred Windows x64 asset metadata, got %#v", payload.Assets[0])
 	}
 }
 

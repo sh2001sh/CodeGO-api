@@ -31,6 +31,8 @@ services:
       - REDIS_CONN_STRING=rediss://default:AVNS_Z8638taFon55XW-QTsz@valkey-3df33062-newapi-sh.b.aivencloud.com:10659 # ⚠️ IMPORTANT: Change the password in production!
       - TRUSTED_PROXIES=127.0.0.1,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fc00::/7
       - CODEGO_DESKTOP_RELEASE_MANIFEST_FILE=/data/codego-release/codego-desktop-release-manifest.json
+      - CODEGO_DESKTOP_RELEASE_GITHUB_FALLBACK_ENABLED=true
+      - CODEGO_DESKTOP_RELEASE_GITHUB_REPOSITORY=sh2001sh/CodeGO
       - TZ=Asia/Shanghai
       - ERROR_LOG_ENABLED=true # 是否启用错误日志记录 (Whether to enable error log recording)
       - BATCH_UPDATE_ENABLED=true  # 是否启用批量更新 (Whether to enable batch update)
