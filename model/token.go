@@ -11,6 +11,8 @@ import (
 	"gorm.io/gorm"
 )
 
+const tokenKeyPrefix = "sk-"
+
 type Token struct {
 	Id                 int            `json:"id"`
 	UserId             int            `json:"user_id" gorm:"index"`
@@ -49,11 +51,15 @@ func MaskTokenKey(key string) string {
 }
 
 func (token *Token) GetFullKey() string {
-	return token.Key
+	key := strings.TrimSpace(token.Key)
+	if key == "" || strings.HasPrefix(key, tokenKeyPrefix) {
+		return key
+	}
+	return tokenKeyPrefix + key
 }
 
 func (token *Token) GetMaskedKey() string {
-	return MaskTokenKey(token.Key)
+	return MaskTokenKey(token.GetFullKey())
 }
 
 func (token *Token) GetIpLimits() []string {
