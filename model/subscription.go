@@ -48,6 +48,12 @@ const (
 )
 
 const (
+	SubscriptionPurchaseTypeNormal    = "normal"
+	SubscriptionPurchaseTypeGroupBuy  = "group_buy"
+	SubscriptionPurchaseTypeJoinGroup = "join_group"
+)
+
+const (
 	SubscriptionPlanTypeMonthly = "monthly"
 	SubscriptionPlanTypeWeekly  = "weekly"
 	SubscriptionPlanTypeDaily   = "daily"
@@ -274,6 +280,8 @@ type SubscriptionOrder struct {
 	TradeNo         string `json:"trade_no" gorm:"unique;type:varchar(255);index"`
 	PaymentMethod   string `json:"payment_method" gorm:"type:varchar(50)"`
 	PaymentProvider string `json:"payment_provider" gorm:"type:varchar(50);default:''"`
+	PurchaseType    string `json:"purchase_type" gorm:"type:varchar(32);default:'normal';index"`
+	GroupBuyId      int64  `json:"group_buy_id" gorm:"type:bigint;default:0;index"`
 	Status          string `json:"status"`
 	CreateTime      int64  `json:"create_time"`
 	CompleteTime    int64  `json:"complete_time"`
@@ -285,11 +293,23 @@ func (o *SubscriptionOrder) Insert() error {
 	if o.CreateTime == 0 {
 		o.CreateTime = common.GetTimestamp()
 	}
+	o.PurchaseType = NormalizeSubscriptionPurchaseType(o.PurchaseType)
 	return DB.Create(o).Error
 }
 
 func (o *SubscriptionOrder) Update() error {
 	return DB.Save(o).Error
+}
+
+func NormalizeSubscriptionPurchaseType(purchaseType string) string {
+	switch strings.TrimSpace(strings.ToLower(purchaseType)) {
+	case SubscriptionPurchaseTypeGroupBuy:
+		return SubscriptionPurchaseTypeGroupBuy
+	case SubscriptionPurchaseTypeJoinGroup:
+		return SubscriptionPurchaseTypeJoinGroup
+	default:
+		return SubscriptionPurchaseTypeNormal
+	}
 }
 
 func GetSubscriptionOrderByTradeNo(tradeNo string) *SubscriptionOrder {
@@ -1139,6 +1159,12 @@ func CompleteSubscriptionOrder(tradeNo string, providerPayload string, expectedP
 			return err
 		}
 		if err := ConsumeReservedBlindBoxPropByTradeNoTx(tx, tradeNo, BlindBoxPropOrderTypeSubscription); err != nil {
+			return err
+		}
+		if err := ApplySubscriptionPurchaseBonusTx(tx, order.UserId, sub, plan, preview); err != nil {
+			return err
+		}
+		if err := ApplyGroupBuyPurchaseAfterPaymentTx(tx, &order, plan); err != nil {
 			return err
 		}
 		order.Status = common.TopUpStatusSuccess

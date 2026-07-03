@@ -17,7 +17,9 @@ import (
 )
 
 type SubscriptionStripePayRequest struct {
-	PlanId int `json:"plan_id"`
+	PlanId       int    `json:"plan_id"`
+	PurchaseType string `json:"purchase_type"`
+	GroupBuyId   int64  `json:"group_buy_id"`
 }
 
 func SubscriptionRequestStripePay(c *gin.Context) {
@@ -54,6 +56,15 @@ func SubscriptionRequestStripePay(c *gin.Context) {
 	}
 
 	userId := c.GetInt("id")
+	purchaseType, groupBuyId, err := normalizeSubscriptionPurchaseFields(userId, subscriptionPurchaseFields{
+		PlanId:       req.PlanId,
+		PurchaseType: req.PurchaseType,
+		GroupBuyId:   req.GroupBuyId,
+	})
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
 	preview, err := model.ResolveSubscriptionPurchasePreview(userId, plan)
 	if err != nil {
 		common.ApiError(c, err)
@@ -103,6 +114,7 @@ func SubscriptionRequestStripePay(c *gin.Context) {
 		CreateTime:      time.Now().Unix(),
 		Status:          common.TopUpStatusPending,
 	}
+	writeSubscriptionPurchaseFields(order, purchaseType, groupBuyId)
 	if _, err := model.CreatePendingSubscriptionOrderWithBlindBoxDiscount(order, preview.BaseAmountDue); err != nil {
 		c.JSON(http.StatusOK, gin.H{"message": "error", "data": "failed to create order"})
 		return

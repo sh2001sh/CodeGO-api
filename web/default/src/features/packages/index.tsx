@@ -27,7 +27,10 @@ import {
 } from '@/components/page-transition'
 import { SiteSeo } from '@/components/seo'
 import { SubscriptionPurchaseDialog } from '@/features/subscriptions/components/dialogs/subscription-purchase-dialog'
-import type { PlanRecord } from '@/features/subscriptions/types'
+import type {
+  PlanRecord,
+  SubscriptionPurchaseType,
+} from '@/features/subscriptions/types'
 import { getEpayMethods } from '@/features/wallet/components/subscription-plans-card'
 import { WalletStatsCard } from '@/features/wallet/components/wallet-stats-card'
 import { WalletWorkspaceShell } from '@/features/wallet/components/wallet-workspace-shell'
@@ -81,6 +84,8 @@ function useGroupedPlans(plans: PlanRecord[]) {
 export function PackagesPage() {
   const workspace = useWalletWorkspace()
   const [selectedPlan, setSelectedPlan] = useState<PlanRecord | null>(null)
+  const [selectedPurchaseType, setSelectedPurchaseType] =
+    useState<SubscriptionPurchaseType>('normal')
   const [purchaseOpen, setPurchaseOpen] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
   const groupedPlans = useGroupedPlans(workspace.publicPlans)
@@ -112,8 +117,12 @@ export function PackagesPage() {
     }
   }
 
-  const openPurchase = (record: PlanRecord) => {
+  const openPurchase = (
+    record: PlanRecord,
+    purchaseType: SubscriptionPurchaseType = 'normal'
+  ) => {
     setSelectedPlan(record)
+    setSelectedPurchaseType(purchaseType)
     setPurchaseOpen(true)
   }
 
@@ -217,6 +226,7 @@ export function PackagesPage() {
         enableOnlineTopUp={!!topupInfo?.enable_online_topup}
         epayMethods={epayMethods}
         purchaseLimit={selectedPlan?.plan?.max_purchase_per_user || undefined}
+        purchaseType={selectedPurchaseType}
         purchaseCount={
           selectedPlan?.plan?.id
             ? purchaseCountMap.get(selectedPlan.plan.id)

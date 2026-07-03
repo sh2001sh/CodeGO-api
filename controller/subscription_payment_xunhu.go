@@ -13,11 +13,13 @@ import (
 )
 
 type SubscriptionXunhuPayRequest struct {
-	PlanId int `json:"plan_id"`
+	PlanId       int    `json:"plan_id"`
+	PurchaseType string `json:"purchase_type"`
+	GroupBuyId   int64  `json:"group_buy_id"`
 }
 
-func requestSubscriptionXunhuPay(c *gin.Context, planId int) {
-	plan, err := model.GetSubscriptionPlanById(planId)
+func requestSubscriptionXunhuPay(c *gin.Context, req subscriptionPurchaseFields) {
+	plan, err := model.GetSubscriptionPlanById(req.PlanId)
 	if err != nil {
 		common.ApiError(c, err)
 		return
@@ -31,6 +33,11 @@ func requestSubscriptionXunhuPay(c *gin.Context, planId int) {
 		return
 	}
 	userId := c.GetInt("id")
+	purchaseType, groupBuyId, err := normalizeSubscriptionPurchaseFields(userId, req)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
 	preview, err := model.ResolveSubscriptionPurchasePreview(userId, plan)
 	if err != nil {
 		common.ApiError(c, err)
@@ -71,6 +78,7 @@ func requestSubscriptionXunhuPay(c *gin.Context, planId int) {
 		CreateTime:      time.Now().Unix(),
 		Status:          common.TopUpStatusPending,
 	}
+	writeSubscriptionPurchaseFields(order, purchaseType, groupBuyId)
 	if _, err := model.CreatePendingSubscriptionOrderWithBlindBoxDiscount(order, preview.BaseAmountDue); err != nil {
 		common.ApiErrorMsg(c, "failed to create order")
 		return
@@ -106,7 +114,11 @@ func SubscriptionRequestXunhuPay(c *gin.Context) {
 		common.ApiErrorMsg(c, "invalid request")
 		return
 	}
-	requestSubscriptionXunhuPay(c, req.PlanId)
+	requestSubscriptionXunhuPay(c, subscriptionPurchaseFields{
+		PlanId:       req.PlanId,
+		PurchaseType: req.PurchaseType,
+		GroupBuyId:   req.GroupBuyId,
+	})
 }
 
 func SubscriptionXunhuNotify(c *gin.Context) {

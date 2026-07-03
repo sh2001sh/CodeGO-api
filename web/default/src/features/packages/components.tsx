@@ -36,6 +36,7 @@ import {
 } from '@/features/subscriptions/lib'
 import type {
   PlanRecord,
+  SubscriptionPurchaseType,
   UserSubscriptionRecord,
 } from '@/features/subscriptions/types'
 
@@ -45,7 +46,10 @@ export function PlanZone(props: {
   plans: PlanRecord[]
   loading: boolean
   purchaseCountMap: Map<number, number>
-  onPurchase: (record: PlanRecord) => void
+  onPurchase: (
+    record: PlanRecord,
+    purchaseType?: SubscriptionPurchaseType
+  ) => void
 }) {
   return (
     <section className='space-y-3'>
@@ -70,7 +74,9 @@ export function PlanZone(props: {
               key={record.plan.id}
               record={record}
               purchaseCount={props.purchaseCountMap.get(record.plan.id) || 0}
-              onPurchase={() => props.onPurchase(record)}
+              onPurchase={(purchaseType) =>
+                props.onPurchase(record, purchaseType)
+              }
             />
           ))}
         </div>
@@ -86,7 +92,7 @@ export function PlanZone(props: {
 function PackagePlanCard(props: {
   record: PlanRecord
   purchaseCount: number
-  onPurchase: () => void
+  onPurchase: (purchaseType?: SubscriptionPurchaseType) => void
 }) {
   const { t } = useTranslation()
   const plan = props.record.plan
@@ -155,7 +161,7 @@ function PackagePlanCard(props: {
           <Button
             className='w-full'
             disabled={limitReached || props.record.action === 'disabled'}
-            onClick={props.onPurchase}
+            onClick={() => props.onPurchase('normal')}
           >
             {limitReached ? '已达购买上限' : actionLabel}
             {!limitReached ? <ArrowRight className='ml-1 h-4 w-4' /> : null}
@@ -164,9 +170,10 @@ function PackagePlanCard(props: {
             <Button
               variant='outline'
               className='w-full'
-              render={<Link to='/group-buy' />}
+              disabled={limitReached || props.record.action === 'disabled'}
+              onClick={() => props.onPurchase('group_buy')}
             >
-              去拼团大厅
+              发起拼团
             </Button>
           ) : null}
         </div>

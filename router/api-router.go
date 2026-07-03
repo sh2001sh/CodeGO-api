@@ -211,6 +211,9 @@ func SetApiRouter(router *gin.Engine) {
 			packagesRoute.GET("/public", controller.GetPublicPackages)
 			packagesRoute.GET("/my-subscription", controller.GetSubscriptionSelf)
 			packagesRoute.GET("/starter-upgrade-bonus", controller.GetStarterUpgradeBonus)
+			packagesRoute.POST("/purchase", middleware.CriticalRateLimit(), controller.PurchasePackage)
+			packagesRoute.POST("/upgrade", middleware.CriticalRateLimit(), controller.UpgradePackage)
+			packagesRoute.POST("/renew", middleware.CriticalRateLimit(), controller.RenewPackage)
 		}
 
 		groupBuyRoute := apiRouter.Group("/group-buy")

@@ -51,6 +51,7 @@ import type {
   PlanRecord,
   SubscriptionOrderStatus,
   SubscriptionPayResponse,
+  SubscriptionPurchaseType,
 } from '../../types'
 
 interface PaymentMethod {
@@ -68,6 +69,8 @@ interface Props {
   epayMethods?: PaymentMethod[]
   purchaseLimit?: number
   purchaseCount?: number
+  purchaseType?: SubscriptionPurchaseType
+  groupBuyId?: number
 }
 
 type PaymentStage = 'idle' | 'pending' | 'success' | 'failed' | 'cancelled'
@@ -103,7 +106,9 @@ function getMethodLabel(
     return '微信支付'
   }
   return (
-    normalizeSubscriptionText(methods.find((item) => item.type === type)?.name) ||
+    normalizeSubscriptionText(
+      methods.find((item) => item.type === type)?.name
+    ) ||
     type ||
     t('Pay')
   )
@@ -140,7 +145,7 @@ function SummaryItem(props: { label: string; value: ReactNode }) {
       <div className='text-muted-foreground text-[11px] font-medium tracking-wide'>
         {props.label}
       </div>
-      <div className='mt-1 text-sm font-medium text-foreground'>
+      <div className='text-foreground mt-1 text-sm font-medium'>
         {props.value}
       </div>
     </div>
@@ -153,7 +158,7 @@ function StatusItem(props: { label: string; value: ReactNode }) {
       <div className='text-muted-foreground text-[11px] font-medium tracking-wide'>
         {props.label}
       </div>
-      <div className='mt-1 text-sm font-medium text-foreground'>
+      <div className='text-foreground mt-1 text-sm font-medium'>
         {props.value}
       </div>
     </div>
@@ -184,7 +189,9 @@ export function SubscriptionPurchaseDialog(props: Props) {
       return
     }
     if (paymentMethods.length > 0) {
-      setSelectedEpayMethod((current) => current || paymentMethods[0]?.type || '')
+      setSelectedEpayMethod(
+        (current) => current || paymentMethods[0]?.type || ''
+      )
     }
   }, [paymentMethods, props.open])
 
@@ -200,7 +207,9 @@ export function SubscriptionPurchaseDialog(props: Props) {
     let active = true
     const poll = async () => {
       try {
-        const response = await getSubscriptionOrderStatus(paymentTracker.orderId)
+        const response = await getSubscriptionOrderStatus(
+          paymentTracker.orderId
+        )
         if (!active || !response.success || !response.data) return
 
         const order = response.data as SubscriptionOrderStatus
@@ -252,9 +261,22 @@ export function SubscriptionPurchaseDialog(props: Props) {
   const hasEpay = props.enableOnlineTopUp && paymentMethods.length > 0
   const totalAmount = Number(plan.total_amount || 0)
   const periodAmount = Number(plan.period_amount || 0)
-  const effectiveAmount = Number(planRecord.amount_due ?? plan.price_amount ?? 0)
-  const displayPrice = formatSubscriptionPlanPrice(effectiveAmount, plan.currency)
+  const effectiveAmount = Number(
+    planRecord.amount_due ?? plan.price_amount ?? 0
+  )
+  const displayPrice = formatSubscriptionPlanPrice(
+    effectiveAmount,
+    plan.currency
+  )
   const actionLabel = getSubscriptionPlanActionLabel(planRecord.action, t)
+  const purchaseType = props.purchaseType || 'normal'
+  const groupBuyId = props.groupBuyId || 0
+  const purchaseModeLabel =
+    purchaseType === 'group_buy'
+      ? '发起拼团'
+      : purchaseType === 'join_group'
+        ? '参与拼团'
+        : actionLabel
   const discountText = getSubscriptionPlanDiscountText(plan)
   const detailText = getSubscriptionPlanDetailText(
     plan,
@@ -271,9 +293,12 @@ export function SubscriptionPurchaseDialog(props: Props) {
     normalizeSubscriptionText(planRecord.disabled_reason) ||
     '当前已有更高等级的有效套餐，暂不支持降级订阅。'
   const disablePurchase =
-    paying || limitReached || blockedByRule || paymentTracker.stage === 'pending'
+    paying ||
+    limitReached ||
+    blockedByRule ||
+    paymentTracker.stage === 'pending'
   const summaryItems = [
-    { label: '购买方式', value: actionLabel },
+    { label: '购买方式', value: purchaseModeLabel },
     {
       label: '有效期',
       value: (
@@ -335,7 +360,7 @@ export function SubscriptionPurchaseDialog(props: Props) {
       qrCodeUrl,
       amountDue,
       methodLabel,
-      actionLabel,
+      actionLabel: purchaseModeLabel,
       message: qrCodeUrl
         ? '请使用微信扫码完成支付，系统会自动等待支付结果回传。'
         : '请在新窗口完成支付，系统会自动等待支付结果回传。',
@@ -346,9 +371,17 @@ export function SubscriptionPurchaseDialog(props: Props) {
   const handlePayStripe = async () => {
     setPaying(true)
     try {
-      const response = await paySubscriptionStripe({ plan_id: plan.id })
+      const response = await paySubscriptionStripe({
+        plan_id: plan.id,
+        purchase_type: purchaseType,
+        group_buy_id: groupBuyId,
+      })
       const payLink = response.data?.pay_link || ''
-      if (response.message === 'success' && payLink && response.data?.order_id) {
+      if (
+        response.message === 'success' &&
+        payLink &&
+        response.data?.order_id
+      ) {
         window.open(payLink, '_blank')
         startPendingPayment(response, 'Stripe', payLink)
       } else {
@@ -364,7 +397,11 @@ export function SubscriptionPurchaseDialog(props: Props) {
   const handlePayCreem = async () => {
     setPaying(true)
     try {
-      const response = await paySubscriptionCreem({ plan_id: plan.id })
+      const response = await paySubscriptionCreem({
+        plan_id: plan.id,
+        purchase_type: purchaseType,
+        group_buy_id: groupBuyId,
+      })
       const checkoutUrl = response.data?.checkout_url || ''
       if (
         response.message === 'success' &&
@@ -393,10 +430,16 @@ export function SubscriptionPurchaseDialog(props: Props) {
     try {
       const isXunhu = selectedEpayMethod === 'xunhu'
       const response = isXunhu
-        ? await paySubscriptionXunhu({ plan_id: plan.id })
+        ? await paySubscriptionXunhu({
+            plan_id: plan.id,
+            purchase_type: purchaseType,
+            group_buy_id: groupBuyId,
+          })
         : await paySubscriptionEpay({
             plan_id: plan.id,
             payment_method: selectedEpayMethod,
+            purchase_type: purchaseType,
+            group_buy_id: groupBuyId,
           })
 
       if (response.message !== 'success') {
@@ -411,7 +454,11 @@ export function SubscriptionPurchaseDialog(props: Props) {
           startPendingPayment(response, '微信支付', payUrl, qrCodeUrl)
           return
         }
-      } else if (response.url && response.data?.form && response.data?.order_id) {
+      } else if (
+        response.url &&
+        response.data?.form &&
+        response.data?.order_id
+      ) {
         submitExternalPaymentForm(
           response.url,
           response.data.form as Record<string, unknown>,
@@ -436,26 +483,24 @@ export function SubscriptionPurchaseDialog(props: Props) {
       pending: {
         icon: <Loader2 className='h-5 w-5 animate-spin' />,
         title: '等待支付结果',
-        tone:
-          'border-sky-200 bg-sky-50/70 dark:border-sky-500/30 dark:bg-sky-500/10',
+        tone: 'border-sky-200 bg-sky-50/70 dark:border-sky-500/30 dark:bg-sky-500/10',
       },
       success: {
         icon: <CheckCircle2 className='h-5 w-5 text-emerald-600' />,
         title: '支付成功',
-        tone:
-          'border-emerald-200 bg-emerald-50/70 dark:border-emerald-500/30 dark:bg-emerald-500/10',
+        tone: 'border-emerald-200 bg-emerald-50/70 dark:border-emerald-500/30 dark:bg-emerald-500/10',
       },
       failed: {
         icon: <XCircle className='h-5 w-5 text-rose-600' />,
         title: '支付失败',
-        tone:
-          'border-rose-200 bg-rose-50/70 dark:border-rose-500/30 dark:bg-rose-500/10',
+        tone: 'border-rose-200 bg-rose-50/70 dark:border-rose-500/30 dark:bg-rose-500/10',
       },
       cancelled: {
-        icon: <CircleSlash className='h-5 w-5 text-slate-500 dark:text-slate-300' />,
+        icon: (
+          <CircleSlash className='h-5 w-5 text-slate-500 dark:text-slate-300' />
+        ),
         title: '已取消等待',
-        tone:
-          'border-slate-200 bg-slate-50/70 dark:border-slate-700 dark:bg-slate-900/70',
+        tone: 'border-slate-200 bg-slate-50/70 dark:border-slate-700 dark:bg-slate-900/70',
       },
       idle: {
         icon: null,
@@ -465,13 +510,15 @@ export function SubscriptionPurchaseDialog(props: Props) {
     }[paymentTracker.stage]
 
     return (
-      <div className={cn('space-y-4 rounded-2xl border p-4', statusConfig.tone)}>
+      <div
+        className={cn('space-y-4 rounded-2xl border p-4', statusConfig.tone)}
+      >
         <div className='flex items-start gap-3'>
           <div className='bg-background flex h-10 w-10 shrink-0 items-center justify-center rounded-full border'>
             {statusConfig.icon}
           </div>
           <div className='min-w-0'>
-            <div className='text-sm font-semibold text-foreground'>
+            <div className='text-foreground text-sm font-semibold'>
               {statusConfig.title}
             </div>
             <p className='text-muted-foreground mt-1 text-sm leading-6'>
@@ -502,7 +549,7 @@ export function SubscriptionPurchaseDialog(props: Props) {
                 className='mx-auto h-36 w-36 object-contain'
               />
             </div>
-            <p className='text-center text-xs text-muted-foreground'>
+            <p className='text-muted-foreground text-center text-xs'>
               请使用微信扫码完成支付。
             </p>
           </div>
@@ -546,17 +593,17 @@ export function SubscriptionPurchaseDialog(props: Props) {
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogContent className='flex max-h-[calc(100vh-1rem)] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl'>
-        <DialogHeader className='border-b border-slate-200 px-4 py-4 dark:border-slate-800 sm:px-5'>
+        <DialogHeader className='border-b border-slate-200 px-4 py-4 sm:px-5 dark:border-slate-800'>
           <DialogTitle className='flex items-center gap-2 text-lg'>
             <Crown className='h-5 w-5' />
-            套餐购买
+            {purchaseModeLabel}
           </DialogTitle>
         </DialogHeader>
 
-        <div className='flex-1 overflow-y-auto px-4 pb-4 pt-4 sm:px-5 sm:pb-5'>
+        <div className='flex-1 overflow-y-auto px-4 pt-4 pb-4 sm:px-5 sm:pb-5'>
           <div className='space-y-4'>
             <div className='overflow-hidden rounded-[24px] border border-sky-100 bg-[linear-gradient(180deg,rgba(248,251,255,0.98),rgba(255,255,255,0.94))] shadow-[0_20px_50px_rgba(15,23,42,0.06)] dark:border-slate-800 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(2,6,23,0.82))] dark:shadow-[0_20px_50px_rgba(2,6,23,0.45)]'>
-              <div className='border-b border-sky-100 px-4 py-4 dark:border-slate-800 sm:px-5'>
+              <div className='border-b border-sky-100 px-4 py-4 sm:px-5 dark:border-slate-800'>
                 <div className='flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between'>
                   <div className='min-w-0'>
                     <div className='mb-2 flex flex-wrap items-center gap-2'>
@@ -572,7 +619,7 @@ export function SubscriptionPurchaseDialog(props: Props) {
                     <p className='text-primary text-[11px] font-semibold tracking-[0.22em] uppercase'>
                       {getSubscriptionPlanSubtitle(plan)}
                     </p>
-                    <h3 className='mt-1 truncate text-xl font-semibold tracking-tight text-foreground sm:text-2xl'>
+                    <h3 className='text-foreground mt-1 truncate text-xl font-semibold tracking-tight sm:text-2xl'>
                       {normalizeSubscriptionText(plan.title) || t('Plan Name')}
                     </h3>
                     <p className='text-muted-foreground mt-2 text-sm leading-6'>
@@ -606,7 +653,8 @@ export function SubscriptionPurchaseDialog(props: Props) {
             {limitReached ? (
               <Alert variant='destructive'>
                 <AlertDescription>
-                  已达到该套餐购买上限（{props.purchaseCount}/{props.purchaseLimit}）。
+                  已达到该套餐购买上限（{props.purchaseCount}/
+                  {props.purchaseLimit}）。
                 </AlertDescription>
               </Alert>
             ) : null}
@@ -622,7 +670,7 @@ export function SubscriptionPurchaseDialog(props: Props) {
             {paymentTracker.stage === 'idle' ? (
               hasStripe || hasCreem || hasEpay ? (
                 <div className='rounded-2xl border bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/70'>
-                  <div className='mb-3 flex items-center gap-2 text-sm font-medium text-foreground'>
+                  <div className='text-foreground mb-3 flex items-center gap-2 text-sm font-medium'>
                     <QrCode className='h-4 w-4 text-sky-600' />
                     选择支付方式
                   </div>
@@ -680,7 +728,7 @@ export function SubscriptionPurchaseDialog(props: Props) {
                           onClick={() => void handlePayEpay()}
                           disabled={disablePurchase || !selectedEpayMethod}
                         >
-                          {actionLabel}
+                          {purchaseModeLabel}
                         </Button>
                       </div>
                     ) : null}
@@ -688,7 +736,9 @@ export function SubscriptionPurchaseDialog(props: Props) {
                 </div>
               ) : (
                 <Alert>
-                  <AlertDescription>当前套餐暂未配置可用支付方式。</AlertDescription>
+                  <AlertDescription>
+                    当前套餐暂未配置可用支付方式。
+                  </AlertDescription>
                 </Alert>
               )
             ) : null}

@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/model"
@@ -180,8 +181,13 @@ func GetPublicPackages(c *gin.Context) {
 }
 
 func GetStarterUpgradeBonus(c *gin.Context) {
+	eligible, err := model.HasStarterPurchaseWithin(c.GetInt("id"), 72*time.Hour)
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
 	common.ApiSuccess(c, gin.H{
-		"eligible":     false,
+		"eligible":     eligible,
 		"window_hours": 72,
 		"bonuses": gin.H{
 			"Lite月卡":     10,

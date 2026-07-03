@@ -118,6 +118,9 @@ func main() {
 	// Subscription quota reset task (daily/weekly/monthly/custom)
 	service.StartSubscriptionQuotaResetTask()
 
+	// Group-buy bonus settlement task
+	service.StartGroupBuySettlementTask()
+
 	// Image workspace retention cleanup task
 	service.StartImageWorkspaceCleanupTask()
 

@@ -167,7 +167,11 @@ export interface PlanPayload {
 export interface SubscriptionPayRequest {
   plan_id: number
   payment_method?: string
+  purchase_type?: SubscriptionPurchaseType
+  group_buy_id?: number
 }
+
+export type SubscriptionPurchaseType = 'normal' | 'group_buy' | 'join_group'
 
 export interface SubscriptionPayResponse {
   success: boolean
