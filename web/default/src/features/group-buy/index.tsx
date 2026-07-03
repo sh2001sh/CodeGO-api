@@ -222,8 +222,12 @@ function GroupBuyCard({ item }: { item: GroupBuyItem }) {
           </span>
         </div>
 
-        <Button className='w-full' disabled={item.joined}>
-          {item.joined ? '已参团' : '立即参团'}
+        <Button
+          className='w-full'
+          disabled={item.joined}
+          render={item.joined ? undefined : <Link to='/packages' />}
+        >
+          {item.joined ? '已参团' : item.id > 0 ? '立即参团' : '发起拼团'}
         </Button>
       </CardContent>
     </Card>

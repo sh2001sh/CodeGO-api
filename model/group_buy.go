@@ -119,6 +119,24 @@ func buildGroupBuyItem(order GroupBuyOrder, plan SubscriptionPlan, joined bool) 
 	}
 }
 
+func buildEmptyGroupBuyRoom(plan SubscriptionPlan) GroupBuyListItem {
+	return GroupBuyListItem{
+		Id:           0,
+		PlanId:       plan.Id,
+		PlanName:     plan.Title,
+		PlanPrice:    plan.PriceAmount,
+		Currency:     plan.Currency,
+		BaseQuotaUSD: quotaUnitsToUSD(plan.TotalAmount),
+		CurrentCount: 0,
+		TargetCount:  5,
+		BonusAt2:     plan.GroupBuyBonus2,
+		BonusAt3:     plan.GroupBuyBonus3,
+		BonusAt5:     plan.GroupBuyBonus5,
+		ExpiresAt:    time.Now().Add(48 * time.Hour).Unix(),
+		Status:       GroupBuyStatusPending,
+	}
+}
+
 func ListActiveGroupBuys(userId int) ([]GroupBuyListItem, error) {
 	now := common.GetTimestamp()
 	var orders []GroupBuyOrder
@@ -127,7 +145,27 @@ func ListActiveGroupBuys(userId int) ([]GroupBuyListItem, error) {
 		Find(&orders).Error; err != nil {
 		return nil, err
 	}
-	return hydrateGroupBuyItems(orders, userId)
+	items, err := hydrateGroupBuyItems(orders, userId)
+	if err != nil {
+		return nil, err
+	}
+	activePlanSet := make(map[int]struct{}, len(items))
+	for _, item := range items {
+		activePlanSet[item.PlanId] = struct{}{}
+	}
+	var plans []SubscriptionPlan
+	if err := DB.Where("enabled = ? AND internal_only = ? AND group_buy_enabled = ?", true, false, true).
+		Order("sort_order desc, id desc").
+		Find(&plans).Error; err != nil {
+		return nil, err
+	}
+	for _, plan := range plans {
+		if _, ok := activePlanSet[plan.Id]; ok {
+			continue
+		}
+		items = append(items, buildEmptyGroupBuyRoom(plan))
+	}
+	return items, nil
 }
 
 func ListUserGroupBuys(userId int) ([]GroupBuyListItem, error) {
