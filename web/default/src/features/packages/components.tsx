@@ -173,7 +173,7 @@ function PackagePlanCard(props: {
               disabled={limitReached || props.record.action === 'disabled'}
               onClick={() => props.onPurchase('group_buy')}
             >
-              发起拼团
+              进入拼团
             </Button>
           ) : null}
         </div>

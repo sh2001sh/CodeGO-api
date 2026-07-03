@@ -319,8 +319,8 @@ function GroupBuyCard({
               : closed
                 ? '已结算'
                 : item.id > 0
-                  ? '立即参团'
-                  : '发起拼团'}
+                  ? '参与拼团'
+                  : '进入拼团'}
         </Button>
       </CardContent>
     </Card>
@@ -349,7 +349,7 @@ function MyGroupList(props: {
   if (props.items.length === 0) {
     return (
       <div className='border-border text-muted-foreground rounded-2xl border border-dashed px-4 py-8 text-sm'>
-        暂无拼团记录。加入或发起拼团后会显示在这里。
+        暂无拼团记录。进入或参与拼团后会显示在这里。
       </div>
     )
   }

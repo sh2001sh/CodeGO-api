@@ -7,6 +7,7 @@ import (
 
 	"github.com/QuantumNous/new-api/common"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 const (
@@ -141,11 +142,12 @@ func buildEmptyGroupBuyRoom(plan SubscriptionPlan) GroupBuyListItem {
 func ListActiveGroupBuys(userId int) ([]GroupBuyListItem, error) {
 	now := common.GetTimestamp()
 	var orders []GroupBuyOrder
-	if err := DB.Where("status = ? AND expires_at > ?", GroupBuyStatusPending, now).
-		Order("updated_at desc, id desc").
+	if err := DB.Where("status = ? AND expires_at > ? AND current_count < target_count", GroupBuyStatusPending, now).
+		Order("created_at asc, id asc").
 		Find(&orders).Error; err != nil {
 		return nil, err
 	}
+	orders = oneGroupBuyOrderPerPlan(orders)
 	items, err := hydrateGroupBuyItems(orders, userId)
 	if err != nil {
 		return nil, err
@@ -167,6 +169,22 @@ func ListActiveGroupBuys(userId int) ([]GroupBuyListItem, error) {
 		items = append(items, buildEmptyGroupBuyRoom(plan))
 	}
 	return items, nil
+}
+
+func oneGroupBuyOrderPerPlan(orders []GroupBuyOrder) []GroupBuyOrder {
+	if len(orders) <= 1 {
+		return orders
+	}
+	filtered := make([]GroupBuyOrder, 0, len(orders))
+	seen := make(map[int]struct{}, len(orders))
+	for _, order := range orders {
+		if _, ok := seen[order.PlanId]; ok {
+			continue
+		}
+		seen[order.PlanId] = struct{}{}
+		filtered = append(filtered, order)
+	}
+	return filtered
 }
 
 func ListUserGroupBuys(userId int) ([]GroupBuyListItem, error) {
@@ -284,23 +302,82 @@ func ValidateGroupBuyPurchase(userId int, planId int, purchaseType string, group
 		return ErrGroupBuyPlanNotEnabled
 	}
 	if purchaseType == SubscriptionPurchaseTypeGroupBuy {
-		return nil
+		order, err := findJoinableGroupBuyByPlanTx(nil, planId)
+		if err != nil || order == nil {
+			return err
+		}
+		return ensureUserCanJoinGroupBuyTx(nil, order.Id, userId)
 	}
 	if groupBuyId <= 0 {
 		return ErrGroupBuyNotFound
 	}
-	var order GroupBuyOrder
-	if err := DB.Where("id = ?", groupBuyId).First(&order).Error; err != nil {
+	order, err := getJoinableGroupBuyTx(nil, groupBuyId)
+	if err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return ErrGroupBuyNotFound
 		}
 		return err
 	}
-	if order.PlanId != planId || order.Status != GroupBuyStatusPending || order.ExpiresAt <= common.GetTimestamp() || order.CurrentCount >= order.TargetCount {
+	if order.PlanId != planId {
 		return ErrGroupBuyNotJoinable
 	}
+	return ensureUserCanJoinGroupBuyTx(nil, groupBuyId, userId)
+}
+
+func groupBuyDB(tx *gorm.DB) *gorm.DB {
+	if tx != nil {
+		return tx
+	}
+	return DB
+}
+
+func lockGroupBuyPlanTx(tx *gorm.DB, planId int) error {
+	if tx == nil || planId <= 0 {
+		return nil
+	}
+	var plan SubscriptionPlan
+	return tx.Clauses(clause.Locking{Strength: "UPDATE"}).
+		Select("id").
+		Where("id = ?", planId).
+		First(&plan).Error
+}
+
+func findJoinableGroupBuyByPlanTx(tx *gorm.DB, planId int) (*GroupBuyOrder, error) {
+	db := groupBuyDB(tx)
+	var order GroupBuyOrder
+	query := db.Where("plan_id = ? AND status = ? AND expires_at > ? AND current_count < target_count", planId, GroupBuyStatusPending, common.GetTimestamp()).
+		Order("created_at asc, id asc")
+	if tx != nil {
+		query = query.Clauses(clause.Locking{Strength: "UPDATE"})
+	}
+	if err := query.First(&order).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	return &order, nil
+}
+
+func getJoinableGroupBuyTx(tx *gorm.DB, groupBuyId int64) (*GroupBuyOrder, error) {
+	db := groupBuyDB(tx)
+	var order GroupBuyOrder
+	query := db.Where("id = ?", groupBuyId)
+	if tx != nil {
+		query = query.Clauses(clause.Locking{Strength: "UPDATE"})
+	}
+	if err := query.First(&order).Error; err != nil {
+		return nil, err
+	}
+	if order.Status != GroupBuyStatusPending || order.ExpiresAt <= common.GetTimestamp() || order.CurrentCount >= order.TargetCount {
+		return nil, ErrGroupBuyNotJoinable
+	}
+	return &order, nil
+}
+
+func ensureUserCanJoinGroupBuyTx(tx *gorm.DB, groupBuyId int64, userId int) error {
 	var count int64
-	if err := DB.Model(&GroupBuyMember{}).Where("group_buy_id = ? AND user_id = ?", groupBuyId, userId).Count(&count).Error; err != nil {
+	if err := groupBuyDB(tx).Model(&GroupBuyMember{}).Where("group_buy_id = ? AND user_id = ?", groupBuyId, userId).Count(&count).Error; err != nil {
 		return err
 	}
 	if count > 0 {
@@ -321,6 +398,17 @@ func ApplyGroupBuyPurchaseAfterPaymentTx(tx *gorm.DB, order *SubscriptionOrder, 
 		return ErrGroupBuyPlanNotEnabled
 	}
 	if purchaseType == SubscriptionPurchaseTypeGroupBuy {
+		if err := lockGroupBuyPlanTx(tx, plan.Id); err != nil {
+			return err
+		}
+		existingOrder, err := findJoinableGroupBuyByPlanTx(tx, plan.Id)
+		if err != nil {
+			return err
+		}
+		if existingOrder != nil {
+			order.GroupBuyId = existingOrder.Id
+			return joinGroupBuyTx(tx, order.UserId, existingOrder.Id, order.Id, plan.Id)
+		}
 		groupOrder := &GroupBuyOrder{
 			InitiatorId:  order.UserId,
 			PlanId:       plan.Id,

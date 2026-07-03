@@ -273,7 +273,7 @@ export function SubscriptionPurchaseDialog(props: Props) {
   const groupBuyId = props.groupBuyId || 0
   const purchaseModeLabel =
     purchaseType === 'group_buy'
-      ? '发起拼团'
+      ? '进入拼团'
       : purchaseType === 'join_group'
         ? '参与拼团'
         : actionLabel
