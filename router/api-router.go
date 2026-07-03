@@ -384,6 +384,10 @@ func SetApiRouter(router *gin.Engine) {
 				middleware.RequireDesktopScope(model.DesktopScopeAccountRead),
 				controller.GetDesktopGroups,
 			)
+			desktopRoute.GET("/pricing",
+				middleware.RequireDesktopScope(model.DesktopScopeAccountRead),
+				controller.GetPricing,
+			)
 			desktopRoute.GET("/group-status",
 				middleware.RequireDesktopScope(model.DesktopScopeAccountRead),
 				controller.GetUserGroupStatus,

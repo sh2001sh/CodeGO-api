@@ -66,6 +66,8 @@ const SIZE_OPTIONS = [
   '1024x1792',
 ]
 
+const GPT_IMAGE_2_SIZE_OPTIONS = ['1024x1024', '1536x1024']
+
 const QUALITY_OPTIONS = [
   { value: 'standard', label: '标准' },
   { value: 'hd', label: '高清' },
@@ -75,6 +77,12 @@ const COUNT_OPTIONS = ['1', '2', '3', '4']
 
 function createSessionId() {
   return `imgs_${Date.now()}_${nanoid(8)}`
+}
+
+function getSizeOptionsForModel(model: string) {
+  return model.toLowerCase().includes('gpt-image-2')
+    ? GPT_IMAGE_2_SIZE_OPTIONS
+    : SIZE_OPTIONS
 }
 
 function createBatchId() {
@@ -260,6 +268,7 @@ export function ImageWorkspace() {
     readySourceItems.find((item) => item.id === selectedSourceId) ?? null
   const selectedGroup =
     (groupsQuery.data ?? []).find((item) => item.value === form.group) ?? null
+  const sizeOptions = getSizeOptionsForModel(form.model)
 
   useEffect(() => {
     if (form.mode !== 'edit') return
@@ -268,6 +277,13 @@ export function ImageWorkspace() {
       setSelectedSourceId(readySourceItems[0].id)
     }
   }, [form.mode, readySourceItems, selectedSource])
+
+  useEffect(() => {
+    const nextSizeOptions = getSizeOptionsForModel(form.model)
+    if (!nextSizeOptions.includes(form.size)) {
+      setForm((prev) => ({ ...prev, size: nextSizeOptions[0] }))
+    }
+  }, [form.model, form.size])
 
   const updateForm = <K extends keyof ImageWorkspaceFormState>(
     key: K,
@@ -560,13 +576,13 @@ export function ImageWorkspace() {
                   <div className='grid gap-2'>
                     <Label>尺寸</Label>
                     <Select
-                      items={SIZE_OPTIONS.map((value) => ({
+                      items={sizeOptions.map((value) => ({
                         value,
                         label: value,
                       }))}
                       value={form.size}
                       onValueChange={(value) =>
-                        updateForm('size', value ?? SIZE_OPTIONS[0])
+                        updateForm('size', value ?? sizeOptions[0])
                       }
                     >
                       <SelectTrigger className='w-full rounded-2xl'>
@@ -574,7 +590,7 @@ export function ImageWorkspace() {
                       </SelectTrigger>
                       <SelectContent alignItemWithTrigger={false}>
                         <SelectGroup>
-                          {SIZE_OPTIONS.map((value) => (
+                          {sizeOptions.map((value) => (
                             <SelectItem key={value} value={value}>
                               {value}
                             </SelectItem>
