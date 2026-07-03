@@ -17,13 +17,10 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useMemo } from 'react'
-import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from '@tanstack/react-router'
-import { Sparkles, User, Wallet, LogOut, Settings } from 'lucide-react'
+import { User, Wallet, LogOut, Settings } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '@/stores/auth-store'
-import { getGamificationDashboard } from '@/features/gamification/api'
-import { resolveWorkshopIcon } from '@/features/gamification/components/icon-resolver'
 import { getUserAvatarFallback, getUserAvatarStyle } from '@/lib/avatar'
 import { ROLE } from '@/lib/roles'
 import useDialogState from '@/hooks/use-dialog'
@@ -54,18 +51,6 @@ export function ProfileDropdown() {
     () => getUserAvatarStyle(avatarName),
     [avatarName]
   )
-  const companionQuery = useQuery({
-    queryKey: ['gamification', 'dashboard'],
-    queryFn: getGamificationDashboard,
-    staleTime: 60 * 1000,
-    enabled: Boolean(user),
-  })
-  const companion = companionQuery.data?.data?.companion
-  const latestAchievement = companionQuery.data?.data?.achievement_stats?.latest
-  const CompanionIcon = latestAchievement
-    ? resolveWorkshopIcon(latestAchievement.icon)
-    : Sparkles
-
   return (
     <>
       <DropdownMenu modal={false}>
@@ -77,15 +62,6 @@ export function ProfileDropdown() {
             />
           }
         >
-          {companion ? (
-            <span
-              title={`${companion.name} · ${companion.title}`}
-              className='hidden items-center gap-1 rounded-full border border-amber-200 bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200 sm:inline-flex'
-            >
-              <CompanionIcon className='size-3.5' />
-              <span className='max-w-20 truncate'>{companion.name}</span>
-            </span>
-          ) : null}
           <Avatar className='size-6'>
             <AvatarFallback
               className={`${avatarFallbackClassName} text-[11px]`}
@@ -126,29 +102,6 @@ export function ProfileDropdown() {
           </div>
 
           <DropdownMenuSeparator />
-
-          {companion && (
-            <>
-              <div className='px-1.5 py-1'>
-                <div className='rounded-xl border border-amber-200/70 bg-amber-50/80 px-3 py-2 dark:border-amber-500/20 dark:bg-amber-500/10'>
-                  <div className='flex items-center gap-2'>
-                    <div className='flex size-7 items-center justify-center rounded-lg bg-white text-amber-600 shadow-sm dark:bg-slate-950/70 dark:text-amber-200'>
-                      <CompanionIcon className='size-4' />
-                    </div>
-                    <div className='min-w-0'>
-                      <div className='truncate text-sm font-medium'>
-                        {companion.name}
-                      </div>
-                      <div className='truncate text-xs text-muted-foreground'>
-                        {companion.title}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <DropdownMenuSeparator />
-            </>
-          )}
 
           <DropdownMenuItem onClick={() => navigate({ to: '/profile' })}>
             <User className='size-4' />

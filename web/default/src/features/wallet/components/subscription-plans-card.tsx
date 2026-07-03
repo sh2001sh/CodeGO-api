@@ -1,9 +1,4 @@
-import {
-  type ReactNode,
-  useEffect,
-  useMemo,
-  useState,
-} from 'react'
+import { type ReactNode, useEffect, useMemo, useState } from 'react'
 import { ArrowRight, Crown, RefreshCw, Sparkles } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
@@ -53,7 +48,9 @@ interface PlanPresentation {
   summary: string
 }
 
-function getEpayMethods(payMethods: PaymentMethod[] = []): PaymentMethod[] {
+export function getEpayMethods(
+  payMethods: PaymentMethod[] = []
+): PaymentMethod[] {
   return payMethods.filter(
     (method) =>
       method?.type && method.type !== 'stripe' && method.type !== 'creem'

@@ -16,7 +16,6 @@ import { getUserModels } from '@/lib/api'
 import { ROLE } from '@/lib/roles'
 import { fetchTokenKey, getApiKeys } from '@/features/keys/api'
 import { normalizeFullApiKey } from '@/features/keys/lib/normalize-full-api-key'
-import { useApiInfo } from '../../../hooks/use-status-data'
 import type {
   HeroSignal,
   QuickAction,
@@ -33,6 +32,11 @@ import {
   saveSetupGuideExpanded,
 } from './utils'
 
+const API_ENDPOINTS = [
+  { label: 'OpenAI 兼容', url: 'https://shu26.cfd/v1' },
+  { label: '通用入口', url: 'https://shu26.cfd' },
+] as const
+
 export interface SetupGuideState {
   startSteps: StartStep[]
   visibleQuickActions: QuickAction[]
@@ -47,7 +51,6 @@ export interface SetupGuideState {
 
 export function useSetupGuide(): SetupGuideState {
   const user = useAuthStore((state) => state.auth.user)
-  const { items: apiInfoItems } = useApiInfo()
   const [manualSetupGuideExpanded, setManualSetupGuideExpanded] = useState<
     boolean | null
   >(() => getSavedSetupGuideExpanded())
@@ -156,7 +159,7 @@ export function useSetupGuide(): SetupGuideState {
     () => [
       {
         label: '路由状态',
-        value: apiInfoItems.length > 0 ? '在线' : '使用当前域名',
+        value: '固定入口',
         icon: RadioTower,
       },
       {
@@ -170,12 +173,12 @@ export function useSetupGuide(): SetupGuideState {
         icon: Timer,
       },
     ],
-    [apiInfoItems.length, modelsQuery.data, preferredKey]
+    [modelsQuery.data, preferredKey]
   )
 
   const requestExample = useMemo<RequestExample>(() => {
-    const endpoint = normalizeEndpoint(apiInfoItems[0]?.url)
-    const anthropicEndpoint = normalizeAnthropicEndpoint(apiInfoItems[0]?.url)
+    const endpoint = normalizeEndpoint(API_ENDPOINTS[0].url)
+    const anthropicEndpoint = normalizeAnthropicEndpoint(API_ENDPOINTS[1].url)
     const model = modelsQuery.data?.[0] ?? 'gpt-4o-mini'
     const apiKey = realKeyQuery.data ?? ''
     const keyName = preferredKey?.name ?? '还没有 API Key'
@@ -191,7 +194,7 @@ export function useSetupGuide(): SetupGuideState {
       ready,
       curl: buildCurlCommand({ endpoint, apiKey: apiKey || 'sk-...', model }),
     }
-  }, [apiInfoItems, modelsQuery.data, preferredKey, realKeyQuery.data])
+  }, [modelsQuery.data, preferredKey, realKeyQuery.data])
 
   const completedStepCount = startSteps.filter((step) => step.completed).length
   const setupComplete = completedStepCount === startSteps.length

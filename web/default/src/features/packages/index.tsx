@@ -1,0 +1,228 @@
+/*
+Copyright (C) 2023-2026 QuantumNous
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as
+published by the Free Software Foundation, either version 3 of the
+License, or (at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+For commercial licensing, please contact support@quantumnous.com
+*/
+import { useMemo, useState } from 'react'
+import { Crown, RefreshCw } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
+import { TitledCard } from '@/components/ui/titled-card'
+import {
+  CardStaggerContainer,
+  CardStaggerItem,
+} from '@/components/page-transition'
+import { SiteSeo } from '@/components/seo'
+import { SubscriptionPurchaseDialog } from '@/features/subscriptions/components/dialogs/subscription-purchase-dialog'
+import type { PlanRecord } from '@/features/subscriptions/types'
+import { getEpayMethods } from '@/features/wallet/components/subscription-plans-card'
+import { WalletStatsCard } from '@/features/wallet/components/wallet-stats-card'
+import { WalletWorkspaceShell } from '@/features/wallet/components/wallet-workspace-shell'
+import { useWalletWorkspace } from '@/features/wallet/hooks/use-wallet-workspace'
+import { CurrentPackagePanel, PlanZone } from './components'
+
+type ZoneId = 'starter' | 'monthly' | 'shortterm'
+
+const PLAN_ORDER = [
+  '新人体验卡',
+  'Standard月卡',
+  'Lite月卡',
+  'Pro月卡',
+  'Ultra月卡',
+  '标准周卡',
+  '50刀日卡',
+  '100刀日卡',
+] as const
+
+function planRank(record: PlanRecord) {
+  const title = record.plan?.title || ''
+  const index = PLAN_ORDER.findIndex((item) => title.includes(item))
+  return index >= 0 ? index : 999 - Number(record.plan?.sort_order || 0)
+}
+
+function getPlanZone(record: PlanRecord): ZoneId {
+  const planType = record.plan?.plan_type
+  if (planType === 'starter') return 'starter'
+  if (planType === 'monthly') return 'monthly'
+  return 'shortterm'
+}
+
+function useGroupedPlans(plans: PlanRecord[]) {
+  return useMemo(() => {
+    const grouped: Record<ZoneId, PlanRecord[]> = {
+      starter: [],
+      monthly: [],
+      shortterm: [],
+    }
+    for (const record of plans) {
+      if (!record.plan) continue
+      grouped[getPlanZone(record)].push(record)
+    }
+    for (const value of Object.values(grouped)) {
+      value.sort((a, b) => planRank(a) - planRank(b))
+    }
+    return grouped
+  }, [plans])
+}
+
+export function PackagesPage() {
+  const workspace = useWalletWorkspace()
+  const [selectedPlan, setSelectedPlan] = useState<PlanRecord | null>(null)
+  const [purchaseOpen, setPurchaseOpen] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
+  const groupedPlans = useGroupedPlans(workspace.publicPlans)
+  const topupInfo = workspace.topupInfo
+  const epayMethods = useMemo(
+    () => getEpayMethods(topupInfo?.pay_methods),
+    [topupInfo?.pay_methods]
+  )
+
+  const allSubscriptions = workspace.subscriptionData?.all_subscriptions || []
+  const purchaseCountMap = useMemo(() => {
+    const map = new Map<number, number>()
+    for (const item of allSubscriptions) {
+      const planId = item.subscription?.plan_id
+      if (planId) map.set(planId, (map.get(planId) || 0) + 1)
+    }
+    return map
+  }, [allSubscriptions])
+
+  const handleRefresh = async () => {
+    setRefreshing(true)
+    try {
+      await Promise.all([
+        workspace.fetchPublicPlans(),
+        workspace.fetchSubscriptionData(),
+      ])
+    } finally {
+      setRefreshing(false)
+    }
+  }
+
+  const openPurchase = (record: PlanRecord) => {
+    setSelectedPlan(record)
+    setPurchaseOpen(true)
+  }
+
+  return (
+    <>
+      <SiteSeo
+        title='套餐'
+        description='购买新人体验卡、月卡、周卡和日卡，查看当前套餐额度与续费升级入口。'
+        canonicalPath='/packages'
+        robots='noindex,follow'
+      />
+      <WalletWorkspaceShell
+        title='套餐'
+        description='按使用节奏选择新人体验卡、月卡或短期补量卡。钱包只负责余额与账单，套餐购买集中在这里完成。'
+        framedMain={false}
+        main={
+          <CardStaggerContainer className='space-y-4'>
+            <CardStaggerItem>
+              <TitledCard
+                title='套餐购买'
+                description='Standard 月卡为主推方案；周卡与 100 刀日卡支持拼团赠额。'
+                icon={<Crown className='h-4 w-4' />}
+                action={
+                  <Button
+                    variant='outline'
+                    size='sm'
+                    onClick={() => void handleRefresh()}
+                    disabled={refreshing}
+                  >
+                    <RefreshCw
+                      className={cn(
+                        'mr-1 h-4 w-4',
+                        refreshing && 'animate-spin'
+                      )}
+                    />
+                    刷新
+                  </Button>
+                }
+                contentClassName='space-y-5'
+              >
+                <PlanZone
+                  title='新人专区'
+                  description='低门槛体验，限购 1 次。购买后 72 小时内升级月卡可获得额外额度奖励。'
+                  plans={groupedPlans.starter}
+                  loading={workspace.publicPlansLoading}
+                  onPurchase={openPurchase}
+                  purchaseCountMap={purchaseCountMap}
+                />
+                <PlanZone
+                  title='月卡专区'
+                  description='适合持续开发与团队日常调用。连续续费可按阶梯获得额外额度。'
+                  plans={groupedPlans.monthly}
+                  loading={workspace.publicPlansLoading}
+                  onPurchase={openPurchase}
+                  purchaseCountMap={purchaseCountMap}
+                />
+                <PlanZone
+                  title='短期补量专区'
+                  description='适合当天或本周高峰任务；支持拼团的套餐可进入大厅参与赠额。'
+                  plans={groupedPlans.shortterm}
+                  loading={workspace.publicPlansLoading}
+                  onPurchase={openPurchase}
+                  purchaseCountMap={purchaseCountMap}
+                />
+              </TitledCard>
+            </CardStaggerItem>
+
+            <CardStaggerItem>
+              <CurrentPackagePanel
+                subscriptions={workspace.subscriptionData?.subscriptions || []}
+                plans={workspace.publicPlans}
+                loading={workspace.subscriptionLoading}
+              />
+            </CardStaggerItem>
+          </CardStaggerContainer>
+        }
+        sidebar={
+          <WalletStatsCard
+            user={workspace.user}
+            plans={workspace.publicPlans}
+            loading={workspace.userLoading}
+            subscriptionData={workspace.subscriptionData}
+            subscriptionLoading={workspace.subscriptionLoading}
+            onSubscriptionRefresh={workspace.fetchSubscriptionData}
+          />
+        }
+      />
+
+      <SubscriptionPurchaseDialog
+        open={purchaseOpen}
+        onOpenChange={(open) => {
+          setPurchaseOpen(open)
+          if (!open) {
+            void workspace.fetchPublicPlans()
+            void workspace.fetchSubscriptionData()
+          }
+        }}
+        plan={selectedPlan}
+        enableStripe={!!topupInfo?.enable_stripe_topup}
+        enableCreem={!!topupInfo?.enable_creem_topup}
+        enableOnlineTopUp={!!topupInfo?.enable_online_topup}
+        epayMethods={epayMethods}
+        purchaseLimit={selectedPlan?.plan?.max_purchase_per_user || undefined}
+        purchaseCount={
+          selectedPlan?.plan?.id
+            ? purchaseCountMap.get(selectedPlan.plan.id)
+            : undefined
+        }
+      />
+    </>
+  )
+}

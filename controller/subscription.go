@@ -89,7 +89,8 @@ func isMonthlySubscriptionPlan(plan *model.SubscriptionPlan) bool {
 	if plan == nil {
 		return false
 	}
-	return plan.DurationUnit == model.SubscriptionDurationMonth && plan.DurationValue == 1
+	return model.NormalizeSubscriptionPlanType(plan.PlanType) == model.SubscriptionPlanTypeMonthly ||
+		(plan.DurationUnit == model.SubscriptionDurationMonth && plan.DurationValue == 1)
 }
 
 func validateSubscriptionPlanInput(plan *model.SubscriptionPlan) error {
@@ -104,6 +105,16 @@ func validateSubscriptionPlanInput(plan *model.SubscriptionPlan) error {
 	}
 	if plan.MaxPurchasePerUser < 0 {
 		return errors.New("max_purchase_per_user must be >= 0")
+	}
+	plan.PlanType = model.NormalizeSubscriptionPlanType(plan.PlanType)
+	if plan.PlanType == model.SubscriptionPlanTypeStarter && plan.MaxPurchasePerUser == 0 {
+		plan.MaxPurchasePerUser = 1
+	}
+	if plan.GroupBuyBonus2 < 0 || plan.GroupBuyBonus3 < 0 || plan.GroupBuyBonus5 < 0 {
+		return errors.New("group buy bonus must be >= 0")
+	}
+	if plan.RenewalBonus2 < 0 || plan.RenewalBonus3 < 0 || plan.RenewalBonus4 < 0 {
+		return errors.New("renewal bonus must be >= 0")
 	}
 	if plan.TotalAmount < 0 || plan.PeriodAmount < 0 {
 		return errors.New("quota values must be >= 0")
@@ -162,6 +173,23 @@ func GetSubscriptionPlans(c *gin.Context) {
 		result = append(result, record)
 	}
 	common.ApiSuccess(c, result)
+}
+
+func GetPublicPackages(c *gin.Context) {
+	GetSubscriptionPlans(c)
+}
+
+func GetStarterUpgradeBonus(c *gin.Context) {
+	common.ApiSuccess(c, gin.H{
+		"eligible":     false,
+		"window_hours": 72,
+		"bonuses": gin.H{
+			"Lite月卡":     10,
+			"Standard月卡": 30,
+			"Pro月卡":      60,
+			"Ultra月卡":    100,
+		},
+	})
 }
 
 func GetSubscriptionOrderStatus(c *gin.Context) {
@@ -313,14 +341,14 @@ func CreateSubscriptionClaudeConversion(c *gin.Context) {
 		model.RecordLog(userId, model.LogTypeTopup, model.BuildSubscriptionClaudeConversionLog(planInfo.PlanTitle, result.SourceQuota, result.TargetClaudeQuota))
 	}
 	common.ApiSuccess(c, gin.H{
-		"subscription_id":      result.SubscriptionId,
-		"source_quota":         result.SourceQuota,
-		"target_claude_quota":  result.TargetClaudeQuota,
-		"claude_quota_after":   result.ClaudeQuotaAfter,
-		"amount_used_after":    result.AmountUsedAfter,
-		"period_used_after":    result.PeriodUsedAfter,
-		"conversion":           result.Conversion,
-		"config":               result.Config,
+		"subscription_id":     result.SubscriptionId,
+		"source_quota":        result.SourceQuota,
+		"target_claude_quota": result.TargetClaudeQuota,
+		"claude_quota_after":  result.ClaudeQuotaAfter,
+		"amount_used_after":   result.AmountUsedAfter,
+		"period_used_after":   result.PeriodUsedAfter,
+		"conversion":          result.Conversion,
+		"config":              result.Config,
 	})
 }
 
@@ -432,6 +460,14 @@ func AdminUpdateSubscriptionPlan(c *gin.Context) {
 			"stripe_price_id":            req.Plan.StripePriceId,
 			"creem_product_id":           req.Plan.CreemProductId,
 			"max_purchase_per_user":      req.Plan.MaxPurchasePerUser,
+			"plan_type":                  req.Plan.PlanType,
+			"group_buy_enabled":          req.Plan.GroupBuyEnabled,
+			"group_buy_bonus_2":          req.Plan.GroupBuyBonus2,
+			"group_buy_bonus_3":          req.Plan.GroupBuyBonus3,
+			"group_buy_bonus_5":          req.Plan.GroupBuyBonus5,
+			"renewal_bonus_2":            req.Plan.RenewalBonus2,
+			"renewal_bonus_3":            req.Plan.RenewalBonus3,
+			"renewal_bonus_4":            req.Plan.RenewalBonus4,
 			"total_amount":               req.Plan.TotalAmount,
 			"period_amount":              req.Plan.PeriodAmount,
 			"model_limits":               req.Plan.ModelLimits,

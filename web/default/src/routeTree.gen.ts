@@ -18,7 +18,6 @@ import { Route as authRouteRouteImport } from './routes/(auth)/route'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as TopicsIndexRouteImport } from './routes/topics/index'
 import { Route as SetupIndexRouteImport } from './routes/setup/index'
-import { Route as RankingsIndexRouteImport } from './routes/rankings/index'
 import { Route as PricingIndexRouteImport } from './routes/pricing/index'
 import { Route as GuideIndexRouteImport } from './routes/guide/index'
 import { Route as DownloadIndexRouteImport } from './routes/download/index'
@@ -26,7 +25,6 @@ import { Route as AboutIndexRouteImport } from './routes/about/index'
 import { Route as TopicsSlugRouteImport } from './routes/topics/$slug'
 import { Route as OauthProviderRouteImport } from './routes/oauth/$provider'
 import { Route as MiniappLandingRouteImport } from './routes/miniapp/landing'
-import { Route as GeneMapTokenRouteImport } from './routes/gene-map/$token'
 import { Route as DesktopAuthorizeRouteImport } from './routes/desktop/authorize'
 import { Route as ConsoleTopupRouteImport } from './routes/console/topup'
 import { Route as ConsoleLogRouteImport } from './routes/console/log'
@@ -58,6 +56,7 @@ import { Route as AuthenticatedKeysIndexRouteImport } from './routes/_authentica
 import { Route as AuthenticatedInviteRewardsIndexRouteImport } from './routes/_authenticated/invite-rewards/index'
 import { Route as AuthenticatedImagesIndexRouteImport } from './routes/_authenticated/images/index'
 import { Route as AuthenticatedGroupStatusIndexRouteImport } from './routes/_authenticated/group-status/index'
+import { Route as AuthenticatedGroupBuyIndexRouteImport } from './routes/_authenticated/group-buy/index'
 import { Route as AuthenticatedDashboardIndexRouteImport } from './routes/_authenticated/dashboard/index'
 import { Route as AuthenticatedChannelsIndexRouteImport } from './routes/_authenticated/channels/index'
 import { Route as AuthenticatedBlindBoxIndexRouteImport } from './routes/_authenticated/blind-box/index'
@@ -125,11 +124,6 @@ const SetupIndexRoute = SetupIndexRouteImport.update({
   path: '/setup/',
   getParentRoute: () => rootRouteImport,
 } as any)
-const RankingsIndexRoute = RankingsIndexRouteImport.update({
-  id: '/rankings/',
-  path: '/rankings/',
-  getParentRoute: () => rootRouteImport,
-} as any)
 const PricingIndexRoute = PricingIndexRouteImport.update({
   id: '/pricing/',
   path: '/pricing/',
@@ -163,11 +157,6 @@ const OauthProviderRoute = OauthProviderRouteImport.update({
 const MiniappLandingRoute = MiniappLandingRouteImport.update({
   id: '/miniapp/landing',
   path: '/miniapp/landing',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const GeneMapTokenRoute = GeneMapTokenRouteImport.update({
-  id: '/gene-map/$token',
-  path: '/gene-map/$token',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DesktopAuthorizeRoute = DesktopAuthorizeRouteImport.update({
@@ -338,6 +327,12 @@ const AuthenticatedGroupStatusIndexRoute =
     path: '/group-status/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedGroupBuyIndexRoute =
+  AuthenticatedGroupBuyIndexRouteImport.update({
+    id: '/group-buy/',
+    path: '/group-buy/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedDashboardIndexRoute =
   AuthenticatedDashboardIndexRouteImport.update({
     id: '/dashboard/',
@@ -497,7 +492,6 @@ export interface FileRoutesByFullPath {
   '/console/log': typeof ConsoleLogRoute
   '/console/topup': typeof ConsoleTopupRoute
   '/desktop/authorize': typeof DesktopAuthorizeRoute
-  '/gene-map/$token': typeof GeneMapTokenRoute
   '/miniapp/landing': typeof MiniappLandingRoute
   '/oauth/$provider': typeof OauthProviderRoute
   '/topics/$slug': typeof TopicsSlugRoute
@@ -505,7 +499,6 @@ export interface FileRoutesByFullPath {
   '/download/': typeof DownloadIndexRoute
   '/guide/': typeof GuideIndexRoute
   '/pricing/': typeof PricingIndexRoute
-  '/rankings/': typeof RankingsIndexRoute
   '/setup/': typeof SetupIndexRoute
   '/topics/': typeof TopicsIndexRoute
   '/user/reset': typeof authUserResetRoute
@@ -517,6 +510,7 @@ export interface FileRoutesByFullPath {
   '/blind-box/': typeof AuthenticatedBlindBoxIndexRoute
   '/channels/': typeof AuthenticatedChannelsIndexRoute
   '/dashboard/': typeof AuthenticatedDashboardIndexRoute
+  '/group-buy/': typeof AuthenticatedGroupBuyIndexRoute
   '/group-status/': typeof AuthenticatedGroupStatusIndexRoute
   '/images/': typeof AuthenticatedImagesIndexRoute
   '/invite-rewards/': typeof AuthenticatedInviteRewardsIndexRoute
@@ -568,7 +562,6 @@ export interface FileRoutesByTo {
   '/console/log': typeof ConsoleLogRoute
   '/console/topup': typeof ConsoleTopupRoute
   '/desktop/authorize': typeof DesktopAuthorizeRoute
-  '/gene-map/$token': typeof GeneMapTokenRoute
   '/miniapp/landing': typeof MiniappLandingRoute
   '/oauth/$provider': typeof OauthProviderRoute
   '/topics/$slug': typeof TopicsSlugRoute
@@ -576,7 +569,6 @@ export interface FileRoutesByTo {
   '/download': typeof DownloadIndexRoute
   '/guide': typeof GuideIndexRoute
   '/pricing': typeof PricingIndexRoute
-  '/rankings': typeof RankingsIndexRoute
   '/setup': typeof SetupIndexRoute
   '/topics': typeof TopicsIndexRoute
   '/user/reset': typeof authUserResetRoute
@@ -588,6 +580,7 @@ export interface FileRoutesByTo {
   '/blind-box': typeof AuthenticatedBlindBoxIndexRoute
   '/channels': typeof AuthenticatedChannelsIndexRoute
   '/dashboard': typeof AuthenticatedDashboardIndexRoute
+  '/group-buy': typeof AuthenticatedGroupBuyIndexRoute
   '/group-status': typeof AuthenticatedGroupStatusIndexRoute
   '/images': typeof AuthenticatedImagesIndexRoute
   '/invite-rewards': typeof AuthenticatedInviteRewardsIndexRoute
@@ -643,7 +636,6 @@ export interface FileRoutesById {
   '/console/log': typeof ConsoleLogRoute
   '/console/topup': typeof ConsoleTopupRoute
   '/desktop/authorize': typeof DesktopAuthorizeRoute
-  '/gene-map/$token': typeof GeneMapTokenRoute
   '/miniapp/landing': typeof MiniappLandingRoute
   '/oauth/$provider': typeof OauthProviderRoute
   '/topics/$slug': typeof TopicsSlugRoute
@@ -651,7 +643,6 @@ export interface FileRoutesById {
   '/download/': typeof DownloadIndexRoute
   '/guide/': typeof GuideIndexRoute
   '/pricing/': typeof PricingIndexRoute
-  '/rankings/': typeof RankingsIndexRoute
   '/setup/': typeof SetupIndexRoute
   '/topics/': typeof TopicsIndexRoute
   '/(auth)/user/reset': typeof authUserResetRoute
@@ -663,6 +654,7 @@ export interface FileRoutesById {
   '/_authenticated/blind-box/': typeof AuthenticatedBlindBoxIndexRoute
   '/_authenticated/channels/': typeof AuthenticatedChannelsIndexRoute
   '/_authenticated/dashboard/': typeof AuthenticatedDashboardIndexRoute
+  '/_authenticated/group-buy/': typeof AuthenticatedGroupBuyIndexRoute
   '/_authenticated/group-status/': typeof AuthenticatedGroupStatusIndexRoute
   '/_authenticated/images/': typeof AuthenticatedImagesIndexRoute
   '/_authenticated/invite-rewards/': typeof AuthenticatedInviteRewardsIndexRoute
@@ -717,7 +709,6 @@ export interface FileRouteTypes {
     | '/console/log'
     | '/console/topup'
     | '/desktop/authorize'
-    | '/gene-map/$token'
     | '/miniapp/landing'
     | '/oauth/$provider'
     | '/topics/$slug'
@@ -725,7 +716,6 @@ export interface FileRouteTypes {
     | '/download/'
     | '/guide/'
     | '/pricing/'
-    | '/rankings/'
     | '/setup/'
     | '/topics/'
     | '/user/reset'
@@ -737,6 +727,7 @@ export interface FileRouteTypes {
     | '/blind-box/'
     | '/channels/'
     | '/dashboard/'
+    | '/group-buy/'
     | '/group-status/'
     | '/images/'
     | '/invite-rewards/'
@@ -788,7 +779,6 @@ export interface FileRouteTypes {
     | '/console/log'
     | '/console/topup'
     | '/desktop/authorize'
-    | '/gene-map/$token'
     | '/miniapp/landing'
     | '/oauth/$provider'
     | '/topics/$slug'
@@ -796,7 +786,6 @@ export interface FileRouteTypes {
     | '/download'
     | '/guide'
     | '/pricing'
-    | '/rankings'
     | '/setup'
     | '/topics'
     | '/user/reset'
@@ -808,6 +797,7 @@ export interface FileRouteTypes {
     | '/blind-box'
     | '/channels'
     | '/dashboard'
+    | '/group-buy'
     | '/group-status'
     | '/images'
     | '/invite-rewards'
@@ -862,7 +852,6 @@ export interface FileRouteTypes {
     | '/console/log'
     | '/console/topup'
     | '/desktop/authorize'
-    | '/gene-map/$token'
     | '/miniapp/landing'
     | '/oauth/$provider'
     | '/topics/$slug'
@@ -870,7 +859,6 @@ export interface FileRouteTypes {
     | '/download/'
     | '/guide/'
     | '/pricing/'
-    | '/rankings/'
     | '/setup/'
     | '/topics/'
     | '/(auth)/user/reset'
@@ -882,6 +870,7 @@ export interface FileRouteTypes {
     | '/_authenticated/blind-box/'
     | '/_authenticated/channels/'
     | '/_authenticated/dashboard/'
+    | '/_authenticated/group-buy/'
     | '/_authenticated/group-status/'
     | '/_authenticated/images/'
     | '/_authenticated/invite-rewards/'
@@ -929,7 +918,6 @@ export interface RootRouteChildren {
   ConsoleLogRoute: typeof ConsoleLogRoute
   ConsoleTopupRoute: typeof ConsoleTopupRoute
   DesktopAuthorizeRoute: typeof DesktopAuthorizeRoute
-  GeneMapTokenRoute: typeof GeneMapTokenRoute
   MiniappLandingRoute: typeof MiniappLandingRoute
   OauthProviderRoute: typeof OauthProviderRoute
   TopicsSlugRoute: typeof TopicsSlugRoute
@@ -937,7 +925,6 @@ export interface RootRouteChildren {
   DownloadIndexRoute: typeof DownloadIndexRoute
   GuideIndexRoute: typeof GuideIndexRoute
   PricingIndexRoute: typeof PricingIndexRoute
-  RankingsIndexRoute: typeof RankingsIndexRoute
   SetupIndexRoute: typeof SetupIndexRoute
   TopicsIndexRoute: typeof TopicsIndexRoute
   PricingModelIdIndexRoute: typeof PricingModelIdIndexRoute
@@ -1008,13 +995,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof SetupIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/rankings/': {
-      id: '/rankings/'
-      path: '/rankings'
-      fullPath: '/rankings/'
-      preLoaderRoute: typeof RankingsIndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
     '/pricing/': {
       id: '/pricing/'
       path: '/pricing'
@@ -1062,13 +1042,6 @@ declare module '@tanstack/react-router' {
       path: '/miniapp/landing'
       fullPath: '/miniapp/landing'
       preLoaderRoute: typeof MiniappLandingRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/gene-map/$token': {
-      id: '/gene-map/$token'
-      path: '/gene-map/$token'
-      fullPath: '/gene-map/$token'
-      preLoaderRoute: typeof GeneMapTokenRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/desktop/authorize': {
@@ -1286,6 +1259,13 @@ declare module '@tanstack/react-router' {
       path: '/group-status'
       fullPath: '/group-status/'
       preLoaderRoute: typeof AuthenticatedGroupStatusIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/group-buy/': {
+      id: '/_authenticated/group-buy/'
+      path: '/group-buy'
+      fullPath: '/group-buy/'
+      preLoaderRoute: typeof AuthenticatedGroupBuyIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/dashboard/': {
@@ -1544,6 +1524,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedBlindBoxIndexRoute: typeof AuthenticatedBlindBoxIndexRoute
   AuthenticatedChannelsIndexRoute: typeof AuthenticatedChannelsIndexRoute
   AuthenticatedDashboardIndexRoute: typeof AuthenticatedDashboardIndexRoute
+  AuthenticatedGroupBuyIndexRoute: typeof AuthenticatedGroupBuyIndexRoute
   AuthenticatedGroupStatusIndexRoute: typeof AuthenticatedGroupStatusIndexRoute
   AuthenticatedImagesIndexRoute: typeof AuthenticatedImagesIndexRoute
   AuthenticatedInviteRewardsIndexRoute: typeof AuthenticatedInviteRewardsIndexRoute
@@ -1571,6 +1552,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedBlindBoxIndexRoute: AuthenticatedBlindBoxIndexRoute,
   AuthenticatedChannelsIndexRoute: AuthenticatedChannelsIndexRoute,
   AuthenticatedDashboardIndexRoute: AuthenticatedDashboardIndexRoute,
+  AuthenticatedGroupBuyIndexRoute: AuthenticatedGroupBuyIndexRoute,
   AuthenticatedGroupStatusIndexRoute: AuthenticatedGroupStatusIndexRoute,
   AuthenticatedImagesIndexRoute: AuthenticatedImagesIndexRoute,
   AuthenticatedInviteRewardsIndexRoute: AuthenticatedInviteRewardsIndexRoute,
@@ -1606,7 +1588,6 @@ const rootRouteChildren: RootRouteChildren = {
   ConsoleLogRoute: ConsoleLogRoute,
   ConsoleTopupRoute: ConsoleTopupRoute,
   DesktopAuthorizeRoute: DesktopAuthorizeRoute,
-  GeneMapTokenRoute: GeneMapTokenRoute,
   MiniappLandingRoute: MiniappLandingRoute,
   OauthProviderRoute: OauthProviderRoute,
   TopicsSlugRoute: TopicsSlugRoute,
@@ -1614,7 +1595,6 @@ const rootRouteChildren: RootRouteChildren = {
   DownloadIndexRoute: DownloadIndexRoute,
   GuideIndexRoute: GuideIndexRoute,
   PricingIndexRoute: PricingIndexRoute,
-  RankingsIndexRoute: RankingsIndexRoute,
   SetupIndexRoute: SetupIndexRoute,
   TopicsIndexRoute: TopicsIndexRoute,
   PricingModelIdIndexRoute: PricingModelIdIndexRoute,

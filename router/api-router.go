@@ -41,7 +41,7 @@ func SetApiRouter(router *gin.Engine) {
 			perfMetricsRoute.GET("/summary", controller.GetPerfMetricsSummary)
 			perfMetricsRoute.GET("", controller.GetPerfMetrics)
 		}
-		apiRouter.GET("/rankings", middleware.HeaderNavModuleAuth("rankings"), controller.GetRankings)
+		// Rankings is retired from the default information architecture.
 		apiRouter.GET("/verification", middleware.EmailVerificationRateLimit(), middleware.TurnstileCheck(), controller.SendEmailVerification)
 		apiRouter.GET("/reset_password", middleware.CriticalRateLimit(), middleware.TurnstileCheck(), controller.SendPasswordResetEmail)
 		apiRouter.POST("/user/reset", middleware.CriticalRateLimit(), anonymousRequestBodyLimit, controller.ResetPassword)
@@ -128,23 +128,8 @@ func SetApiRouter(router *gin.Engine) {
 				selfRoute.GET("/checkin", controller.GetCheckinStatus)
 				selfRoute.POST("/checkin", middleware.TurnstileCheck(), controller.DoCheckin)
 
-				gamificationRoute := selfRoute.Group("/gamification")
-				{
-					gamificationRoute.GET("/dashboard", controller.GetGamificationDashboard)
-					gamificationRoute.GET("/achievements", controller.GetGamificationAchievements)
-					gamificationRoute.GET("/hall-of-fame", controller.GetGamificationHallOfFame)
-					gamificationRoute.POST("/share-link", controller.ClaimGamificationShareLink)
-					gamificationRoute.POST("/equip", controller.EquipGamificationCompanionPet)
-					gamificationRoute.POST("/upgrade", controller.UpgradeGamificationCompanionPet)
-					gamificationRoute.POST("/feed", controller.FeedGamificationCompanionPet)
-				}
-
-				geneMapRoute := selfRoute.Group("/gene-map")
-				{
-					geneMapRoute.GET("/generate", controller.GenerateGeneMap)
-					geneMapRoute.POST("/share", middleware.CriticalRateLimit(), controller.ShareGeneMap)
-					geneMapRoute.GET("/compare/:token", controller.CompareGeneMapShare)
-				}
+				// Gamification and authenticated gene-map APIs are retired from
+				// active product navigation. Historical database rows are kept.
 
 				// Custom OAuth bindings
 				selfRoute.GET("/oauth/bindings", controller.GetUserOAuthBindings)
@@ -219,6 +204,23 @@ func SetApiRouter(router *gin.Engine) {
 		apiRouter.POST("/subscription/xunhu/notify", anonymousRequestBodyLimit, controller.SubscriptionXunhuNotify)
 		apiRouter.GET("/subscription/xunhu/notify", controller.SubscriptionXunhuNotify)
 		apiRouter.GET("/subscription/xunhu/return", controller.SubscriptionXunhuReturn)
+
+		packagesRoute := apiRouter.Group("/packages")
+		packagesRoute.Use(middleware.UserAuth())
+		{
+			packagesRoute.GET("/public", controller.GetPublicPackages)
+			packagesRoute.GET("/my-subscription", controller.GetSubscriptionSelf)
+			packagesRoute.GET("/starter-upgrade-bonus", controller.GetStarterUpgradeBonus)
+		}
+
+		groupBuyRoute := apiRouter.Group("/group-buy")
+		groupBuyRoute.Use(middleware.UserAuth())
+		{
+			groupBuyRoute.GET("/list", controller.ListGroupBuys)
+			groupBuyRoute.GET("/mine", controller.ListMyGroupBuys)
+			groupBuyRoute.POST("/join", middleware.CriticalRateLimit(), controller.JoinGroupBuy)
+			groupBuyRoute.GET("/:id", controller.GetGroupBuy)
+		}
 
 		blindBoxRoute := apiRouter.Group("/blind-box")
 		blindBoxRoute.Use(middleware.UserAuth())

@@ -1,17 +1,15 @@
 import {
   Activity,
-  Award,
   BadgeCheck,
-  BookMarked,
   Box,
   Command,
   Compass,
   Egg,
   FileText,
   FlaskConical,
-  Footprints,
   Gem,
   MessageSquare,
+  Package,
   Radio,
   RefreshCcw,
   ScrollText,
@@ -68,24 +66,9 @@ export function useSidebarData(): SidebarData {
             icon: Compass,
           },
           {
-            title: '邀请与刷新',
-            url: '/invite-rewards',
-            icon: RefreshCcw,
-          },
-          {
-            title: '模型',
+            title: '模型分析',
             url: '/dashboard/models',
-            icon: Footprints,
-          },
-          {
-            title: '成就',
-            url: '/dashboard/achievements',
-            icon: BookMarked,
-          },
-          {
-            title: '名人堂',
-            url: '/dashboard/hall-of-fame',
-            icon: Award,
+            icon: Activity,
           },
           {
             title: 'API 密钥',
@@ -111,12 +94,22 @@ export function useSidebarData(): SidebarData {
           {
             title: '套餐',
             url: '/packages',
-            icon: ScrollText,
+            icon: Package,
+          },
+          {
+            title: '拼团大厅',
+            url: '/group-buy',
+            icon: Users,
           },
           {
             title: '盲盒',
             url: '/blind-box',
             icon: Ticket,
+          },
+          {
+            title: '邀请',
+            url: '/invite-rewards',
+            icon: RefreshCcw,
           },
           {
             title: '个人资料',

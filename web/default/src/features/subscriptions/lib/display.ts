@@ -1,7 +1,7 @@
 import type { TFunction } from 'i18next'
 import { getCurrencyDisplay } from '@/lib/currency'
-import { formatDuration, formatResetPeriod } from './format'
 import type { SubscriptionPlan } from '../types'
+import { formatDuration, formatResetPeriod } from './format'
 
 const DAY_PASS_KEYWORDS = ['day pass', '日卡']
 const DEFAULT_QUOTA_PER_UNIT = 500000
@@ -10,13 +10,19 @@ const PLAN_DISCOUNT_TEXT_MAP: Array<{
   match: (title: string) => boolean
   text: string
 }> = [
-  { match: (title) => title.includes('lite'), text: '比官方 Plus 优惠约 89.7%' },
+  {
+    match: (title) => title.includes('lite'),
+    text: '比官方 Plus 优惠约 89.7%',
+  },
   {
     match: (title) => title.includes('standard'),
     text: '比官方 Plus 优惠约 90.8%',
   },
   { match: (title) => title.includes('pro'), text: '比官方 Plus 优惠约 93.0%' },
-  { match: (title) => title.includes('ultra'), text: '比官方 Plus 优惠约 94.5%' },
+  {
+    match: (title) => title.includes('ultra'),
+    text: '比官方 Plus 优惠约 94.5%',
+  },
   {
     match: (title) =>
       (title.includes('50') && title.includes('日卡')) ||
@@ -34,7 +40,9 @@ const PLAN_DISCOUNT_TEXT_MAP: Array<{
 function trimText(value?: string | null): string {
   // Strip NUL bytes that can leak in from upstream payloads before trimming.
   // eslint-disable-next-line no-control-regex
-  return String(value || '').replace(/\u0000/g, '').trim()
+  return String(value || '')
+    .replace(/\u0000/g, '')
+    .trim()
 }
 
 function formatNumber(value: number): string {
@@ -44,7 +52,10 @@ function formatNumber(value: number): string {
     return value.toFixed(Number.isInteger(value) ? 0 : 2).replace(/\.00$/, '')
   }
   if (abs >= 1) {
-    return value.toFixed(2).replace(/\.00$/, '').replace(/(\.\d)0$/, '$1')
+    return value
+      .toFixed(2)
+      .replace(/\.00$/, '')
+      .replace(/(\.\d)0$/, '$1')
   }
   if (abs >= 0.01) {
     return value.toFixed(4).replace(/0+$/, '').replace(/\.$/, '')
@@ -73,8 +84,11 @@ export function normalizeSubscriptionText(value?: string | null): string {
   return trimText(value)
 }
 
-export function isDayPassPlan(plan?: Partial<SubscriptionPlan> | null): boolean {
+export function isDayPassPlan(
+  plan?: Partial<SubscriptionPlan> | null
+): boolean {
   if (!plan) return false
+  if (plan.plan_type === 'daily') return true
   if (plan.duration_unit === 'day' && Number(plan.duration_value || 0) <= 2) {
     return true
   }
@@ -86,6 +100,7 @@ export function isMonthlyCardPlan(
   plan?: Partial<SubscriptionPlan> | null
 ): boolean {
   if (!plan || isDayPassPlan(plan)) return false
+  if (plan.plan_type === 'monthly') return true
   return plan.duration_unit === 'month'
 }
 
@@ -121,6 +136,8 @@ export function getSubscriptionPlanSubtitle(
 ): string {
   const subtitle = normalizeSubscriptionText(plan?.subtitle)
   if (subtitle) return subtitle
+  if (plan?.plan_type === 'starter') return '新人专区'
+  if (plan?.plan_type === 'weekly') return '周卡'
   return isDayPassPlan(plan) ? '日卡' : '月卡'
 }
 
@@ -202,7 +219,9 @@ export function getSubscriptionPlanDetailText(
 
   if (isMonthlyCardPlan(plan)) {
     if (totalAmount > 0) {
-      detailParts.push(`本月可用额度 ${formatSubscriptionQuotaAmount(totalAmount)}`)
+      detailParts.push(
+        `本月可用额度 ${formatSubscriptionQuotaAmount(totalAmount)}`
+      )
     } else {
       detailParts.push('本月可用额度不限')
     }

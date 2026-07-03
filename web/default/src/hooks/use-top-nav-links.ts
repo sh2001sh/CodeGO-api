@@ -1,8 +1,8 @@
 import { useMemo } from 'react'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '@/stores/auth-store'
-import { useStatus } from '@/hooks/use-status'
 import { parseHeaderNavModulesFromStatus } from '@/lib/nav-modules'
+import { useStatus } from '@/hooks/use-status'
 
 export type TopNavLink = {
   title: string
@@ -40,12 +40,6 @@ export function useTopNavLinks(): TopNavLink[] {
     links.push({ title: t('Model Square'), href: '/pricing', requiresAuth })
   }
 
-  const rankings = modules?.rankings
-  if (rankings && typeof rankings === 'object' && rankings.enabled) {
-    const requiresAuth = rankings.requireAuth && !isAuthed
-    links.push({ title: t('Rankings'), href: '/rankings', requiresAuth })
-  }
-
   if (modules?.docs !== false) {
     links.push({ title: t('Usage guide'), href: '/guide' })
   }
@@ -54,11 +48,6 @@ export function useTopNavLinks(): TopNavLink[] {
 
   if (modules?.about !== false) {
     links.push({ title: t('About'), href: '/about' })
-  }
-
-  if (isAuthed) {
-    links.push({ title: '精灵图鉴', href: '/dashboard/achievements' })
-    links.push({ title: '荣誉榜', href: '/dashboard/hall-of-fame' })
   }
 
   return links

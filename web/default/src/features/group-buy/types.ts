@@ -16,4 +16,27 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-export * from './format'
+
+export interface GroupBuyItem {
+  id: number
+  plan_id: number
+  plan_name: string
+  plan_price: number
+  currency: string
+  base_quota_usd: number
+  current_count: number
+  target_count: number
+  bonus_at_2: number
+  bonus_at_3: number
+  bonus_at_5: number
+  expires_at: number
+  initiator_id: number
+  initiator_avatar?: string
+  status: string
+  joined?: boolean
+}
+
+export interface GroupBuyListResponse {
+  data: GroupBuyItem[]
+  total: number
+}

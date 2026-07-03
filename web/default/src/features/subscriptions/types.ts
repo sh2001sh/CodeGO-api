@@ -37,6 +37,17 @@ export const subscriptionPlanSchema = z.object({
   internal_only: z.boolean().default(false),
   sort_order: z.number(),
   max_purchase_per_user: z.number(),
+  plan_type: z
+    .enum(['monthly', 'weekly', 'daily', 'starter'])
+    .default('monthly')
+    .optional(),
+  group_buy_enabled: z.boolean().default(false).optional(),
+  group_buy_bonus_2: z.number().default(0).optional(),
+  group_buy_bonus_3: z.number().default(0).optional(),
+  group_buy_bonus_5: z.number().default(0).optional(),
+  renewal_bonus_2: z.number().default(0).optional(),
+  renewal_bonus_3: z.number().default(0).optional(),
+  renewal_bonus_4: z.number().default(0).optional(),
   total_amount: z.number(),
   period_amount: z.number().optional(),
   model_limits: z.string().optional(),

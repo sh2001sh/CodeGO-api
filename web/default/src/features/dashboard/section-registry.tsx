@@ -21,18 +21,6 @@ const DASHBOARD_SECTIONS = [
     adminOnly: true,
     build: () => null,
   },
-  {
-    id: 'achievements',
-    titleKey: '精灵图鉴',
-    descriptionKey: '查看已解锁与未解锁宠物、奖励和解锁方式',
-    build: () => null,
-  },
-  {
-    id: 'hall-of-fame',
-    titleKey: '荣誉榜',
-    descriptionKey: '查看本周消耗、邀请与图鉴收集排行',
-    build: () => null,
-  },
 ] as const
 
 export type DashboardSectionId = (typeof DASHBOARD_SECTIONS)[number]['id']

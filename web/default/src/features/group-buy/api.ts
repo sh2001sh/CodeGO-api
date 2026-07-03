@@ -16,10 +16,20 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-export * from './entity-links'
-export * from './growth-text'
-export * from './market-share-section'
-export * from './model-leaderboard'
-export * from './models-section'
-export * from './pulse-section'
-export * from './rankings-hero'
+import { api } from '@/lib/api'
+import type { ApiResponse } from '@/features/subscriptions/types'
+import type { GroupBuyListResponse } from './types'
+
+export async function getGroupBuyList(): Promise<
+  ApiResponse<GroupBuyListResponse>
+> {
+  const res = await api.get('/api/group-buy/list')
+  return res.data
+}
+
+export async function getMyGroupBuys(): Promise<
+  ApiResponse<GroupBuyListResponse>
+> {
+  const res = await api.get('/api/group-buy/mine')
+  return res.data
+}

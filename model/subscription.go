@@ -47,6 +47,13 @@ const (
 	SubscriptionPurchaseActionDisabled  = "disabled"
 )
 
+const (
+	SubscriptionPlanTypeMonthly = "monthly"
+	SubscriptionPlanTypeWeekly  = "weekly"
+	SubscriptionPlanTypeDaily   = "daily"
+	SubscriptionPlanTypeStarter = "starter"
+)
+
 type SubscriptionModelQuotaMap map[string]int64
 
 const (
@@ -178,6 +185,16 @@ type SubscriptionPlan struct {
 	// Max purchases per user (0 = unlimited)
 	MaxPurchasePerUser int `json:"max_purchase_per_user" gorm:"type:int;default:0"`
 
+	// Product system metadata
+	PlanType        string  `json:"plan_type" gorm:"type:varchar(20);default:'monthly';index"`
+	GroupBuyEnabled bool    `json:"group_buy_enabled" gorm:"default:false;index"`
+	GroupBuyBonus2  float64 `json:"group_buy_bonus_2" gorm:"type:decimal(10,2);default:0"`
+	GroupBuyBonus3  float64 `json:"group_buy_bonus_3" gorm:"type:decimal(10,2);default:0"`
+	GroupBuyBonus5  float64 `json:"group_buy_bonus_5" gorm:"type:decimal(10,2);default:0"`
+	RenewalBonus2   float64 `json:"renewal_bonus_2" gorm:"type:decimal(8,4);default:0"`
+	RenewalBonus3   float64 `json:"renewal_bonus_3" gorm:"type:decimal(8,4);default:0"`
+	RenewalBonus4   float64 `json:"renewal_bonus_4" gorm:"type:decimal(8,4);default:0"`
+
 	// Upgrade user group after purchase (empty = no change)
 	UpgradeGroup string `json:"upgrade_group" gorm:"type:varchar(64);default:''"`
 
@@ -200,6 +217,9 @@ type SubscriptionPlan struct {
 
 func (p *SubscriptionPlan) BeforeCreate(tx *gorm.DB) error {
 	now := common.GetTimestamp()
+	if strings.TrimSpace(p.PlanType) == "" {
+		p.PlanType = InferSubscriptionPlanType(p)
+	}
 	p.CreatedAt = now
 	p.UpdatedAt = now
 	return nil
@@ -208,6 +228,40 @@ func (p *SubscriptionPlan) BeforeCreate(tx *gorm.DB) error {
 func (p *SubscriptionPlan) BeforeUpdate(tx *gorm.DB) error {
 	p.UpdatedAt = common.GetTimestamp()
 	return nil
+}
+
+func NormalizeSubscriptionPlanType(planType string) string {
+	switch strings.TrimSpace(strings.ToLower(planType)) {
+	case SubscriptionPlanTypeStarter:
+		return SubscriptionPlanTypeStarter
+	case SubscriptionPlanTypeWeekly:
+		return SubscriptionPlanTypeWeekly
+	case SubscriptionPlanTypeDaily:
+		return SubscriptionPlanTypeDaily
+	default:
+		return SubscriptionPlanTypeMonthly
+	}
+}
+
+func InferSubscriptionPlanType(plan *SubscriptionPlan) string {
+	if plan == nil {
+		return SubscriptionPlanTypeMonthly
+	}
+	title := strings.ToLower(strings.TrimSpace(plan.Title))
+	if strings.Contains(title, "新人") || strings.Contains(title, "体验") || strings.Contains(title, "starter") {
+		return SubscriptionPlanTypeStarter
+	}
+	switch plan.DurationUnit {
+	case SubscriptionDurationDay:
+		if plan.DurationValue >= 7 {
+			return SubscriptionPlanTypeWeekly
+		}
+		return SubscriptionPlanTypeDaily
+	case SubscriptionDurationMonth, SubscriptionDurationYear:
+		return SubscriptionPlanTypeMonthly
+	default:
+		return NormalizeSubscriptionPlanType(plan.PlanType)
+	}
 }
 
 // Subscription order (payment -> webhook -> create UserSubscription)
@@ -308,13 +362,13 @@ type SubscriptionSummary struct {
 }
 
 type SubscriptionPurchasePreview struct {
-	Action              string            `json:"action"`
-	BaseAmountDue       float64           `json:"base_amount_due"`
-	AmountDue           float64           `json:"amount_due"`
-	CurrentSubscription *UserSubscription `json:"-"`
-	CurrentPlan         *SubscriptionPlan `json:"-"`
-	DisabledReason      string            `json:"disabled_reason,omitempty"`
-	AppliedBlindBoxDiscountRate float64   `json:"applied_blind_box_discount_rate,omitempty"`
+	Action                      string            `json:"action"`
+	BaseAmountDue               float64           `json:"base_amount_due"`
+	AmountDue                   float64           `json:"amount_due"`
+	CurrentSubscription         *UserSubscription `json:"-"`
+	CurrentPlan                 *SubscriptionPlan `json:"-"`
+	DisabledReason              string            `json:"disabled_reason,omitempty"`
+	AppliedBlindBoxDiscountRate float64           `json:"applied_blind_box_discount_rate,omitempty"`
 }
 
 func NormalizeSubscriptionModelQuotaMap(input map[string]int64) SubscriptionModelQuotaMap {
@@ -1999,47 +2053,71 @@ func defaultSubscriptionPlans() []SubscriptionPlan {
 		{
 			Title:              "Lite月卡",
 			Subtitle:           "月卡",
-			PriceAmount:        50,
+			PriceAmount:        49,
 			Currency:           "CNY",
 			DurationUnit:       SubscriptionDurationMonth,
 			DurationValue:      1,
 			Enabled:            true,
 			InternalOnly:       false,
-			SortOrder:          60,
+			SortOrder:          70,
 			TotalAmount:        quotaUnitsFromUSD(300),
 			PeriodAmount:       0,
 			QuotaResetPeriod:   SubscriptionResetNever,
 			ModelLimits:        "",
 			UpgradeGroup:       "",
 			MaxPurchasePerUser: 0,
+			PlanType:           SubscriptionPlanTypeMonthly,
+			GroupBuyEnabled:    true,
+			GroupBuyBonus2:     20,
+			GroupBuyBonus3:     35,
+			GroupBuyBonus5:     60,
+			RenewalBonus2:      0.03,
+			RenewalBonus3:      0.05,
+			RenewalBonus4:      0.08,
 		},
 		{
 			Title:            "Standard月卡",
 			Subtitle:         "月卡",
-			PriceAmount:      90,
+			PriceAmount:      89,
 			Currency:         "CNY",
 			DurationUnit:     SubscriptionDurationMonth,
 			DurationValue:    1,
 			Enabled:          true,
 			InternalOnly:     false,
-			SortOrder:        50,
-			TotalAmount:      quotaUnitsFromUSD(600),
+			SortOrder:        80,
+			TotalAmount:      quotaUnitsFromUSD(620),
 			PeriodAmount:     0,
 			QuotaResetPeriod: SubscriptionResetNever,
+			PlanType:         SubscriptionPlanTypeMonthly,
+			GroupBuyEnabled:  true,
+			GroupBuyBonus2:   40,
+			GroupBuyBonus3:   70,
+			GroupBuyBonus5:   110,
+			RenewalBonus2:    0.03,
+			RenewalBonus3:    0.05,
+			RenewalBonus4:    0.08,
 		},
 		{
 			Title:            "Pro月卡",
 			Subtitle:         "月卡",
-			PriceAmount:      159,
+			PriceAmount:      169,
 			Currency:         "CNY",
 			DurationUnit:     SubscriptionDurationMonth,
 			DurationValue:    1,
 			Enabled:          true,
 			InternalOnly:     false,
-			SortOrder:        40,
+			SortOrder:        60,
 			TotalAmount:      quotaUnitsFromUSD(1200),
 			PeriodAmount:     0,
 			QuotaResetPeriod: SubscriptionResetNever,
+			PlanType:         SubscriptionPlanTypeMonthly,
+			GroupBuyEnabled:  true,
+			GroupBuyBonus2:   70,
+			GroupBuyBonus3:   130,
+			GroupBuyBonus5:   220,
+			RenewalBonus2:    0.03,
+			RenewalBonus3:    0.05,
+			RenewalBonus4:    0.08,
 		},
 		{
 			Title:            "Ultra月卡",
@@ -2050,36 +2128,88 @@ func defaultSubscriptionPlans() []SubscriptionPlan {
 			DurationValue:    1,
 			Enabled:          true,
 			InternalOnly:     false,
-			SortOrder:        30,
+			SortOrder:        50,
 			TotalAmount:      quotaUnitsFromUSD(2200),
 			PeriodAmount:     0,
 			QuotaResetPeriod: SubscriptionResetNever,
+			PlanType:         SubscriptionPlanTypeMonthly,
+			GroupBuyEnabled:  true,
+			GroupBuyBonus2:   120,
+			GroupBuyBonus3:   220,
+			GroupBuyBonus5:   380,
+			RenewalBonus2:    0.03,
+			RenewalBonus3:    0.05,
+			RenewalBonus4:    0.08,
+		},
+		{
+			Title:              "新人体验卡",
+			Subtitle:           "新人专区",
+			PriceAmount:        2.9,
+			Currency:           "CNY",
+			DurationUnit:       SubscriptionDurationDay,
+			DurationValue:      1,
+			Enabled:            true,
+			InternalOnly:       false,
+			SortOrder:          90,
+			TotalAmount:        quotaUnitsFromUSD(10),
+			QuotaResetPeriod:   SubscriptionResetNever,
+			MaxPurchasePerUser: 1,
+			PlanType:           SubscriptionPlanTypeStarter,
+			GroupBuyEnabled:    false,
+		},
+		{
+			Title:            "标准周卡",
+			Subtitle:         "周卡",
+			PriceAmount:      39,
+			Currency:         "CNY",
+			DurationUnit:     SubscriptionDurationDay,
+			DurationValue:    7,
+			Enabled:          true,
+			InternalOnly:     false,
+			SortOrder:        40,
+			TotalAmount:      quotaUnitsFromUSD(220),
+			QuotaResetPeriod: SubscriptionResetNever,
+			PlanType:         SubscriptionPlanTypeWeekly,
+			GroupBuyEnabled:  true,
+			GroupBuyBonus2:   20,
+			GroupBuyBonus3:   35,
+			GroupBuyBonus5:   55,
 		},
 		{
 			Title:            "50刀日卡",
 			Subtitle:         "日卡",
-			PriceAmount:      10,
+			PriceAmount:      9.9,
+			Currency:         "CNY",
+			DurationUnit:     SubscriptionDurationDay,
+			DurationValue:    1,
+			Enabled:          true,
+			InternalOnly:     false,
+			SortOrder:        30,
+			TotalAmount:      quotaUnitsFromUSD(50),
+			QuotaResetPeriod: SubscriptionResetNever,
+			PlanType:         SubscriptionPlanTypeDaily,
+			GroupBuyEnabled:  true,
+			GroupBuyBonus2:   5,
+			GroupBuyBonus3:   8,
+			GroupBuyBonus5:   12,
+		},
+		{
+			Title:            "100刀日卡",
+			Subtitle:         "日卡",
+			PriceAmount:      18.9,
 			Currency:         "CNY",
 			DurationUnit:     SubscriptionDurationDay,
 			DurationValue:    1,
 			Enabled:          true,
 			InternalOnly:     false,
 			SortOrder:        20,
-			TotalAmount:      quotaUnitsFromUSD(50),
-			QuotaResetPeriod: SubscriptionResetNever,
-		},
-		{
-			Title:            "100刀日卡",
-			Subtitle:         "日卡",
-			PriceAmount:      20,
-			Currency:         "CNY",
-			DurationUnit:     SubscriptionDurationDay,
-			DurationValue:    1,
-			Enabled:          true,
-			InternalOnly:     false,
-			SortOrder:        10,
 			TotalAmount:      quotaUnitsFromUSD(100),
 			QuotaResetPeriod: SubscriptionResetNever,
+			PlanType:         SubscriptionPlanTypeDaily,
+			GroupBuyEnabled:  true,
+			GroupBuyBonus2:   10,
+			GroupBuyBonus3:   18,
+			GroupBuyBonus5:   28,
 		},
 	}
 }
@@ -2161,6 +2291,30 @@ func syncPresetSubscriptionPlanFields(existing *SubscriptionPlan, preset Subscri
 	}
 	if existing.MaxPurchasePerUser != preset.MaxPurchasePerUser {
 		updates["max_purchase_per_user"] = preset.MaxPurchasePerUser
+	}
+	if NormalizeSubscriptionPlanType(existing.PlanType) != NormalizeSubscriptionPlanType(preset.PlanType) {
+		updates["plan_type"] = NormalizeSubscriptionPlanType(preset.PlanType)
+	}
+	if existing.GroupBuyEnabled != preset.GroupBuyEnabled {
+		updates["group_buy_enabled"] = preset.GroupBuyEnabled
+	}
+	if existing.GroupBuyBonus2 != preset.GroupBuyBonus2 {
+		updates["group_buy_bonus_2"] = preset.GroupBuyBonus2
+	}
+	if existing.GroupBuyBonus3 != preset.GroupBuyBonus3 {
+		updates["group_buy_bonus_3"] = preset.GroupBuyBonus3
+	}
+	if existing.GroupBuyBonus5 != preset.GroupBuyBonus5 {
+		updates["group_buy_bonus_5"] = preset.GroupBuyBonus5
+	}
+	if existing.RenewalBonus2 != preset.RenewalBonus2 {
+		updates["renewal_bonus_2"] = preset.RenewalBonus2
+	}
+	if existing.RenewalBonus3 != preset.RenewalBonus3 {
+		updates["renewal_bonus_3"] = preset.RenewalBonus3
+	}
+	if existing.RenewalBonus4 != preset.RenewalBonus4 {
+		updates["renewal_bonus_4"] = preset.RenewalBonus4
 	}
 	if existing.UpgradeGroup != preset.UpgradeGroup {
 		updates["upgrade_group"] = preset.UpgradeGroup

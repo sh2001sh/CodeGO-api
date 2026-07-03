@@ -21,15 +21,11 @@ import { getRouteApi, useNavigate } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '@/stores/auth-store'
 import { ROLE } from '@/lib/roles'
-import { SiteSeo } from '@/components/seo'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { SectionPageLayout } from '@/components/layout'
 import { FadeIn } from '@/components/page-transition'
-import {
-  WorkshopDexSection,
-  WorkshopHallOfFameSection,
-} from '@/features/gamification'
+import { SiteSeo } from '@/components/seo'
 import { ModelsChartPreferences } from './components/models/models-chart-preferences'
 import { ModelsFilter } from './components/models/models-filter-dialog'
 import { OverviewDashboard } from './components/overview/overview-dashboard'
@@ -150,14 +146,6 @@ const SECTION_META: Record<
   users: {
     titleKey: 'User Analytics',
     descriptionKey: 'View user consumption statistics and charts',
-  },
-  achievements: {
-    titleKey: '精灵图鉴',
-    descriptionKey: '查看你的成就、伙伴与今日工坊任务',
-  },
-  'hall-of-fame': {
-    titleKey: '工坊荣誉榜',
-    descriptionKey: '查看本周消耗、邀请与成就收藏排行',
   },
 }
 
@@ -324,16 +312,6 @@ export function Dashboard() {
               <Suspense fallback={<ModelChartsFallback />}>
                 <LazyUserCharts />
               </Suspense>
-            </FadeIn>
-          )}
-          {activeSection === 'achievements' && (
-            <FadeIn>
-              <WorkshopDexSection />
-            </FadeIn>
-          )}
-          {activeSection === 'hall-of-fame' && (
-            <FadeIn>
-              <WorkshopHallOfFameSection />
             </FadeIn>
           )}
         </div>

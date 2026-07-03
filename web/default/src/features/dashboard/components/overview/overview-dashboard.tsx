@@ -22,7 +22,6 @@ import {
   CardStaggerItem,
   FadeIn,
 } from '@/components/page-transition'
-import { WorkshopOverviewSidebar } from '@/features/gamification'
 import { RedemptionCodePanel } from '@/features/wallet/components/redemption-code-panel'
 import { useRedemption } from '@/features/wallet/hooks/use-redemption'
 import { useTopupInfo } from '@/features/wallet/hooks/use-topup-info'
@@ -70,9 +69,6 @@ export function OverviewDashboard() {
           </CardStaggerItem>
           <CardStaggerItem>
             <OverviewHealthPanel />
-          </CardStaggerItem>
-          <CardStaggerItem>
-            <WorkshopOverviewSidebar />
           </CardStaggerItem>
           <CardStaggerItem>
             <RedemptionCodePanel
