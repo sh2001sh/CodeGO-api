@@ -15,6 +15,7 @@ import { useAuthStore } from '@/stores/auth-store'
 import { getUserModels } from '@/lib/api'
 import { ROLE } from '@/lib/roles'
 import { fetchTokenKey, getApiKeys } from '@/features/keys/api'
+import { normalizeFullApiKey } from '@/features/keys/lib/normalize-full-api-key'
 import { useApiInfo } from '../../../hooks/use-status-data'
 import type {
   HeroSignal,
@@ -85,7 +86,9 @@ export function useSetupGuide(): SetupGuideState {
     queryFn: async () => {
       if (!preferredKey?.id) return ''
       const result = await fetchTokenKey(preferredKey.id)
-      return result.success && result.data?.key ? `sk-${result.data.key}` : ''
+      return result.success && result.data?.key
+        ? normalizeFullApiKey(result.data.key)
+        : ''
     },
     enabled: Boolean(preferredKey?.id),
     staleTime: 5 * 60 * 1000,

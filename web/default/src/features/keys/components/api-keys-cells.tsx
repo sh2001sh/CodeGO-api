@@ -41,6 +41,7 @@ import {
 } from '@/components/ui/tooltip'
 import { StatusBadge } from '@/components/status-badge'
 import { downloadCodexSetupScript } from '../lib/codex-config-script'
+import { normalizeFullApiKey } from '../lib/normalize-full-api-key'
 import { type ApiKey } from '../types'
 import { useApiKeys } from './api-keys-provider'
 
@@ -58,7 +59,7 @@ export function ApiKeyCell({ apiKey }: { apiKey: ApiKey }) {
   const isLoading = !!loadingKeys[apiKey.id]
   const resolvedFullKey = resolvedKeys[apiKey.id]
   const isCopied = copiedKeyId === apiKey.id
-  const maskedKey = `sk-${apiKey.key}`
+  const maskedKey = normalizeFullApiKey(apiKey.key)
 
   const handlePopoverOpen = useCallback(
     (open: boolean) => {

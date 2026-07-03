@@ -20,6 +20,7 @@ import { useQuery } from '@tanstack/react-query'
 import { useAuthStore } from '@/stores/auth-store'
 import { fetchTokenKey, getApiKeys } from '@/features/keys/api'
 import { API_KEY_STATUS } from '@/features/keys/constants'
+import { normalizeFullApiKey } from '@/features/keys/lib/normalize-full-api-key'
 
 export async function fetchActiveChatKey() {
   const result = await getApiKeys({ p: 1, size: 50 })
@@ -38,7 +39,7 @@ export async function fetchActiveChatKey() {
     throw new Error(keyResult.message || 'Failed to load API key')
   }
 
-  return `sk-${keyResult.data.key}`
+  return normalizeFullApiKey(keyResult.data.key)
 }
 
 /**
