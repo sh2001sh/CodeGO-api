@@ -29,6 +29,7 @@ type StatusMeta = {
   accentText: string
   dot: string
   border: string
+  badgeBg: string
 }
 
 const STATUS_META: Record<SidebarGroupAvailabilityStatus, StatusMeta> = {
@@ -38,6 +39,7 @@ const STATUS_META: Record<SidebarGroupAvailabilityStatus, StatusMeta> = {
     accentText: 'text-rose-700 dark:text-rose-300',
     dot: 'bg-rose-500 shadow-[0_0_0_4px_rgba(244,63,94,0.12)]',
     border: 'border-rose-500/30',
+    badgeBg: 'bg-rose-500/10',
   },
   slow: {
     label: '缓慢',
@@ -45,6 +47,7 @@ const STATUS_META: Record<SidebarGroupAvailabilityStatus, StatusMeta> = {
     accentText: 'text-amber-700 dark:text-amber-300',
     dot: 'bg-amber-500 shadow-[0_0_0_4px_rgba(245,158,11,0.14)]',
     border: 'border-amber-500/30',
+    badgeBg: 'bg-amber-500/10',
   },
   unknown: {
     label: '观测中',
@@ -52,6 +55,7 @@ const STATUS_META: Record<SidebarGroupAvailabilityStatus, StatusMeta> = {
     accentText: 'text-slate-700 dark:text-slate-300',
     dot: 'bg-slate-400 shadow-[0_0_0_4px_rgba(148,163,184,0.16)]',
     border: 'border-slate-500/25',
+    badgeBg: 'bg-slate-500/10',
   },
   healthy: {
     label: '正常',
@@ -59,6 +63,7 @@ const STATUS_META: Record<SidebarGroupAvailabilityStatus, StatusMeta> = {
     accentText: 'text-emerald-700 dark:text-emerald-300',
     dot: 'bg-emerald-500 shadow-[0_0_0_4px_rgba(16,185,129,0.14)]',
     border: 'border-emerald-500/30',
+    badgeBg: 'bg-emerald-500/10',
   },
 }
 

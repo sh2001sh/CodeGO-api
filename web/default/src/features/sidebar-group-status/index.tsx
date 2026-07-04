@@ -98,7 +98,7 @@ export function SidebarGroupStatusPage() {
                     </div>
                   </div>
 
-                  <div className='grid gap-3 md:grid-cols-2 2xl:grid-cols-3'>
+                  <div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'>
                     {group.models.length === 0 ? (
                       <div className='text-muted-foreground rounded-2xl border border-dashed px-4 py-6 text-sm'>
                         当前分组下暂无可展示模型。
@@ -233,11 +233,11 @@ function BoardSkeleton() {
               <Skeleton className='h-6 w-36 rounded-md' />
               <Skeleton className='h-4 w-24 rounded-md' />
             </div>
-            <div className='grid gap-3 md:grid-cols-2 2xl:grid-cols-3'>
-              {Array.from({ length: 3 }).map((__, cardIndex) => (
+            <div className='grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5'>
+              {Array.from({ length: 5 }).map((__, cardIndex) => (
                 <Skeleton
                   key={cardIndex}
-                  className='h-36 w-full rounded-[22px]'
+                  className='h-48 w-full rounded-2xl'
                 />
               ))}
             </div>

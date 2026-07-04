@@ -17,7 +17,6 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { Card, CardContent } from '@/components/ui/card'
-import { formatUptimePct } from '@/features/performance-metrics/lib/format'
 import { cn } from '@/lib/utils'
 import { HealthStrip } from './health-strip'
 import { formatSampleWindowLabel, getStatusMeta } from './presentation'
@@ -27,64 +26,55 @@ export function GroupStatusMonitorCard(props: {
   item: SidebarGroupModelStatusItem
 }) {
   const meta = getStatusMeta(props.item.status)
-  const sampleWindowLabel = formatSampleWindowLabel(props.item.sample_window)
   const seriesWindowLabel = formatSampleWindowLabel(props.item.series_window ?? props.item.sample_window)
 
   return (
     <Card
       size='sm'
       className={cn(
-        'relative gap-0 overflow-hidden border bg-card/96 py-0 shadow-[0_10px_28px_rgba(15,23,42,0.06)] dark:bg-card/92 dark:shadow-[0_14px_30px_rgba(0,0,0,0.22)]',
+        'group relative overflow-hidden border-2 bg-card py-0 shadow-sm transition-all hover:shadow-lg',
         meta.border
       )}
     >
-      <span className={cn('absolute inset-y-0 left-0 w-[3px]', meta.accent)} />
-      <CardContent className='px-4 py-3'>
-        <div className='space-y-3'>
-          <div className='flex items-start justify-between gap-3'>
-            <div className='flex min-w-0 items-start gap-2.5'>
-              <span className={cn('mt-1 size-2.5 shrink-0 rounded-full', meta.dot)} />
-              <div className='min-w-0 space-y-1'>
-                <div className='break-all text-[0.95rem] font-semibold tracking-tight text-foreground'>
-                  {props.item.model}
-                </div>
-                <div className='text-muted-foreground text-xs tabular-nums'>
-                  {sampleWindowLabel}
-                </div>
-              </div>
-            </div>
+      <div className={cn('absolute left-0 top-0 h-full w-1 transition-all group-hover:w-1.5', meta.accent)} />
 
-            <div className={cn('shrink-0 text-sm font-semibold', meta.accentText)}>
+      <CardContent className='px-4 py-3.5'>
+        <div className='space-y-3'>
+          {/* Header: Model name and status badge */}
+          <div className='flex items-start justify-between gap-2'>
+            <div className='flex min-w-0 flex-1 items-center gap-2'>
+              <div className={cn('size-2 shrink-0 rounded-full', meta.dot)} />
+              <h4 className='min-w-0 flex-1 truncate text-sm font-semibold text-foreground' title={props.item.model}>
+                {props.item.model}
+              </h4>
+            </div>
+            <div className={cn('shrink-0 rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide', meta.accentText, meta.badgeBg)}>
               {meta.label}
             </div>
           </div>
 
-          <div className='flex items-end justify-between gap-4'>
-            <div className='text-muted-foreground text-xs'>
-              {sampleWindowLabel}请求成功率
-            </div>
-            <div className='font-mono text-sm font-semibold tabular-nums text-foreground'>
-              {props.item.success_rate == null
-                ? '--'
-                : formatUptimePct(props.item.success_rate)}
+          {/* Success rate metric */}
+          <div className='flex items-baseline justify-between'>
+            <span className='text-muted-foreground text-xs'>成功率</span>
+            <div className='flex items-baseline gap-1'>
+              <span className='font-mono text-2xl font-bold tabular-nums text-foreground'>
+                {props.item.success_rate == null ? '--' : Math.round(props.item.success_rate)}
+              </span>
+              <span className='text-muted-foreground text-sm font-medium'>%</span>
             </div>
           </div>
 
+          {/* Time range label */}
           <div className='text-muted-foreground text-[11px]'>
-            请求时间分布：每 {formatDurationLabel(props.item.bucket_seconds)} 一格 · {seriesWindowLabel}
+            {seriesWindowLabel}
           </div>
 
-          <HealthStrip item={props.item} />
+          {/* Health strip */}
+          <div className='pt-1'>
+            <HealthStrip item={props.item} />
+          </div>
         </div>
       </CardContent>
     </Card>
   )
-}
-
-function formatDurationLabel(seconds: number | undefined) {
-  if (!seconds || seconds <= 0) return '时间段'
-  const minutes = Math.round(seconds / 60)
-  if (minutes < 60) return `${minutes} 分钟`
-  if (minutes % 60 === 0) return `${minutes / 60} 小时`
-  return `${minutes} 分钟`
 }
