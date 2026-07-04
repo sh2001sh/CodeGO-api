@@ -652,23 +652,26 @@ func ResolveSubscriptionPurchasePreviewTx(tx *gorm.DB, userId int, targetPlan *S
 	}
 	preview.CurrentSubscription = currentSub
 	preview.CurrentPlan = currentPlan
+	remainingQuota := currentSub.AmountTotal - currentSub.AmountUsed
+	if remainingQuota < 0 {
+		remainingQuota = 0
+	}
+	hasRemainingQuota := currentSub.AmountTotal <= 0 || remainingQuota > 0
 
 	switch compareSubscriptionPlanTier(targetPlan, currentPlan) {
 	case -1:
-		preview.Action = SubscriptionPurchaseActionDisabled
-		preview.BaseAmountDue = 0
-		preview.AmountDue = 0
-		preview.DisabledReason = "cannot subscribe to a lower-tier plan while your current package is active"
+		if hasRemainingQuota {
+			preview.Action = SubscriptionPurchaseActionDisabled
+			preview.BaseAmountDue = 0
+			preview.AmountDue = 0
+			preview.DisabledReason = "cannot subscribe to a lower-tier plan while your current package still has remaining quota"
+		}
 	case 0:
 		preview.Action = SubscriptionPurchaseActionRenew
 		preview.BaseAmountDue = targetPlan.PriceAmount
 		preview.AmountDue = targetPlan.PriceAmount
 	default:
 		preview.Action = SubscriptionPurchaseActionUpgrade
-		remainingQuota := currentSub.AmountTotal - currentSub.AmountUsed
-		if remainingQuota < 0 {
-			remainingQuota = 0
-		}
 		discount := 0.0
 		if currentPlan.PriceAmount > 0 && currentSub.AmountTotal > 0 && remainingQuota > 0 {
 			discount = currentPlan.PriceAmount * float64(remainingQuota) / float64(currentSub.AmountTotal)

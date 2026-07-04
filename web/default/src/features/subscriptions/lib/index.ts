@@ -21,6 +21,7 @@ export {
   formatSubscriptionQuotaAmount,
   formatSubscriptionPlanPrice,
   getSubscriptionPlanActionLabel,
+  getSubscriptionDisabledReasonText,
   getSubscriptionPlanDescription,
   getSubscriptionPlanDiscountText,
   getSubscriptionPlanDetailText,

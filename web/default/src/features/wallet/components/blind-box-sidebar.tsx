@@ -1,13 +1,8 @@
 import { motion, useReducedMotion } from 'motion/react'
 import type { Variants } from 'motion/react'
-import { Boxes, Sparkles, Wallet } from 'lucide-react'
+import { Info, Sparkles, Wallet } from 'lucide-react'
 import { formatQuota } from '@/lib/format'
 import { cn } from '@/lib/utils'
-import {
-  PixelPetSprite,
-  type PetProfile,
-} from '@/features/gamification/pet-catalog'
-import type { CompanionBuffView } from '@/features/gamification/types'
 import type { BlindBoxRecord } from '../types'
 import { DropRecordList } from './blind-box-view-parts'
 
@@ -38,8 +33,6 @@ export function BlindBoxSidebar(props: {
   claudeQuota: number
   availableBoxes: number
   pendingBoxes: number
-  petProfile: PetProfile | null
-  petSkill: CompanionBuffView | null
   records: BlindBoxRecord[]
 }) {
   const reduced = useReducedMotion()
@@ -61,7 +54,7 @@ export function BlindBoxSidebar(props: {
       </motion.div>
 
       <motion.div variants={reduced ? REDUCED_ITEM : STACK_ITEM}>
-        <PetCard petProfile={props.petProfile} petSkill={props.petSkill} />
+        <SettlementCard />
       </motion.div>
 
       <motion.div variants={reduced ? REDUCED_ITEM : STACK_ITEM}>
@@ -123,42 +116,22 @@ function Tile(props: { label: string; value: string; highlight?: boolean }) {
   )
 }
 
-function PetCard(props: {
-  petProfile: PetProfile | null
-  petSkill: CompanionBuffView | null
-}) {
-  if (!props.petProfile) {
-    return (
-      <div className='app-subtle-panel p-4'>
-        <div className='flex items-center gap-2'>
-          <Boxes className='text-muted-foreground size-4' />
-          <div className='text-foreground text-sm font-semibold'>出战宠物</div>
-        </div>
-        <div className='text-muted-foreground mt-2 text-xs leading-5'>
-          前往成就页解锁并装备宠物，开盒可获得额外增益
-        </div>
-      </div>
-    )
-  }
-
+function SettlementCard() {
   return (
     <div className='app-subtle-panel p-4'>
-      <div className='flex items-center gap-3'>
-        <div className='border-border/70 bg-background/80 flex size-12 shrink-0 items-center justify-center rounded-xl border p-1.5'>
-          <PixelPetSprite
-            id={props.petProfile.id}
-            label={props.petProfile.species}
-          />
+      <div className='mb-3 flex items-center gap-2'>
+        <Info className='text-muted-foreground size-4' />
+        <div className='text-foreground text-sm font-semibold'>到账说明</div>
+      </div>
+      <div className='space-y-2 text-xs leading-5'>
+        <div className='border-border/70 bg-background/60 rounded-xl border px-3 py-2.5'>
+          普通额度直接进入钱包，永久有效。
         </div>
-        <div className='min-w-0 flex-1'>
-          <div className='text-foreground truncate text-sm font-semibold'>
-            {props.petProfile.species}
-          </div>
-          <div className='text-muted-foreground mt-0.5 truncate text-xs'>
-            {props.petSkill
-              ? `${props.petSkill.name} ${props.petSkill.value_text}`.trim()
-              : '暂无生效增益'}
-          </div>
+        <div className='border-border/70 bg-background/60 rounded-xl border px-3 py-2.5'>
+          Claude 额度直接进入 Claude 钱包，永久有效。
+        </div>
+        <div className='border-border/70 bg-background/60 rounded-xl border px-3 py-2.5'>
+          道具会在本页展示并按规则自动生效或手动启用。
         </div>
       </div>
     </div>

@@ -84,6 +84,19 @@ export function normalizeSubscriptionText(value?: string | null): string {
   return trimText(value)
 }
 
+export function getSubscriptionDisabledReasonText(
+  value?: string | null
+): string {
+  const normalized = normalizeSubscriptionText(value)
+  switch (normalized) {
+    case 'cannot subscribe to a lower-tier plan while your current package is active':
+    case 'cannot subscribe to a lower-tier plan while your current package still has remaining quota':
+      return '当前还有更高档且未用完的生效套餐，暂不支持直接降级。'
+    default:
+      return normalized
+  }
+}
+
 export function isDayPassPlan(
   plan?: Partial<SubscriptionPlan> | null
 ): boolean {

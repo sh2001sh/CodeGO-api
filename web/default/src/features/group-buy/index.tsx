@@ -19,13 +19,10 @@ For commercial licensing, please contact support@quantumnous.com
 import { useMemo, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { Clock3, RefreshCw, Search, Users } from 'lucide-react'
+import { RefreshCw, Search, Users } from 'lucide-react'
 import { toast } from 'sonner'
-import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Progress } from '@/components/ui/progress'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { TitledCard } from '@/components/ui/titled-card'
@@ -38,25 +35,10 @@ import type {
 } from '@/features/subscriptions/types'
 import { getEpayMethods } from '@/features/wallet/components/subscription-plans-card'
 import { useWalletWorkspace } from '@/features/wallet/hooks/use-wallet-workspace'
+import { cn } from '@/lib/utils'
 import { getGroupBuyList, getMyGroupBuys } from './api'
+import { GroupBuyCard } from './components'
 import type { GroupBuyItem } from './types'
-
-function formatRemaining(expiresAt: number) {
-  const diff = Math.max(0, expiresAt * 1000 - Date.now())
-  const hours = Math.floor(diff / 3600000)
-  const minutes = Math.floor((diff % 3600000) / 60000)
-  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
-}
-
-function nextRewardText(item: GroupBuyItem) {
-  if (item.current_count < 2)
-    return `再邀 1 人达到 2 人团，每人额外 +$${item.bonus_at_2}`
-  if (item.current_count < 3)
-    return `再邀 1 人达到 3 人团，每人额外 +$${item.bonus_at_3}`
-  if (item.current_count < 5)
-    return `再邀 ${5 - item.current_count} 人达到 5 人团，每人额外 +$${item.bonus_at_5}`
-  return `已达到最高 5 人团奖励，每人额外 +$${item.bonus_at_5}`
-}
 
 export function GroupBuyPage() {
   const workspace = useWalletWorkspace()
@@ -134,14 +116,14 @@ export function GroupBuyPage() {
         />
         <SectionPageLayout.Title>拼团大厅</SectionPageLayout.Title>
         <SectionPageLayout.Description>
-          每个套餐档位一个房间，基础额度支付后立即生效；拼团到期或满 5
-          人后按实际人数发放赠额。
+          每个套餐档位同时只有一个房间可加入，基础额度支付后立即生效；房间满
+          5 人或到达 48 小时后，按实际人数统一补发赠额。
         </SectionPageLayout.Description>
         <SectionPageLayout.Content>
           <div className='mx-auto w-full max-w-6xl space-y-4'>
             <TitledCard
               title='正在拼团'
-              description='筛选可参与房间，优先加入即将达到下一奖励档位的拼团。'
+              description='筛选可参与房间，优先加入即将达到下一奖励档位的拼团。赠额会直接追加到对应套餐额度。'
               icon={<Users className='h-4 w-4' />}
               action={
                 <Button
@@ -248,82 +230,6 @@ export function GroupBuyPage() {
         groupBuyId={selectedGroupBuyId}
       />
     </>
-  )
-}
-
-function GroupBuyCard({
-  item,
-  onPurchase,
-}: {
-  item: GroupBuyItem
-  onPurchase?: (item: GroupBuyItem) => void
-}) {
-  const progress = Math.min(100, (item.current_count / item.target_count) * 100)
-  const full = item.current_count >= item.target_count
-  const closed = item.status !== 'pending'
-
-  return (
-    <Card className='border-border bg-card shadow-none'>
-      <CardContent className='space-y-4 p-4'>
-        <div className='flex items-start justify-between gap-3'>
-          <div>
-            <h3 className='text-foreground text-lg font-semibold'>
-              {item.plan_name} · ¥{item.plan_price}
-            </h3>
-            <p className='text-muted-foreground mt-1 text-sm'>
-              基础额度 ${item.base_quota_usd}，最高可得 $
-              {item.base_quota_usd + item.bonus_at_5}
-            </p>
-          </div>
-          <span className='border-border bg-muted rounded-full border px-2.5 py-1 text-xs'>
-            {item.current_count}/{item.target_count} 人
-          </span>
-        </div>
-
-        <div className='space-y-2'>
-          <div className='flex gap-1.5'>
-            {Array.from({ length: item.target_count }).map((_, index) => (
-              <div
-                key={index}
-                className={cn(
-                  'flex h-8 w-8 items-center justify-center rounded-full border text-xs',
-                  index < item.current_count
-                    ? 'border-primary/40 bg-primary/10 text-primary'
-                    : 'border-border bg-muted text-muted-foreground'
-                )}
-              >
-                {index < item.current_count ? '人' : ''}
-              </div>
-            ))}
-          </div>
-          <Progress value={progress} />
-        </div>
-
-        <div className='text-muted-foreground flex flex-wrap items-center justify-between gap-2 text-sm'>
-          <span>{nextRewardText(item)}</span>
-          <span className='flex items-center gap-1 tabular-nums'>
-            <Clock3 className='h-4 w-4' />
-            剩余 {formatRemaining(item.expires_at)}
-          </span>
-        </div>
-
-        <Button
-          className='w-full'
-          disabled={item.joined || full || closed}
-          onClick={() => onPurchase?.(item)}
-        >
-          {item.joined
-            ? '已参团'
-            : full
-              ? '已满员'
-              : closed
-                ? '已结算'
-                : item.id > 0
-                  ? '参与拼团'
-                  : '进入拼团'}
-        </Button>
-      </CardContent>
-    </Card>
   )
 }
 

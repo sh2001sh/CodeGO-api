@@ -1,7 +1,5 @@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import type { PetProfile } from '@/features/gamification/pet-catalog'
-import type { CompanionBuffView } from '@/features/gamification/types'
 import { cn } from '@/lib/utils'
 import { AlertCircle, ChevronDown, Gift, Loader2, Sparkles } from 'lucide-react'
 import type { BlindBoxSelfData, BlindBoxTier, PaymentMethod } from '../types'
@@ -20,8 +18,6 @@ interface BlindBoxCardViewProps {
   pityProgress: number
   remainingPity: number
   showPrizeNotice: boolean
-  petProfile: PetProfile | null
-  petSkill: CompanionBuffView | null
   onQuantityChange: (value: number) => void
   onPaymentMethodChange: (method: PaymentMethod) => void
   onPay: () => void
@@ -110,8 +106,6 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
         pityProgress={props.pityProgress}
         pityThreshold={props.effectivePityThreshold}
         remainingPity={props.remainingPity}
-        petProfile={props.petProfile}
-        petSkill={props.petSkill}
       />
 
       <div>

@@ -16,6 +16,7 @@ import {
   formatDuration,
   formatSubscriptionPlanPrice,
   formatSubscriptionQuotaAmount,
+  getSubscriptionDisabledReasonText,
   getSubscriptionPlanActionLabel,
   getSubscriptionPlanDescription,
   getSubscriptionPlanDetailText,
@@ -233,7 +234,7 @@ export function SubscriptionPlansCard({
     const discountText = getSubscriptionPlanDiscountText(plan)
     const isMonthlyPlan = isMonthlyCardPlan(plan)
     const blockedReason =
-      normalizeSubscriptionText(record.disabled_reason) ||
+      getSubscriptionDisabledReasonText(record.disabled_reason) ||
       '当前已有更高等级的生效套餐，暂不支持降级订阅。'
 
     return (

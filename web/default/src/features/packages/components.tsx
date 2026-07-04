@@ -18,27 +18,18 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useMemo } from 'react'
 import { Link } from '@tanstack/react-router'
-import { ArrowRight, Crown, Sparkles, Users } from 'lucide-react'
-import { useTranslation } from 'react-i18next'
-import { cn } from '@/lib/utils'
+import { Crown } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { Skeleton } from '@/components/ui/skeleton'
 import { TitledCard } from '@/components/ui/titled-card'
-import {
-  formatDuration,
-  formatSubscriptionPlanPrice,
-  formatSubscriptionQuotaAmount,
-  getSubscriptionPlanActionLabel,
-  getSubscriptionPlanSubtitle,
-  subscriptionQuotaUnitsToUSD,
-} from '@/features/subscriptions/lib'
+import { subscriptionQuotaUnitsToUSD } from '@/features/subscriptions/lib'
 import type {
   PlanRecord,
   SubscriptionPurchaseType,
   UserSubscriptionRecord,
 } from '@/features/subscriptions/types'
+import { PackagePlanCard } from './package-plan-card'
 
 export function PlanZone(props: {
   title: string
@@ -86,99 +77,6 @@ export function PlanZone(props: {
         </div>
       )}
     </section>
-  )
-}
-
-function PackagePlanCard(props: {
-  record: PlanRecord
-  purchaseCount: number
-  onPurchase: (purchaseType?: SubscriptionPurchaseType) => void
-}) {
-  const { t } = useTranslation()
-  const plan = props.record.plan
-  const title = plan.title || '套餐'
-  const isRecommended = title.includes('Standard')
-  const groupBuyEnabled = plan.group_buy_enabled === true
-  const limit = Number(plan.max_purchase_per_user || 0)
-  const limitReached = limit > 0 && props.purchaseCount >= limit
-  const actionLabel = getSubscriptionPlanActionLabel(props.record.action, t)
-
-  return (
-    <Card
-      className={cn(
-        'border-border bg-card h-full overflow-hidden shadow-none',
-        isRecommended && 'border-primary/60 ring-primary/15 ring-2'
-      )}
-    >
-      <CardContent className='flex h-full flex-col gap-4 p-4'>
-        <div className='flex items-start justify-between gap-3'>
-          <div className='min-w-0'>
-            <div className='text-primary text-xs font-medium'>
-              {getSubscriptionPlanSubtitle(plan)}
-            </div>
-            <h4 className='text-foreground mt-1 truncate text-lg font-semibold'>
-              {title}
-            </h4>
-          </div>
-          {isRecommended ? (
-            <span className='bg-primary/10 text-primary inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-xs font-medium'>
-              <Sparkles className='mr-1 h-3.5 w-3.5' />
-              推荐
-            </span>
-          ) : null}
-        </div>
-
-        <div>
-          <div className='text-primary text-2xl font-semibold'>
-            {formatSubscriptionPlanPrice(
-              props.record.amount_due ?? plan.price_amount,
-              plan.currency
-            )}
-          </div>
-          <div className='text-muted-foreground mt-1 text-sm'>
-            基础额度 {formatSubscriptionQuotaAmount(plan.total_amount)} ·{' '}
-            {formatDuration(plan, t)}
-          </div>
-        </div>
-
-        {groupBuyEnabled ? (
-          <div className='border-border bg-muted/40 rounded-2xl border p-3 text-sm'>
-            <div className='text-foreground flex items-center font-medium'>
-              <Users className='mr-1.5 h-4 w-4' />
-              可拼团赠额
-            </div>
-            <div className='text-muted-foreground mt-1 text-xs leading-5'>
-              2/3/5 人团最高额外 +${plan.group_buy_bonus_5 || 0}
-            </div>
-          </div>
-        ) : (
-          <div className='border-border bg-muted/30 text-muted-foreground rounded-2xl border p-3 text-sm'>
-            新人体验卡不参与拼团，适合先验证使用节奏。
-          </div>
-        )}
-
-        <div className='mt-auto grid gap-2'>
-          <Button
-            className='w-full'
-            disabled={limitReached || props.record.action === 'disabled'}
-            onClick={() => props.onPurchase('normal')}
-          >
-            {limitReached ? '已达购买上限' : actionLabel}
-            {!limitReached ? <ArrowRight className='ml-1 h-4 w-4' /> : null}
-          </Button>
-          {groupBuyEnabled ? (
-            <Button
-              variant='outline'
-              className='w-full'
-              disabled={limitReached || props.record.action === 'disabled'}
-              onClick={() => props.onPurchase('group_buy')}
-            >
-              进入拼团
-            </Button>
-          ) : null}
-        </div>
-      </CardContent>
-    </Card>
   )
 }
 

@@ -1,10 +1,8 @@
-import { ShieldCheck, Sparkles, Zap } from 'lucide-react'
+import { ShieldCheck, Zap } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { formatQuota } from '@/lib/format'
 import { cn } from '@/lib/utils'
-import type { PetProfile } from '@/features/gamification/pet-catalog'
-import type { CompanionBuffView } from '@/features/gamification/types'
 import type { BlindBoxRecord, PaymentMethod } from '../types'
 import {
   formatBlindBoxTimestamp,
@@ -86,8 +84,6 @@ export function PityStatusCard(props: {
   pityProgress: number
   pityThreshold: number
   remainingPity: number
-  petProfile: PetProfile | null
-  petSkill: CompanionBuffView | null
 }) {
   if (props.firstPurchaseEligible) {
     return (
@@ -114,10 +110,6 @@ export function PityStatusCard(props: {
     props.pityThreshold > 0
       ? Math.min(100, (props.pityProgress / props.pityThreshold) * 100)
       : 0
-  const buffAnnotation =
-    props.petProfile && props.petSkill
-      ? `${props.petProfile.species} ${props.petSkill.value_text}`.trim()
-      : null
 
   return (
     <div className='app-subtle-panel p-4'>
@@ -141,12 +133,9 @@ export function PityStatusCard(props: {
             ? `再抽 ${props.remainingPity} 次可触发保底`
             : '下次开启将触发保底奖励'}
         </span>
-        {buffAnnotation ? (
-          <span className='inline-flex items-center gap-1 rounded-full border border-amber-500/25 bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-700 dark:text-amber-300'>
-            <Sparkles className='size-3' />
-            {buffAnnotation}
-          </span>
-        ) : null}
+        <span className='text-muted-foreground text-[11px]'>
+          购买成功后会自动累计保底进度
+        </span>
       </div>
     </div>
   )

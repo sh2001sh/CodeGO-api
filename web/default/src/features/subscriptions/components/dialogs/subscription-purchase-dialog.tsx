@@ -40,6 +40,7 @@ import {
   formatResetPeriod,
   formatSubscriptionPlanPrice,
   formatSubscriptionQuotaAmount,
+  getSubscriptionDisabledReasonText,
   getSubscriptionPlanActionLabel,
   getSubscriptionPlanDetailText,
   getSubscriptionPlanDiscountText,
@@ -290,7 +291,7 @@ export function SubscriptionPurchaseDialog(props: Props) {
     (props.purchaseCount || 0) >= (props.purchaseLimit || 0)
   const blockedByRule = planRecord.action === 'disabled'
   const blockedMessage =
-    normalizeSubscriptionText(planRecord.disabled_reason) ||
+    getSubscriptionDisabledReasonText(planRecord.disabled_reason) ||
     '当前已有更高等级的有效套餐，暂不支持降级订阅。'
   const disablePurchase =
     paying ||

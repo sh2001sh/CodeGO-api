@@ -206,6 +206,55 @@ func TestResolveSubscriptionPurchasePreview_UpgradeUsesFullTargetPrice(t *testin
 	assert.InDelta(t, 56.67, preview.AmountDue, 0.01)
 }
 
+func TestResolveSubscriptionPurchasePreview_DepletedHigherTierAllowsLowerTier(t *testing.T) {
+	truncateTables(t)
+
+	user := &User{
+		Id:       9211,
+		Username: "depleted_preview_user",
+		Status:   common.UserStatusEnabled,
+	}
+	require.NoError(t, DB.Create(user).Error)
+
+	currentPlan := &SubscriptionPlan{
+		Id:            9312,
+		Title:         "Standard月卡",
+		DurationUnit:  SubscriptionDurationMonth,
+		DurationValue: 1,
+		PriceAmount:   90,
+		TotalAmount:   int64(common.QuotaPerUnit * 6),
+	}
+	targetPlan := &SubscriptionPlan{
+		Id:            9313,
+		Title:         "标准周卡",
+		DurationUnit:  SubscriptionDurationDay,
+		DurationValue: 7,
+		PriceAmount:   29,
+		TotalAmount:   int64(common.QuotaPerUnit * 1),
+	}
+	require.NoError(t, DB.Create(currentPlan).Error)
+	require.NoError(t, DB.Create(targetPlan).Error)
+
+	now := time.Now().Unix()
+	require.NoError(t, DB.Create(&UserSubscription{
+		Id:          9411,
+		UserId:      user.Id,
+		PlanId:      currentPlan.Id,
+		AmountTotal: currentPlan.TotalAmount,
+		AmountUsed:  currentPlan.TotalAmount,
+		StartTime:   now - 15*24*3600,
+		EndTime:     now + 2*24*3600,
+		Status:      "active",
+	}).Error)
+
+	preview, err := ResolveSubscriptionPurchasePreview(user.Id, targetPlan)
+	require.NoError(t, err)
+	require.NotNil(t, preview)
+	assert.Equal(t, SubscriptionPurchaseActionSubscribe, preview.Action)
+	assert.Equal(t, 29.0, preview.AmountDue)
+	assert.Empty(t, preview.DisabledReason)
+}
+
 func TestUpgradeUserSubscriptionWithPlanTx_ResetsUsageAndStartsNewCycle(t *testing.T) {
 	truncateTables(t)
 

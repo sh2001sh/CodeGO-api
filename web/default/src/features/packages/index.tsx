@@ -136,14 +136,14 @@ export function PackagesPage() {
       />
       <WalletWorkspaceShell
         title='套餐'
-        description='按使用节奏选择新人体验卡、月卡或短期补量卡。钱包只负责余额与账单，套餐购买集中在这里完成。'
+        description='按使用节奏选择新人体验卡、月卡或短期补量卡。支持拼团的套餐会直接展示 2/3/5 人成团后的最终额度。'
         framedMain={false}
         main={
           <CardStaggerContainer className='space-y-4'>
             <CardStaggerItem>
               <TitledCard
                 title='套餐购买'
-                description='Standard 月卡为主推方案；周卡与 100 刀日卡支持拼团赠额。'
+                description='先看基础额度和有效期，再看单买、2 人团、3 人团、5 人团各自能拿到的最终额度。'
                 icon={<Crown className='h-4 w-4' />}
                 action={
                   <Button
@@ -181,7 +181,7 @@ export function PackagesPage() {
                 />
                 <PlanZone
                   title='短期补量专区'
-                  description='适合当天或本周高峰任务；支持拼团的套餐可进入大厅参与赠额。'
+                  description='适合当天或本周高峰任务；支持拼团的套餐会在满员或 48 小时后统一补发赠额。'
                   plans={groupedPlans.shortterm}
                   loading={workspace.publicPlansLoading}
                   onPurchase={openPurchase}
