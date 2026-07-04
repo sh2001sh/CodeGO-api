@@ -1,6 +1,7 @@
-import { createFileRoute } from '@tanstack/react-router'
-import { BrandHome } from '@/features/brand'
+import { createFileRoute, redirect } from '@tanstack/react-router'
 
 export const Route = createFileRoute('/brand')({
-  component: BrandHome,
+  beforeLoad: () => {
+    throw redirect({ to: '/' })
+  },
 })

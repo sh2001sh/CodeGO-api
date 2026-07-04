@@ -9,6 +9,7 @@ import {
   Terminal,
 } from 'lucide-react'
 import { SiteSeo } from '@/components/seo'
+import { getPublicPageSeoEntry } from '@/lib/public-page-seo'
 import { Button } from '@/components/ui/button'
 import { PublicLayout } from '@/components/layout'
 import { guideSections } from './content'
@@ -27,6 +28,8 @@ const brandSections = [
     text: '让 AI Coding 的每一步，都算数。',
   },
 ]
+
+const guideSeo = getPublicPageSeoEntry('/guide')
 
 function GuideDiagram(props: { title: string; steps: string[] }) {
   return (
@@ -139,10 +142,10 @@ export function Guide() {
   return (
     <PublicLayout showMainContainer={false}>
       <SiteSeo
-        title='Guide'
-        description='Code Go 使用说明与推广指南，覆盖 Codex、Claude Code、AI Coding 长期积累感、平台玩法与实际使用流程。'
-        keywords='Code Go guide, Codex, Claude Code, AI Coding, 使用说明, 推广语, 长期积累'
-        canonicalPath='/guide'
+        title={guideSeo.title}
+        description={guideSeo.description}
+        keywords={guideSeo.keywords}
+        canonicalPath={guideSeo.path}
       />
       <main className='bg-background'>
         <section className='border-b border-border/50 px-6 pb-10 pt-28 md:px-10 md:pb-14 md:pt-32'>
@@ -150,14 +153,14 @@ export function Guide() {
             <div className='max-w-3xl space-y-4'>
               <div className='inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300'>
                 <BookOpenText className='size-3.5' />
-                前端说明文档
+                {guideSeo.eyebrow}
               </div>
               <div className='space-y-3'>
                 <h1 className='text-4xl font-semibold tracking-tight text-slate-950 dark:text-slate-50 md:text-5xl'>
-                  Code Go 使用说明
+                  {guideSeo.h1}
                 </h1>
                 <p className='max-w-2xl text-base leading-8 text-muted-foreground md:text-lg'>
-                  这里会告诉你怎么开始使用 Code Go，也会告诉你它为什么适合长期做 AI Coding。
+                  {guideSeo.intro}
                 </p>
               </div>
             </div>

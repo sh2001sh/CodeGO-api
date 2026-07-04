@@ -17,14 +17,21 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useTranslation } from 'react-i18next'
+import { getPublicPageSeoEntry } from '@/lib/public-page-seo'
 import { getPrivacyPolicy } from './api'
 import { LegalDocument } from './legal-document'
+
+const privacySeo = getPublicPageSeoEntry('/privacy-policy')
 
 export function PrivacyPolicy() {
   const { t } = useTranslation()
   return (
     <LegalDocument
       title={t('Privacy Policy')}
+      seoTitle={privacySeo.title}
+      seoDescription={privacySeo.description}
+      seoKeywords={privacySeo.keywords}
+      canonicalPath={privacySeo.path}
       queryKey='privacy-policy'
       fetchDocument={getPrivacyPolicy}
       emptyMessage={t(

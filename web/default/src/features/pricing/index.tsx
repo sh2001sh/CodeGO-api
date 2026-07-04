@@ -20,6 +20,7 @@ import { useCallback, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { PublicLayout } from '@/components/layout'
 import { SiteSeo } from '@/components/seo'
+import { getPublicPageSeoEntry } from '@/lib/public-page-seo'
 import { PageTransition } from '@/components/page-transition'
 import {
   LoadingSkeleton,
@@ -36,6 +37,8 @@ import { EXCLUDED_GROUPS, VIEW_MODES } from './constants'
 import { useFilters } from './hooks/use-filters'
 import { countFreeModels } from './lib/model-helpers'
 import { usePricingData } from './hooks/use-pricing-data'
+
+const pricingSeo = getPublicPageSeoEntry('/pricing')
 
 export function Pricing() {
   const { t } = useTranslation()
@@ -176,10 +179,10 @@ export function Pricing() {
   return (
     <PublicLayout showMainContainer={false}>
       <SiteSeo
-        title='模型广场与价格总览'
-        description='Code Go 模型广场汇总当前可用模型、免费模型、分组与价格信息，支持按供应商、标签、额度和输出单价快速筛选对比，方便你挑选适合长期 AI Coding 的入口。'
-        keywords='模型广场, 价格总览, 免费模型, Codex, Claude, GPT, AI API 价格, Code Go'
-        canonicalPath='/pricing'
+        title={pricingSeo.title}
+        description={pricingSeo.description}
+        keywords={pricingSeo.keywords}
+        canonicalPath={pricingSeo.path}
         ogType='website'
       />
       <PageTransition className='public-topbar-spacer mx-auto w-full max-w-[1800px] px-3 pb-8 sm:px-6 sm:pb-10 xl:px-8'>

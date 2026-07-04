@@ -2,6 +2,7 @@ import { ChevronRight, Code2, MessageSquareQuote, Search } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 import { PublicLayout } from '@/components/layout'
 import { SiteSeo } from '@/components/seo'
+import { getPublicPageSeoEntry } from '@/lib/public-page-seo'
 
 const faqs = [
   {
@@ -30,14 +31,16 @@ const faqs = [
   },
 ]
 
+const faqSeo = getPublicPageSeoEntry('/faq')
+
 export function FAQPage() {
   return (
     <PublicLayout showMainContainer={false}>
       <SiteSeo
-        title='FAQ'
-        description='Code Go 常见问题：产品定位、Codex / Claude Code 使用场景、AI Coding 长期积累感与平台差异化。'
-        keywords='Code Go FAQ, Codex, Claude Code, AI Coding, 长期积累, 常见问题'
-        canonicalPath='/faq'
+        title={faqSeo.title}
+        description={faqSeo.description}
+        keywords={faqSeo.keywords}
+        canonicalPath={faqSeo.path}
         jsonLd={{
           '@context': 'https://schema.org',
           '@type': 'FAQPage',
@@ -56,13 +59,13 @@ export function FAQPage() {
           <div className='max-w-3xl space-y-4'>
             <div className='inline-flex items-center gap-2 rounded-full border border-sky-200 bg-sky-50 px-3 py-1 text-xs font-semibold text-sky-700 dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-300'>
               <Search className='size-3.5' />
-              常见问题
+              {faqSeo.eyebrow}
             </div>
             <h1 className='text-4xl font-semibold tracking-tight text-foreground'>
-              先回答最关键的问题
+              {faqSeo.h1}
             </h1>
             <p className='text-base leading-8 text-muted-foreground'>
-              这一页不是堆规则，而是先让你一眼看懂 Code Go 到底在做什么。
+              {faqSeo.intro}
             </p>
           </div>
 

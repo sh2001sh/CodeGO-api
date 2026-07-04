@@ -31,6 +31,7 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { PublicLayout } from '@/components/layout'
 import { SiteSeo } from '@/components/seo'
+import { getPublicPageSeoEntry } from '@/lib/public-page-seo'
 import {
   detectDesktopPlatform,
   formatFileSize,
@@ -39,6 +40,8 @@ import {
 } from './lib'
 import type { DesktopRelease, DownloadCopy } from './types'
 import { buildDownloadPageViewModel } from './view-model'
+
+const downloadSeo = getPublicPageSeoEntry('/download')
 
 function getDownloadCopy(t: (key: string) => string): DownloadCopy {
   return {
@@ -121,9 +124,10 @@ export function DownloadPage() {
   return (
     <PublicLayout showMainContainer={false}>
       <SiteSeo
-        title='Code Go Desktop 下载 | Windows、macOS、Linux'
-        description='下载 Code Go Desktop，使用浏览器授权、Token 导入和本地工具一键配置来连接 Code Go 与 Codex、Claude Code、Gemini CLI、OpenCode、OpenClaw、Hermes。'
-        canonicalPath='/download'
+        title={downloadSeo.title}
+        description={downloadSeo.description}
+        keywords={downloadSeo.keywords}
+        canonicalPath={downloadSeo.path}
       />
 
       <main className='bg-background min-h-screen pt-28 pb-16'>

@@ -24,10 +24,15 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Markdown } from '@/components/ui/markdown'
 import { Skeleton } from '@/components/ui/skeleton'
 import { PublicLayout } from '@/components/layout'
+import { SiteSeo } from '@/components/seo'
 import type { LegalDocumentResponse } from './types'
 
 type LegalDocumentProps = {
   title: string
+  seoTitle: string
+  seoDescription: string
+  seoKeywords: string
+  canonicalPath: string
   queryKey: string
   fetchDocument: () => Promise<LegalDocumentResponse>
   emptyMessage: string
@@ -47,6 +52,17 @@ function isLikelyHtml(value: string) {
   return /<\/?[a-z][\s\S]*>/i.test(value)
 }
 
+function DocumentHeader(props: { title: string; description: string }) {
+  return (
+    <div className='space-y-3'>
+      <h1 className='text-3xl font-semibold tracking-tight'>{props.title}</h1>
+      <p className='text-muted-foreground max-w-3xl text-sm leading-7'>
+        {props.description}
+      </p>
+    </div>
+  )
+}
+
 export function LegalDocument(props: LegalDocumentProps) {
   const { t } = useTranslation()
   const { data, isLoading } = useQuery({
@@ -62,7 +78,17 @@ export function LegalDocument(props: LegalDocumentProps) {
   if (isLoading) {
     return (
       <PublicLayout>
+        <SiteSeo
+          title={props.seoTitle}
+          description={props.seoDescription}
+          keywords={props.seoKeywords}
+          canonicalPath={props.canonicalPath}
+        />
         <div className='mx-auto flex max-w-4xl flex-col gap-4 py-12'>
+          <DocumentHeader
+            title={props.title}
+            description={props.seoDescription}
+          />
           <Skeleton className='h-8 w-[45%]' />
           <Skeleton className='h-4 w-full' />
           <Skeleton className='h-4 w-[90%]' />
@@ -81,7 +107,17 @@ export function LegalDocument(props: LegalDocumentProps) {
   if (!success && !displayContent) {
     return (
       <PublicLayout>
-        <div className='mx-auto max-w-2xl py-12'>
+        <SiteSeo
+          title={props.seoTitle}
+          description={props.seoDescription}
+          keywords={props.seoKeywords}
+          canonicalPath={props.canonicalPath}
+        />
+        <div className='mx-auto max-w-4xl space-y-6 py-12'>
+          <DocumentHeader
+            title={props.title}
+            description={props.seoDescription}
+          />
           <Card className='border-dashed'>
             <CardHeader className='flex flex-row items-center gap-4'>
               <div className='bg-muted rounded-lg p-2'>
@@ -103,7 +139,17 @@ export function LegalDocument(props: LegalDocumentProps) {
   if (displayIsUrl) {
     return (
       <PublicLayout>
-        <div className='mx-auto max-w-2xl py-12'>
+        <SiteSeo
+          title={props.seoTitle}
+          description={props.seoDescription}
+          keywords={props.seoKeywords}
+          canonicalPath={props.canonicalPath}
+        />
+        <div className='mx-auto max-w-4xl space-y-6 py-12'>
+          <DocumentHeader
+            title={props.title}
+            description={props.seoDescription}
+          />
           <Card>
             <CardHeader>
               <CardTitle>{props.title}</CardTitle>
@@ -133,23 +179,30 @@ export function LegalDocument(props: LegalDocumentProps) {
   }
 
   return (
-      <PublicLayout>
-        <div className='mx-auto max-w-4xl space-y-6 py-12'>
-          <div className='space-y-2'>
-            <h1 className='text-3xl font-semibold tracking-tight'>{props.title}</h1>
-          </div>
+    <PublicLayout>
+      <SiteSeo
+        title={props.seoTitle}
+        description={props.seoDescription}
+        keywords={props.seoKeywords}
+        canonicalPath={props.canonicalPath}
+      />
+      <div className='mx-auto max-w-4xl space-y-6 py-12'>
+        <DocumentHeader
+          title={props.title}
+          description={props.seoDescription}
+        />
 
-          {displayIsHtml ? (
-            <div
-              className='prose prose-neutral dark:prose-invert max-w-none'
-              dangerouslySetInnerHTML={{ __html: displayContent }}
-            />
-          ) : (
-            <Markdown className='prose-neutral dark:prose-invert max-w-none'>
-              {displayContent}
-            </Markdown>
-          )}
-        </div>
-      </PublicLayout>
+        {displayIsHtml ? (
+          <div
+            className='prose prose-neutral dark:prose-invert max-w-none'
+            dangerouslySetInnerHTML={{ __html: displayContent }}
+          />
+        ) : (
+          <Markdown className='prose-neutral dark:prose-invert max-w-none'>
+            {displayContent}
+          </Markdown>
+        )}
+      </div>
+    </PublicLayout>
   )
 }

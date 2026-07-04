@@ -17,14 +17,21 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useTranslation } from 'react-i18next'
+import { getPublicPageSeoEntry } from '@/lib/public-page-seo'
 import { getUserAgreement } from './api'
 import { LegalDocument } from './legal-document'
+
+const userAgreementSeo = getPublicPageSeoEntry('/user-agreement')
 
 export function UserAgreement() {
   const { t } = useTranslation()
   return (
     <LegalDocument
       title={t('User Agreement')}
+      seoTitle={userAgreementSeo.title}
+      seoDescription={userAgreementSeo.description}
+      seoKeywords={userAgreementSeo.keywords}
+      canonicalPath={userAgreementSeo.path}
       queryKey='user-agreement'
       fetchDocument={getUserAgreement}
       emptyMessage={t(

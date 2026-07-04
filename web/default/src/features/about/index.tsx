@@ -20,14 +20,15 @@ import { useQuery } from '@tanstack/react-query'
 import { Construction } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { SiteSeo } from '@/components/seo'
+import { getPublicPageSeoEntry } from '@/lib/public-page-seo'
 import { Markdown } from '@/components/ui/markdown'
 import { Skeleton } from '@/components/ui/skeleton'
 import { PublicLayout } from '@/components/layout'
 import { getAboutContent } from './api'
 
-const fallbackAboutMarkdown = `# About Code Go
+const aboutSeo = getPublicPageSeoEntry('/about')
 
-## 品牌主张
+const fallbackAboutMarkdown = `## 品牌主张
 
 让 AI Coding 的每一步，都算数。
 
@@ -59,6 +60,24 @@ Code Go 让 AI Coding 更适合长期使用。
 
 **让 AI Coding 的每一步，都算数。**
 `
+
+function AboutHero() {
+  return (
+    <div className='space-y-4'>
+      <div className='inline-flex items-center rounded-full border border-orange-500/20 bg-orange-500/8 px-3 py-1 text-xs font-semibold text-orange-700 dark:text-orange-300'>
+        {aboutSeo.eyebrow}
+      </div>
+      <div className='space-y-3'>
+        <h1 className='text-4xl font-semibold tracking-tight text-foreground md:text-5xl'>
+          {aboutSeo.h1}
+        </h1>
+        <p className='max-w-3xl text-base leading-8 text-muted-foreground md:text-lg'>
+          {aboutSeo.intro}
+        </p>
+      </div>
+    </div>
+  )
+}
 
 function SupportGroupCard() {
   return (
@@ -209,11 +228,13 @@ export function About() {
     return (
       <PublicLayout>
         <SiteSeo
-          title='About'
-          description='关于 Code Go：让 AI Coding 的每一步，都算数。一个围绕长期积累感构建的 AI Coding 平台。'
-          canonicalPath='/about'
+          title={aboutSeo.title}
+          description={aboutSeo.description}
+          keywords={aboutSeo.keywords}
+          canonicalPath={aboutSeo.path}
         />
-        <div className='mx-auto flex max-w-4xl flex-col gap-4 py-12'>
+        <div className='mx-auto flex max-w-6xl flex-col gap-6 px-4 py-12'>
+          <AboutHero />
           <Skeleton className='h-8 w-[45%]' />
           <Skeleton className='h-4 w-full' />
           <Skeleton className='h-4 w-[90%]' />
@@ -227,11 +248,13 @@ export function About() {
     return (
       <PublicLayout>
         <SiteSeo
-          title='About'
-          description='关于 Code Go：让 AI Coding 的每一步，都算数。一个围绕长期积累感构建的 AI Coding 平台。'
-          canonicalPath='/about'
+          title={aboutSeo.title}
+          description={aboutSeo.description}
+          keywords={aboutSeo.keywords}
+          canonicalPath={aboutSeo.path}
         />
         <div className='mx-auto max-w-6xl space-y-6 px-4 py-8'>
+          <AboutHero />
           <SupportGroupCard />
           <Markdown className='prose-neutral dark:prose-invert max-w-none'>
             {fallbackAboutMarkdown}
@@ -246,13 +269,18 @@ export function About() {
     return (
       <PublicLayout showMainContainer={false}>
         <SiteSeo
-          title='About'
-          description='关于 Code Go：让 AI Coding 的每一步，都算数。一个围绕长期积累感构建的 AI Coding 平台。'
-          canonicalPath='/about'
+          title={aboutSeo.title}
+          description={aboutSeo.description}
+          keywords={aboutSeo.keywords}
+          canonicalPath={aboutSeo.path}
         />
         <div className='space-y-4 px-4 py-6 md:px-6'>
-          <div className='mx-auto max-w-6xl'>
+          <div className='mx-auto max-w-6xl space-y-6'>
+            <AboutHero />
             <SupportGroupCard />
+            <p className='max-w-3xl text-sm leading-7 text-muted-foreground'>
+              当前 About 内容由外部地址承载。为了保持公开页结构稳定，这里会保留统一标题、说明和支持入口，再跳转到外部内容容器展示。
+            </p>
           </div>
           <iframe
             src={rawContent}
@@ -267,11 +295,13 @@ export function About() {
   return (
     <PublicLayout>
       <SiteSeo
-        title='About'
-        description='关于 Code Go：让 AI Coding 的每一步，都算数。一个围绕长期积累感构建的 AI Coding 平台。'
-        canonicalPath='/about'
+        title={aboutSeo.title}
+        description={aboutSeo.description}
+        keywords={aboutSeo.keywords}
+        canonicalPath={aboutSeo.path}
       />
       <div className='mx-auto max-w-6xl space-y-6 px-4 py-8'>
+        <AboutHero />
         <SupportGroupCard />
         {isHtml ? (
           <div

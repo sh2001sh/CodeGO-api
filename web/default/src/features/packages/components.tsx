@@ -53,13 +53,13 @@ export function PlanZone(props: {
         </p>
       </div>
       {props.loading ? (
-        <div className='grid gap-3 md:grid-cols-2 2xl:grid-cols-4'>
+        <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'>
           {Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton key={index} className='h-56 rounded-2xl' />
+            <Skeleton key={index} className='h-[420px] rounded-2xl' />
           ))}
         </div>
       ) : props.plans.length > 0 ? (
-        <div className='grid gap-3 md:grid-cols-2 2xl:grid-cols-4'>
+        <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'>
           {props.plans.map((record) => (
             <PackagePlanCard
               key={record.plan.id}

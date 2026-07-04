@@ -171,22 +171,26 @@ export function PackagesPage() {
                   onPurchase={openPurchase}
                   purchaseCountMap={purchaseCountMap}
                 />
-                <PlanZone
-                  title='月卡专区'
-                  description='适合持续开发与团队日常调用。连续续费可按阶梯获得额外额度。'
-                  plans={groupedPlans.monthly}
-                  loading={workspace.publicPlansLoading}
-                  onPurchase={openPurchase}
-                  purchaseCountMap={purchaseCountMap}
-                />
-                <PlanZone
-                  title='短期补量专区'
-                  description='适合当天或本周高峰任务；支持拼团的套餐会在满员或 48 小时后统一补发赠额。'
-                  plans={groupedPlans.shortterm}
-                  loading={workspace.publicPlansLoading}
-                  onPurchase={openPurchase}
-                  purchaseCountMap={purchaseCountMap}
-                />
+                {groupedPlans.monthly.length > 0 && (
+                  <PlanZone
+                    title='月卡专区'
+                    description='适合持续开发与团队日常调用。连续续费可按阶梯获得额外额度。'
+                    plans={groupedPlans.monthly}
+                    loading={workspace.publicPlansLoading}
+                    onPurchase={openPurchase}
+                    purchaseCountMap={purchaseCountMap}
+                  />
+                )}
+                {groupedPlans.shortterm.length > 0 && (
+                  <PlanZone
+                    title='短期补量专区'
+                    description='适合当天或本周高峰任务；支持拼团的套餐会在满员或 48 小时后统一补发赠额。'
+                    plans={groupedPlans.shortterm}
+                    loading={workspace.publicPlansLoading}
+                    onPurchase={openPurchase}
+                    purchaseCountMap={purchaseCountMap}
+                  />
+                )}
               </TitledCard>
             </CardStaggerItem>
 

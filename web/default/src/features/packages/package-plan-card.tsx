@@ -1,4 +1,5 @@
-import { ArrowRight, Sparkles, Users } from 'lucide-react'
+import { ArrowRight, ChevronDown, Sparkles } from 'lucide-react'
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -23,6 +24,7 @@ export function PackagePlanCard(props: {
   onPurchase: (purchaseType?: SubscriptionPurchaseType) => void
 }) {
   const { t } = useTranslation()
+  const [showDetails, setShowDetails] = useState(false)
   const plan = props.record.plan
   const title = plan.title || '套餐'
   const isRecommended = title.includes('Standard')
@@ -40,103 +42,122 @@ export function PackagePlanCard(props: {
   return (
     <Card
       className={cn(
-        'border-border bg-card h-full overflow-hidden shadow-none',
-        isRecommended && 'border-primary/60 ring-primary/15 ring-2'
+        'border-border bg-card relative h-full overflow-hidden shadow-sm transition-all hover:shadow-md',
+        isRecommended && 'border-primary ring-primary/20 border-2 ring-4'
       )}
     >
-      <CardContent className='flex h-full flex-col gap-4 p-4'>
-        <div className='flex items-start justify-between gap-3'>
-          <div className='min-w-0'>
-            <div className='text-primary text-xs font-medium'>
-              {getSubscriptionPlanSubtitle(plan)}
-            </div>
-            <h4 className='text-foreground mt-1 truncate text-lg font-semibold'>
-              {title}
-            </h4>
+      {isRecommended && (
+        <div className='bg-primary absolute left-0 right-0 top-0 flex items-center justify-center py-1.5'>
+          <span className='flex items-center text-xs font-semibold text-white'>
+            <Sparkles className='mr-1 h-3.5 w-3.5' />
+            最受欢迎
+          </span>
+        </div>
+      )}
+
+      <CardContent className={cn('flex h-full flex-col gap-3 p-4', isRecommended && 'pt-10')}>
+        <div className='text-center'>
+          <div className='text-muted-foreground text-xs font-medium'>
+            {getSubscriptionPlanSubtitle(plan)}
           </div>
-          {isRecommended ? (
-            <span className='bg-primary/10 text-primary inline-flex shrink-0 items-center rounded-full px-2.5 py-1 text-xs font-medium'>
-              <Sparkles className='mr-1 h-3.5 w-3.5' />
-              推荐
-            </span>
-          ) : null}
+          <h4 className='text-foreground mt-1 text-lg font-bold'>
+            {title}
+          </h4>
         </div>
 
-        <div className='space-y-1'>
-          <div className='text-primary text-2xl font-semibold'>
+        <div className='text-center'>
+          <div className='text-primary flex items-baseline justify-center gap-1 text-3xl font-bold'>
             {formatSubscriptionPlanPrice(effectiveAmount, plan.currency)}
           </div>
-          {effectiveAmount !== plan.price_amount ? (
-            <div className='text-muted-foreground text-xs line-through'>
+          {effectiveAmount !== plan.price_amount && (
+            <div className='text-muted-foreground mt-1 text-xs line-through'>
               {formatSubscriptionPlanPrice(plan.price_amount, plan.currency)}
             </div>
-          ) : null}
-          <div className='text-muted-foreground text-sm'>
-            支付后基础额度立即生效
+          )}
+        </div>
+
+        <div className='space-y-2'>
+          <div className='flex items-center justify-between text-sm'>
+            <span className='text-muted-foreground'>基础额度</span>
+            <span className='text-foreground font-semibold'>
+              {formatSubscriptionQuotaAmount(baseQuota)}
+            </span>
           </div>
-        </div>
-
-        <div className='grid grid-cols-2 gap-2 text-sm'>
-          <InfoTile
-            label='基础额度'
-            value={formatSubscriptionQuotaAmount(baseQuota)}
-          />
-          <InfoTile label='有效期' value={formatDuration(plan, t)} />
-          <InfoTile
-            label='单独购买'
-            value={formatSubscriptionQuotaAmount(baseQuota)}
-          />
-          <InfoTile
-            label='结算规则'
-            value={groupBuyEnabled ? '满 5 人或 48 小时' : '支付后立即完成'}
-          />
-        </div>
-
-        <div className='border-border rounded-2xl border'>
-          <div className='border-border/70 bg-muted/30 flex items-center justify-between rounded-t-2xl border-b px-3 py-2.5'>
-            <div className='text-foreground flex items-center text-sm font-medium'>
-              <Users className='mr-1.5 h-4 w-4' />
-              额度阶梯
+          <div className='flex items-center justify-between text-sm'>
+            <span className='text-muted-foreground'>有效期</span>
+            <span className='text-foreground font-semibold'>
+              {formatDuration(plan, t)}
+            </span>
+          </div>
+          {groupBuyEnabled && (
+            <div className='bg-muted/40 -mx-4 mt-2 space-y-1.5 px-4 py-2'>
+              <div className='flex items-center justify-between text-sm'>
+                <span className='text-muted-foreground'>2人团</span>
+                <span className='text-primary font-semibold'>
+                  {formatSubscriptionQuotaAmount(
+                    baseQuota +
+                      parseSubscriptionQuotaUSDToUnits(plan.group_buy_bonus_2 || 0)
+                  )}
+                </span>
+              </div>
+              <div className='flex items-center justify-between text-sm'>
+                <span className='text-muted-foreground'>3人团</span>
+                <span className='text-primary font-semibold'>
+                  {formatSubscriptionQuotaAmount(
+                    baseQuota +
+                      parseSubscriptionQuotaUSDToUnits(plan.group_buy_bonus_3 || 0)
+                  )}
+                </span>
+              </div>
+              <div className='flex items-center justify-between text-sm'>
+                <span className='text-muted-foreground'>5人团</span>
+                <span className='text-primary font-semibold'>
+                  {formatSubscriptionQuotaAmount(
+                    baseQuota +
+                      parseSubscriptionQuotaUSDToUnits(plan.group_buy_bonus_5 || 0)
+                  )}
+                </span>
+              </div>
             </div>
-            <div className='text-muted-foreground text-xs'>
+          )}
+        </div>
+
+        {showDetails && (
+          <div className='border-border space-y-2 rounded-lg border p-3'>
+            <div className='space-y-1.5 text-xs'>
+              {tierRows.map((tier) => (
+                <div key={tier.label} className='flex justify-between'>
+                  <span className='text-muted-foreground'>{tier.label}: {tier.detail}</span>
+                  <span className='text-foreground font-medium'>{tier.value}</span>
+                </div>
+              ))}
+            </div>
+            <div className='text-muted-foreground text-xs leading-relaxed'>
               {groupBuyEnabled
-                ? '拼团成功后赠额直接追加到套餐额度'
-                : '该套餐不参与拼团'}
+                ? '拼团后先支付基础价，满5人或48小时后按实际成团人数补发赠额。'
+                : '该套餐不参与拼团，支付后立即完成结算。'}
             </div>
-          </div>
-          <div className='divide-border/70 divide-y'>
-            {tierRows.map((tier) => (
-              <TierRow
-                key={tier.label}
-                label={tier.label}
-                detail={tier.detail}
-                value={tier.value}
-              />
-            ))}
-          </div>
-        </div>
-
-        {groupBuyEnabled ? (
-          <div className='text-muted-foreground rounded-2xl bg-muted/25 px-3 py-2.5 text-xs leading-5'>
-            当前套餐进入拼团后，先按基础价完成支付；房间满 5 人或到达 48
-            小时后，按实际成团人数统一补发赠额。
-          </div>
-        ) : (
-          <div className='text-muted-foreground rounded-2xl bg-muted/25 px-3 py-2.5 text-xs leading-5'>
-            该套餐不参与拼团，适合立即补量或先体验使用节奏。
           </div>
         )}
 
-        <div className='mt-auto grid gap-2'>
+        <button
+          onClick={() => setShowDetails(!showDetails)}
+          className='text-primary -mx-4 flex items-center justify-center gap-1 py-1 text-xs font-medium transition-colors hover:text-primary/80'
+        >
+          {showDetails ? '收起' : '查看'}详情
+          <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', showDetails && 'rotate-180')} />
+        </button>
+
+        <div className='mt-auto space-y-2'>
           <Button
             className='w-full'
             disabled={limitReached || props.record.action === 'disabled'}
             onClick={() => props.onPurchase('normal')}
           >
             {limitReached ? '已达购买上限' : actionLabel}
-            {!limitReached ? <ArrowRight className='ml-1 h-4 w-4' /> : null}
+            {!limitReached && <ArrowRight className='ml-1 h-4 w-4' />}
           </Button>
-          {groupBuyEnabled ? (
+          {groupBuyEnabled && (
             <Button
               variant='outline'
               className='w-full'
@@ -145,17 +166,17 @@ export function PackagePlanCard(props: {
             >
               进入拼团
             </Button>
-          ) : null}
-          {limitReached ? (
-            <div className='text-muted-foreground text-xs'>
-              已达到该套餐购买上限（{props.purchaseCount}/{limit}）。
+          )}
+          {limitReached && (
+            <div className='text-muted-foreground text-center text-xs'>
+              已达上限 ({props.purchaseCount}/{limit})
             </div>
-          ) : null}
-          {props.record.action === 'disabled' ? (
-            <div className='text-muted-foreground text-xs leading-5'>
+          )}
+          {props.record.action === 'disabled' && (
+            <div className='text-muted-foreground text-center text-xs leading-relaxed'>
               {blockedReason}
             </div>
-          ) : null}
+          )}
         </div>
       </CardContent>
     </Card>
@@ -204,33 +225,4 @@ function buildPackageQuotaTiers(
   }
 
   return tiers
-}
-
-function InfoTile(props: { label: string; value: string }) {
-  return (
-    <div className='border-border/70 bg-muted/25 rounded-2xl border px-3 py-2.5'>
-      <div className='text-muted-foreground text-[11px] font-medium'>
-        {props.label}
-      </div>
-      <div className='text-foreground mt-1 text-sm font-semibold'>
-        {props.value}
-      </div>
-    </div>
-  )
-}
-
-function TierRow(props: { label: string; detail: string; value: string }) {
-  return (
-    <div className='flex items-center justify-between gap-3 px-3 py-2.5'>
-      <div className='min-w-0'>
-        <div className='text-foreground text-sm font-medium'>{props.label}</div>
-        <div className='text-muted-foreground mt-0.5 text-xs'>
-          {props.detail}
-        </div>
-      </div>
-      <div className='text-foreground shrink-0 text-sm font-semibold tabular-nums'>
-        {props.value}
-      </div>
-    </div>
-  )
 }

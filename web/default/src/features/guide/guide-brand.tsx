@@ -3,6 +3,7 @@ import { ArrowRight, Code2, Terminal, Wrench } from 'lucide-react'
 import { PublicLayout } from '@/components/layout'
 import { SiteSeo } from '@/components/seo'
 import { Button } from '@/components/ui/button'
+import { getPublicPageSeoEntry } from '@/lib/public-page-seo'
 
 const sections = [
   {
@@ -19,14 +20,16 @@ const sections = [
   },
 ]
 
+const guideSeo = getPublicPageSeoEntry('/guide')
+
 export function GuideBrand() {
   return (
     <PublicLayout showMainContainer={false}>
       <SiteSeo
-        title='Guide'
-        description='Code Go 品牌与推广指南：Codex、Claude Code、AI Coding 长期积累感与内容表达口径。'
-        keywords='Code Go Guide, Codex, Claude Code, AI Coding, 品牌推广, 长期积累'
-        canonicalPath='/guide'
+        title={guideSeo.title}
+        description={guideSeo.description}
+        keywords={guideSeo.keywords}
+        canonicalPath={guideSeo.path}
       />
       <main className='px-6 pb-16 pt-28 md:px-10 md:pt-32'>
         <div className='mx-auto max-w-6xl space-y-10'>
