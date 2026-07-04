@@ -8,6 +8,7 @@ import (
 
 	"github.com/QuantumNous/new-api/dto"
 	relaycommon "github.com/QuantumNous/new-api/relay/common"
+	"github.com/QuantumNous/new-api/types"
 )
 
 func TestSanitizeConversationText(t *testing.T) {
@@ -40,12 +41,13 @@ func TestFormatConversationArchiveOnlyContainsContent(t *testing.T) {
 
 func TestArchiveConversationWritesStandaloneTxt(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "conversation_archive.txt")
 	t.Setenv(conversationArchiveEnabledEnv, "true")
-	t.Setenv(conversationArchivePathEnv, path)
+	t.Setenv(conversationArchivePathEnv, dir)
 
 	archiveConversation(t.Context(), &relaycommon.RelayInfo{
+		RequestHeaders: map[string]string{"session_id": "session-1"},
 		Request: &dto.GeneralOpenAIRequest{
+			Model: "gpt-5",
 			Messages: []dto.Message{
 				{Role: "user", Content: "question with api_key=topsecret"},
 			},
@@ -53,7 +55,7 @@ func TestArchiveConversationWritesStandaloneTxt(t *testing.T) {
 		ConversationResponseText: "answer",
 	})
 
-	data, err := os.ReadFile(path)
+	data, err := os.ReadFile(filepath.Join(dir, conversationArchiveNonClaudeDir, "session-1.txt"))
 	if err != nil {
 		t.Fatalf("read archive file: %v", err)
 	}
@@ -66,36 +68,71 @@ func TestArchiveConversationWritesStandaloneTxt(t *testing.T) {
 	}
 }
 
-func TestAppendConversationArchiveRotatesAtMaxSize(t *testing.T) {
+func TestArchiveConversationAppendsSameSessionTxt(t *testing.T) {
 	dir := t.TempDir()
-	path := filepath.Join(dir, "conversation_archive.txt")
-	t.Setenv(conversationArchivePathEnv, path)
+	t.Setenv(conversationArchiveEnabledEnv, "true")
+	t.Setenv(conversationArchivePathEnv, filepath.Join(dir, "conversation_archive.txt"))
 
-	originalMaxSize := conversationArchiveMaxSize
-	conversationArchiveMaxSize = 32
-	t.Cleanup(func() {
-		conversationArchiveMaxSize = originalMaxSize
+	for _, content := range []string{"first question", "second question"} {
+		archiveConversation(t.Context(), &relaycommon.RelayInfo{
+			RequestHeaders: map[string]string{"Session_Id": "same/session"},
+			Request: &dto.GeneralOpenAIRequest{
+				Model: "gpt-5",
+				Messages: []dto.Message{
+					{Role: "user", Content: content},
+				},
+			},
+			ConversationResponseText: content + " answer",
+		})
+	}
+
+	data, err := os.ReadFile(filepath.Join(dir, "conversation_archive", conversationArchiveNonClaudeDir, "same_session.txt"))
+	if err != nil {
+		t.Fatalf("read archive file: %v", err)
+	}
+	text := string(data)
+	for _, expected := range []string{"first question", "first question answer", "second question", "second question answer"} {
+		if !strings.Contains(text, expected) {
+			t.Fatalf("archive missing %q: %s", expected, text)
+		}
+	}
+}
+
+func TestArchiveConversationSplitsClaudeAndNonClaudeFolders(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv(conversationArchiveEnabledEnv, "true")
+	t.Setenv(conversationArchivePathEnv, dir)
+
+	archiveConversation(t.Context(), &relaycommon.RelayInfo{
+		RelayFormat: types.RelayFormatClaude,
+		RequestHeaders: map[string]string{
+			"session_id": "claude-session",
+		},
+		Request: &dto.ClaudeRequest{
+			Model: "claude-opus-4",
+			Messages: []dto.ClaudeMessage{
+				{Role: "user", Content: "claude question"},
+			},
+		},
+		ConversationResponseText: "claude answer",
+	})
+	archiveConversation(t.Context(), &relaycommon.RelayInfo{
+		RequestHeaders: map[string]string{
+			"session_id": "openai-session",
+		},
+		Request: &dto.GeneralOpenAIRequest{
+			Model: "gpt-5",
+			Messages: []dto.Message{
+				{Role: "user", Content: "openai question"},
+			},
+		},
+		ConversationResponseText: "openai answer",
 	})
 
-	if err := appendConversationArchive(strings.Repeat("a", 24)); err != nil {
-		t.Fatalf("write initial archive: %v", err)
+	if _, err := os.Stat(filepath.Join(dir, conversationArchiveClaudeDir, "claude-session.txt")); err != nil {
+		t.Fatalf("claude archive file missing: %v", err)
 	}
-	if err := appendConversationArchive(strings.Repeat("b", 16)); err != nil {
-		t.Fatalf("write rotated archive: %v", err)
-	}
-
-	baseData, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("read base archive: %v", err)
-	}
-	rotatedData, err := os.ReadFile(filepath.Join(dir, "conversation_archive_0001.txt"))
-	if err != nil {
-		t.Fatalf("read rotated archive: %v", err)
-	}
-	if string(baseData) != strings.Repeat("a", 24) {
-		t.Fatalf("base archive changed unexpectedly: %q", string(baseData))
-	}
-	if string(rotatedData) != strings.Repeat("b", 16) {
-		t.Fatalf("rotated archive mismatch: %q", string(rotatedData))
+	if _, err := os.Stat(filepath.Join(dir, conversationArchiveNonClaudeDir, "openai-session.txt")); err != nil {
+		t.Fatalf("non-claude archive file missing: %v", err)
 	}
 }

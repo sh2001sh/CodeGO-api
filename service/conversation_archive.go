@@ -4,10 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"os"
-	"path/filepath"
 	"strings"
-	"sync"
 
 	"github.com/QuantumNous/new-api/common"
 	"github.com/QuantumNous/new-api/dto"
@@ -18,12 +15,8 @@ import (
 const (
 	conversationArchiveEnabledEnv  = "CONVERSATION_ARCHIVE_ENABLED"
 	conversationArchivePathEnv     = "CONVERSATION_ARCHIVE_PATH"
-	defaultConversationArchivePath = "data/conversation_archive.txt"
+	defaultConversationArchivePath = "data/conversation_archive"
 )
-
-var conversationArchiveMaxSize int64 = 1 << 30
-
-var conversationArchiveMu sync.Mutex
 
 type conversationArchiveMessage struct {
 	role    string
@@ -38,44 +31,13 @@ func archiveConversation(ctx context.Context, relayInfo *relaycommon.RelayInfo) 
 	if strings.TrimSpace(text) == "" {
 		return
 	}
-	if err := appendConversationArchive(text); err != nil {
+	if err := appendConversationArchive(relayInfo, text); err != nil {
 		logger.LogWarn(ctx, "conversation archive write failed: "+err.Error())
 	}
 }
 
 func conversationArchiveEnabled() bool {
 	return common.GetEnvOrDefaultBool(conversationArchiveEnabledEnv, true)
-}
-
-func conversationArchivePath() string {
-	return common.GetEnvOrDefaultString(conversationArchivePathEnv, defaultConversationArchivePath)
-}
-
-func appendConversationArchive(text string) error {
-	path := conversationArchivePath()
-	if path == "" {
-		return fmt.Errorf("%s is empty", conversationArchivePathEnv)
-	}
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
-		return err
-	}
-
-	conversationArchiveMu.Lock()
-	defer conversationArchiveMu.Unlock()
-
-	targetPath, err := conversationArchiveWritePath(path, int64(len(text)))
-	if err != nil {
-		return err
-	}
-
-	file, err := os.OpenFile(targetPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
-	if err != nil {
-		return err
-	}
-	defer file.Close()
-
-	_, err = file.WriteString(text)
-	return err
 }
 
 func buildConversationArchiveText(relayInfo *relaycommon.RelayInfo) string {
@@ -243,7 +205,7 @@ func rawMessageString(raw json.RawMessage) string {
 		return ""
 	}
 	var text string
-	if err := json.Unmarshal(raw, &text); err == nil {
+	if err := common.Unmarshal(raw, &text); err == nil {
 		return text
 	}
 	return string(raw)
@@ -264,7 +226,7 @@ func stringifyArchiveValue(value any) string {
 		}
 		return strings.Join(nonEmptyArchiveStrings(parts), "\n")
 	default:
-		data, err := json.Marshal(typed)
+		data, err := common.Marshal(typed)
 		if err != nil {
 			return fmt.Sprintf("%v", typed)
 		}
