@@ -461,7 +461,7 @@ func NewBillingSession(c *gin.Context, relayInfo *relaycommon.RelayInfo, preCons
 		}
 		if userQuota <= 0 {
 			return nil, types.NewErrorWithStatusCode(
-				fmt.Errorf("user quota insufficient, remain: %s", logger.FormatQuota(userQuota)),
+				fmt.Errorf("用户额度不足, 剩余额度: %s", logger.FormatQuota(userQuota)),
 				types.ErrorCodeInsufficientUserQuota,
 				http.StatusForbidden,
 				types.ErrOptionWithSkipRetry(),
@@ -471,7 +471,7 @@ func NewBillingSession(c *gin.Context, relayInfo *relaycommon.RelayInfo, preCons
 		if userQuota-preConsumedQuota < 0 {
 			return nil, types.NewErrorWithStatusCode(
 				fmt.Errorf(
-					"pre-consume failed, user quota remain: %s, required: %s",
+					"站内余额不足, 当前余额: %s, 本次所需: %s",
 					logger.FormatQuota(userQuota),
 					logger.FormatQuota(preConsumedQuota),
 				),
@@ -500,7 +500,7 @@ func NewBillingSession(c *gin.Context, relayInfo *relaycommon.RelayInfo, preCons
 		}
 		if claudeQuota <= 0 {
 			return nil, types.NewErrorWithStatusCode(
-				fmt.Errorf("claude quota insufficient, remain: %s", logger.FormatQuota(claudeQuota)),
+				fmt.Errorf("Claude额度不足, 剩余额度: %s", logger.FormatQuota(claudeQuota)),
 				types.ErrorCodeInsufficientUserQuota,
 				http.StatusForbidden,
 				types.ErrOptionWithSkipRetry(),
@@ -510,7 +510,7 @@ func NewBillingSession(c *gin.Context, relayInfo *relaycommon.RelayInfo, preCons
 		if claudeQuota-preConsumedQuota < 0 {
 			return nil, types.NewErrorWithStatusCode(
 				fmt.Errorf(
-					"pre-consume failed, claude quota remain: %s, required: %s",
+					"Claude额度不足, 当前余额: %s, 本次所需: %s",
 					logger.FormatQuota(claudeQuota),
 					logger.FormatQuota(preConsumedQuota),
 				),
