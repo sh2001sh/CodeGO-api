@@ -61,12 +61,26 @@ export function useRedemption() {
           }
         } else if (result.redeem_type === 'blind_box') {
           toast.success(
-            i18next.t('Redemption successful! Added {{count}} blind box chance(s)', {
-              count: result.blind_box_quantity || 0,
-            })
+            i18next.t(
+              'Redemption successful! Opened {{count}} blind box(es) automatically',
+              {
+                count:
+                  result.blind_box_open_count || result.blind_box_quantity || 0,
+              }
+            )
           )
           if (typeof window !== 'undefined') {
-            window.dispatchEvent(new Event('blind-box:changed'))
+            window.dispatchEvent(
+              new CustomEvent('blind-box:changed', {
+                detail: {
+                  records: result.blind_box_records || [],
+                  openCount:
+                    result.blind_box_open_count ||
+                    result.blind_box_quantity ||
+                    0,
+                },
+              })
+            )
           }
         } else {
           const quotaText = formatQuota(result.quota || 0)

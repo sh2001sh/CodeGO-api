@@ -32,6 +32,11 @@ func queryGroupModelRecentHealth(groupNames []string, sampleMinutes int, segment
 	now := time.Now().Unix()
 	windowStart, windowEnd, alignedSegments := buildAlignedStatusWindow(now, windowSeconds, requestedBucketSeconds)
 
+	if shouldPreferLogHealth(windowSeconds, requestedBucketSeconds) &&
+		fillGroupModelLogHealth(rates, seriesByModel, requestCounts, windowStart, windowEnd, requestedBucketSeconds, alignedSegments, groupNames) {
+		return rates, seriesByModel, requestCounts, sampleWindowHours, requestedBucketSeconds
+	}
+
 	if actualBucketSeconds, ok := fillGroupModelPerfHealth(
 		rates,
 		seriesByModel,
@@ -47,6 +52,10 @@ func queryGroupModelRecentHealth(groupNames []string, sampleMinutes int, segment
 
 	fillGroupModelLogHealth(rates, seriesByModel, requestCounts, windowStart, windowEnd, requestedBucketSeconds, alignedSegments, groupNames)
 	return rates, seriesByModel, requestCounts, sampleWindowHours, requestedBucketSeconds
+}
+
+func shouldPreferLogHealth(_ int64, bucketSeconds int64) bool {
+	return bucketSeconds < 3600
 }
 
 func fillGroupModelPerfHealth(
@@ -123,10 +132,10 @@ func fillGroupModelLogHealth(
 	bucketSeconds int64,
 	segmentCount int,
 	groupNames []string,
-) {
+) bool {
 	rows, err := model.GetGroupModelRequestBuckets(windowStart, windowEnd, bucketSeconds, groupNames)
 	if err != nil {
-		return
+		return false
 	}
 
 	successCounts := make(map[string]int64)
@@ -148,6 +157,7 @@ func fillGroupModelLogHealth(
 		}
 	}
 	applyGroupModelRates(rates, requestCounts, successCounts)
+	return len(requestCounts) > 0 || len(seriesByModel) > 0
 }
 
 func applyGroupModelRates(rates map[string]*float64, requestCounts map[string]int64, successCounts map[string]int64) {

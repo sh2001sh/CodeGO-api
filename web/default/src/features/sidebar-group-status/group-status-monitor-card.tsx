@@ -71,7 +71,7 @@ export function GroupStatusMonitorCard(props: {
           </div>
 
           <div className='text-muted-foreground text-[11px]'>
-            请求时间分布：{seriesWindowLabel}
+            请求时间分布：每 {formatDurationLabel(props.item.bucket_seconds)} 一格 · {seriesWindowLabel}
           </div>
 
           <HealthStrip item={props.item} />
@@ -79,4 +79,12 @@ export function GroupStatusMonitorCard(props: {
       </CardContent>
     </Card>
   )
+}
+
+function formatDurationLabel(seconds: number | undefined) {
+  if (!seconds || seconds <= 0) return '时间段'
+  const minutes = Math.round(seconds / 60)
+  if (minutes < 60) return `${minutes} 分钟`
+  if (minutes % 60 === 0) return `${minutes / 60} 小时`
+  return `${minutes} 分钟`
 }

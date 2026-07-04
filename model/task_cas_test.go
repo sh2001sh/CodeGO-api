@@ -256,8 +256,24 @@ func TestUpdateWithStatus_ConcurrentWinner(t *testing.T) {
 	assert.Equal(t, 1, winCount, "exactly one goroutine should win the CAS")
 }
 
-func TestRedeem_BlindBoxCodeCreatesAvailableBlindBoxOrder(t *testing.T) {
+func TestRedeem_BlindBoxCodeAutoOpensBlindBoxOrder(t *testing.T) {
 	truncateTables(t)
+
+	originalSetting := operation_setting.GetBlindBoxSetting()
+	setting := originalSetting
+	setting.DailyOpenLimit = 100
+	setting.SubscriptionPrizeProbability = 0
+	setting.PityThreshold = 999
+	setting.PityGuaranteeUSD = 0
+	setting.LowRewardThresholdUSD = 0
+	setting.FirstPurchaseGuaranteeUSD = 0
+	setting.Tiers = []operation_setting.BlindBoxTierSetting{
+		{Name: "redemption reward", MinUSD: 1, MaxUSD: 1, Probability: 1},
+	}
+	operation_setting.SetBlindBoxSetting(setting)
+	t.Cleanup(func() {
+		operation_setting.SetBlindBoxSetting(originalSetting)
+	})
 
 	user := &User{
 		Id:       8801,
@@ -283,19 +299,22 @@ func TestRedeem_BlindBoxCodeCreatesAvailableBlindBoxOrder(t *testing.T) {
 	assert.Equal(t, RedemptionTypeBlindBox, result.RedeemType)
 	assert.Equal(t, 3, result.BlindBoxQuantity)
 	assert.NotZero(t, result.BlindBoxOrderId)
+	assert.Equal(t, 3, result.BlindBoxOpenCount)
+	require.Len(t, result.BlindBoxRecords, 3)
 
 	var order BlindBoxOrder
 	require.NoError(t, DB.Where("id = ?", result.BlindBoxOrderId).First(&order).Error)
 	assert.Equal(t, user.Id, order.UserId)
 	assert.Equal(t, 3, order.Quantity)
-	assert.Equal(t, 0, order.OpenedCount)
+	assert.Equal(t, 3, order.OpenedCount)
 	assert.Equal(t, common.TopUpStatusSuccess, order.Status)
 	assert.Equal(t, "redemption", order.PaymentMethod)
 	assert.Equal(t, "redemption", order.PaymentProvider)
 
 	overview, err := GetUserBlindBoxOverview(user.Id, 5)
 	require.NoError(t, err)
-	assert.Equal(t, 3, overview.AvailableBoxes)
+	assert.Equal(t, 0, overview.AvailableBoxes)
+	assert.Len(t, overview.RecentRecords, 3)
 	assert.Equal(t, 0, overview.PurchasedToday)
 	assert.Equal(t, 0, overview.PurchasedThisMonth)
 

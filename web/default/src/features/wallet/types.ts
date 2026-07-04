@@ -37,6 +37,8 @@ export interface RedemptionResult {
   plan_title?: string
   blind_box_quantity?: number
   blind_box_order_id?: number
+  blind_box_open_count?: number
+  blind_box_records?: BlindBoxRecord[]
   user_subscription_id?: number
 }
 

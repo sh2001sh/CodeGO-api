@@ -39,14 +39,16 @@ type Redemption struct {
 }
 
 type RedemptionResult struct {
-	RedeemType         string `json:"redeem_type"`
-	Quota              int    `json:"quota,omitempty"`
-	WalletType         string `json:"wallet_type,omitempty"`
-	PlanId             int    `json:"plan_id,omitempty"`
-	PlanTitle          string `json:"plan_title,omitempty"`
-	BlindBoxQuantity   int    `json:"blind_box_quantity,omitempty"`
-	BlindBoxOrderId    int    `json:"blind_box_order_id,omitempty"`
-	UserSubscriptionId int    `json:"user_subscription_id,omitempty"`
+	RedeemType         string               `json:"redeem_type"`
+	Quota              int                  `json:"quota,omitempty"`
+	WalletType         string               `json:"wallet_type,omitempty"`
+	PlanId             int                  `json:"plan_id,omitempty"`
+	PlanTitle          string               `json:"plan_title,omitempty"`
+	BlindBoxQuantity   int                  `json:"blind_box_quantity,omitempty"`
+	BlindBoxOrderId    int                  `json:"blind_box_order_id,omitempty"`
+	BlindBoxOpenCount  int                  `json:"blind_box_open_count,omitempty"`
+	BlindBoxRecords    []BlindBoxOpenRecord `json:"blind_box_records,omitempty"`
+	UserSubscriptionId int                  `json:"user_subscription_id,omitempty"`
 }
 
 func (redemption *Redemption) BeforeCreate(tx *gorm.DB) error {
@@ -236,8 +238,14 @@ func Redeem(key string, userId int) (*RedemptionResult, error) {
 			if err != nil {
 				return err
 			}
+			records, err := OpenBlindBoxOrderByTradeNoTx(tx, order.TradeNo)
+			if err != nil {
+				return err
+			}
 			result.BlindBoxQuantity = redemption.BlindBoxQuantity
 			result.BlindBoxOrderId = order.Id
+			result.BlindBoxOpenCount = len(records)
+			result.BlindBoxRecords = records
 		default:
 			walletType := NormalizeWalletType(redemption.WalletType)
 			field := "quota"

@@ -12,16 +12,23 @@ const SEGMENT_CLASS = {
 
 export function HealthStrip(props: { item: SidebarGroupModelStatusItem }) {
   const segments = buildHealthSegments(props.item)
+  const showCurrentMarker = segments.length > 0
   const bucketSeconds =
     props.item.bucket_seconds ??
     inferBucketSeconds(props.item.series_window ?? props.item.sample_window, segments.length || 20)
 
   return (
     <div className='space-y-2'>
-      <div className='flex items-center gap-2'>
+      <div className='flex items-center justify-between gap-3'>
         <div className='text-muted-foreground text-[11px]'>开始</div>
+        <div className='text-muted-foreground text-[11px]'>现在</div>
+      </div>
 
-        <div className='flex flex-wrap items-center gap-1'>
+      <div className='relative'>
+        <div
+          className='grid gap-1'
+          style={{ gridTemplateColumns: `repeat(${segments.length || 1}, minmax(0, 1fr))` }}
+        >
           {segments.map(({ bucket, tone }, index) => (
             <Tooltip key={`${props.item.model}-${bucket.ts}-${index}`}>
               <TooltipTrigger
@@ -30,7 +37,7 @@ export function HealthStrip(props: { item: SidebarGroupModelStatusItem }) {
                     type='button'
                     aria-label={buildBucketLabel(bucket, bucketSeconds)}
                     className={cn(
-                      'h-5 w-10 rounded-md transition-transform hover:-translate-y-0.5 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
+                      'h-5 min-w-0 rounded-md transition-transform hover:-translate-y-0.5 focus-visible:ring-ring focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2',
                       SEGMENT_CLASS[tone]
                     )}
                   />
@@ -52,7 +59,11 @@ export function HealthStrip(props: { item: SidebarGroupModelStatusItem }) {
           ))}
         </div>
 
-        <div className='text-muted-foreground text-[11px]'>现在</div>
+        {showCurrentMarker ? (
+          <div className='pointer-events-none absolute inset-y-[-6px] right-0 flex items-start'>
+            <div className='bg-foreground/80 h-[calc(100%+12px)] w-px' />
+          </div>
+        ) : null}
       </div>
 
       <div className='flex flex-wrap items-center gap-x-4 gap-y-1 text-[11px] text-muted-foreground'>

@@ -106,7 +106,22 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
   useEffect(() => {
     if (typeof window === 'undefined') return
 
-    const handleBlindBoxChanged = () => {
+    const handleBlindBoxChanged = (event: Event) => {
+      const detail =
+        event instanceof CustomEvent && isRecord(event.detail)
+          ? event.detail
+          : null
+      const records = Array.isArray(detail?.records)
+        ? (detail.records as BlindBoxRecord[])
+        : []
+      const openCount = Number(detail?.openCount || records.length || 0)
+      if (records.length > 0) {
+        setPrizeState({
+          open: true,
+          records,
+          openCount,
+        })
+      }
       void refreshAll()
     }
 

@@ -180,11 +180,6 @@ func openBlindBoxesTx(tx *gorm.DB, userId int, count int, orderId *int) ([]Blind
 		}
 	}
 
-	subscriptionPlan, err := getBlindBoxSubscriptionPlanTx(tx)
-	if err != nil {
-		return nil, err
-	}
-
 	firstPurchaseOrderID := 0
 	if firstPurchaseStartUSD > 0 && len(orders) > 0 {
 		isFirstOrder, err := isFirstSuccessfulBlindBoxOrderTx(tx, userId, orders[0].Id)
@@ -220,6 +215,10 @@ func openBlindBoxesTx(tx *gorm.DB, userId int, count int, orderId *int) ([]Blind
 
 		subscriptionHit := rand.Float64() < setting.SubscriptionPrizeProbability
 		if subscriptionHit {
+			subscriptionPlan, err := getBlindBoxSubscriptionPlanTx(tx)
+			if err != nil {
+				return nil, err
+			}
 			sub, _, err := ApplySubscriptionPurchaseTx(tx, userId, subscriptionPlan, "blind_box")
 			if err != nil {
 				return nil, err

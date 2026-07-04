@@ -38,8 +38,8 @@ type userGroupStatusBucket struct {
 func GetUserGroupStatus(c *gin.Context) {
 	const successSampleMinutes = 30
 	const successSegmentCount = 1
-	const timelineSampleMinutes = 30
-	const timelineSegmentCount = 1
+	const timelineSampleMinutes = 24 * 60
+	const timelineSegmentCount = 48
 
 	pricing := model.GetPricing()
 	groupNames, err := resolveVisibleGroupStatusGroups(c, pricing)
