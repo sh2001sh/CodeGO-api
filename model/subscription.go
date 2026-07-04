@@ -601,6 +601,17 @@ func compareSubscriptionPlanTier(left *SubscriptionPlan, right *SubscriptionPlan
 	return 0
 }
 
+func hasMeaningfulSubscriptionQuotaRemaining(sub *UserSubscription) bool {
+	if sub == nil {
+		return false
+	}
+	remainingQuota := sub.AmountTotal - sub.AmountUsed
+	if remainingQuota <= 0 {
+		return false
+	}
+	return remainingQuota > quotaUnitsFromUSD(0.01)
+}
+
 func pickPrimaryActivePackageTx(tx *gorm.DB, userId int, now int64) (*UserSubscription, *SubscriptionPlan, error) {
 	if tx == nil {
 		tx = DB
@@ -656,7 +667,7 @@ func ResolveSubscriptionPurchasePreviewTx(tx *gorm.DB, userId int, targetPlan *S
 	if remainingQuota < 0 {
 		remainingQuota = 0
 	}
-	hasRemainingQuota := currentSub.AmountTotal <= 0 || remainingQuota > 0
+	hasRemainingQuota := currentSub.AmountTotal <= 0 || hasMeaningfulSubscriptionQuotaRemaining(currentSub)
 
 	switch compareSubscriptionPlanTier(targetPlan, currentPlan) {
 	case -1:
