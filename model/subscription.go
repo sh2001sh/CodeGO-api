@@ -1164,7 +1164,7 @@ func CompleteSubscriptionOrder(tradeNo string, providerPayload string, expectedP
 		if err := ApplySubscriptionPurchaseBonusTx(tx, order.UserId, sub, plan, preview); err != nil {
 			return err
 		}
-		if err := ApplyGroupBuyPurchaseAfterPaymentTx(tx, &order, plan); err != nil {
+		if err := ApplyGroupBuyPurchaseAfterPaymentTx(tx, &order, plan, sub); err != nil {
 			return err
 		}
 		order.Status = common.TopUpStatusSuccess

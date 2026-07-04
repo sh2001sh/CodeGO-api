@@ -61,13 +61,14 @@ func (g *GroupBuyOrder) BeforeUpdate(tx *gorm.DB) error {
 }
 
 type GroupBuyMember struct {
-	Id             int64   `json:"id"`
-	GroupBuyId     int64   `json:"group_buy_id" gorm:"type:bigint;not null;uniqueIndex:idx_group_buy_user"`
-	UserId         int     `json:"user_id" gorm:"type:int;not null;uniqueIndex:idx_group_buy_user;index"`
-	OrderId        int     `json:"order_id" gorm:"type:int;not null;default:0;index"`
-	BonusGranted   bool    `json:"bonus_granted" gorm:"default:false"`
-	BonusAmountUSD float64 `json:"bonus_amount_usd" gorm:"type:decimal(10,2);default:0"`
-	CreatedAt      int64   `json:"created_at" gorm:"type:bigint;not null"`
+	Id                 int64   `json:"id"`
+	GroupBuyId         int64   `json:"group_buy_id" gorm:"type:bigint;not null;uniqueIndex:idx_group_buy_user"`
+	UserId             int     `json:"user_id" gorm:"type:int;not null;uniqueIndex:idx_group_buy_user;index"`
+	OrderId            int     `json:"order_id" gorm:"type:int;not null;default:0;index"`
+	UserSubscriptionId int     `json:"user_subscription_id" gorm:"type:int;not null;default:0;index"`
+	BonusGranted       bool    `json:"bonus_granted" gorm:"default:false"`
+	BonusAmountUSD     float64 `json:"bonus_amount_usd" gorm:"type:decimal(10,2);default:0"`
+	CreatedAt          int64   `json:"created_at" gorm:"type:bigint;not null"`
 }
 
 func (m *GroupBuyMember) BeforeCreate(tx *gorm.DB) error {
@@ -285,7 +286,7 @@ func hydrateGroupBuyItems(orders []GroupBuyOrder, userId int) ([]GroupBuyListIte
 
 func JoinGroupBuy(userId int, groupBuyId int64, orderId int) error {
 	return DB.Transaction(func(tx *gorm.DB) error {
-		return joinGroupBuyTx(tx, userId, groupBuyId, orderId, 0)
+		return joinGroupBuyTx(tx, userId, groupBuyId, orderId, 0, 0)
 	})
 }
 
@@ -386,7 +387,7 @@ func ensureUserCanJoinGroupBuyTx(tx *gorm.DB, groupBuyId int64, userId int) erro
 	return nil
 }
 
-func ApplyGroupBuyPurchaseAfterPaymentTx(tx *gorm.DB, order *SubscriptionOrder, plan *SubscriptionPlan) error {
+func ApplyGroupBuyPurchaseAfterPaymentTx(tx *gorm.DB, order *SubscriptionOrder, plan *SubscriptionPlan, sub *UserSubscription) error {
 	if tx == nil || order == nil || plan == nil {
 		return errors.New("invalid group buy purchase args")
 	}
@@ -407,7 +408,7 @@ func ApplyGroupBuyPurchaseAfterPaymentTx(tx *gorm.DB, order *SubscriptionOrder, 
 		}
 		if existingOrder != nil {
 			order.GroupBuyId = existingOrder.Id
-			return joinGroupBuyTx(tx, order.UserId, existingOrder.Id, order.Id, plan.Id)
+			return joinGroupBuyTx(tx, order.UserId, existingOrder.Id, order.Id, plan.Id, groupBuySubscriptionId(sub))
 		}
 		groupOrder := &GroupBuyOrder{
 			InitiatorId:  order.UserId,
@@ -421,9 +422,10 @@ func ApplyGroupBuyPurchaseAfterPaymentTx(tx *gorm.DB, order *SubscriptionOrder, 
 			return err
 		}
 		member := GroupBuyMember{
-			GroupBuyId: groupOrder.Id,
-			UserId:     order.UserId,
-			OrderId:    order.Id,
+			GroupBuyId:         groupOrder.Id,
+			UserId:             order.UserId,
+			OrderId:            order.Id,
+			UserSubscriptionId: groupBuySubscriptionId(sub),
 		}
 		if err := tx.Create(&member).Error; err != nil {
 			return err
@@ -432,12 +434,19 @@ func ApplyGroupBuyPurchaseAfterPaymentTx(tx *gorm.DB, order *SubscriptionOrder, 
 		return nil
 	}
 	if purchaseType == SubscriptionPurchaseTypeJoinGroup {
-		return joinGroupBuyTx(tx, order.UserId, order.GroupBuyId, order.Id, plan.Id)
+		return joinGroupBuyTx(tx, order.UserId, order.GroupBuyId, order.Id, plan.Id, groupBuySubscriptionId(sub))
 	}
 	return nil
 }
 
-func joinGroupBuyTx(tx *gorm.DB, userId int, groupBuyId int64, orderId int, expectedPlanId int) error {
+func groupBuySubscriptionId(sub *UserSubscription) int {
+	if sub == nil {
+		return 0
+	}
+	return sub.Id
+}
+
+func joinGroupBuyTx(tx *gorm.DB, userId int, groupBuyId int64, orderId int, expectedPlanId int, userSubscriptionId int) error {
 	var order GroupBuyOrder
 	if err := tx.Set("gorm:query_option", "FOR UPDATE").Where("id = ?", groupBuyId).First(&order).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
@@ -466,9 +475,10 @@ func joinGroupBuyTx(tx *gorm.DB, userId int, groupBuyId int64, orderId int, expe
 		return ErrGroupBuyAlreadyJoined
 	}
 	member := GroupBuyMember{
-		GroupBuyId: groupBuyId,
-		UserId:     userId,
-		OrderId:    orderId,
+		GroupBuyId:         groupBuyId,
+		UserId:             userId,
+		OrderId:            orderId,
+		UserSubscriptionId: userSubscriptionId,
 	}
 	if err := tx.Create(&member).Error; err != nil {
 		return err
@@ -544,8 +554,11 @@ func settleGroupBuyOrder(groupBuyId int64) error {
 				if member.BonusGranted {
 					continue
 				}
-				if err := tx.Model(&User{}).Where("id = ?", member.UserId).
-					Update("quota", gorm.Expr("quota + ?", quota)).Error; err != nil {
+				sub, err := getGroupBuyMemberSubscriptionTx(tx, member, order.PlanId)
+				if err != nil {
+					return err
+				}
+				if err := addSubscriptionBonusTx(tx, sub, int64(quota)); err != nil {
 					return err
 				}
 				if err := tx.Model(&GroupBuyMember{}).Where("id = ?", member.Id).
@@ -555,8 +568,7 @@ func settleGroupBuyOrder(groupBuyId int64) error {
 					}).Error; err != nil {
 					return err
 				}
-				_ = cacheIncrUserQuota(member.UserId, int64(quota))
-				if err := RecordLogTx(tx, member.UserId, LogTypeTopup, fmt.Sprintf("拼团奖励到账，套餐: %s，奖励额度: $%.2f", plan.Title, bonusUSD)); err != nil {
+				if err := RecordLogTx(tx, member.UserId, LogTypeTopup, fmt.Sprintf("拼团奖励到账，已加入套餐额度，套餐: %s，奖励额度: $%.2f", plan.Title, bonusUSD)); err != nil {
 					return err
 				}
 			}
@@ -568,4 +580,28 @@ func settleGroupBuyOrder(groupBuyId int64) error {
 				"updated_at": common.GetTimestamp(),
 			}).Error
 	})
+}
+
+func getGroupBuyMemberSubscriptionTx(tx *gorm.DB, member GroupBuyMember, planId int) (*UserSubscription, error) {
+	if tx == nil {
+		return nil, errors.New("tx is nil")
+	}
+	var sub UserSubscription
+	query := tx.Set("gorm:query_option", "FOR UPDATE")
+	if member.UserSubscriptionId > 0 {
+		err := query.Where("id = ? AND user_id = ?", member.UserSubscriptionId, member.UserId).First(&sub).Error
+		if err == nil {
+			return &sub, nil
+		}
+		if !errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, err
+		}
+	}
+	err := query.Where("user_id = ? AND plan_id = ? AND status = ?", member.UserId, planId, "active").
+		Order("created_at desc, id desc").
+		First(&sub).Error
+	if err != nil {
+		return nil, err
+	}
+	return &sub, nil
 }

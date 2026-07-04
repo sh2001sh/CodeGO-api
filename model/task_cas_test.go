@@ -47,6 +47,8 @@ func TestMain(m *testing.M) {
 		&SubscriptionPlan{},
 		&SubscriptionOrder{},
 		&UserSubscription{},
+		&GroupBuyOrder{},
+		&GroupBuyMember{},
 		&SubscriptionClaudeConversion{},
 		&BlindBoxOrder{},
 		&BlindBoxCredit{},
@@ -79,6 +81,8 @@ func truncateTables(t *testing.T) {
 		DB.Exec("DELETE FROM blind_box_pity_states")
 		DB.Exec("DELETE FROM user_companion_pets")
 		DB.Exec("DELETE FROM subscription_orders")
+		DB.Exec("DELETE FROM group_buy_members")
+		DB.Exec("DELETE FROM group_buy_orders")
 		DB.Exec("DELETE FROM subscription_plans")
 		DB.Exec("DELETE FROM user_subscriptions")
 		DB.Exec("DELETE FROM subscription_claude_conversions")
