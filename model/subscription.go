@@ -194,12 +194,12 @@ type SubscriptionPlan struct {
 	// Product system metadata
 	PlanType        string  `json:"plan_type" gorm:"type:varchar(20);default:'monthly';index"`
 	GroupBuyEnabled bool    `json:"group_buy_enabled" gorm:"default:false;index"`
-	GroupBuyBonus2  float64 `json:"group_buy_bonus_2" gorm:"type:decimal(10,2);default:0"`
-	GroupBuyBonus3  float64 `json:"group_buy_bonus_3" gorm:"type:decimal(10,2);default:0"`
-	GroupBuyBonus5  float64 `json:"group_buy_bonus_5" gorm:"type:decimal(10,2);default:0"`
-	RenewalBonus2   float64 `json:"renewal_bonus_2" gorm:"type:decimal(8,4);default:0"`
-	RenewalBonus3   float64 `json:"renewal_bonus_3" gorm:"type:decimal(8,4);default:0"`
-	RenewalBonus4   float64 `json:"renewal_bonus_4" gorm:"type:decimal(8,4);default:0"`
+	GroupBuyBonus2  float64 `json:"group_buy_bonus_2" gorm:"column:group_buy_bonus2;type:decimal(10,2);default:0"`
+	GroupBuyBonus3  float64 `json:"group_buy_bonus_3" gorm:"column:group_buy_bonus3;type:decimal(10,2);default:0"`
+	GroupBuyBonus5  float64 `json:"group_buy_bonus_5" gorm:"column:group_buy_bonus5;type:decimal(10,2);default:0"`
+	RenewalBonus2   float64 `json:"renewal_bonus_2" gorm:"column:renewal_bonus2;type:decimal(8,4);default:0"`
+	RenewalBonus3   float64 `json:"renewal_bonus_3" gorm:"column:renewal_bonus3;type:decimal(8,4);default:0"`
+	RenewalBonus4   float64 `json:"renewal_bonus_4" gorm:"column:renewal_bonus4;type:decimal(8,4);default:0"`
 
 	// Upgrade user group after purchase (empty = no change)
 	UpgradeGroup string `json:"upgrade_group" gorm:"type:varchar(64);default:''"`
@@ -2325,22 +2325,22 @@ func syncPresetSubscriptionPlanFields(existing *SubscriptionPlan, preset Subscri
 		updates["group_buy_enabled"] = preset.GroupBuyEnabled
 	}
 	if existing.GroupBuyBonus2 != preset.GroupBuyBonus2 {
-		updates["group_buy_bonus_2"] = preset.GroupBuyBonus2
+		updates["group_buy_bonus2"] = preset.GroupBuyBonus2
 	}
 	if existing.GroupBuyBonus3 != preset.GroupBuyBonus3 {
-		updates["group_buy_bonus_3"] = preset.GroupBuyBonus3
+		updates["group_buy_bonus3"] = preset.GroupBuyBonus3
 	}
 	if existing.GroupBuyBonus5 != preset.GroupBuyBonus5 {
-		updates["group_buy_bonus_5"] = preset.GroupBuyBonus5
+		updates["group_buy_bonus5"] = preset.GroupBuyBonus5
 	}
 	if existing.RenewalBonus2 != preset.RenewalBonus2 {
-		updates["renewal_bonus_2"] = preset.RenewalBonus2
+		updates["renewal_bonus2"] = preset.RenewalBonus2
 	}
 	if existing.RenewalBonus3 != preset.RenewalBonus3 {
-		updates["renewal_bonus_3"] = preset.RenewalBonus3
+		updates["renewal_bonus3"] = preset.RenewalBonus3
 	}
 	if existing.RenewalBonus4 != preset.RenewalBonus4 {
-		updates["renewal_bonus_4"] = preset.RenewalBonus4
+		updates["renewal_bonus4"] = preset.RenewalBonus4
 	}
 	if existing.UpgradeGroup != preset.UpgradeGroup {
 		updates["upgrade_group"] = preset.UpgradeGroup

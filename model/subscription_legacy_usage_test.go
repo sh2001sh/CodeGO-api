@@ -143,6 +143,33 @@ func TestSeedDefaultSubscriptionPlans_RepairsCollapsedMonthlyQuotaSnapshot(t *te
 	assert.Zero(t, reloadedSub.NextResetTime)
 }
 
+func TestSeedDefaultSubscriptionPlans_UpdatesLegacyBonusColumnsWithoutMissingColumnError(t *testing.T) {
+	truncateTables(t)
+	ensureSubscriptionUsageTestSchema(t)
+
+	preset := defaultSubscriptionPlans()[0]
+	legacyPlan := preset
+	legacyPlan.Id = 9701
+	legacyPlan.GroupBuyBonus2 = 0
+	legacyPlan.GroupBuyBonus3 = 0
+	legacyPlan.GroupBuyBonus5 = 0
+	legacyPlan.RenewalBonus2 = 0
+	legacyPlan.RenewalBonus3 = 0
+	legacyPlan.RenewalBonus4 = 0
+	require.NoError(t, DB.Create(&legacyPlan).Error)
+
+	require.NoError(t, SeedDefaultSubscriptionPlans())
+
+	var reloadedPlan SubscriptionPlan
+	require.NoError(t, DB.Where("id = ?", legacyPlan.Id).First(&reloadedPlan).Error)
+	assert.Equal(t, preset.GroupBuyBonus2, reloadedPlan.GroupBuyBonus2)
+	assert.Equal(t, preset.GroupBuyBonus3, reloadedPlan.GroupBuyBonus3)
+	assert.Equal(t, preset.GroupBuyBonus5, reloadedPlan.GroupBuyBonus5)
+	assert.Equal(t, preset.RenewalBonus2, reloadedPlan.RenewalBonus2)
+	assert.Equal(t, preset.RenewalBonus3, reloadedPlan.RenewalBonus3)
+	assert.Equal(t, preset.RenewalBonus4, reloadedPlan.RenewalBonus4)
+}
+
 func TestPreConsumeUserSubscription_KeepsExhaustedDayPassVisibleButSkipsBilling(t *testing.T) {
 	truncateTables(t)
 	ensureSubscriptionUsageTestSchema(t)
