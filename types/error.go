@@ -137,12 +137,12 @@ func (e *NewAPIError) ErrorWithStatusCode() string {
 	}
 	msg := e.Error()
 	if e.StatusCode == 0 {
-		return msg
+		return common.SanitizeUpstreamQuotaErrorMessage(msg)
 	}
 	if msg == "" {
 		return fmt.Sprintf("status_code=%d", e.StatusCode)
 	}
-	return fmt.Sprintf("status_code=%d, %s", e.StatusCode, msg)
+	return common.SanitizeUpstreamQuotaErrorMessage(fmt.Sprintf("status_code=%d, %s", e.StatusCode, msg))
 }
 
 func (e *NewAPIError) MaskSensitiveError() string {
@@ -156,7 +156,7 @@ func (e *NewAPIError) MaskSensitiveError() string {
 	if e.errorCode == ErrorCodeCountTokenFailed {
 		return errStr
 	}
-	return common.MaskSensitiveInfo(errStr)
+	return common.SanitizeUpstreamQuotaErrorMessage(common.MaskSensitiveInfo(errStr))
 }
 
 func (e *NewAPIError) MaskSensitiveErrorWithStatusCode() string {
@@ -170,7 +170,10 @@ func (e *NewAPIError) MaskSensitiveErrorWithStatusCode() string {
 	if msg == "" {
 		return fmt.Sprintf("status_code=%d", e.StatusCode)
 	}
-	return fmt.Sprintf("status_code=%d, %s", e.StatusCode, msg)
+	if msg == common.UpstreamQuotaGenericMessage {
+		return msg
+	}
+	return common.SanitizeUpstreamQuotaErrorMessage(fmt.Sprintf("status_code=%d, %s", e.StatusCode, msg))
 }
 
 func (e *NewAPIError) SetMessage(message string) {

@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestRespondTaskErrorKeepsUpstreamQuota403(t *testing.T) {
+func TestRespondTaskErrorSanitizesUpstreamQuota403(t *testing.T) {
 	t.Parallel()
 
 	gin.SetMode(gin.TestMode)
@@ -26,6 +26,7 @@ func TestRespondTaskErrorKeepsUpstreamQuota403(t *testing.T) {
 
 	require.Equal(t, http.StatusForbidden, recorder.Code)
 	require.Equal(t, http.StatusForbidden, taskErr.StatusCode)
+	require.Equal(t, "当前模型服务暂不可用，请稍后重试", taskErr.Message)
 }
 
 func TestRespondTaskErrorKeepsLocalQuota403(t *testing.T) {
