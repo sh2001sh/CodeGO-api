@@ -1,15 +1,17 @@
 import { Clock3 } from 'lucide-react'
+import { useEffect, useState } from 'react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import type { GroupBuyItem } from './types'
 
-function formatRemaining(expiresAt: number) {
-  const diff = Math.max(0, expiresAt * 1000 - Date.now())
+function formatRemaining(expiresAt: number, nowMs: number) {
+  const diff = Math.max(0, expiresAt * 1000 - nowMs)
   const hours = Math.floor(diff / 3600000)
   const minutes = Math.floor((diff % 3600000) / 60000)
-  return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`
+  const seconds = Math.floor((diff % 60000) / 1000)
+  return `${hours}小时${minutes}分钟${seconds}秒`
 }
 
 function nextRewardText(item: GroupBuyItem) {
@@ -40,6 +42,17 @@ export function GroupBuyCard(props: {
   item: GroupBuyItem
   onPurchase?: (item: GroupBuyItem) => void
 }) {
+  const [nowMs, setNowMs] = useState(() => Date.now())
+
+  useEffect(() => {
+    const timer = window.setInterval(() => {
+      setNowMs(Date.now())
+    }, 1000)
+    return () => {
+      window.clearInterval(timer)
+    }
+  }, [])
+
   const progress = Math.min(
     100,
     (props.item.current_count / props.item.target_count) * 100
@@ -82,7 +95,7 @@ export function GroupBuyCard(props: {
           />
           <MetricTile
             label='自动结算'
-            value={`剩余 ${formatRemaining(props.item.expires_at)}`}
+            value={`剩余 ${formatRemaining(props.item.expires_at, nowMs)}`}
           />
         </div>
 
