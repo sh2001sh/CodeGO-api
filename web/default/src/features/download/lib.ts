@@ -17,6 +17,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import type {
+  DesktopArchitecture,
+  DesktopDevice,
   DesktopPlatform,
   DesktopRelease,
   DesktopReleaseAsset,
@@ -76,6 +78,26 @@ function getAssetPreference(
   ]
 }
 
+function normalizeDesktopArchitecture(
+  arch: string | undefined
+): DesktopArchitecture {
+  const normalized = (arch || '').toLowerCase()
+  if (normalized.includes('arm64') || normalized.includes('aarch64')) {
+    return 'arm64'
+  }
+  if (
+    normalized.includes('x64') ||
+    normalized.includes('x86_64') ||
+    normalized.includes('amd64')
+  ) {
+    return 'x64'
+  }
+  if (normalized.includes('universal')) {
+    return 'universal'
+  }
+  return 'unknown'
+}
+
 function pickPreferredAsset(
   assets: DesktopReleaseAsset[],
   platform: Exclude<DesktopPlatform, 'unknown'>
@@ -110,6 +132,21 @@ function findAsset(
   return undefined
 }
 
+function findAssetByArchitecture(
+  assets: DesktopReleaseAsset[],
+  platform: Exclude<DesktopPlatform, 'unknown'>,
+  arch: Exclude<DesktopArchitecture, 'unknown' | 'universal'>
+) {
+  return pickPreferredAsset(
+    assets.filter(
+      (asset) =>
+        asset.platform === platform &&
+        normalizeDesktopArchitecture(asset.arch) === arch
+    ),
+    platform
+  )
+}
+
 /** Format release asset sizes for compact UI display. */
 export function formatFileSize(size: number) {
   if (!Number.isFinite(size) || size <= 0) return '-'
@@ -138,6 +175,41 @@ export function detectDesktopPlatform(userAgent: string): DesktopPlatform {
   return 'unknown'
 }
 
+/** Infer the user's desktop CPU architecture from a browser user agent string. */
+export function detectDesktopArchitecture(
+  userAgent: string,
+  platform: DesktopPlatform
+): DesktopArchitecture {
+  const normalized = userAgent.toLowerCase()
+
+  if (
+    normalized.includes('arm64') ||
+    normalized.includes('aarch64') ||
+    normalized.includes('apple silicon')
+  ) {
+    return 'arm64'
+  }
+
+  if (
+    normalized.includes('win64') ||
+    normalized.includes('x64') ||
+    normalized.includes('x86_64') ||
+    normalized.includes('amd64')
+  ) {
+    return 'x64'
+  }
+
+  if (platform === 'macos' && normalized.includes('intel mac os x')) {
+    return 'unknown'
+  }
+
+  if (normalized.includes('universal')) {
+    return 'universal'
+  }
+
+  return 'unknown'
+}
+
 /** Map a desktop release payload into the download cards rendered by the page. */
 export function buildDownloadCards(
   release: DesktopRelease | null | undefined,
@@ -146,48 +218,76 @@ export function buildDownloadCards(
   const assets = release?.assets ?? []
   const releasePageURL = release?.html_url || RELEASE_PAGE_URL
   const windows = findAsset(assets, 'windows', '-Windows.msi')
-  const macos = findAsset(assets, 'macos', '-macOS.dmg')
+  const macosUniversal = findAsset(assets, 'macos', '-macOS.dmg')
+  const macosArm64 =
+    findAssetByArchitecture(assets, 'macos', 'arm64') ?? macosUniversal
+  const macosX64 =
+    findAssetByArchitecture(assets, 'macos', 'x64') ?? macosUniversal
   const linux = findAsset(assets, 'linux', '-Linux-x86_64.AppImage')
   const macosFallbackURL = release?.homebrew_url || releasePageURL
+  const windowsArch = normalizeDesktopArchitecture(windows?.arch)
+  const linuxArch = normalizeDesktopArchitecture(linux?.arch)
 
   return [
     {
       key: 'windows',
+      platform: 'windows',
       title: copy.windowsTitle,
       description: copy.windowsDescription,
       href: windows?.browser_download_url || releasePageURL,
       fileName: windows?.name,
       fileSize: windows?.size,
       digest: windows?.digest,
-      arch: windows?.arch,
+      arch: windowsArch === 'unknown' ? undefined : windowsArch,
       cta: windows ? copy.windowsCta : copy.releaseFallbackCta,
       fallback: !windows,
     },
     {
-      key: 'macos',
-      title: copy.macosTitle,
-      description: copy.macosDescription,
-      href: macos?.browser_download_url || macosFallbackURL,
-      fileName: macos?.name,
-      fileSize: macos?.size,
-      digest: macos?.digest,
-      arch: macos?.arch,
-      cta: macos
-        ? copy.macosCta
+      key: 'macos-arm64',
+      platform: 'macos',
+      title: copy.macosAppleSiliconTitle,
+      description: copy.macosAppleSiliconDescription,
+      href: macosArm64?.browser_download_url || macosFallbackURL,
+      fileName: macosArm64?.name,
+      fileSize: macosArm64?.size,
+      digest: macosArm64?.digest,
+      arch: 'arm64',
+      archLabel: copy.appleSiliconLabel,
+      cta: macosArm64
+        ? copy.macosAppleSiliconCta
         : release?.homebrew_url
           ? copy.macosFallbackCta
           : copy.releaseFallbackCta,
-      fallback: !macos,
+      fallback: !macosArm64,
+    },
+    {
+      key: 'macos-x64',
+      platform: 'macos',
+      title: copy.macosIntelTitle,
+      description: copy.macosIntelDescription,
+      href: macosX64?.browser_download_url || macosFallbackURL,
+      fileName: macosX64?.name,
+      fileSize: macosX64?.size,
+      digest: macosX64?.digest,
+      arch: 'x64',
+      archLabel: copy.intelLabel,
+      cta: macosX64
+        ? copy.macosIntelCta
+        : release?.homebrew_url
+          ? copy.macosFallbackCta
+          : copy.releaseFallbackCta,
+      fallback: !macosX64,
     },
     {
       key: 'linux',
+      platform: 'linux',
       title: copy.linuxTitle,
       description: copy.linuxDescription,
       href: linux?.browser_download_url || releasePageURL,
       fileName: linux?.name,
       fileSize: linux?.size,
       digest: linux?.digest,
-      arch: linux?.arch || 'x86_64',
+      arch: linuxArch === 'unknown' ? 'x64' : linuxArch,
       cta: linux ? copy.linuxCta : copy.linuxFallbackCta,
       fallback: !linux,
     },
@@ -197,9 +297,19 @@ export function buildDownloadCards(
 /** Pick the most relevant download card for the detected platform. */
 export function getRecommendedDownloadCard(
   cards: DownloadCard[],
-  platform: DesktopPlatform
+  device: DesktopDevice
 ) {
-  return cards.find((card) => card.key === platform) ?? cards[0] ?? null
+  const platformCards = cards.filter((card) => card.platform === device.platform)
+  if (platformCards.length === 0) return cards[0] ?? null
+
+  const exactCard =
+    device.arch === 'unknown'
+      ? null
+      : platformCards.find((card) => card.arch === device.arch)
+
+  if (exactCard) return exactCard
+  if (device.platform === 'macos' && platformCards.length > 1) return null
+  return platformCards[0] ?? null
 }
 
 /** Build installation guidance tracks for each supported desktop platform. */

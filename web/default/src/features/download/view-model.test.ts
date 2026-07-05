@@ -7,9 +7,14 @@ const copy: DownloadCopy = {
   windowsTitle: 'Windows',
   windowsDescription: 'windows-desc',
   windowsCta: 'Download for Windows',
-  macosTitle: 'macOS',
-  macosDescription: 'mac-desc',
-  macosCta: 'Download for macOS',
+  appleSiliconLabel: 'Apple Silicon',
+  intelLabel: 'Intel',
+  macosAppleSiliconTitle: 'macOS Apple Silicon',
+  macosAppleSiliconDescription: 'mac-arm-desc',
+  macosAppleSiliconCta: 'Download for Apple Silicon',
+  macosIntelTitle: 'macOS Intel',
+  macosIntelDescription: 'mac-intel-desc',
+  macosIntelCta: 'Download for Intel Mac',
   macosFallbackCta: 'Install with Homebrew',
   linuxTitle: 'Linux',
   linuxDescription: 'linux-desc',
@@ -34,12 +39,20 @@ const release: DesktopRelease = {
       arch: 'x64',
     },
     {
-      name: 'CodeGo_3.16.4_universal.dmg',
+      name: 'CodeGo_3.16.4_arm64.dmg',
       size: 20971520,
-      digest: 'sha256:macos-dmg',
-      browser_download_url: 'https://example.test/macos.dmg',
+      digest: 'sha256:macos-arm64',
+      browser_download_url: 'https://example.test/macos-arm64.dmg',
       platform: 'macos',
-      arch: 'universal',
+      arch: 'arm64',
+    },
+    {
+      name: 'CodeGo_3.16.4_x64.dmg',
+      size: 20971520,
+      digest: 'sha256:macos-x64',
+      browser_download_url: 'https://example.test/macos-x64.dmg',
+      platform: 'macos',
+      arch: 'x64',
     },
     {
       name: 'CodeGo_3.16.4_x64.AppImage',
@@ -57,17 +70,17 @@ describe('download page view model', () => {
     const viewModel = buildDownloadPageViewModel({
       release,
       copy,
-      platform: 'macos',
+      device: { platform: 'macos', arch: 'arm64' },
       isLoading: false,
     })
 
     assert.equal(viewModel.currentBuildLabel, 'v3.16.4')
     assert.match(viewModel.publishedAtLabel, /^2026-06-28 /)
-    assert.equal(viewModel.downloadCards.length, 3)
-    assert.equal(viewModel.recommendedCard?.key, 'macos')
+    assert.equal(viewModel.downloadCards.length, 4)
+    assert.equal(viewModel.recommendedCard?.key, 'macos-arm64')
     assert.equal(
       viewModel.recommendedCard?.href,
-      'https://example.test/macos.dmg'
+      'https://example.test/macos-arm64.dmg'
     )
     assert.equal(viewModel.recommendedTrack?.key, 'macos')
     assert.equal(viewModel.verificationItems.length, 3)
@@ -79,7 +92,7 @@ describe('download page view model', () => {
     const viewModel = buildDownloadPageViewModel({
       release: null,
       copy,
-      platform: 'unknown',
+      device: { platform: 'unknown', arch: 'unknown' },
       isLoading: true,
       error: new Error('Desktop release channel unavailable'),
     })
@@ -89,9 +102,22 @@ describe('download page view model', () => {
     assert.equal(viewModel.downloadCards[0]?.href, '/download')
     assert.equal(viewModel.downloadCards[1]?.href, '/download')
     assert.equal(viewModel.downloadCards[2]?.href, '/download')
+    assert.equal(viewModel.downloadCards[3]?.href, '/download')
     assert.equal(viewModel.recommendedCard?.key, 'windows')
     assert.equal(viewModel.recommendedTrack?.key, 'windows')
     assert.equal(viewModel.errorMessage, 'Desktop release channel unavailable')
     assert.equal(viewModel.isLoading, true)
+  })
+
+  test('leaves mac recommendation unset when architecture cannot be inferred safely', () => {
+    const viewModel = buildDownloadPageViewModel({
+      release,
+      copy,
+      device: { platform: 'macos', arch: 'unknown' },
+      isLoading: false,
+    })
+
+    assert.equal(viewModel.recommendedCard, null)
+    assert.equal(viewModel.recommendedTrack?.key, 'macos')
   })
 })

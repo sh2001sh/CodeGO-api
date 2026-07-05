@@ -17,6 +17,13 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 export type DesktopPlatform = 'windows' | 'macos' | 'linux' | 'unknown'
+export type DesktopArchitecture = 'arm64' | 'x64' | 'universal' | 'unknown'
+export type SupportedDesktopPlatform = Exclude<DesktopPlatform, 'unknown'>
+
+export type DesktopDevice = {
+  platform: DesktopPlatform
+  arch: DesktopArchitecture
+}
 
 export type DesktopReleaseAsset = {
   name: string
@@ -39,14 +46,16 @@ export type DesktopRelease = {
 }
 
 export type DownloadCard = {
-  key: Exclude<DesktopPlatform, 'unknown'>
+  key: string
+  platform: SupportedDesktopPlatform
   title: string
   description: string
   href: string
   fileName?: string
   fileSize?: number
   digest?: string
-  arch?: string
+  arch?: Exclude<DesktopArchitecture, 'unknown'>
+  archLabel?: string
   cta: string
   fallback: boolean
 }
@@ -55,9 +64,14 @@ export type DownloadCopy = {
   windowsTitle: string
   windowsDescription: string
   windowsCta: string
-  macosTitle: string
-  macosDescription: string
-  macosCta: string
+  appleSiliconLabel: string
+  intelLabel: string
+  macosAppleSiliconTitle: string
+  macosAppleSiliconDescription: string
+  macosAppleSiliconCta: string
+  macosIntelTitle: string
+  macosIntelDescription: string
+  macosIntelCta: string
   macosFallbackCta: string
   linuxTitle: string
   linuxDescription: string

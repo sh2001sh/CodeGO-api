@@ -23,7 +23,7 @@ import {
   getRecommendedDownloadCard,
 } from './lib.ts'
 import type {
-  DesktopPlatform,
+  DesktopDevice,
   DesktopRelease,
   DownloadCard,
   DownloadCopy,
@@ -46,7 +46,7 @@ export type DownloadPageViewModel = {
 type BuildDownloadPageViewModelArgs = {
   release?: DesktopRelease | null
   copy: DownloadCopy
-  platform: DesktopPlatform
+  device: DesktopDevice
   isLoading: boolean
   error?: unknown
 }
@@ -73,15 +73,15 @@ function formatPublishedAt(value?: string) {
 export function buildDownloadPageViewModel({
   release,
   copy,
-  platform,
+  device,
   isLoading,
   error,
 }: BuildDownloadPageViewModelArgs): DownloadPageViewModel {
   const downloadCards = buildDownloadCards(release, copy)
-  const recommendedCard = getRecommendedDownloadCard(downloadCards, platform)
+  const recommendedCard = getRecommendedDownloadCard(downloadCards, device)
   const installationTracks = buildInstallationTracks()
   const recommendedTrack =
-    installationTracks.find((track) => track.key === platform) ??
+    installationTracks.find((track) => track.key === device.platform) ??
     installationTracks[0] ??
     null
 

@@ -33,12 +33,13 @@ import { PublicLayout } from '@/components/layout'
 import { SiteSeo } from '@/components/seo'
 import { getPublicPageSeoEntry } from '@/lib/public-page-seo'
 import {
+  detectDesktopArchitecture,
   detectDesktopPlatform,
   formatFileSize,
   RELEASE_PAGE_URL,
   RELEASES_URL,
 } from './lib'
-import type { DesktopRelease, DownloadCopy } from './types'
+import type { DesktopDevice, DesktopRelease, DownloadCopy } from './types'
 import { buildDownloadPageViewModel } from './view-model'
 
 const downloadSeo = getPublicPageSeoEntry('/download')
@@ -50,11 +51,16 @@ function getDownloadCopy(t: (key: string) => string): DownloadCopy {
       'Installer with automatic updates for Windows 10 and above.'
     ),
     windowsCta: t('Download for Windows'),
-    macosTitle: t('macOS'),
-    macosDescription: t(
-      'Signed DMG package for macOS 12+ with Apple Silicon and Intel support.'
+    appleSiliconLabel: t('Apple Silicon'),
+    intelLabel: t('Intel'),
+    macosAppleSiliconTitle: t('macOS Apple Silicon'),
+    macosAppleSiliconDescription: t(
+      'Signed DMG installer for macOS 12+ on Apple Silicon (M-series).'
     ),
-    macosCta: t('Download for macOS'),
+    macosAppleSiliconCta: t('Download for Apple Silicon'),
+    macosIntelTitle: t('macOS Intel'),
+    macosIntelDescription: t('Signed DMG installer for macOS 12+ on Intel Macs.'),
+    macosIntelCta: t('Download for Intel Mac'),
     macosFallbackCta: t('Install with Homebrew'),
     linuxTitle: t('Linux'),
     linuxDescription: t(
@@ -95,11 +101,17 @@ export function DownloadPage() {
 
   const release = releaseQuery.data
   const copy = useMemo(() => getDownloadCopy(t), [t])
-  const recommendedPlatform = useMemo(
-    () =>
-      typeof navigator === 'undefined'
-        ? 'unknown'
-        : detectDesktopPlatform(navigator.userAgent),
+  const device = useMemo<DesktopDevice>(
+    () => {
+      if (typeof navigator === 'undefined') {
+        return { platform: 'unknown', arch: 'unknown' }
+      }
+      const platform = detectDesktopPlatform(navigator.userAgent)
+      return {
+        platform,
+        arch: detectDesktopArchitecture(navigator.userAgent, platform),
+      }
+    },
     []
   )
   const viewModel = useMemo(
@@ -107,19 +119,16 @@ export function DownloadPage() {
       buildDownloadPageViewModel({
         release,
         copy,
-        platform: recommendedPlatform,
+        device,
         isLoading: releaseQuery.isLoading,
         error: releaseQuery.error,
       }),
-    [
-      copy,
-      recommendedPlatform,
-      release,
-      releaseQuery.error,
-      releaseQuery.isLoading,
-    ]
+    [copy, device, release, releaseQuery.error, releaseQuery.isLoading]
   )
   const recommendedCard = viewModel.recommendedCard
+  const hasMacArchitectureChoice = viewModel.downloadCards.some(
+    (card) => card.key === 'macos-arm64'
+  )
 
   return (
     <PublicLayout showMainContainer={false}>
@@ -160,6 +169,13 @@ export function DownloadPage() {
                     }
                   >
                     {t('Recommended download')}: {recommendedCard.title}
+                  </Button>
+                ) : null}
+                {!recommendedCard &&
+                device.platform === 'macos' &&
+                hasMacArchitectureChoice ? (
+                  <Button size='lg' render={<a href='#desktop-downloads' />}>
+                    {t('Choose your Mac build')}
                   </Button>
                 ) : null}
                 <Button
@@ -225,12 +241,15 @@ export function DownloadPage() {
             </div>
           </div>
 
-          <div className='grid gap-5 lg:grid-cols-3'>
+          <div
+            id='desktop-downloads'
+            className='grid gap-5 md:grid-cols-2 xl:grid-cols-4'
+          >
             {viewModel.downloadCards.map((card) => {
               const Icon =
-                card.key === 'windows'
+                card.platform === 'windows'
                   ? Monitor
-                  : card.key === 'macos'
+                  : card.platform === 'macos'
                     ? Apple
                     : Laptop
               const isRecommended = viewModel.recommendedCard?.key === card.key
@@ -252,7 +271,7 @@ export function DownloadPage() {
                     <div className='flex flex-col items-end gap-2'>
                       {card.arch ? (
                         <span className='border-border rounded-full border px-2.5 py-1 text-xs font-medium'>
-                          {card.arch}
+                          {card.archLabel || card.arch}
                         </span>
                       ) : null}
                       {isRecommended ? (
@@ -356,7 +375,7 @@ export function DownloadPage() {
               </h2>
               <p className='text-muted-foreground mt-3 text-sm leading-6'>
                 {t(
-                  'Portable Windows, macOS archive, Linux .deb, Linux .rpm, and ARM64 builds remain available on the release page.'
+                  'Portable Windows builds, macOS archives, and Linux .deb/.rpm packages remain available on the release page.'
                 )}
               </p>
               <div className='mt-5 space-y-3'>
