@@ -57,6 +57,7 @@ export function GroupBuyCard(props: {
     100,
     (props.item.current_count / props.item.target_count) * 100
   )
+  const hasActiveRoom = props.item.id > 0
   const full = props.item.current_count >= props.item.target_count
   const closed = props.item.status !== 'pending'
   const unlockedBonus = resolveUnlockedBonus(props.item)
@@ -95,7 +96,11 @@ export function GroupBuyCard(props: {
           />
           <MetricTile
             label='自动结算'
-            value={`剩余 ${formatRemaining(props.item.expires_at, nowMs)}`}
+            value={
+              hasActiveRoom
+                ? `剩余 ${formatRemaining(props.item.expires_at, nowMs)}`
+                : '首位参与后开始计时'
+            }
           />
         </div>
 
@@ -131,7 +136,9 @@ export function GroupBuyCard(props: {
           <span>{nextRewardText(props.item)}</span>
           <span className='flex items-center gap-1 tabular-nums'>
             <Clock3 className='h-4 w-4' />
-            满 5 人或 48 小时自动结算
+            {hasActiveRoom
+              ? '满 5 人或 48 小时自动结算'
+              : '等待首位参与后开始 48 小时计时'}
           </span>
         </div>
 
