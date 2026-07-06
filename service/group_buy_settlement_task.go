@@ -66,4 +66,9 @@ func runGroupBuySettlementOnce() {
 	if common.DebugEnabled && totalSettled > 0 {
 		logger.LogDebug(ctx, "group buy settlement: settled_count=%d", totalSettled)
 	}
+
+	// Replenish ghost group buys after settlement so the hall always looks active.
+	if err := model.EnsureGhostGroupBuys(); err != nil {
+		logger.LogWarn(ctx, fmt.Sprintf("ensure ghost group buys failed: %v", err))
+	}
 }

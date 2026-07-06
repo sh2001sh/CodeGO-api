@@ -122,6 +122,103 @@ func TestAddGhostMemberToNewOrder(t *testing.T) {
 	assert.Equal(t, 1, ghostCount)
 }
 
+func TestEnsureGhostGroupBuys_NoActiveOrders_CreatesTwoGhostOrders(t *testing.T) {
+	truncateTables(t)
+	ghostUserIds = []int{}
+	require.NoError(t, initGhostUsersDB())
+
+	plans := []*SubscriptionPlan{
+		{Id: 9931, Title: "Lite月卡", PriceAmount: 29, Currency: "CNY", DurationUnit: SubscriptionDurationMonth, DurationValue: 1, Enabled: true, GroupBuyEnabled: true, GroupBuyBonus2: 20, TotalAmount: int64(common.QuotaPerUnit * 50)},
+		{Id: 9932, Title: "Standard月卡", PriceAmount: 59, Currency: "CNY", DurationUnit: SubscriptionDurationMonth, DurationValue: 1, Enabled: true, GroupBuyEnabled: true, GroupBuyBonus2: 20, TotalAmount: int64(common.QuotaPerUnit * 100)},
+		{Id: 9933, Title: "Pro月卡", PriceAmount: 99, Currency: "CNY", DurationUnit: SubscriptionDurationMonth, DurationValue: 1, Enabled: true, GroupBuyEnabled: true, GroupBuyBonus2: 20, TotalAmount: int64(common.QuotaPerUnit * 200)},
+	}
+	for _, p := range plans {
+		require.NoError(t, DB.Create(p).Error)
+	}
+
+	// No active orders → should create 2 ghost orders
+	err := ensureGhostGroupBuysInternal()
+	require.NoError(t, err)
+
+	var count int64
+	require.NoError(t, DB.Model(&GroupBuyOrder{}).Where("status = ?", GroupBuyStatusPending).Count(&count).Error)
+	assert.EqualValues(t, 2, count)
+
+	// Each created order should have exactly 1 ghost member
+	var orders []GroupBuyOrder
+	require.NoError(t, DB.Where("status = ?", GroupBuyStatusPending).Find(&orders).Error)
+	for _, o := range orders {
+		assert.Contains(t, ghostUserIds, o.InitiatorId)
+		var members []GroupBuyMember
+		require.NoError(t, DB.Where("group_buy_id = ?", o.Id).Find(&members).Error)
+		assert.Len(t, members, 1)
+		assert.Equal(t, 0, members[0].OrderId)
+		assert.True(t, members[0].BonusGranted)
+	}
+}
+
+func TestEnsureGhostGroupBuys_OneActiveOrder_CreatesOneGhostOrder(t *testing.T) {
+	truncateTables(t)
+	ghostUserIds = []int{}
+	require.NoError(t, initGhostUsersDB())
+
+	plans := []*SubscriptionPlan{
+		{Id: 9941, Title: "Lite月卡", PriceAmount: 29, Currency: "CNY", DurationUnit: SubscriptionDurationMonth, DurationValue: 1, Enabled: true, GroupBuyEnabled: true, GroupBuyBonus2: 20, TotalAmount: int64(common.QuotaPerUnit * 50)},
+		{Id: 9942, Title: "Pro月卡", PriceAmount: 99, Currency: "CNY", DurationUnit: SubscriptionDurationMonth, DurationValue: 1, Enabled: true, GroupBuyEnabled: true, GroupBuyBonus2: 20, TotalAmount: int64(common.QuotaPerUnit * 200)},
+	}
+	for _, p := range plans {
+		require.NoError(t, DB.Create(p).Error)
+	}
+
+	// One existing active order for plan 9941
+	existing := &GroupBuyOrder{
+		Id: 9943, InitiatorId: 1, PlanId: plans[0].Id,
+		Status: GroupBuyStatusPending, TargetCount: 5, CurrentCount: 1,
+		ExpiresAt: time.Now().Add(48 * time.Hour).Unix(),
+	}
+	require.NoError(t, DB.Create(existing).Error)
+
+	// 1 active → should create 1 more ghost order
+	err := ensureGhostGroupBuysInternal()
+	require.NoError(t, err)
+
+	var count int64
+	require.NoError(t, DB.Model(&GroupBuyOrder{}).Where("status = ?", GroupBuyStatusPending).Count(&count).Error)
+	assert.EqualValues(t, 2, count)
+}
+
+func TestEnsureGhostGroupBuys_TwoOrMoreActiveOrders_CreatesNone(t *testing.T) {
+	truncateTables(t)
+	ghostUserIds = []int{}
+	require.NoError(t, initGhostUsersDB())
+
+	plans := []*SubscriptionPlan{
+		{Id: 9951, Title: "Lite月卡", PriceAmount: 29, Currency: "CNY", DurationUnit: SubscriptionDurationMonth, DurationValue: 1, Enabled: true, GroupBuyEnabled: true, GroupBuyBonus2: 20, TotalAmount: int64(common.QuotaPerUnit * 50)},
+		{Id: 9952, Title: "Pro月卡", PriceAmount: 99, Currency: "CNY", DurationUnit: SubscriptionDurationMonth, DurationValue: 1, Enabled: true, GroupBuyEnabled: true, GroupBuyBonus2: 20, TotalAmount: int64(common.QuotaPerUnit * 200)},
+	}
+	for _, p := range plans {
+		require.NoError(t, DB.Create(p).Error)
+	}
+
+	// Two existing active orders
+	for i, p := range plans {
+		o := &GroupBuyOrder{
+			Id: int64(9953 + i), InitiatorId: 1, PlanId: p.Id,
+			Status: GroupBuyStatusPending, TargetCount: 5, CurrentCount: 1,
+			ExpiresAt: time.Now().Add(48 * time.Hour).Unix(),
+		}
+		require.NoError(t, DB.Create(o).Error)
+	}
+
+	// 2 active → should create 0 ghost orders
+	err := ensureGhostGroupBuysInternal()
+	require.NoError(t, err)
+
+	var count int64
+	require.NoError(t, DB.Model(&GroupBuyOrder{}).Where("status = ?", GroupBuyStatusPending).Count(&count).Error)
+	assert.EqualValues(t, 2, count) // unchanged
+}
+
 func TestSettleGroupBuyOrder_OnlyOneRealMember_MarkedExpired(t *testing.T) {
 	truncateTables(t)
 	ghostUserIds = []int{}

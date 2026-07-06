@@ -294,6 +294,11 @@ func InitResources() error {
 		common.SysLog("failed to initialize ghost users: " + err.Error())
 	}
 
+	// Ensure ghost group buys exist so the hall always looks active on startup
+	if err := model.EnsureGhostGroupBuys(); err != nil {
+		common.SysLog("failed to ensure ghost group buys: " + err.Error())
+	}
+
 	// Initialize options, should after model.InitDB()
 	model.InitOptionMap()
 

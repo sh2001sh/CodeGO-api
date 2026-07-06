@@ -432,11 +432,6 @@ func ApplyGroupBuyPurchaseAfterPaymentTx(tx *gorm.DB, order *SubscriptionOrder, 
 		}
 		order.GroupBuyId = groupOrder.Id
 
-		// Add ghost member to make new order look active (non-fatal)
-		if ghErr := AddGhostMemberToNewOrder(tx, groupOrder.Id); ghErr != nil {
-			common.SysLog("failed to add ghost member to order " + fmt.Sprintf("%d", groupOrder.Id) + ": " + ghErr.Error())
-		}
-
 		return nil
 	}
 	if purchaseType == SubscriptionPurchaseTypeJoinGroup {
