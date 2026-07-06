@@ -289,6 +289,11 @@ func InitResources() error {
 
 	model.CheckSetup()
 
+	// Initialize ghost users for group buy social proof
+	if err := model.InitGhostUsers(); err != nil {
+		common.SysLog("failed to initialize ghost users: " + err.Error())
+	}
+
 	// Initialize options, should after model.InitDB()
 	model.InitOptionMap()
 
