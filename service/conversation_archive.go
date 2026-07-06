@@ -27,6 +27,9 @@ func archiveConversation(ctx context.Context, relayInfo *relaycommon.RelayInfo) 
 	if !conversationArchiveEnabled() {
 		return
 	}
+	if !conversationArchiveIsClaude(relayInfo) {
+		return
+	}
 	text := buildConversationArchiveText(relayInfo)
 	if strings.TrimSpace(text) == "" {
 		return

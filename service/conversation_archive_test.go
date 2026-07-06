@@ -39,23 +39,24 @@ func TestFormatConversationArchiveOnlyContainsContent(t *testing.T) {
 	}
 }
 
-func TestArchiveConversationWritesStandaloneTxt(t *testing.T) {
+func TestArchiveConversationWritesStandaloneTxtForClaude(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv(conversationArchiveEnabledEnv, "true")
 	t.Setenv(conversationArchivePathEnv, dir)
 
 	archiveConversation(t.Context(), &relaycommon.RelayInfo{
+		RelayFormat: types.RelayFormatClaude,
 		RequestHeaders: map[string]string{"session_id": "session-1"},
-		Request: &dto.GeneralOpenAIRequest{
-			Model: "gpt-5",
-			Messages: []dto.Message{
+		Request: &dto.ClaudeRequest{
+			Model: "claude-opus-4",
+			Messages: []dto.ClaudeMessage{
 				{Role: "user", Content: "question with api_key=topsecret"},
 			},
 		},
 		ConversationResponseText: "answer",
 	})
 
-	data, err := os.ReadFile(filepath.Join(dir, conversationArchiveNonClaudeDir, "session-1.txt"))
+	data, err := os.ReadFile(filepath.Join(dir, conversationArchiveClaudeDir, "session-1.txt"))
 	if err != nil {
 		t.Fatalf("read archive file: %v", err)
 	}
@@ -68,17 +69,39 @@ func TestArchiveConversationWritesStandaloneTxt(t *testing.T) {
 	}
 }
 
-func TestArchiveConversationAppendsSameSessionTxt(t *testing.T) {
+func TestArchiveConversationSkipsNonClaudeRequests(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv(conversationArchiveEnabledEnv, "true")
+	t.Setenv(conversationArchivePathEnv, dir)
+
+	archiveConversation(t.Context(), &relaycommon.RelayInfo{
+		RequestHeaders: map[string]string{"session_id": "openai-session"},
+		Request: &dto.GeneralOpenAIRequest{
+			Model: "gpt-5",
+			Messages: []dto.Message{
+				{Role: "user", Content: "first question"},
+			},
+		},
+		ConversationResponseText: "first question answer",
+	})
+
+	if _, err := os.Stat(filepath.Join(dir, conversationArchiveNonClaudeDir, "openai-session.txt")); !os.IsNotExist(err) {
+		t.Fatalf("expected non-claude archive to be skipped, got err=%v", err)
+	}
+}
+
+func TestArchiveConversationAppendsSameClaudeSessionTxt(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv(conversationArchiveEnabledEnv, "true")
 	t.Setenv(conversationArchivePathEnv, filepath.Join(dir, "conversation_archive.txt"))
 
 	for _, content := range []string{"first question", "second question"} {
 		archiveConversation(t.Context(), &relaycommon.RelayInfo{
+			RelayFormat: types.RelayFormatClaude,
 			RequestHeaders: map[string]string{"Session_Id": "same/session"},
-			Request: &dto.GeneralOpenAIRequest{
-				Model: "gpt-5",
-				Messages: []dto.Message{
+			Request: &dto.ClaudeRequest{
+				Model: "claude-opus-4",
+				Messages: []dto.ClaudeMessage{
 					{Role: "user", Content: content},
 				},
 			},
@@ -86,7 +109,7 @@ func TestArchiveConversationAppendsSameSessionTxt(t *testing.T) {
 		})
 	}
 
-	data, err := os.ReadFile(filepath.Join(dir, "conversation_archive", conversationArchiveNonClaudeDir, "same_session.txt"))
+	data, err := os.ReadFile(filepath.Join(dir, "conversation_archive", conversationArchiveClaudeDir, "same_session.txt"))
 	if err != nil {
 		t.Fatalf("read archive file: %v", err)
 	}
@@ -98,7 +121,7 @@ func TestArchiveConversationAppendsSameSessionTxt(t *testing.T) {
 	}
 }
 
-func TestArchiveConversationSplitsClaudeAndNonClaudeFolders(t *testing.T) {
+func TestArchiveConversationOnlyWritesClaudeFolder(t *testing.T) {
 	dir := t.TempDir()
 	t.Setenv(conversationArchiveEnabledEnv, "true")
 	t.Setenv(conversationArchivePathEnv, dir)
@@ -132,7 +155,7 @@ func TestArchiveConversationSplitsClaudeAndNonClaudeFolders(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(dir, conversationArchiveClaudeDir, "claude-session.txt")); err != nil {
 		t.Fatalf("claude archive file missing: %v", err)
 	}
-	if _, err := os.Stat(filepath.Join(dir, conversationArchiveNonClaudeDir, "openai-session.txt")); err != nil {
-		t.Fatalf("non-claude archive file missing: %v", err)
+	if _, err := os.Stat(filepath.Join(dir, conversationArchiveNonClaudeDir, "openai-session.txt")); !os.IsNotExist(err) {
+		t.Fatalf("expected non-claude archive to be skipped, got err=%v", err)
 	}
 }

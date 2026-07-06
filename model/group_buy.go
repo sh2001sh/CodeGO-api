@@ -3,6 +3,8 @@ package model
 import (
 	"errors"
 	"fmt"
+	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/QuantumNous/new-api/common"
@@ -169,7 +171,30 @@ func ListActiveGroupBuys(userId int) ([]GroupBuyListItem, error) {
 		}
 		items = append(items, buildEmptyGroupBuyRoom(plan))
 	}
+	items = injectGhostParticipants(items)
 	return items, nil
+}
+
+// injectGhostParticipants adds 1-2 fake current_count to 2 randomly chosen empty
+// monthly-plan rooms when there are 2+ such empty rooms, to improve social proof.
+// This is display-only: id remains 0, no DB writes, real join logic is unaffected.
+func injectGhostParticipants(items []GroupBuyListItem) []GroupBuyListItem {
+	emptyIdx := make([]int, 0, len(items))
+	for i, item := range items {
+		if item.Id == 0 && strings.Contains(item.PlanName, "月卡") {
+			emptyIdx = append(emptyIdx, i)
+		}
+	}
+	if len(emptyIdx) < 2 {
+		return items
+	}
+	rand.Shuffle(len(emptyIdx), func(i, j int) {
+		emptyIdx[i], emptyIdx[j] = emptyIdx[j], emptyIdx[i]
+	})
+	for _, idx := range emptyIdx[:2] {
+		items[idx].CurrentCount = 1 + rand.Intn(2)
+	}
+	return items
 }
 
 func oneGroupBuyOrderPerPlan(orders []GroupBuyOrder) []GroupBuyOrder {
