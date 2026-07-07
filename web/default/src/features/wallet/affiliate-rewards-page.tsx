@@ -26,7 +26,10 @@ import {
   Users,
   Wallet,
 } from 'lucide-react'
+import { motion, useReducedMotion, type Variants } from 'motion/react'
 import { toast } from 'sonner'
+import { MOTION_TRANSITION } from '@/lib/motion'
+import { cn } from '@/lib/utils'
 import { formatNumber, formatTimestampToDate } from '@/lib/format'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -52,31 +55,50 @@ import { consumeSubscriptionResetOpportunity } from '@/features/subscriptions/ap
 import { useAffiliate } from './hooks'
 import type { AffiliateInviteeRewardStatus } from './types'
 
+const CARDS_STAGGER: Variants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.08, delayChildren: 0.1 } },
+}
+
+const CARD_ITEM: Variants = {
+  hidden: { opacity: 0, y: 14, scale: 0.97 },
+  visible: { opacity: 1, y: 0, scale: 1, transition: MOTION_TRANSITION.slow },
+}
+
+const SECTION_FADE: Variants = {
+  hidden: { opacity: 0, y: 20 },
+  visible: { opacity: 1, y: 0, transition: MOTION_TRANSITION.slow },
+}
+
 function StatCard(props: {
   title: string
   value: string
   hint: string
   icon: ComponentType<{ className?: string }>
+  iconClass?: string
 }) {
   const Icon = props.icon
 
   return (
-    <Card className='py-0'>
-      <CardContent className='flex items-start justify-between gap-4 p-4'>
-        <div className='min-w-0'>
-          <div className='text-muted-foreground text-xs font-medium'>
+    <motion.div variants={CARD_ITEM} className='overview-soft-card px-4 py-4'>
+      <div className='flex items-start justify-between gap-3'>
+        <div className='min-w-0 flex-1'>
+          <div className='text-muted-foreground text-[11px] font-medium uppercase tracking-wide'>
             {props.title}
           </div>
           <div className='mt-2 text-2xl font-semibold tracking-tight'>
             {props.value}
           </div>
-          <div className='text-muted-foreground mt-1 text-sm'>{props.hint}</div>
+          <div className='text-muted-foreground mt-1 text-xs leading-5'>{props.hint}</div>
         </div>
-        <div className='bg-muted flex size-10 shrink-0 items-center justify-center rounded-xl border'>
-          <Icon className='text-muted-foreground size-4' />
+        <div className={cn(
+          'flex size-9 shrink-0 items-center justify-center rounded-xl',
+          props.iconClass ?? 'bg-muted text-muted-foreground'
+        )}>
+          <Icon className='size-4' />
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </motion.div>
   )
 }
 
@@ -93,6 +115,7 @@ function getInviteeName(invitee: AffiliateInviteeRewardStatus) {
 }
 
 export function AffiliateRewardsPage() {
+  const shouldReduceMotion = Boolean(useReducedMotion())
   const [usingResetOpportunity, setUsingResetOpportunity] = useState(false)
   const {
     overview,
@@ -162,6 +185,11 @@ export function AffiliateRewardsPage() {
       </SectionPageLayout.Actions>
       <SectionPageLayout.Content>
         <div className='mx-auto flex w-full max-w-7xl flex-col gap-4'>
+          <motion.div
+            variants={SECTION_FADE}
+            initial={shouldReduceMotion ? false : 'hidden'}
+            animate='visible'
+          >
           <Card className='overflow-hidden py-0'>
             <CardContent className='grid gap-4 bg-[linear-gradient(135deg,rgba(255,255,255,0.98),rgba(246,249,252,0.96),rgba(252,249,244,0.96))] p-4 sm:p-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(320px,0.8fr)] dark:bg-[linear-gradient(135deg,rgba(23,29,38,0.98),rgba(18,23,31,0.96),rgba(27,32,42,0.94))]'>
               <div className='min-w-0'>
@@ -245,6 +273,7 @@ export function AffiliateRewardsPage() {
               </div>
             </CardContent>
           </Card>
+          </motion.div>
 
           {loading ? (
             <div className='grid gap-3 md:grid-cols-2 xl:grid-cols-4'>
@@ -253,35 +282,51 @@ export function AffiliateRewardsPage() {
               ))}
             </div>
           ) : (
-            <div className='grid gap-3 md:grid-cols-2 xl:grid-cols-4'>
+            <motion.div
+              className='grid gap-3 md:grid-cols-2 xl:grid-cols-4'
+              variants={CARDS_STAGGER}
+              initial={shouldReduceMotion ? false : 'hidden'}
+              whileInView='visible'
+              viewport={{ once: true, margin: '-40px' }}
+            >
               <StatCard
                 title='已邀请人数'
                 value={formatNumber(overview?.invited_count ?? 0)}
                 hint='通过你的链接完成注册的用户数'
                 icon={Users}
+                iconClass='bg-blue-500/10 text-blue-500'
               />
               <StatCard
                 title='月卡首购完成'
                 value={formatNumber(overview?.successful_purchase_invites ?? 0)}
                 hint='已经为你触发刷新机会的人数'
                 icon={Sparkles}
+                iconClass='bg-amber-500/10 text-amber-500'
               />
               <StatCard
                 title='可刷新次数'
                 value={formatNumber(resetOpportunity.available_count)}
                 hint='当前还能使用的刷新机会'
                 icon={RotateCcw}
+                iconClass='bg-emerald-500/10 text-emerald-500'
               />
               <StatCard
                 title='本月状态'
                 value={resetOpportunity.used_this_month ? '已使用' : '可刷新'}
                 hint='每个自然月最多刷新 1 次'
                 icon={Wallet}
+                iconClass='bg-violet-500/10 text-violet-500'
               />
-            </div>
+            </motion.div>
           )}
 
-          <div className='grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(340px,0.8fr)]'>
+          <motion.div
+            className='grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(340px,0.8fr)]'
+            variants={SECTION_FADE}
+            initial={shouldReduceMotion ? false : 'hidden'}
+            whileInView='visible'
+            viewport={{ once: true, margin: '-40px' }}
+          >
             <Card className='py-0'>
               <CardHeader>
                 <CardTitle>邀请明细</CardTitle>
@@ -356,32 +401,33 @@ export function AffiliateRewardsPage() {
             </Card>
 
             <div className='flex flex-col gap-4'>
-              <Card className='py-0'>
-                <CardHeader>
-                  <CardTitle>立即刷新</CardTitle>
-                  <CardDescription>
-                    使用刷新机会清空当前订阅的已用额度。本月已刷新或暂无机会时不可用。
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className='space-y-3 pb-4'>
-                  <div className='grid gap-2 sm:grid-cols-2'>
-                    <div className='rounded-xl border bg-muted/30 px-3 py-3'>
-                      <div className='text-muted-foreground text-[11px] font-medium'>
-                        可用次数
-                      </div>
-                      <div className='mt-1 text-2xl font-semibold'>
-                        {resetOpportunity.available_count}
-                      </div>
+              <div className='overview-glass-card rounded-2xl p-5'>
+                <div className='text-base font-semibold'>立即刷新</div>
+                <div className='text-muted-foreground mt-1 text-sm leading-6'>
+                  使用刷新机会清空当前订阅的已用额度。本月已刷新或暂无机会时不可用。
+                </div>
+                <div className='mt-4 grid gap-2 sm:grid-cols-2'>
+                  <div className='overview-soft-card px-3 py-3'>
+                    <div className='text-muted-foreground text-[11px] font-medium uppercase tracking-wide'>
+                      可用次数
                     </div>
-                    <div className='rounded-xl border bg-muted/30 px-3 py-3'>
-                      <div className='text-muted-foreground text-[11px] font-medium'>
-                        本月状态
-                      </div>
-                      <div className='mt-1 text-2xl font-semibold'>
-                        {resetOpportunity.used_this_month ? '已用' : '可用'}
-                      </div>
+                    <div className='mt-1.5 text-2xl font-semibold tabular-nums'>
+                      {resetOpportunity.available_count}
                     </div>
                   </div>
+                  <div className='overview-soft-card px-3 py-3'>
+                    <div className='text-muted-foreground text-[11px] font-medium uppercase tracking-wide'>
+                      本月状态
+                    </div>
+                    <div className={cn(
+                      'mt-1.5 text-2xl font-semibold tabular-nums',
+                      resetOpportunity.used_this_month ? 'text-muted-foreground' : 'text-emerald-600 dark:text-emerald-400'
+                    )}>
+                      {resetOpportunity.used_this_month ? '已用' : '可用'}
+                    </div>
+                  </div>
+                </div>
+                <div className='mt-4 flex flex-col gap-2'>
                   <Button
                     className='w-full'
                     onClick={() => void handleUseResetOpportunity()}
@@ -396,24 +442,31 @@ export function AffiliateRewardsPage() {
                   <Button variant='outline' className='w-full' render={<Link to='/wallet' />}>
                     去钱包查看当前订阅
                   </Button>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
 
-              <Card className='py-0'>
-                <CardHeader>
-                  <CardTitle>你会刷新什么</CardTitle>
-                  <CardDescription>
-                    刷新只影响当前排序第 1 个生效订阅，具体排序可在钱包页调整。
-                  </CardDescription>
-                </CardHeader>
-                <CardContent className='pb-4 text-sm leading-6 text-muted-foreground'>
-                  <p>1. 清空当前订阅的已用总额度。</p>
-                  <p>2. 如果有周期额度，也会一起清空周期已用值。</p>
-                  <p>3. 不延长套餐到期时间，不增加总额度，不改变权益组。</p>
-                </CardContent>
-              </Card>
+              <div className='overview-glass-card rounded-2xl p-5'>
+                <div className='text-base font-semibold'>你会刷新什么</div>
+                <div className='text-muted-foreground mt-1 text-sm leading-6'>
+                  刷新只影响当前排序第 1 个生效订阅，具体排序可在钱包页调整。
+                </div>
+                <ul className='mt-3 space-y-2 text-sm leading-6 text-muted-foreground'>
+                  <li className='flex items-start gap-2'>
+                    <span className='mt-1 inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-foreground/10 text-[10px] font-semibold text-foreground'>1</span>
+                    清空当前订阅的已用总额度。
+                  </li>
+                  <li className='flex items-start gap-2'>
+                    <span className='mt-1 inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-foreground/10 text-[10px] font-semibold text-foreground'>2</span>
+                    如果有周期额度，也会一起清空周期已用值。
+                  </li>
+                  <li className='flex items-start gap-2'>
+                    <span className='mt-1 inline-flex size-4 shrink-0 items-center justify-center rounded-full bg-foreground/10 text-[10px] font-semibold text-foreground'>3</span>
+                    不延长套餐到期时间，不增加总额度，不改变权益组。
+                  </li>
+                </ul>
+              </div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </SectionPageLayout.Content>
     </SectionPageLayout>

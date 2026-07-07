@@ -2,42 +2,32 @@ import { Link } from '@tanstack/react-router'
 import {
   ArrowRight,
   BookOpenText,
-  Code2,
   Compass,
   FolderKanban,
   ShieldAlert,
-  Terminal,
 } from 'lucide-react'
+import { motion, useReducedMotion, type Variants } from 'motion/react'
+import { MOTION_TRANSITION } from '@/lib/motion'
 import { SiteSeo } from '@/components/seo'
 import { getPublicPageSeoEntry } from '@/lib/public-page-seo'
 import { Button } from '@/components/ui/button'
 import { PublicLayout } from '@/components/layout'
 import { guideSections } from './content'
 
-const brandSections = [
-  {
-    title: '适合 Codex 用户',
-    text: '如果你已经把 Codex 用进日常工作，Code Go 可以继续承接这条工作流。',
-  },
-  {
-    title: '适合 Claude Code 用户',
-    text: '如果你偏终端、偏任务流，Code Go 可以作为日常调用和记录的入口。',
-  },
-  {
-    title: '一句话介绍',
-    text: '让 AI Coding 的每一步，都算数。',
-  },
-]
-
 const guideSeo = getPublicPageSeoEntry('/guide')
+
+const SECTION_REVEAL: Variants = {
+  hidden: { opacity: 0, y: 24 },
+  visible: { opacity: 1, y: 0, transition: MOTION_TRANSITION.slow },
+}
 
 function GuideDiagram(props: { title: string; steps: string[] }) {
   return (
-    <div className='rounded-2xl border bg-background/70 p-4'>
+    <div className='overview-soft-card p-4'>
       <div className='text-sm font-medium text-foreground'>{props.title}</div>
       <div className='mt-3 grid gap-3 md:grid-cols-2 xl:grid-cols-4'>
         {props.steps.map((step, index) => (
-          <div key={step} className='relative rounded-2xl border bg-card p-3'>
+          <div key={step} className='relative rounded-xl border border-border/60 bg-background/80 p-3 shadow-sm'>
             <div className='text-[11px] font-semibold tracking-[0.22em] text-muted-foreground uppercase'>
               Step {index + 1}
             </div>
@@ -58,11 +48,16 @@ function GuideDiagram(props: { title: string; steps: string[] }) {
 
 function GuideSectionBlock(props: { section: (typeof guideSections)[number] }) {
   const { section } = props
+  const shouldReduceMotion = Boolean(useReducedMotion())
 
   return (
-    <section
+    <motion.section
       id={section.id}
       className='scroll-mt-24 border-t border-border/50 py-10 first:border-t-0 first:pt-0'
+      variants={SECTION_REVEAL}
+      initial={shouldReduceMotion ? false : 'hidden'}
+      whileInView='visible'
+      viewport={{ once: true, margin: '-60px' }}
     >
       <div className='grid gap-8 xl:grid-cols-[minmax(0,0.9fr)_minmax(360px,1.1fr)]'>
         <div className='space-y-5'>
@@ -85,7 +80,7 @@ function GuideSectionBlock(props: { section: (typeof guideSections)[number] }) {
                   key={`${section.id}-step-${index}`}
                   className='flex gap-3 text-sm leading-7 text-slate-700 dark:text-slate-300'
                 >
-                  <span className='mt-1 inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-muted text-xs font-semibold text-foreground'>
+                  <span className='mt-1 inline-flex size-6 shrink-0 items-center justify-center rounded-full bg-foreground text-xs font-semibold text-background'>
                     {index + 1}
                   </span>
                   <span>{step}</span>
@@ -102,12 +97,12 @@ function GuideSectionBlock(props: { section: (typeof guideSections)[number] }) {
           ) : null}
 
           {section.notes && section.notes.length > 0 ? (
-            <div className='rounded-2xl border border-amber-200/70 bg-muted/55 px-4 py-4 dark:border-amber-900/60'>
-              <div className='mb-3 flex items-center gap-2 text-sm font-medium text-amber-700 dark:text-amber-300'>
+            <div className='rounded-2xl border border-amber-400/25 bg-amber-50/60 px-5 py-4 shadow-[0_0_0_1px_rgba(245,158,11,0.06)_inset] dark:border-amber-700/25 dark:bg-amber-950/20'>
+              <div className='mb-3 flex items-center gap-2 text-sm font-semibold text-amber-700 dark:text-amber-400'>
                 <ShieldAlert className='size-4' />
                 说明
               </div>
-              <ul className='space-y-2 text-sm leading-6 text-slate-700 dark:text-slate-300'>
+              <ul className='space-y-2 text-sm leading-7 text-slate-700 dark:text-slate-300'>
                 {section.notes.map((note, index) => (
                   <li key={`${section.id}-note-${index}`}>{note}</li>
                 ))}
@@ -119,7 +114,7 @@ function GuideSectionBlock(props: { section: (typeof guideSections)[number] }) {
         <div className='space-y-5'>
           {section.images.map((image) => (
             <figure key={image.src} className='space-y-3'>
-              <div className='overflow-hidden rounded-2xl border border-slate-200/80 bg-muted/35 shadow-sm dark:border-slate-800'>
+              <div className='overflow-hidden rounded-2xl border border-border/60 bg-muted/35 shadow-[0_2px_12px_rgba(24,32,43,0.06)] transition-shadow hover:shadow-[0_4px_20px_rgba(24,32,43,0.1)] dark:shadow-[0_2px_12px_rgba(0,0,0,0.24)] dark:hover:shadow-[0_4px_20px_rgba(0,0,0,0.32)]'>
                 <img
                   src={image.src}
                   alt={image.alt}
@@ -134,7 +129,7 @@ function GuideSectionBlock(props: { section: (typeof guideSections)[number] }) {
           ))}
         </div>
       </div>
-    </section>
+    </motion.section>
   )
 }
 
@@ -148,7 +143,8 @@ export function Guide() {
         canonicalPath={guideSeo.path}
       />
       <main className='bg-background'>
-        <section className='border-b border-border/50 px-6 pb-10 pt-28 md:px-10 md:pb-14 md:pt-32'>
+        <section className='relative overflow-hidden border-b border-border/50 px-6 pb-10 pt-28 md:px-10 md:pb-14 md:pt-32'>
+          <div className='pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_80%_50%_at_50%_-10%,color-mix(in_oklch,var(--primary)_10%,transparent),transparent)]' />
           <div className='mx-auto flex max-w-7xl flex-col gap-8 lg:flex-row lg:items-end lg:justify-between'>
             <div className='max-w-3xl space-y-4'>
               <div className='inline-flex items-center gap-2 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300'>
@@ -166,20 +162,20 @@ export function Guide() {
             </div>
 
             <div className='grid gap-3 sm:grid-cols-3 lg:min-w-[440px]'>
-              <div className='rounded-2xl border border-slate-200/70 px-4 py-4 dark:border-slate-800'>
-                <div className='text-xs uppercase text-muted-foreground'>章节数量</div>
+              <div className='overview-soft-card px-4 py-4'>
+                <div className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>章节数量</div>
                 <div className='mt-2 text-2xl font-semibold'>
                   {guideSections.length}
                 </div>
               </div>
-              <div className='rounded-2xl border border-slate-200/70 px-4 py-4 dark:border-slate-800'>
-                <div className='text-xs uppercase text-muted-foreground'>说明范围</div>
+              <div className='overview-soft-card px-4 py-4'>
+                <div className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>说明范围</div>
                 <div className='mt-2 text-sm font-medium leading-6'>
                   从首页到钱包
                 </div>
               </div>
-              <div className='rounded-2xl border border-slate-200/70 px-4 py-4 dark:border-slate-800'>
-                <div className='text-xs uppercase text-muted-foreground'>玩法文档</div>
+              <div className='overview-soft-card px-4 py-4'>
+                <div className='text-xs font-medium uppercase tracking-wide text-muted-foreground'>玩法文档</div>
                 <div className='mt-2 text-sm font-medium leading-6'>
                   宠物、盲盒、套餐
                 </div>
@@ -189,79 +185,23 @@ export function Guide() {
         </section>
 
         <section className='px-6 py-8 md:px-10'>
-          <div className='mx-auto max-w-7xl'>
-            <div className='mb-6 max-w-3xl space-y-3'>
-              <div className='inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold'>
-                <Terminal className='size-3.5' />
-                一句话介绍
-              </div>
-              <h2 className='text-2xl font-semibold tracking-tight text-slate-950 dark:text-slate-50'>
-                为什么这句话适合放在首页
-              </h2>
-              <p className='text-sm leading-7 text-muted-foreground'>
-                因为它直接说明了产品要解决的事：不是只完成一次调用，而是让 AI Coding 持续积累。
-              </p>
-            </div>
-            <div className='grid gap-4 md:grid-cols-3'>
-              {brandSections.map((item) => (
-                <div key={item.title} className='rounded-3xl border bg-background p-5'>
-                <div className='flex items-center gap-2 text-sm font-semibold'>
-                  <Code2 className='size-4 text-amber-600' />
-                  {item.title}
-                </div>
-                <p className='mt-2 text-sm leading-7 text-muted-foreground'>
-                    {item.text}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        <section className='px-6 py-8 md:px-10'>
-          <div className='mx-auto max-w-7xl rounded-3xl border bg-background p-6'>
-            <div className='max-w-3xl space-y-3'>
-              <div className='inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-semibold'>
-                <Compass className='size-3.5' />
-                关键词入口
-              </div>
-              <h2 className='text-2xl font-semibold tracking-tight text-slate-950 dark:text-slate-50'>
-                从搜索词直接进入 Code Go
-              </h2>
-              <p className='text-sm leading-7 text-muted-foreground'>
-                如果你是从 Codex API、Claude Code API、Codex 中转、Claude 中转，或者教程、配置、对比、报错相关关键词进入，可以直接查看专题聚合页。
-              </p>
-            </div>
-            <div className='mt-5 flex flex-wrap gap-3'>
-              <Button variant='outline' render={<Link to='/topics' />}>
-                查看专题聚合页
-                <ArrowRight className='ml-2 size-4' />
-              </Button>
-              <Button variant='ghost' render={<Link to='/pricing' />}>
-                查看模型广场
-              </Button>
-            </div>
-          </div>
-        </section>
-
-        <section className='px-6 py-8 md:px-10'>
           <div className='mx-auto grid max-w-7xl gap-10 xl:grid-cols-[240px_minmax(0,1fr)]'>
             <aside className='xl:sticky xl:top-24 xl:self-start'>
-              <div className='space-y-4 rounded-2xl border border-slate-200/70 bg-muted/40 p-4 dark:border-slate-800'>
+              <div className='overview-glass-card space-y-4 rounded-2xl p-4'>
                 <div className='flex items-center gap-2 text-sm font-semibold'>
                   <Compass className='size-4' />
                   导航目录
                 </div>
 
                 <nav aria-label='使用说明章节目录'>
-                  <ul className='space-y-1.5'>
+                  <ul className='space-y-1'>
                     {guideSections.map((section) => (
                       <li key={section.id}>
                         <a
                           href={`#${section.id}`}
-                          className='flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-muted-foreground transition-colors hover:text-foreground'
+                          className='flex items-center gap-3 rounded-xl px-3 py-2 text-sm text-muted-foreground transition-colors hover:bg-background/50 hover:text-foreground'
                         >
-                          <span className='text-[11px] font-semibold uppercase tracking-[0.22em]'>
+                          <span className='text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/60'>
                             {section.eyebrow}
                           </span>
                           <span>{section.title}</span>

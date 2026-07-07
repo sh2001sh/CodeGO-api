@@ -1,9 +1,15 @@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { cn } from '@/lib/utils'
+import { motion, useReducedMotion, type Variants } from 'motion/react'
 import { AlertCircle, ChevronDown, Gift, Loader2, Sparkles } from 'lucide-react'
 import type { BlindBoxSelfData, BlindBoxTier, PaymentMethod } from '../types'
 import { PaymentMethodSelector, PityStatusCard } from './blind-box-view-parts'
+
+const STACK: Variants = {
+  hidden: {},
+  visible: { transition: { staggerChildren: 0.07, delayChildren: 0.05 } },
+}
 
 interface BlindBoxCardViewProps {
   data: BlindBoxSelfData | null
@@ -66,13 +72,19 @@ function groupBlindBoxTiers(tiers: BlindBoxTier[]) {
 }
 
 export function BlindBoxCardView(props: BlindBoxCardViewProps) {
+  const shouldReduceMotion = Boolean(useReducedMotion())
   const firstPurchaseStartUSD = props.data?.first_purchase_guarantee_usd ?? 0
   const firstPurchaseEligible =
     props.data?.first_purchase_guarantee_eligible ?? false
   const groupedTiers = groupBlindBoxTiers(props.data?.tiers || [])
 
   return (
-    <div className='space-y-5'>
+    <motion.div
+      className='space-y-5'
+      variants={STACK}
+      initial={shouldReduceMotion ? false : 'hidden'}
+      animate='visible'
+    >
       {props.availableBoxes > 0 ? (
         <div className='flex items-start gap-3 rounded-xl border border-amber-500/25 bg-amber-500/5 p-4'>
           <div className='flex size-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/12 text-amber-600 dark:text-amber-500'>
@@ -152,10 +164,10 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
         />
       </div>
 
-      <div className='app-subtle-panel p-4'>
+      <div className='overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-background to-muted/30 p-4 shadow-sm'>
         <div className='flex flex-wrap items-center justify-between gap-4'>
           <div>
-            <div className='text-muted-foreground text-xs font-medium'>
+            <div className='text-muted-foreground text-xs font-medium uppercase tracking-wide'>
               应付金额
             </div>
             <div className='text-foreground mt-1 text-2xl font-semibold tabular-nums'>
@@ -197,7 +209,7 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
       </div>
 
       {props.showPrizeNotice ? (
-        <div className='app-subtle-panel p-4'>
+        <div className='overview-glass-card rounded-2xl p-4'>
           <div className='mb-3 flex items-center justify-between gap-3'>
             <div className='text-foreground text-sm font-semibold'>盲盒奖池</div>
             <Button
@@ -344,7 +356,7 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
           </div>
         </div>
       ) : null}
-    </div>
+    </motion.div>
   )
 }
 

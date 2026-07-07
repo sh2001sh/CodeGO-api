@@ -254,15 +254,25 @@ export function BrandHome() {
               whileInView='visible'
               viewport={{ once: true, margin: '-80px' }}
             >
-              <div className='mb-3 flex items-center justify-between gap-4'>
-                <div className='text-foreground text-sm font-semibold dark:text-slate-100'>
-                  当前模型储备
-                </div>
-                {freeCount > 0 ? (
-                  <div className='rounded-full border border-emerald-600/18 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-500/12 dark:text-emerald-200'>
-                    {freeCount} FREE
+              <div className='mb-4 flex items-center justify-between gap-4'>
+                <div className='flex items-center gap-2'>
+                  <div className='h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.6)]' />
+                  <div className='text-foreground text-sm font-semibold dark:text-slate-100'>
+                    当前模型储备
                   </div>
-                ) : null}
+                </div>
+                <div className='flex items-center gap-2'>
+                  {models.length > 0 ? (
+                    <div className='rounded-full border border-slate-900/10 bg-white/40 px-2.5 py-1 text-xs font-medium text-slate-600 backdrop-blur dark:border-white/10 dark:bg-white/8 dark:text-slate-300'>
+                      {models.length}+ 个模型
+                    </div>
+                  ) : null}
+                  {freeCount > 0 ? (
+                    <div className='rounded-full border border-emerald-600/18 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-500/12 dark:text-emerald-200'>
+                      {freeCount} 个免费
+                    </div>
+                  ) : null}
+                </div>
               </div>
               <div className='home-marquee-shell is-immersive'>
                 <ModelMarquee
@@ -280,10 +290,7 @@ export function BrandHome() {
                 />
               </div>
               <div className='text-muted-foreground mx-auto mt-6 max-w-4xl text-center text-sm leading-7 dark:text-slate-200/82'>
-                适合搜索 Codex中转、Claude中转、Codex API、Claude Code API
-                的开发者先看模型分组与免费模型，再决定什么时候切到 GPT
-                或 Claude。当前也覆盖 DeepSeek、GLM、Kimi、Qwen
-                等免费模型入口，方便先完成第一轮整理、改写和轻量代码任务。
+                面向 Codex、Claude Code 等 AI Coding 工作流，覆盖接入、调用与持续使用的完整链路。
               </div>
             </motion.div>
           </div>
