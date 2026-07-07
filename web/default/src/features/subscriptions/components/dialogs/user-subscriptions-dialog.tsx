@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { Pencil, Plus } from 'lucide-react'
+import { Pencil, Plus, RotateCcw } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/confirm-dialog'
@@ -62,6 +62,7 @@ import {
   getAdminPlans,
   getUserSubscriptions,
   invalidateUserSubscription,
+  resetUserSubscriptionQuota,
   updateUserSubscription,
 } from '../../api'
 import {
@@ -144,7 +145,7 @@ export function UserSubscriptionsDialog(props: Props) {
   const [subs, setSubs] = useState<UserSubscriptionRecord[]>([])
   const [selectedPlanId, setSelectedPlanId] = useState('')
   const [confirmAction, setConfirmAction] = useState<{
-    type: 'invalidate' | 'delete'
+    type: 'invalidate' | 'delete' | 'reset'
     subId: number
   } | null>(null)
   const [editingSub, setEditingSub] =
@@ -232,6 +233,15 @@ export function UserSubscriptionsDialog(props: Props) {
         const res = await invalidateUserSubscription(confirmAction.subId)
         if (res.success) {
           toast.success(res.data?.message || t('Has been invalidated'))
+          await loadData()
+          props.onSuccess?.()
+        }
+      } else if (confirmAction.type === 'reset') {
+        const res = await resetUserSubscriptionQuota(confirmAction.subId, {
+          advance_reset_time: true,
+        })
+        if (res.success) {
+          toast.success(res.data?.message || t('Subscription quota reset'))
           await loadData()
           props.onSuccess?.()
         }
@@ -438,6 +448,20 @@ export function UserSubscriptionsDialog(props: Props) {
                               <Button
                                 size='sm'
                                 variant='outline'
+                                disabled={!isActive}
+                                onClick={() =>
+                                  setConfirmAction({
+                                    type: 'reset',
+                                    subId: sub.id,
+                                  })
+                                }
+                              >
+                                <RotateCcw className='mr-1 h-3.5 w-3.5' />
+                                {t('Reset quota')}
+                              </Button>
+                              <Button
+                                size='sm'
+                                variant='outline'
                                 onClick={() => openEditDialog(sub)}
                               >
                                 <Pencil className='mr-1 h-3.5 w-3.5' />
@@ -488,6 +512,8 @@ export function UserSubscriptionsDialog(props: Props) {
           title={
             confirmAction.type === 'invalidate'
               ? t('Confirm invalidate')
+              : confirmAction.type === 'reset'
+                ? t('Confirm quota reset')
               : t('Confirm delete')
           }
           desc={
@@ -495,6 +521,10 @@ export function UserSubscriptionsDialog(props: Props) {
               ? t(
                   'After invalidating, this subscription will be immediately deactivated. Historical records are not affected. Continue?'
                 )
+              : confirmAction.type === 'reset'
+                ? t(
+                    'This will clear the used quota, period used quota, and per-model usage for this subscription, then move the reset cycle forward. Continue?'
+                  )
               : t(
                   'Deleting will permanently remove this subscription record (including benefit details). Continue?'
                 )

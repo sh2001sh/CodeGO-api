@@ -46,6 +46,9 @@ func (s *BillingSession) Settle(actualQuota int) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	if actualQuota < 0 {
+		actualQuota = 0
+	}
 	if s.settled {
 		return nil
 	}
@@ -211,6 +214,9 @@ func (s *BillingSession) Reserve(targetQuota int) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
+	if targetQuota < 0 {
+		targetQuota = 0
+	}
 	if s.settled || s.refunded || s.trusted || targetQuota <= s.preConsumedQuota {
 		return nil
 	}

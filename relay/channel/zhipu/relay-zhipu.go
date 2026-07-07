@@ -159,11 +159,20 @@ func zhipuStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.
 	var usage *dto.Usage
 	scanner := helper.NewStreamScanner(resp.Body)
 	scanner.Split(bufio.ScanLines)
-	dataChan := make(chan string)
-	metaChan := make(chan string)
-	stopChan := make(chan bool)
+	dataChan := make(chan string, 1)
+	metaChan := make(chan string, 1)
+	stopChan := make(chan bool, 1)
+	streamStopped := make(chan struct{})
+	defer close(streamStopped)
 	go func() {
 		for scanner.Scan() {
+			select {
+			case <-streamStopped:
+				return
+			case <-c.Request.Context().Done():
+				return
+			default:
+			}
 			data := scanner.Text()
 			lines := strings.Split(data, "\n")
 			for i, line := range lines {
@@ -171,19 +180,41 @@ func zhipuStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.
 					continue
 				}
 				if line[:5] == "data:" {
-					dataChan <- line[5:]
+					select {
+					case dataChan <- line[5:]:
+					case <-streamStopped:
+						return
+					case <-c.Request.Context().Done():
+						return
+					}
 					if i != len(lines)-1 {
-						dataChan <- "\n"
+						select {
+						case dataChan <- "\n":
+						case <-streamStopped:
+							return
+						case <-c.Request.Context().Done():
+							return
+						}
 					}
 				} else if line[:5] == "meta:" {
-					metaChan <- line[5:]
+					select {
+					case metaChan <- line[5:]:
+					case <-streamStopped:
+						return
+					case <-c.Request.Context().Done():
+						return
+					}
 				}
 			}
 		}
 		if err := scanner.Err(); err != nil {
 			common.SysLog("error reading stream: " + err.Error())
 		}
-		stopChan <- true
+		select {
+		case stopChan <- true:
+		case <-streamStopped:
+		case <-c.Request.Context().Done():
+		}
 	}()
 	helper.SetEventStreamHeaders(c)
 	c.Stream(func(w io.Writer) bool {
@@ -221,6 +252,8 @@ func zhipuStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.
 			return true
 		case <-stopChan:
 			helper.Done(c)
+			return false
+		case <-c.Request.Context().Done():
 			return false
 		}
 	})

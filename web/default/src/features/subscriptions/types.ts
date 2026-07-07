@@ -216,6 +216,10 @@ export interface UpdateUserSubscriptionRequest {
   model_limits: string
 }
 
+export interface ResetUserSubscriptionQuotaRequest {
+  advance_reset_time?: boolean
+}
+
 // ============================================================================
 // Self Subscription Data (user-facing)
 // ============================================================================

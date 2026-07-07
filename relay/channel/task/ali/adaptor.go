@@ -320,8 +320,6 @@ func (a *TaskAdaptor) convertToAliRequest(info *relaycommon.RelayInfo, req relay
 		} else {
 			aliReq.Parameters.Duration = seconds
 		}
-	} else {
-		aliReq.Parameters.Duration = 5 // 默认5秒
 	}
 
 	// 从 metadata 中提取额外参数
@@ -334,6 +332,10 @@ func (a *TaskAdaptor) convertToAliRequest(info *relaycommon.RelayInfo, req relay
 		} else {
 			return nil, errors.Wrap(err, "marshal metadata failed")
 		}
+	}
+
+	if aliReq.Parameters.Duration <= 0 {
+		aliReq.Parameters.Duration = 5 // 默认5秒
 	}
 
 	if aliReq.Model != upstreamModel {

@@ -61,6 +61,10 @@ type AdminUpdateUserSubscriptionRequest struct {
 	ModelLimits  string `json:"model_limits"`
 }
 
+type AdminResetUserSubscriptionQuotaRequest struct {
+	AdvanceResetTime bool `json:"advance_reset_time"`
+}
+
 func normalizeSubscriptionCurrency(currency string) string {
 	normalized := strings.ToUpper(strings.TrimSpace(currency))
 	if normalized == "" {
@@ -694,4 +698,39 @@ func AdminDeleteUserSubscription(c *gin.Context) {
 		return
 	}
 	common.ApiSuccess(c, nil)
+}
+
+func AdminResetUserSubscriptionQuota(c *gin.Context) {
+	subId, _ := strconv.Atoi(c.Param("id"))
+	if subId <= 0 {
+		common.ApiErrorMsg(c, "invalid subscription id")
+		return
+	}
+
+	var req AdminResetUserSubscriptionQuotaRequest
+	if err := c.ShouldBindJSON(&req); err != nil && !errors.Is(err, gorm.ErrInvalidData) {
+		common.ApiErrorMsg(c, "invalid request")
+		return
+	}
+
+	sub, err := model.AdminResetUserSubscriptionQuota(subId, model.AdminResetUserSubscriptionQuotaInput{
+		AdvanceResetTime: req.AdvanceResetTime,
+	})
+	if err != nil {
+		common.ApiError(c, err)
+		return
+	}
+
+	adminInfo := map[string]interface{}{
+		"admin_id":   c.GetInt("id"),
+		"admin_name": c.GetString("username"),
+		"sub_id":     subId,
+	}
+	model.RecordLogWithAdminInfo(sub.UserId, model.LogTypeManage, "admin reset subscription quota", adminInfo)
+	common.SysLog("admin reset subscription quota, sub_id=" + strconv.Itoa(subId))
+	common.ApiSuccess(c, gin.H{
+		"message":         "subscription quota reset",
+		"subscription_id": sub.Id,
+		"next_reset_time": sub.NextResetTime,
+	})
 }

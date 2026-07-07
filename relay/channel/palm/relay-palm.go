@@ -54,13 +54,19 @@ func palmStreamHandler(c *gin.Context, resp *http.Response) (*types.NewAPIError,
 	responseText := ""
 	responseId := helper.GetResponseID(c)
 	createdTime := common.GetTimestamp()
-	dataChan := make(chan string)
-	stopChan := make(chan bool)
+	dataChan := make(chan string, 1)
+	stopChan := make(chan bool, 1)
+	streamStopped := make(chan struct{})
+	defer close(streamStopped)
 	go func() {
 		responseBody, err := io.ReadAll(resp.Body)
 		if err != nil {
 			common.SysLog("error reading stream response: " + err.Error())
-			stopChan <- true
+			select {
+			case stopChan <- true:
+			case <-streamStopped:
+			case <-c.Request.Context().Done():
+			}
 			return
 		}
 		service.CloseResponseBodyGracefully(resp)
@@ -68,7 +74,11 @@ func palmStreamHandler(c *gin.Context, resp *http.Response) (*types.NewAPIError,
 		err = json.Unmarshal(responseBody, &palmResponse)
 		if err != nil {
 			common.SysLog("error unmarshalling stream response: " + err.Error())
-			stopChan <- true
+			select {
+			case stopChan <- true:
+			case <-streamStopped:
+			case <-c.Request.Context().Done():
+			}
 			return
 		}
 		fullTextResponse := streamResponsePaLM2OpenAI(&palmResponse)
@@ -80,11 +90,25 @@ func palmStreamHandler(c *gin.Context, resp *http.Response) (*types.NewAPIError,
 		jsonResponse, err := json.Marshal(fullTextResponse)
 		if err != nil {
 			common.SysLog("error marshalling stream response: " + err.Error())
-			stopChan <- true
+			select {
+			case stopChan <- true:
+			case <-streamStopped:
+			case <-c.Request.Context().Done():
+			}
 			return
 		}
-		dataChan <- string(jsonResponse)
-		stopChan <- true
+		select {
+		case dataChan <- string(jsonResponse):
+		case <-streamStopped:
+			return
+		case <-c.Request.Context().Done():
+			return
+		}
+		select {
+		case stopChan <- true:
+		case <-streamStopped:
+		case <-c.Request.Context().Done():
+		}
 	}()
 	helper.SetEventStreamHeaders(c)
 	c.Stream(func(w io.Writer) bool {
@@ -97,6 +121,8 @@ func palmStreamHandler(c *gin.Context, resp *http.Response) (*types.NewAPIError,
 			return true
 		case <-stopChan:
 			helper.Done(c)
+			return false
+		case <-c.Request.Context().Done():
 			return false
 		}
 	})

@@ -62,7 +62,14 @@ func SetEventStreamHeaders(c *gin.Context) {
 	c.Writer.Header().Set("X-Accel-Buffering", "no")
 }
 
+func IsClientGone(c *gin.Context) bool {
+	return c == nil || c.Request == nil || c.Request.Context().Err() != nil
+}
+
 func ClaudeData(c *gin.Context, resp dto.ClaudeResponse) error {
+	if IsClientGone(c) {
+		return fmt.Errorf("request context done")
+	}
 	jsonData, err := common.Marshal(resp)
 	if err != nil {
 		common.SysError("error marshalling stream response: " + err.Error())
@@ -78,6 +85,9 @@ func ClaudeData(c *gin.Context, resp dto.ClaudeResponse) error {
 }
 
 func ClaudeChunkData(c *gin.Context, resp dto.ClaudeResponse, data string) error {
+	if IsClientGone(c) {
+		return fmt.Errorf("request context done")
+	}
 	c.Render(-1, common.CustomEvent{Data: fmt.Sprintf("event: %s\n", resp.Type)})
 	c.Render(-1, common.CustomEvent{Data: fmt.Sprintf("data: %s\n", data)})
 	err := FlushWriter(c)
@@ -88,6 +98,9 @@ func ClaudeChunkData(c *gin.Context, resp dto.ClaudeResponse, data string) error
 }
 
 func ResponseChunkData(c *gin.Context, resp dto.ResponsesStreamResponse, data string) error {
+	if IsClientGone(c) {
+		return fmt.Errorf("request context done")
+	}
 	c.Render(-1, common.CustomEvent{Data: fmt.Sprintf("event: %s\n", resp.Type)})
 	c.Render(-1, common.CustomEvent{Data: fmt.Sprintf("data: %s", data)})
 	err := FlushWriter(c)
@@ -141,6 +154,9 @@ func ObjectData(c *gin.Context, object interface{}) error {
 }
 
 func Done(c *gin.Context) {
+	if IsClientGone(c) {
+		return
+	}
 	_ = StringData(c, "[DONE]")
 }
 

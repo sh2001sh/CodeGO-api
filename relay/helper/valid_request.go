@@ -18,6 +18,29 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+func validateMaxTokenField(name string, value *uint) error {
+	if value == nil {
+		return nil
+	}
+	if *value == 0 {
+		return nil
+	}
+	if !common.ValidateOptionalUintWithinRange(value, common.SafeMaxRequestTokens) {
+		return fmt.Errorf("%s is invalid", name)
+	}
+	return nil
+}
+
+func validatePositiveCountField(name string, value *int, max int) error {
+	if value == nil {
+		return nil
+	}
+	if *value < 0 || *value > max {
+		return fmt.Errorf("%s is invalid", name)
+	}
+	return nil
+}
+
 func GetAndValidateRequest(c *gin.Context, format types.RelayFormat) (request dto.Request, err error) {
 	relayMode := relayconstant.Path2RelayMode(c.Request.URL.Path)
 
@@ -126,6 +149,12 @@ func GetAndValidateResponsesRequest(c *gin.Context) (*dto.OpenAIResponsesRequest
 	if request.Input == nil {
 		return nil, errors.New("input is required")
 	}
+	if err := validateMaxTokenField("max_output_tokens", request.MaxOutputTokens); err != nil {
+		return nil, err
+	}
+	if !common.ValidateOptionalUintWithinRange(request.MaxToolCalls, common.SafeMaxToolCallCount) {
+		return nil, errors.New("max_tool_calls is invalid")
+	}
 	request.Stream = common.GetPointer(true)
 	return request, nil
 }
@@ -233,6 +262,9 @@ func GetAndValidOpenAIImageRequest(c *gin.Context, relayMode int) (*dto.ImageReq
 		if imageRequest.N == nil || *imageRequest.N == 0 {
 			imageRequest.N = common.GetPointer(uint(1))
 		}
+		if imageRequest.N != nil && (*imageRequest.N == 0 || *imageRequest.N > dto.MaxImageRequestCount) {
+			return nil, errors.New("n must be between 1 and 16")
+		}
 	}
 
 	return imageRequest, nil
@@ -249,6 +281,15 @@ func GetAndValidateClaudeRequest(c *gin.Context) (textRequest *dto.ClaudeRequest
 	}
 	if textRequest.Model == "" {
 		return nil, errors.New("field model is required")
+	}
+	if err := validateMaxTokenField("max_tokens", textRequest.MaxTokens); err != nil {
+		return nil, err
+	}
+	if err := validateMaxTokenField("max_tokens_to_sample", textRequest.MaxTokensToSample); err != nil {
+		return nil, err
+	}
+	if err := validatePositiveCountField("top_k", textRequest.TopK, common.SafeMaxCandidateCount); err != nil {
+		return nil, err
 	}
 
 	//if textRequest.Stream {
@@ -274,6 +315,18 @@ func GetAndValidateTextRequest(c *gin.Context, relayMode int) (*dto.GeneralOpenA
 
 	if lo.FromPtrOr(textRequest.MaxTokens, uint(0)) > math.MaxInt32/2 {
 		return nil, errors.New("max_tokens is invalid")
+	}
+	if err := validateMaxTokenField("max_tokens", textRequest.MaxTokens); err != nil {
+		return nil, err
+	}
+	if err := validateMaxTokenField("max_completion_tokens", textRequest.MaxCompletionTokens); err != nil {
+		return nil, err
+	}
+	if err := validatePositiveCountField("n", textRequest.N, common.SafeMaxCandidateCount); err != nil {
+		return nil, err
+	}
+	if err := validatePositiveCountField("top_k", textRequest.TopK, common.SafeMaxCandidateCount); err != nil {
+		return nil, err
 	}
 	if textRequest.Model == "" {
 		return nil, errors.New("model is required")
@@ -324,6 +377,12 @@ func GetAndValidateGeminiRequest(c *gin.Context) (*dto.GeminiChatRequest, error)
 	}
 	if len(request.Contents) == 0 && len(request.Requests) == 0 {
 		return nil, errors.New("contents is required")
+	}
+	if request.GenerationConfig.MaxOutputTokens != nil && !common.ValidateOptionalUintWithinRange(request.GenerationConfig.MaxOutputTokens, common.SafeMaxRequestTokens) {
+		return nil, errors.New("max_output_tokens is invalid")
+	}
+	if err := validatePositiveCountField("candidate_count", request.GenerationConfig.CandidateCount, common.SafeMaxCandidateCount); err != nil {
+		return nil, err
 	}
 
 	//if c.Query("alt") == "sse" {

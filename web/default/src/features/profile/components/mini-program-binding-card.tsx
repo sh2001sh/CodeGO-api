@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router'
 import { Smartphone, RefreshCw, Unlink, Link2 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
+import { toIntlLocale } from '@/i18n/languages'
 import { CopyButton } from '@/components/copy-button'
 import { ConfirmDialog } from '@/components/confirm-dialog'
 import { StatusBadge } from '@/components/status-badge'
@@ -61,7 +62,9 @@ export function MiniProgramBindingCard() {
 
   const expiresAtLabel = useMemo(() => {
     if (!bindCode?.expires_at) return ''
-    return new Date(bindCode.expires_at * 1000).toLocaleString(i18n.language)
+    return new Date(bindCode.expires_at * 1000).toLocaleString(
+      toIntlLocale(i18n.language)
+    )
   }, [bindCode, i18n.language])
 
   const handleGenerateCode = async () => {

@@ -17,6 +17,8 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import dayjs from '@/lib/dayjs'
+import i18next from 'i18next'
+import { toIntlLocale } from '@/i18n/languages'
 import {
   formatCurrencyFromUSD,
   formatQuotaWithCurrency,
@@ -29,14 +31,14 @@ import {
 
 export function formatNumber(value: number | null | undefined): string {
   if (value == null || Number.isNaN(value as number)) return '-'
-  return Intl.NumberFormat(undefined, { maximumFractionDigits: 2 }).format(
+  return Intl.NumberFormat(toIntlLocale(i18next.language), { maximumFractionDigits: 2 }).format(
     value as number
   )
 }
 
 export function formatCompactNumber(value: number | null | undefined): string {
   if (value == null || Number.isNaN(value as number)) return '-'
-  return Intl.NumberFormat(undefined, {
+  return Intl.NumberFormat(toIntlLocale(i18next.language), {
     notation: 'compact',
     maximumFractionDigits: 1,
   }).format(value as number)
@@ -44,7 +46,7 @@ export function formatCompactNumber(value: number | null | undefined): string {
 
 export function formatPercent(value: number | null | undefined): string {
   if (value == null || Number.isNaN(value as number)) return '-'
-  return Intl.NumberFormat(undefined, {
+  return Intl.NumberFormat(toIntlLocale(i18next.language), {
     style: 'percent',
     maximumFractionDigits: 2,
   }).format((value as number) / 100)
@@ -56,7 +58,7 @@ export function formatCurrencyUSD(value: number | null | undefined): string {
 
 export function formatUsdAmount(value: number | null | undefined): string {
   if (value == null || Number.isNaN(value as number)) return '-'
-  return new Intl.NumberFormat(undefined, {
+  return new Intl.NumberFormat(toIntlLocale(i18next.language), {
     style: 'currency',
     currency: 'USD',
     currencyDisplay: 'narrowSymbol',
@@ -152,7 +154,7 @@ export function formatTimestampToDate(
     return '-'
   }
   const ms = unit === 'seconds' ? timestamp * 1000 : timestamp
-  return dayjs(ms).format('YYYY-MM-DD HH:mm:ss')
+  return new Date(ms).toLocaleString(toIntlLocale(i18next.language))
 }
 
 /** Format a Date object to YYYY-MM-DD HH:mm:ss */

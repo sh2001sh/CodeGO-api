@@ -81,6 +81,8 @@ func stopReasonCohere2OpenAI(reason string) string {
 }
 
 func cohereStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http.Response) (*dto.Usage, *types.NewAPIError) {
+	defer service.CloseResponseBodyGracefully(resp)
+
 	responseId := helper.GetResponseID(c)
 	createdTime := common.GetTimestamp()
 	usage := &dto.Usage{}
@@ -98,17 +100,29 @@ func cohereStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 		}
 		return 0, nil, nil
 	})
-	dataChan := make(chan string)
-	stopChan := make(chan bool)
+	dataChan := make(chan string, 1)
+	stopChan := make(chan bool, 1)
+	streamStopped := make(chan struct{})
+	defer close(streamStopped)
 	go func() {
 		for scanner.Scan() {
 			data := scanner.Text()
-			dataChan <- data
+			select {
+			case dataChan <- data:
+			case <-streamStopped:
+				return
+			case <-c.Request.Context().Done():
+				return
+			}
 		}
 		if err := scanner.Err(); err != nil {
 			common.SysLog("error reading stream: " + err.Error())
 		}
-		stopChan <- true
+		select {
+		case stopChan <- true:
+		case <-streamStopped:
+		case <-c.Request.Context().Done():
+		}
 	}()
 	helper.SetEventStreamHeaders(c)
 	isFirst := true
@@ -168,6 +182,8 @@ func cohereStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp *http
 			return true
 		case <-stopChan:
 			helper.Done(c)
+			return false
+		case <-c.Request.Context().Done():
 			return false
 		}
 	})

@@ -293,6 +293,10 @@ func fulfillOrder(ctx context.Context, event stripe.Event, referenceId string, c
 
 	LockOrder(referenceId)
 	defer UnlockOrder(referenceId)
+	if topUp := model.GetTopUpByTradeNo(referenceId); topUp != nil && topUp.Status == common.TopUpStatusSuccess {
+		logger.LogInfo(ctx, fmt.Sprintf("Stripe webhook duplicate success ignored trade_no=%s event_type=%s client_ip=%s", referenceId, string(event.Type), callerIp))
+		return
+	}
 	payload := map[string]any{
 		"customer":     customerId,
 		"amount_total": event.GetObjectValue("amount_total"),
@@ -309,6 +313,10 @@ func fulfillOrder(ctx context.Context, event stripe.Event, referenceId string, c
 
 	err := model.Recharge(referenceId, customerId, callerIp)
 	if err != nil {
+		if strings.Contains(strings.ToLower(err.Error()), "already") {
+			logger.LogInfo(ctx, fmt.Sprintf("Stripe recharge duplicate ignored trade_no=%s event_type=%s client_ip=%s", referenceId, string(event.Type), callerIp))
+			return
+		}
 		logger.LogError(ctx, fmt.Sprintf("Stripe 充值处理失败 trade_no=%s event_type=%s client_ip=%s error=%q", referenceId, string(event.Type), callerIp, err.Error()))
 		return
 	}

@@ -1555,6 +1555,10 @@ type AdminUpdateUserSubscriptionInput struct {
 	ModelLimits  string
 }
 
+type AdminResetUserSubscriptionQuotaInput struct {
+	AdvanceResetTime bool
+}
+
 func AdminUpdateUserSubscription(userSubscriptionId int, input AdminUpdateUserSubscriptionInput) (string, error) {
 	if userSubscriptionId <= 0 {
 		return "", errors.New("invalid userSubscriptionId")
@@ -1646,6 +1650,58 @@ func AdminUpdateUserSubscription(userSubscriptionId int, input AdminUpdateUserSu
 		return fmt.Sprintf("用户分组已同步为 %s", cacheGroup), nil
 	}
 	return "", nil
+}
+
+func AdminResetUserSubscriptionQuota(userSubscriptionId int, input AdminResetUserSubscriptionQuotaInput) (*UserSubscription, error) {
+	if userSubscriptionId <= 0 {
+		return nil, errors.New("invalid userSubscriptionId")
+	}
+	now := common.GetTimestamp()
+	var updated UserSubscription
+	err := DB.Transaction(func(tx *gorm.DB) error {
+		var sub UserSubscription
+		if err := tx.Set("gorm:query_option", "FOR UPDATE").
+			Where("id = ?", userSubscriptionId).First(&sub).Error; err != nil {
+			return err
+		}
+		plan, err := getSubscriptionPlanByIdTx(tx, sub.PlanId)
+		if err != nil {
+			return err
+		}
+		sub.AmountUsed = 0
+		sub.PeriodUsed = 0
+		sub.ModelUsage = ""
+
+		if NormalizeResetPeriod(plan.QuotaResetPeriod) == SubscriptionResetNever {
+			sub.LastResetTime = 0
+			sub.NextResetTime = 0
+		} else {
+			base := now
+			if input.AdvanceResetTime {
+				sub.LastResetTime = base
+				sub.NextResetTime = calcNextResetTime(time.Unix(base, 0), plan, sub.EndTime)
+			} else if sub.LastResetTime <= 0 {
+				sub.LastResetTime = maxInt64(sub.StartTime, now)
+				sub.NextResetTime = calcNextResetTime(time.Unix(sub.LastResetTime, 0), plan, sub.EndTime)
+			}
+		}
+		if err := tx.Save(&sub).Error; err != nil {
+			return err
+		}
+		updated = sub
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &updated, nil
+}
+
+func maxInt64(a int64, b int64) int64 {
+	if a > b {
+		return a
+	}
+	return b
 }
 
 type SubscriptionPreConsumeResult struct {

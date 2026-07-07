@@ -16,6 +16,7 @@ import (
 	"io"
 	"math"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -327,7 +328,7 @@ func handleCheckoutCompleted(c *gin.Context, event *CreemWebhookEvent) {
 	topUp := model.GetTopUpByTradeNo(referenceId)
 	if topUp == nil {
 		logger.LogWarn(c.Request.Context(), fmt.Sprintf("Creem 充值订单不存在 trade_no=%s creem_order_id=%s", referenceId, event.Object.Order.Id))
-		c.AbortWithStatus(http.StatusBadRequest)
+		c.Status(http.StatusOK)
 		return
 	}
 
@@ -351,6 +352,11 @@ func handleCheckoutCompleted(c *gin.Context, event *CreemWebhookEvent) {
 
 	err := model.RechargeCreem(referenceId, customerEmail, customerName, c.ClientIP())
 	if err != nil {
+		if strings.Contains(strings.ToLower(err.Error()), "already") {
+			logger.LogInfo(c.Request.Context(), fmt.Sprintf("Creem duplicate recharge ignored trade_no=%s creem_order_id=%s", referenceId, event.Object.Order.Id))
+			c.Status(http.StatusOK)
+			return
+		}
 		logger.LogError(c.Request.Context(), fmt.Sprintf("Creem 充值处理失败 trade_no=%s creem_order_id=%s client_ip=%s error=%q", referenceId, event.Object.Order.Id, c.ClientIP(), err.Error()))
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return

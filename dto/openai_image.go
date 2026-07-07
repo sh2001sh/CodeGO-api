@@ -2,6 +2,7 @@ package dto
 
 import (
 	"encoding/json"
+	"errors"
 	"reflect"
 	"strings"
 
@@ -39,6 +40,8 @@ type ImageRequest struct {
 	Extra map[string]json.RawMessage `json:"-"`
 }
 
+const MaxImageRequestCount = 16
+
 func (i *ImageRequest) UnmarshalJSON(data []byte) error {
 	// 先解析成 map[string]interface{}
 	var rawMap map[string]json.RawMessage
@@ -63,6 +66,9 @@ func (i *ImageRequest) UnmarshalJSON(data []byte) error {
 		if _, ok := knownFields[k]; !ok {
 			i.Extra[k] = v
 		}
+	}
+	if i.N != nil && (*i.N == 0 || *i.N > MaxImageRequestCount) {
+		return errors.New("n must be between 1 and 16")
 	}
 	return nil
 }

@@ -339,6 +339,9 @@ func streamTTSResponse(c *gin.Context, resp *http.Response) {
 		n, err := resp.Body.Read(buffer)
 		//logger.LogInfo(c, fmt.Sprintf("streamTTSResponse read %d bytes", n))
 		if n > 0 {
+			if helper.IsClientGone(c) {
+				break
+			}
 			if _, writeErr := c.Writer.Write(buffer[:n]); writeErr != nil {
 				logger.LogError(c, writeErr.Error())
 				break
@@ -695,6 +698,12 @@ func OpenaiImageStreamHandler(c *gin.Context, info *relaycommon.RelayInfo, resp 
 			}
 			return usage, nil
 		}
+		if helper.IsClientGone(c) {
+			if info != nil && info.StreamStatus != nil {
+				info.StreamStatus.SetEndReason(relaycommon.StreamEndReasonClientGone, c.Request.Context().Err())
+			}
+			return usage, nil
+		}
 		if line == "" {
 			if err := helper.FlushWriter(c); err != nil {
 				if info != nil && info.StreamStatus != nil {
@@ -843,6 +852,9 @@ func OpenaiImageJSONAsStreamHandler(c *gin.Context, info *relaycommon.RelayInfo,
 }
 
 func writeOpenaiImageStreamPayload(c *gin.Context, eventName string, payload any) error {
+	if helper.IsClientGone(c) {
+		return fmt.Errorf("request context done")
+	}
 	data, err := common.Marshal(payload)
 	if err != nil {
 		return err
@@ -859,6 +871,9 @@ func writeOpenaiImageStreamPayload(c *gin.Context, eventName string, payload any
 }
 
 func writeOpenaiImageStreamDone(c *gin.Context) error {
+	if helper.IsClientGone(c) {
+		return fmt.Errorf("request context done")
+	}
 	if _, err := fmt.Fprint(c.Writer, "data: [DONE]\n\n"); err != nil {
 		return err
 	}

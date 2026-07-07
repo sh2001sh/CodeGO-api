@@ -12,6 +12,7 @@ import (
 
 	"github.com/QuantumNous/new-api/dto"
 	relaycommon "github.com/QuantumNous/new-api/relay/common"
+	"github.com/QuantumNous/new-api/relay/helper"
 	"github.com/QuantumNous/new-api/types"
 	"github.com/gin-gonic/gin"
 	"github.com/google/uuid"
@@ -197,6 +198,14 @@ func generateRequestID() string {
 }
 
 func handleTTSWebSocketResponse(c *gin.Context, requestURL string, volcRequest VolcengineTTSRequest, info *relaycommon.RelayInfo, encoding string) (usage any, err *types.NewAPIError) {
+	buildUsage := func() any {
+		return &dto.Usage{
+			PromptTokens:     info.GetEstimatePromptTokens(),
+			CompletionTokens: 0,
+			TotalTokens:      info.GetEstimatePromptTokens(),
+		}
+	}
+
 	_, token, parseErr := parseVolcengineAuth(info.ApiKey)
 	if parseErr != nil {
 		return nil, types.NewErrorWithStatusCode(
@@ -248,6 +257,10 @@ func handleTTSWebSocketResponse(c *gin.Context, requestURL string, volcRequest V
 	c.Header("Transfer-Encoding", "chunked")
 
 	for {
+		if helper.IsClientGone(c) {
+			return buildUsage(), nil
+		}
+
 		msg, recvErr := ReceiveMessage(conn)
 		if recvErr != nil {
 			if websocket.IsCloseError(recvErr, websocket.CloseNormalClosure, websocket.CloseGoingAway) {
@@ -271,23 +284,34 @@ func handleTTSWebSocketResponse(c *gin.Context, requestURL string, volcRequest V
 			continue
 		case MsgTypeAudioOnlyServer:
 			if len(msg.Payload) > 0 {
+				if helper.IsClientGone(c) {
+					return buildUsage(), nil
+				}
 				if _, writeErr := c.Writer.Write(msg.Payload); writeErr != nil {
+					if helper.IsClientGone(c) {
+						return buildUsage(), nil
+					}
 					return nil, types.NewErrorWithStatusCode(
 						fmt.Errorf("failed to write audio data: %w", writeErr),
 						types.ErrorCodeBadResponse,
 						http.StatusInternalServerError,
 					)
 				}
-				c.Writer.Flush()
+				if flushErr := helper.FlushWriter(c); flushErr != nil {
+					if helper.IsClientGone(c) {
+						return buildUsage(), nil
+					}
+					return nil, types.NewErrorWithStatusCode(
+						fmt.Errorf("failed to flush audio data: %w", flushErr),
+						types.ErrorCodeBadResponse,
+						http.StatusInternalServerError,
+					)
+				}
 			}
 
 			if msg.Sequence < 0 {
 				c.Status(http.StatusOK)
-				usage = &dto.Usage{
-					PromptTokens:     info.GetEstimatePromptTokens(),
-					CompletionTokens: 0,
-					TotalTokens:      info.GetEstimatePromptTokens(),
-				}
+				usage = buildUsage()
 				return usage, nil
 			}
 		default:
@@ -296,10 +320,6 @@ func handleTTSWebSocketResponse(c *gin.Context, requestURL string, volcRequest V
 	}
 
 	c.Status(http.StatusOK)
-	usage = &dto.Usage{
-		PromptTokens:     info.GetEstimatePromptTokens(),
-		CompletionTokens: 0,
-		TotalTokens:      info.GetEstimatePromptTokens(),
-	}
+	usage = buildUsage()
 	return usage, nil
 }

@@ -25,6 +25,7 @@ import type {
   UserSubscriptionRecord,
   CreateUserSubscriptionRequest,
   UpdateUserSubscriptionRequest,
+  ResetUserSubscriptionQuotaRequest,
   SubscriptionPayResponse,
   SubscriptionPayRequest,
   SelfSubscriptionData,
@@ -122,6 +123,17 @@ export async function deleteUserSubscription(
 ): Promise<ApiResponse> {
   const res = await api.delete(
     `/api/subscription/admin/user_subscriptions/${subId}`
+  )
+  return res.data
+}
+
+export async function resetUserSubscriptionQuota(
+  subId: number,
+  data: ResetUserSubscriptionQuotaRequest = {}
+): Promise<ApiResponse<{ message?: string; next_reset_time?: number }>> {
+  const res = await api.post(
+    `/api/subscription/admin/user_subscriptions/${subId}/reset`,
+    data
   )
   return res.data
 }
