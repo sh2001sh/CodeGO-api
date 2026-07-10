@@ -1,9 +1,0 @@
-# import config
-packagefile fmt=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b056\_pkg_.a
-packagefile gorm.io/gorm=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b351\_pkg_.a
-packagefile gorm.io/gorm/clause=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b353\_pkg_.a
-packagefile gorm.io/gorm/schema=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b359\_pkg_.a
-packagefile gorm.io/gorm/utils=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b358\_pkg_.a
-packagefile reflect=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b058\_pkg_.a
-packagefile sort=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b165\_pkg_.a
-packagefile strings=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b078\_pkg_.a

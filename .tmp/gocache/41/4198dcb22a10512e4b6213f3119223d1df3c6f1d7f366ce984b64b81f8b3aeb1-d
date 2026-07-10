@@ -1,5 +1,0 @@
-./encoding.go
-./poll_other.go
-./run.go
-./run_windows.go
-./structures.go

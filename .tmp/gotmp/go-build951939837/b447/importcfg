@@ -1,5 +1,0 @@
-# import config
-packagefile github.com/QuantumNous/new-api/setting/config=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b368\_pkg_.a
-packagefile net/http=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b186\_pkg_.a
-packagefile slices=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b047\_pkg_.a
-packagefile strings=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b078\_pkg_.a

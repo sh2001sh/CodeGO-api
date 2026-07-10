@@ -1,6 +1,0 @@
-# import config
-packagefile google.golang.org/protobuf/reflect/protoreflect=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b254\_pkg_.a
-packagefile google.golang.org/protobuf/runtime/protoimpl=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b385\_pkg_.a
-packagefile reflect=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b058\_pkg_.a
-packagefile sync=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b036\_pkg_.a
-packagefile time=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b049\_pkg_.a

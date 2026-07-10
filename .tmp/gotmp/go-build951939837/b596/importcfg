@@ -1,7 +1,0 @@
-# import config
-packagefile context=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b069\_pkg_.a
-packagefile fmt=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b056\_pkg_.a
-packagefile github.com/aws/smithy-go=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b574\_pkg_.a
-packagefile github.com/aws/smithy-go/auth=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b575\_pkg_.a
-packagefile github.com/aws/smithy-go/middleware=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b571\_pkg_.a
-packagefile github.com/aws/smithy-go/transport/http=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b573\_pkg_.a

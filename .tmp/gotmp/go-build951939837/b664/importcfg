@@ -1,5 +1,0 @@
-# import config
-packagefile github.com/waffo-com/waffo-go/config=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b665\_pkg_.a
-packagefile github.com/waffo-com/waffo-go/core=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b669\_pkg_.a
-packagefile github.com/waffo-com/waffo-go/resources=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b672\_pkg_.a
-packagefile github.com/waffo-com/waffo-go/utils=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b668\_pkg_.a

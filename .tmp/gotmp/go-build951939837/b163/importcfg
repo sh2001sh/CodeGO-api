@@ -1,9 +1,0 @@
-# import config
-packagefile internal/abi=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b005\_pkg_.a
-packagefile internal/goarch=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b006\_pkg_.a
-packagefile internal/stringslite=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b033\_pkg_.a
-packagefile internal/sync=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b037\_pkg_.a
-packagefile runtime=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b009\_pkg_.a
-packagefile sync=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b036\_pkg_.a
-packagefile sync/atomic=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b038\_pkg_.a
-packagefile weak=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b124\_pkg_.a

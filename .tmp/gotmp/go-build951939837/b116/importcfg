@@ -1,5 +1,0 @@
-# import config
-packagefile crypto/internal/fips140/check=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b080\_pkg_.a
-packagefile crypto/internal/fips140/subtle=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b087\_pkg_.a
-packagefile errors=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b003\_pkg_.a
-packagefile math/bits=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b032\_pkg_.a

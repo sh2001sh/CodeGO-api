@@ -1,6 +1,0 @@
-version: "2"
-linters:
-  exclusions:
-    rules:
-      - path: rule_gen\.go
-        text: "QF1001:"

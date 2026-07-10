@@ -1,6 +1,0 @@
-# import config
-packagefile bytes=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b002\_pkg_.a
-packagefile encoding/xml=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b183\_pkg_.a
-packagefile golang.org/x/net/html=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b213\_pkg_.a
-packagefile strings=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b078\_pkg_.a
-packagefile unicode/utf8=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b042\_pkg_.a

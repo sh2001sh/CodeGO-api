@@ -1,7 +1,0 @@
-# import config
-packagefile fmt=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b056\_pkg_.a
-packagefile modernc.org/libc=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b457\_pkg_.a
-packagefile modernc.org/libc/sys/types=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b468\_pkg_.a
-packagefile reflect=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b058\_pkg_.a
-packagefile sync=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b036\_pkg_.a
-packagefile sync/atomic=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b038\_pkg_.a

@@ -1,5 +1,0 @@
-# import config
-packagefile crypto/internal/constanttime=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b088\_pkg_.a
-packagefile crypto/internal/fips140/alias=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b079\_pkg_.a
-packagefile crypto/internal/fips140deps/byteorder=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b083\_pkg_.a
-packagefile math/bits=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b032\_pkg_.a

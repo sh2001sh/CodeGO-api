@@ -1,9 +1,0 @@
-# import config
-packagefile cmp=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b048\_pkg_.a
-packagefile errors=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b003\_pkg_.a
-packagefile internal/bytealg=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b010\_pkg_.a
-packagefile internal/byteorder=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b012\_pkg_.a
-packagefile math=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b059\_pkg_.a
-packagefile math/bits=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b032\_pkg_.a
-packagefile strconv=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b060\_pkg_.a
-packagefile unique=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b163\_pkg_.a

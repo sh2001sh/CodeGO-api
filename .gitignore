@@ -32,6 +32,12 @@ data/
 .gomodcache/
 .gocache-temp
 .gopath
+.tmp/
+.playwright-cli/
+output/playwright/
+web/default/.playwright-cli/
+web/default/output/playwright/
+.helloagents/
 .test
 token_estimator_test.go
 skills-lock.json

@@ -1,9 +1,0 @@
-# import config
-packagefile fmt=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b056\_pkg_.a
-packagefile github.com/expr-lang/expr/file=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b430\_pkg_.a
-packagefile github.com/expr-lang/expr/internal/ring=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b438\_pkg_.a
-packagefile github.com/expr-lang/expr/parser/utils=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b432\_pkg_.a
-packagefile io=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b035\_pkg_.a
-packagefile math=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b059\_pkg_.a
-packagefile strings=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b078\_pkg_.a
-packagefile unicode/utf8=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b042\_pkg_.a

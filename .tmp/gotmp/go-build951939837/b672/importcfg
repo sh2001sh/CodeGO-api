@@ -1,8 +1,0 @@
-# import config
-packagefile context=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b069\_pkg_.a
-packagefile github.com/waffo-com/waffo-go/config=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b665\_pkg_.a
-packagefile github.com/waffo-com/waffo-go/core=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b669\_pkg_.a
-packagefile github.com/waffo-com/waffo-go/types/merchant=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b673\_pkg_.a
-packagefile github.com/waffo-com/waffo-go/types/order=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b674\_pkg_.a
-packagefile github.com/waffo-com/waffo-go/types/refund=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b675\_pkg_.a
-packagefile github.com/waffo-com/waffo-go/types/subscription=E:\sh\Coding\cpa_bussiness\new-api\.tmp\gotmp\go-build951939837\b670\_pkg_.a
