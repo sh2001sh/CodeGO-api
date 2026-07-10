@@ -32,12 +32,6 @@ const USAGE_LOGS_SECTIONS = [
     build: () => null,
   },
   {
-    id: 'drawing',
-    titleKey: 'Drawing Logs',
-    descriptionKey: 'View and manage your drawing logs',
-    build: () => null,
-  },
-  {
     id: 'task',
     titleKey: 'Task Logs',
     descriptionKey: 'View and manage your task logs',

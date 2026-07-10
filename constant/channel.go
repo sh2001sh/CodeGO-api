@@ -3,10 +3,10 @@ package constant
 const (
 	ChannelTypeUnknown        = 0
 	ChannelTypeOpenAI         = 1
-	ChannelTypeMidjourney     = 2
 	ChannelTypeAzure          = 3
 	ChannelTypeOllama         = 4
-	ChannelTypeMidjourneyPlus = 5
+	ChannelTypeDeprecated2    = 2
+	ChannelTypeDeprecated5    = 5
 	ChannelTypeOpenAIMax      = 6
 	ChannelTypeOhMyGPT        = 7
 	ChannelTypeCustom         = 8
@@ -52,7 +52,7 @@ const (
 	ChannelTypeVidu           = 52
 	ChannelTypeSubmodel       = 53
 	ChannelTypeDoubaoVideo    = 54
-	ChannelTypeSora           = 55
+	ChannelTypeDeprecated55   = 55
 	ChannelTypeReplicate      = 56
 	ChannelTypeCodex          = 57
 	ChannelTypeDummy          // this one is only for count, do not add any channel after this
@@ -123,10 +123,8 @@ var ChannelBaseURLs = []string{
 var ChannelTypeNames = map[int]string{
 	ChannelTypeUnknown:        "Unknown",
 	ChannelTypeOpenAI:         "OpenAI",
-	ChannelTypeMidjourney:     "Midjourney",
 	ChannelTypeAzure:          "Azure",
 	ChannelTypeOllama:         "Ollama",
-	ChannelTypeMidjourneyPlus: "MidjourneyPlus",
 	ChannelTypeOpenAIMax:      "OpenAIMax",
 	ChannelTypeOhMyGPT:        "OhMyGPT",
 	ChannelTypeCustom:         "Custom",
@@ -172,7 +170,6 @@ var ChannelTypeNames = map[int]string{
 	ChannelTypeVidu:           "Vidu",
 	ChannelTypeSubmodel:       "Submodel",
 	ChannelTypeDoubaoVideo:    "DoubaoVideo",
-	ChannelTypeSora:           "Sora",
 	ChannelTypeReplicate:      "Replicate",
 	ChannelTypeCodex:          "Codex",
 }

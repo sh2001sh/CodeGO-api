@@ -35,10 +35,6 @@ const USAGE_LOGS_SECTION_META: Record<
     titleKey: 'Common Logs',
     descriptionKey: 'View and manage your API usage logs',
   },
-  drawing: {
-    titleKey: 'Drawing Logs',
-    descriptionKey: 'View and manage your drawing logs',
-  },
   task: {
     titleKey: 'Task Logs',
     descriptionKey: 'View and manage your task logs',

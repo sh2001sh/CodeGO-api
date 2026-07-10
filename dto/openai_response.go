@@ -3,9 +3,8 @@ package dto
 import (
 	"encoding/json"
 	"fmt"
-
-	"github.com/QuantumNous/new-api/common"
-	"github.com/QuantumNous/new-api/types"
+	platformencoding "github.com/sh2001sh/new-api/internal/platform/encodingx"
+	"github.com/sh2001sh/new-api/types"
 )
 
 const (
@@ -360,7 +359,7 @@ func (r *ResponsesOutput) ArgumentsString() string {
 
 // ResponsesArgumentsString returns function call arguments in the string form expected by Chat Completions.
 func ResponsesArgumentsString(arguments json.RawMessage) string {
-	return common.JsonRawMessageToString(arguments)
+	return platformencoding.JSONRawMessageToString(arguments)
 }
 
 type ResponsesOutputContent struct {

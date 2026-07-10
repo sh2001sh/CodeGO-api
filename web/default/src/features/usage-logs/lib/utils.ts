@@ -22,8 +22,6 @@ For commercial licensing, please contact support@quantumnous.com
 import {
   getAllLogs,
   getUserLogs,
-  getAllMidjourneyLogs,
-  getUserMidjourneyLogs,
   getAllTaskLogs,
   getUserTaskLogs,
 } from '../api'
@@ -36,7 +34,6 @@ import type {
   GetLogsParams,
   GetLogsResponse,
   FetchLogsConfig,
-  GetMidjourneyLogsParams,
   GetTaskLogsParams,
 } from '../types'
 
@@ -110,8 +107,7 @@ export function buildQueryParams(
 }
 
 /**
- * Build time range parameters with default values
- * Shared logic for all log types
+ * Build time range parameters with default values.
  */
 function buildTimeRangeParams(
   searchParams: Record<string, unknown>,
@@ -138,8 +134,7 @@ function buildTimeRangeParams(
 }
 
 /**
- * Build base parameters with time range (for drawing and task logs)
- * @param useMilliseconds - Whether to use millisecond timestamps (true for drawing logs, false for task logs)
+ * Build base parameters with time range for task logs.
  */
 export function buildBaseParams(config: {
   page: number
@@ -265,31 +260,18 @@ export async function fetchLogsByCategory(
     return isAdmin ? await getAllLogs(params) : await getUserLogs(params)
   }
 
-  // For drawing and task logs
   const baseParams = buildBaseParams({
     page,
     pageSize,
     searchParams,
-    useMilliseconds: logCategory === 'drawing',
+    useMilliseconds: false,
   })
 
   const paramsWithFilter = {
     ...baseParams,
-    ...(logCategory === 'drawing'
-      ? { mj_id: searchParams.filter as string | undefined }
-      : {}),
-    ...(logCategory === 'task'
-      ? { task_id: searchParams.filter as string | undefined }
-      : {}),
+    task_id: searchParams.filter as string | undefined,
   }
 
-  if (logCategory === 'drawing') {
-    return isAdmin
-      ? await getAllMidjourneyLogs(paramsWithFilter as GetMidjourneyLogsParams)
-      : await getUserMidjourneyLogs(paramsWithFilter as GetMidjourneyLogsParams)
-  }
-
-  // task logs
   return isAdmin
     ? await getAllTaskLogs(paramsWithFilter as GetTaskLogsParams)
     : await getUserTaskLogs(paramsWithFilter as GetTaskLogsParams)

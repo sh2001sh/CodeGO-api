@@ -22,6 +22,10 @@ const INVALID_LOGO_VALUES = new Set(['', 'null', 'undefined', 'false', '0'])
 const LEGACY_LOGO_VALUES = new Set([
   '/codexforall-logo.svg',
   'codexforall-logo.svg',
+  '/logo.png',
+  'logo.png',
+  '/favicon.ico',
+  'favicon.ico',
 ])
 const LEGACY_SYSTEM_NAMES = new Set(['codexforall', 'new api', 'newapi'])
 

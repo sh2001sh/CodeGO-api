@@ -139,11 +139,6 @@ export type ContentSettings = {
   DataExportInterval: number
   Chats: string
   DrawingEnabled: boolean
-  MjNotifyEnabled: boolean
-  MjAccountFilterEnabled: boolean
-  MjForwardUrlEnabled: boolean
-  MjModeClearEnabled: boolean
-  MjActionCheckSuccessEnabled: boolean
 }
 
 export type ModelSettings = {

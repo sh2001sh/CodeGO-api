@@ -209,6 +209,9 @@ export async function getStatus() {
     // Used by app bootstrap and layout surfaces; don't show global toast noise
     // when the backend status endpoint is temporarily unavailable.
     skipErrorHandler: true,
+    // Route guards consume this endpoint. Keep a missing local backend from
+    // blocking public navigation indefinitely.
+    timeout: 2500,
   } as Record<string, unknown>)
   return res.data?.data as Record<string, unknown>
 }

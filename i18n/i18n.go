@@ -10,9 +10,10 @@ import (
 	"golang.org/x/text/language"
 	"gopkg.in/yaml.v3"
 
-	"github.com/QuantumNous/new-api/common"
-	"github.com/QuantumNous/new-api/constant"
-	"github.com/QuantumNous/new-api/dto"
+	"github.com/sh2001sh/new-api/constant"
+	"github.com/sh2001sh/new-api/dto"
+	httpapi "github.com/sh2001sh/new-api/internal/platform/transport/http/httpapi"
+	httpctx "github.com/sh2001sh/new-api/internal/platform/transport/http/httpctx"
 )
 
 const (
@@ -54,8 +55,7 @@ func Init() error {
 		localizers[LangZhTW] = i18n.NewLocalizer(bundle, LangZhTW)
 		localizers[LangEn] = i18n.NewLocalizer(bundle, LangEn)
 
-		// Set the TranslateMessage function in common package
-		common.TranslateMessage = T
+		httpapi.TranslateMessage = T
 	})
 	return initErr
 }
@@ -133,7 +133,7 @@ func GetLangFromContext(c *gin.Context) string {
 	}
 
 	// 1. Try to get language from user settings (if already loaded by TokenAuth or other middleware)
-	if userSetting, ok := common.GetContextKeyType[dto.UserSetting](c, constant.ContextKeyUserSetting); ok {
+	if userSetting, ok := httpctx.GetContextKeyType[dto.UserSetting](c, constant.ContextKeyUserSetting); ok {
 		if userSetting.Language != "" {
 			normalized := normalizeLang(userSetting.Language)
 			if IsSupported(normalized) {

@@ -1,11 +1,10 @@
 package dto
 
 import (
-	"testing"
-
-	"github.com/QuantumNous/new-api/common"
+	platformencoding "github.com/sh2001sh/new-api/internal/platform/encodingx"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
+	"testing"
 )
 
 func TestGeneralOpenAIRequestPreserveExplicitZeroValues(t *testing.T) {
@@ -28,10 +27,10 @@ func TestGeneralOpenAIRequestPreserveExplicitZeroValues(t *testing.T) {
 	}`)
 
 	var req GeneralOpenAIRequest
-	err := common.Unmarshal(raw, &req)
+	err := platformencoding.Unmarshal(raw, &req)
 	require.NoError(t, err)
 
-	encoded, err := common.Marshal(req)
+	encoded, err := platformencoding.Marshal(req)
 	require.NoError(t, err)
 
 	require.True(t, gjson.GetBytes(encoded, "stream").Exists())
@@ -60,10 +59,10 @@ func TestOpenAIResponsesRequestPreserveExplicitZeroValues(t *testing.T) {
 	}`)
 
 	var req OpenAIResponsesRequest
-	err := common.Unmarshal(raw, &req)
+	err := platformencoding.Unmarshal(raw, &req)
 	require.NoError(t, err)
 
-	encoded, err := common.Marshal(req)
+	encoded, err := platformencoding.Marshal(req)
 	require.NoError(t, err)
 
 	require.True(t, gjson.GetBytes(encoded, "max_output_tokens").Exists())

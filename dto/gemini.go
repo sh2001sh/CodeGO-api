@@ -2,13 +2,11 @@ package dto
 
 import (
 	"encoding/json"
-	"strings"
-
-	"github.com/QuantumNous/new-api/common"
-	"github.com/QuantumNous/new-api/logger"
-	"github.com/QuantumNous/new-api/types"
-
 	"github.com/gin-gonic/gin"
+	platformencoding "github.com/sh2001sh/new-api/internal/platform/encodingx"
+	"github.com/sh2001sh/new-api/internal/platform/logger"
+	"github.com/sh2001sh/new-api/types"
+	"strings"
 )
 
 type GeminiChatRequest struct {
@@ -30,7 +28,7 @@ func (r *GeminiChatRequest) UnmarshalJSON(data []byte) error {
 		SystemInstructionSnake *GeminiChatContent `json:"system_instruction,omitempty"`
 	}
 
-	if err := common.Unmarshal(data, &aux); err != nil {
+	if err := platformencoding.Unmarshal(data, &aux); err != nil {
 		return err
 	}
 
@@ -44,9 +42,9 @@ func (r *GeminiChatRequest) UnmarshalJSON(data []byte) error {
 }
 
 type ToolConfig struct {
-	FunctionCallingConfig *FunctionCallingConfig `json:"functionCallingConfig,omitempty"`
-	RetrievalConfig       *RetrievalConfig       `json:"retrievalConfig,omitempty"`
-	IncludeServerSideToolInvocations *bool       `json:"includeServerSideToolInvocations,omitempty"`
+	FunctionCallingConfig            *FunctionCallingConfig `json:"functionCallingConfig,omitempty"`
+	RetrievalConfig                  *RetrievalConfig       `json:"retrievalConfig,omitempty"`
+	IncludeServerSideToolInvocations *bool                  `json:"includeServerSideToolInvocations,omitempty"`
 }
 
 type FunctionCallingConfig struct {
@@ -128,14 +126,14 @@ func (r *GeminiChatRequest) GetTools() []GeminiChatTool {
 	var tools []GeminiChatTool
 	if strings.HasPrefix(string(r.Tools), "[") {
 		// is array
-		if err := common.Unmarshal(r.Tools, &tools); err != nil {
+		if err := platformencoding.Unmarshal(r.Tools, &tools); err != nil {
 			logger.LogError(nil, "error_unmarshalling_tools: "+err.Error())
 			return nil
 		}
 	} else if strings.HasPrefix(string(r.Tools), "{") {
 		// is object
 		singleTool := GeminiChatTool{}
-		if err := common.Unmarshal(r.Tools, &singleTool); err != nil {
+		if err := platformencoding.Unmarshal(r.Tools, &singleTool); err != nil {
 			logger.LogError(nil, "error_unmarshalling_single_tool: "+err.Error())
 			return nil
 		}
@@ -151,7 +149,7 @@ func (r *GeminiChatRequest) SetTools(tools []GeminiChatTool) {
 	}
 
 	// Marshal the tools to JSON
-	data, err := common.Marshal(tools)
+	data, err := platformencoding.Marshal(tools)
 	if err != nil {
 		logger.LogError(nil, "error_marshalling_tools: "+err.Error())
 		return
@@ -176,7 +174,7 @@ func (c *GeminiThinkingConfig) UnmarshalJSON(data []byte) error {
 		ThinkingLevelSnake   string `json:"thinking_level,omitempty"`
 	}
 
-	if err := common.Unmarshal(data, &aux); err != nil {
+	if err := platformencoding.Unmarshal(data, &aux); err != nil {
 		return err
 	}
 
@@ -221,7 +219,7 @@ func (g *GeminiInlineData) UnmarshalJSON(data []byte) error {
 		MimeTypeSnake string `json:"mime_type"`
 	}
 
-	if err := common.Unmarshal(data, &aux); err != nil {
+	if err := platformencoding.Unmarshal(data, &aux); err != nil {
 		return err
 	}
 
@@ -290,7 +288,7 @@ func (p *GeminiPart) UnmarshalJSON(data []byte) error {
 		InlineDataSnake *GeminiInlineData `json:"inline_data,omitempty"` // snake_case variant
 	}
 
-	if err := common.Unmarshal(data, &aux); err != nil {
+	if err := platformencoding.Unmarshal(data, &aux); err != nil {
 		return err
 	}
 
@@ -373,7 +371,7 @@ func (c *GeminiChatGenerationConfig) UnmarshalJSON(data []byte) error {
 		ImageConfigSnake                json.RawMessage       `json:"image_config,omitempty"`
 	}
 
-	if err := common.Unmarshal(data, &aux); err != nil {
+	if err := platformencoding.Unmarshal(data, &aux); err != nil {
 		return err
 	}
 

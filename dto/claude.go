@@ -3,12 +3,10 @@ package dto
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
-
-	"github.com/QuantumNous/new-api/common"
-	"github.com/QuantumNous/new-api/types"
-
 	"github.com/gin-gonic/gin"
+	platformencoding "github.com/sh2001sh/new-api/internal/platform/encodingx"
+	"github.com/sh2001sh/new-api/types"
+	"strings"
 )
 
 type ClaudeMetadata struct {
@@ -85,7 +83,7 @@ func (c *ClaudeMediaMessage) GetStringContent() string {
 }
 
 func (c *ClaudeMediaMessage) GetJsonRowString() string {
-	jsonContent, _ := common.Marshal(c)
+	jsonContent, _ := platformencoding.Marshal(c)
 	return string(jsonContent)
 }
 
@@ -94,7 +92,7 @@ func (c *ClaudeMediaMessage) SetContent(content any) {
 }
 
 func (c *ClaudeMediaMessage) ParseMediaContent() []ClaudeMediaMessage {
-	mediaContent, _ := common.Any2Type[[]ClaudeMediaMessage](c.Content)
+	mediaContent, _ := platformencoding.Any2Type[[]ClaudeMediaMessage](c.Content)
 	return mediaContent
 }
 
@@ -104,7 +102,7 @@ func (m *ClaudeMediaMessage) ToFileSource() types.FileSource {
 	}
 	data := m.Source.Url
 	if data == "" {
-		data = common.Interface2String(m.Source.Data)
+		data = platformencoding.Interface2String(m.Source.Data)
 	}
 	if data == "" {
 		return nil
@@ -167,7 +165,7 @@ func (c *ClaudeMessage) SetContent(content any) {
 }
 
 func (c *ClaudeMessage) ParseContent() ([]ClaudeMediaMessage, error) {
-	return common.Any2Type[[]ClaudeMediaMessage](c.Content)
+	return platformencoding.Any2Type[[]ClaudeMediaMessage](c.Content)
 }
 
 type Tool struct {
@@ -308,12 +306,12 @@ func (c *ClaudeRequest) GetTokenCountMeta() *types.TokenCountMeta {
 					texts = append(texts, media.Name)
 				}
 				if media.Input != nil {
-					b, _ := common.Marshal(media.Input)
+					b, _ := platformencoding.Marshal(media.Input)
 					texts = append(texts, string(b))
 				}
 			case "tool_result":
 				if media.Content != nil {
-					b, _ := common.Marshal(media.Content)
+					b, _ := platformencoding.Marshal(media.Content)
 					texts = append(texts, string(b))
 				}
 			}
@@ -334,7 +332,7 @@ func (c *ClaudeRequest) GetTokenCountMeta() *types.TokenCountMeta {
 					texts = append(texts, t.Description)
 				}
 				if t.InputSchema != nil {
-					b, _ := common.Marshal(t.InputSchema)
+					b, _ := platformencoding.Marshal(t.InputSchema)
 					texts = append(texts, string(b))
 				}
 			}
@@ -346,7 +344,7 @@ func (c *ClaudeRequest) GetTokenCountMeta() *types.TokenCountMeta {
 					texts = append(texts, t.Name)
 				}
 				if t.UserLocation != nil {
-					b, _ := common.Marshal(t.UserLocation)
+					b, _ := platformencoding.Marshal(t.UserLocation)
 					texts = append(texts, string(b))
 				}
 			}
@@ -479,7 +477,7 @@ func (c *ClaudeRequest) SetStringSystem(system string) {
 }
 
 func (c *ClaudeRequest) ParseSystem() []ClaudeMediaMessage {
-	mediaContent, _ := common.Any2Type[[]ClaudeMediaMessage](c.System)
+	mediaContent, _ := platformencoding.Any2Type[[]ClaudeMediaMessage](c.System)
 	return mediaContent
 }
 

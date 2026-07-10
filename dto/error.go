@@ -2,9 +2,8 @@ package dto
 
 import (
 	"encoding/json"
-
-	"github.com/QuantumNous/new-api/common"
-	"github.com/QuantumNous/new-api/types"
+	platformencoding "github.com/sh2001sh/new-api/internal/platform/encodingx"
+	"github.com/sh2001sh/new-api/types"
 )
 
 //type OpenAIError struct {
@@ -41,7 +40,7 @@ type GeneralErrorResponse struct {
 func (e GeneralErrorResponse) TryToOpenAIError() *types.OpenAIError {
 	var openAIError types.OpenAIError
 	if len(e.Error) > 0 {
-		err := common.Unmarshal(e.Error, &openAIError)
+		err := platformencoding.Unmarshal(e.Error, &openAIError)
 		if err == nil && openAIError.Message != "" {
 			return &openAIError
 		}
@@ -51,16 +50,16 @@ func (e GeneralErrorResponse) TryToOpenAIError() *types.OpenAIError {
 
 func (e GeneralErrorResponse) ToMessage() string {
 	if len(e.Error) > 0 {
-		switch common.GetJsonType(e.Error) {
+		switch platformencoding.GetJSONType(e.Error) {
 		case "object":
 			var openAIError types.OpenAIError
-			err := common.Unmarshal(e.Error, &openAIError)
+			err := platformencoding.Unmarshal(e.Error, &openAIError)
 			if err == nil && openAIError.Message != "" {
 				return openAIError.Message
 			}
 		case "string":
 			var msg string
-			err := common.Unmarshal(e.Error, &msg)
+			err := platformencoding.Unmarshal(e.Error, &msg)
 			if err == nil && msg != "" {
 				return msg
 			}

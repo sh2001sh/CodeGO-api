@@ -12,7 +12,7 @@ type SiteSeoProps = {
 
 const SITE_NAME = 'Code Go'
 const SITE_ORIGIN = 'https://shu26.cfd'
-const DEFAULT_OG_IMAGE = `${SITE_ORIGIN}/logo.png`
+const DEFAULT_OG_IMAGE = `${SITE_ORIGIN}/code-go-logo.svg`
 
 function ensureMeta(selector: string, attribute: 'name' | 'property', value: string) {
   let element = document.head.querySelector(selector) as HTMLMetaElement | null

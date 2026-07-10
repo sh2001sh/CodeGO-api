@@ -27,6 +27,9 @@ import type { PricingData } from './types'
 export async function getPricing(): Promise<PricingData> {
   const res = await api.get('/api/pricing', {
     skipErrorHandler: true,
+    // The public pricing screen already provides an error/empty state. Do not
+    // leave its skeleton visible forever when the backend is unavailable.
+    timeout: 5000,
   } as Record<string, unknown>)
   return res.data
 }

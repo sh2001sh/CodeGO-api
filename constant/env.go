@@ -19,7 +19,7 @@ var ErrorLogEnabled bool
 var TaskQueryLimit int
 var TaskTimeoutMinutes int
 
-// temporary variable for sora patch, will be removed in future
+// temporary variable for task price patches, will be removed in future
 var TaskPricePatches []string
 
 // TrustedRedirectDomains is a list of trusted domains for redirect URL validation.

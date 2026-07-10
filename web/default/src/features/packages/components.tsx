@@ -55,7 +55,7 @@ export function PlanZone(props: {
       {props.loading ? (
         <div className='grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'>
           {Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton key={index} className='h-[420px] rounded-2xl' />
+            <Skeleton key={index} className='h-[420px] rounded-xl' />
           ))}
         </div>
       ) : props.plans.length > 0 ? (
@@ -72,9 +72,9 @@ export function PlanZone(props: {
           ))}
         </div>
       ) : (
-        <div className='border-border text-muted-foreground rounded-2xl border border-dashed px-4 py-6 text-sm'>
+        <p className='text-muted-foreground border-border border-t pt-3 text-sm'>
           当前分区暂无可购买套餐。
-        </div>
+        </p>
       )}
     </section>
   )
@@ -91,6 +91,17 @@ export function CurrentPackagePanel(props: {
     return map
   }, [props.plans])
   const current = props.subscriptions[0]
+
+  if (!props.loading && !current) {
+    return (
+      <TitledCard
+        title='我的当前套餐'
+        description='暂未生效套餐。可先购买新人体验卡，或直接选择 Standard 月卡。'
+        icon={<Crown className='h-4 w-4' />}
+        contentClassName='hidden'
+      />
+    )
+  }
 
   return (
     <TitledCard
@@ -148,11 +159,7 @@ export function CurrentPackagePanel(props: {
             ).toFixed(2)}
           </div>
         </div>
-      ) : (
-        <div className='border-border text-muted-foreground rounded-2xl border border-dashed px-4 py-8 text-sm'>
-          你还没有生效套餐。可以先购买新人体验卡，或直接选择 Standard 月卡。
-        </div>
-      )}
+      ) : null}
     </TitledCard>
   )
 }

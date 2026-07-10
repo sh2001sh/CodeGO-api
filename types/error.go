@@ -4,10 +4,12 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	platformconfig "github.com/sh2001sh/new-api/internal/platform/config"
+	platformruntime "github.com/sh2001sh/new-api/internal/platform/runtime"
 	"net/http"
 	"strings"
 
-	"github.com/QuantumNous/new-api/common"
+	platformtext "github.com/sh2001sh/new-api/internal/platform/textx"
 )
 
 type OpenAIError struct {
@@ -26,13 +28,12 @@ type ClaudeError struct {
 type ErrorType string
 
 const (
-	ErrorTypeNewAPIError     ErrorType = "new_api_error"
-	ErrorTypeOpenAIError     ErrorType = "openai_error"
-	ErrorTypeClaudeError     ErrorType = "claude_error"
-	ErrorTypeMidjourneyError ErrorType = "midjourney_error"
-	ErrorTypeGeminiError     ErrorType = "gemini_error"
-	ErrorTypeRerankError     ErrorType = "rerank_error"
-	ErrorTypeUpstreamError   ErrorType = "upstream_error"
+	ErrorTypeNewAPIError   ErrorType = "new_api_error"
+	ErrorTypeOpenAIError   ErrorType = "openai_error"
+	ErrorTypeClaudeError   ErrorType = "claude_error"
+	ErrorTypeGeminiError   ErrorType = "gemini_error"
+	ErrorTypeRerankError   ErrorType = "rerank_error"
+	ErrorTypeUpstreamError ErrorType = "upstream_error"
 )
 
 type ErrorCode string
@@ -137,12 +138,12 @@ func (e *NewAPIError) ErrorWithStatusCode() string {
 	}
 	msg := e.Error()
 	if e.StatusCode == 0 {
-		return common.SanitizeUpstreamQuotaErrorMessage(msg)
+		return platformtext.SanitizeUpstreamQuotaErrorMessage(msg)
 	}
 	if msg == "" {
 		return fmt.Sprintf("status_code=%d", e.StatusCode)
 	}
-	return common.SanitizeUpstreamQuotaErrorMessage(fmt.Sprintf("status_code=%d, %s", e.StatusCode, msg))
+	return platformtext.SanitizeUpstreamQuotaErrorMessage(fmt.Sprintf("status_code=%d, %s", e.StatusCode, msg))
 }
 
 func (e *NewAPIError) MaskSensitiveError() string {
@@ -156,7 +157,7 @@ func (e *NewAPIError) MaskSensitiveError() string {
 	if e.errorCode == ErrorCodeCountTokenFailed {
 		return errStr
 	}
-	return common.SanitizeUpstreamQuotaErrorMessage(common.MaskSensitiveInfo(errStr))
+	return platformtext.SanitizeUpstreamQuotaErrorMessage(platformtext.MaskSensitiveInfo(errStr))
 }
 
 func (e *NewAPIError) MaskSensitiveErrorWithStatusCode() string {
@@ -170,10 +171,10 @@ func (e *NewAPIError) MaskSensitiveErrorWithStatusCode() string {
 	if msg == "" {
 		return fmt.Sprintf("status_code=%d", e.StatusCode)
 	}
-	if msg == common.UpstreamQuotaGenericMessage {
+	if msg == platformtext.UpstreamQuotaGenericMessage {
 		return msg
 	}
-	return common.SanitizeUpstreamQuotaErrorMessage(fmt.Sprintf("status_code=%d, %s", e.StatusCode, msg))
+	return platformtext.SanitizeUpstreamQuotaErrorMessage(fmt.Sprintf("status_code=%d, %s", e.StatusCode, msg))
 }
 
 func (e *NewAPIError) SetMessage(message string) {
@@ -205,9 +206,9 @@ func (e *NewAPIError) ToOpenAIError() OpenAIError {
 		}
 	}
 	if e.errorCode != ErrorCodeCountTokenFailed {
-		result.Message = common.MaskSensitiveInfo(result.Message)
+		result.Message = platformtext.MaskSensitiveInfo(result.Message)
 	}
-	result.Message = common.SanitizeUpstreamQuotaErrorMessage(result.Message)
+	result.Message = platformtext.SanitizeUpstreamQuotaErrorMessage(result.Message)
 	if result.Message == "" {
 		result.Message = string(e.errorType)
 	}
@@ -235,9 +236,9 @@ func (e *NewAPIError) ToClaudeError() ClaudeError {
 		}
 	}
 	if e.errorCode != ErrorCodeCountTokenFailed {
-		result.Message = common.MaskSensitiveInfo(result.Message)
+		result.Message = platformtext.MaskSensitiveInfo(result.Message)
 	}
-	result.Message = common.SanitizeUpstreamQuotaErrorMessage(result.Message)
+	result.Message = platformtext.SanitizeUpstreamQuotaErrorMessage(result.Message)
 	if result.Message == "" {
 		result.Message = string(e.errorType)
 	}
@@ -391,7 +392,7 @@ func ErrOptionWithSkipRetry() NewAPIErrorOptions {
 
 func ErrOptionWithNoRecordErrorLog() NewAPIErrorOptions {
 	return func(e *NewAPIError) {
-		e.recordErrorLog = common.GetPointer(false)
+		e.recordErrorLog = platformruntime.GetPointer(false)
 	}
 }
 
@@ -403,7 +404,7 @@ func ErrOptionWithStatusCode(statusCode int) NewAPIErrorOptions {
 
 func ErrOptionWithHideErrMsg(replaceStr string) NewAPIErrorOptions {
 	return func(e *NewAPIError) {
-		if common.DebugEnabled {
+		if platformconfig.DebugEnabled {
 			fmt.Printf("ErrOptionWithHideErrMsg: %s, origin error: %s", replaceStr, e.Err)
 		}
 		e.Err = errors.New(replaceStr)

@@ -92,13 +92,10 @@ export function getChannelTypeIcon(type: number): string {
     20: 'OpenRouter', // OpenRouter
 
     // Image/Video generation
-    2: 'Midjourney', // Midjourney
-    5: 'Midjourney', // MidjourneyPlus
     50: 'Kling', // Kling
     51: 'Jimeng', // Jimeng
     52: 'Vidu', // Vidu
     36: 'Suno', // SunoAPI
-    55: 'OpenAI', // Sora
     54: 'Doubao', // DoubaoVideo
     56: 'Replicate', // Replicate
 

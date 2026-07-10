@@ -17,7 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 
-export const USAGE_LOGS_SECTION_IDS = ['common', 'drawing', 'task'] as const
+export const USAGE_LOGS_SECTION_IDS = ['common', 'task'] as const
 
 export type UsageLogsSectionId = (typeof USAGE_LOGS_SECTION_IDS)[number]
 

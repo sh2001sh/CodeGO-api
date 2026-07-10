@@ -3,13 +3,11 @@ package dto
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
-
-	"github.com/QuantumNous/new-api/common"
-	"github.com/QuantumNous/new-api/types"
-	"github.com/samber/lo"
-
 	"github.com/gin-gonic/gin"
+	"github.com/samber/lo"
+	platformencoding "github.com/sh2001sh/new-api/internal/platform/encodingx"
+	"github.com/sh2001sh/new-api/types"
+	"strings"
 )
 
 type ResponseFormat struct {
@@ -208,8 +206,8 @@ func (r *GeneralOpenAIRequest) SetModelName(modelName string) {
 
 func (r *GeneralOpenAIRequest) ToMap() map[string]any {
 	result := make(map[string]any)
-	data, _ := common.Marshal(r)
-	_ = common.Unmarshal(data, &result)
+	data, _ := platformencoding.Marshal(r)
+	_ = platformencoding.Unmarshal(data, &result)
 	return result
 }
 
@@ -305,9 +303,9 @@ func (m *MediaContent) GetImageMedia() *MessageImageUrl {
 		}
 		if itemMap, ok := m.ImageUrl.(map[string]any); ok {
 			out := &MessageImageUrl{
-				Url:      common.Interface2String(itemMap["url"]),
-				Detail:   common.Interface2String(itemMap["detail"]),
-				MimeType: common.Interface2String(itemMap["mime_type"]),
+				Url:      platformencoding.Interface2String(itemMap["url"]),
+				Detail:   platformencoding.Interface2String(itemMap["detail"]),
+				MimeType: platformencoding.Interface2String(itemMap["mime_type"]),
 			}
 			return out
 		}
@@ -322,8 +320,8 @@ func (m *MediaContent) GetInputAudio() *MessageInputAudio {
 		}
 		if itemMap, ok := m.InputAudio.(map[string]any); ok {
 			out := &MessageInputAudio{
-				Data:   common.Interface2String(itemMap["data"]),
-				Format: common.Interface2String(itemMap["format"]),
+				Data:   platformencoding.Interface2String(itemMap["data"]),
+				Format: platformencoding.Interface2String(itemMap["format"]),
 			}
 			return out
 		}
@@ -338,9 +336,9 @@ func (m *MediaContent) GetFile() *MessageFile {
 		}
 		if itemMap, ok := m.File.(map[string]any); ok {
 			out := &MessageFile{
-				FileName: common.Interface2String(itemMap["file_name"]),
-				FileData: common.Interface2String(itemMap["file_data"]),
-				FileId:   common.Interface2String(itemMap["file_id"]),
+				FileName: platformencoding.Interface2String(itemMap["file_name"]),
+				FileData: platformencoding.Interface2String(itemMap["file_data"]),
+				FileId:   platformencoding.Interface2String(itemMap["file_id"]),
 			}
 			return out
 		}
@@ -355,7 +353,7 @@ func (m *MediaContent) GetVideoUrl() *MessageVideoUrl {
 		}
 		if itemMap, ok := m.VideoUrl.(map[string]any); ok {
 			out := &MessageVideoUrl{
-				Url: common.Interface2String(itemMap["url"]),
+				Url: platformencoding.Interface2String(itemMap["url"]),
 			}
 			return out
 		}
@@ -969,7 +967,7 @@ func (r *OpenAIResponsesRequest) SetModelName(modelName string) {
 func (r *OpenAIResponsesRequest) GetToolsMap() []map[string]any {
 	var toolsMap []map[string]any
 	if len(r.Tools) > 0 {
-		_ = common.Unmarshal(r.Tools, &toolsMap)
+		_ = platformencoding.Unmarshal(r.Tools, &toolsMap)
 	}
 	return toolsMap
 }
@@ -1005,32 +1003,28 @@ func (r *OpenAIResponsesRequest) ParseInput() []MediaInput {
 
 	var mediaInputs []MediaInput
 
-	// Try string first
-	// if str, ok := common.GetJsonType(r.Input); ok {
-	// 	inputs = append(inputs, MediaInput{Type: "input_text", Text: str})
-	// 	return inputs
-	// }
-	if common.GetJsonType(r.Input) == "string" {
+	// Try string first.
+	if platformencoding.GetJSONType(r.Input) == "string" {
 		var str string
-		_ = common.Unmarshal(r.Input, &str)
+		_ = platformencoding.Unmarshal(r.Input, &str)
 		mediaInputs = append(mediaInputs, MediaInput{Type: "input_text", Text: str})
 		return mediaInputs
 	}
 
 	// Try array of parts
-	if common.GetJsonType(r.Input) == "array" {
+	if platformencoding.GetJSONType(r.Input) == "array" {
 		var inputs []Input
-		_ = common.Unmarshal(r.Input, &inputs)
+		_ = platformencoding.Unmarshal(r.Input, &inputs)
 		for _, input := range inputs {
-			if common.GetJsonType(input.Content) == "string" {
+			if platformencoding.GetJSONType(input.Content) == "string" {
 				var str string
-				_ = common.Unmarshal(input.Content, &str)
+				_ = platformencoding.Unmarshal(input.Content, &str)
 				mediaInputs = append(mediaInputs, MediaInput{Type: "input_text", Text: str})
 			}
 
-			if common.GetJsonType(input.Content) == "array" {
+			if platformencoding.GetJSONType(input.Content) == "array" {
 				var array []any
-				_ = common.Unmarshal(input.Content, &array)
+				_ = platformencoding.Unmarshal(input.Content, &array)
 				for _, itemAny := range array {
 					// Already parsed MediaContent
 					if media, ok := itemAny.(MediaInput); ok {

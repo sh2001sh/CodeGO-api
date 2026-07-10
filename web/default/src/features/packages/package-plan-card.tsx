@@ -43,20 +43,17 @@ export function PackagePlanCard(props: {
     <Card
       className={cn(
         'border-border bg-card relative h-full overflow-hidden shadow-sm transition-all hover:shadow-md',
-        isRecommended && 'border-primary ring-primary/20 border-2 ring-4'
+        isRecommended && 'border-primary bg-primary/[0.035] border-2'
       )}
     >
-      {isRecommended && (
-        <div className='bg-primary absolute left-0 right-0 top-0 flex items-center justify-center py-1.5'>
-          <span className='flex items-center text-xs font-semibold text-white'>
-            <Sparkles className='mr-1 h-3.5 w-3.5' />
-            最受欢迎
-          </span>
-        </div>
-      )}
-
-      <CardContent className={cn('flex h-full flex-col gap-3 p-4', isRecommended && 'pt-10')}>
+      <CardContent className='flex h-full flex-col gap-3 p-4'>
         <div className='text-center'>
+          {isRecommended && (
+            <span className='text-primary mb-2 inline-flex items-center gap-1 text-xs font-semibold'>
+              <Sparkles className='h-3.5 w-3.5' />
+              最受欢迎
+            </span>
+          )}
           <div className='text-muted-foreground text-xs font-medium'>
             {getSubscriptionPlanSubtitle(plan)}
           </div>

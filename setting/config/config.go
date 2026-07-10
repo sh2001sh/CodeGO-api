@@ -2,12 +2,11 @@ package config
 
 import (
 	"encoding/json"
+	platformobservability "github.com/sh2001sh/new-api/internal/platform/observability"
 	"reflect"
 	"strconv"
 	"strings"
 	"sync"
-
-	"github.com/QuantumNous/new-api/common"
 )
 
 // ConfigManager 统一管理所有配置
@@ -58,7 +57,7 @@ func (cm *ConfigManager) LoadFromDB(options map[string]string) error {
 		// 如果找到配置项，则更新配置
 		if len(configMap) > 0 {
 			if err := updateConfigFromMap(config, configMap); err != nil {
-				common.SysError("failed to update config " + name + ": " + err.Error())
+				platformobservability.SysError("failed to update config " + name + ": " + err.Error())
 				continue
 			}
 		}

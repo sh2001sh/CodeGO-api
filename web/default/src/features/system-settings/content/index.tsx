@@ -40,11 +40,6 @@ const defaultContentSettings: ContentSettings = {
   DataExportInterval: 5,
   Chats: '[]',
   DrawingEnabled: false,
-  MjNotifyEnabled: false,
-  MjAccountFilterEnabled: false,
-  MjForwardUrlEnabled: false,
-  MjModeClearEnabled: false,
-  MjActionCheckSuccessEnabled: false,
 }
 
 export function ContentSettings() {
@@ -117,7 +112,6 @@ export function ContentSettings() {
     | 'faq'
     | 'uptime-kuma'
     | 'chat'
-    | 'drawing'
   const sectionContent = getContentSectionContent(activeSection, settings)
 
   return (

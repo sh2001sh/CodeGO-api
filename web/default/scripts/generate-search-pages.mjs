@@ -94,8 +94,8 @@ function renderPage({
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/code-go-logo.svg" />
-    <link rel="shortcut icon" href="/favicon.ico" />
-    <link rel="apple-touch-icon" href="/logo.png" />
+    <link rel="shortcut icon" type="image/svg+xml" href="/code-go-logo.svg" />
+    <link rel="apple-touch-icon" href="/code-go-logo.svg" />
     <title>${escapeHtml(title)}</title>
     <meta name="title" content="${escapeHtml(title)}" />
     <meta name="description" content="${escapeHtml(description)}" />
@@ -108,11 +108,11 @@ function renderPage({
     <meta property="og:type" content="${escapeHtml(ogType)}" />
     <meta property="og:url" content="${canonical}" />
     <meta property="og:site_name" content="Code Go" />
-    <meta property="og:image" content="${baseUrl}/logo.png" />
+    <meta property="og:image" content="${baseUrl}/code-go-logo.svg" />
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:title" content="${escapeHtml(title)}" />
     <meta name="twitter:description" content="${escapeHtml(description)}" />
-    <meta name="twitter:image" content="${baseUrl}/logo.png" />
+    <meta name="twitter:image" content="${baseUrl}/code-go-logo.svg" />
     <style>
       :root {
         color-scheme: light;

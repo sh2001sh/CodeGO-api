@@ -1,11 +1,10 @@
 package dto
 
 import (
-	"testing"
-
-	"github.com/QuantumNous/new-api/common"
+	platformencoding "github.com/sh2001sh/new-api/internal/platform/encodingx"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"testing"
 )
 
 func TestGeminiChatGenerationConfigPreservesExplicitZeroValuesCamelCase(t *testing.T) {
@@ -22,13 +21,13 @@ func TestGeminiChatGenerationConfigPreservesExplicitZeroValuesCamelCase(t *testi
 	}`)
 
 	var req GeminiChatRequest
-	require.NoError(t, common.Unmarshal(raw, &req))
+	require.NoError(t, platformencoding.Unmarshal(raw, &req))
 
-	encoded, err := common.Marshal(req)
+	encoded, err := platformencoding.Marshal(req)
 	require.NoError(t, err)
 
 	var out map[string]any
-	require.NoError(t, common.Unmarshal(encoded, &out))
+	require.NoError(t, platformencoding.Unmarshal(encoded, &out))
 
 	generationConfig, ok := out["generationConfig"].(map[string]any)
 	require.True(t, ok)
@@ -62,13 +61,13 @@ func TestGeminiChatGenerationConfigPreservesExplicitZeroValuesSnakeCase(t *testi
 	}`)
 
 	var req GeminiChatRequest
-	require.NoError(t, common.Unmarshal(raw, &req))
+	require.NoError(t, platformencoding.Unmarshal(raw, &req))
 
-	encoded, err := common.Marshal(req)
+	encoded, err := platformencoding.Marshal(req)
 	require.NoError(t, err)
 
 	var out map[string]any
-	require.NoError(t, common.Unmarshal(encoded, &out))
+	require.NoError(t, platformencoding.Unmarshal(encoded, &out))
 
 	generationConfig, ok := out["generationConfig"].(map[string]any)
 	require.True(t, ok)

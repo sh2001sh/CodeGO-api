@@ -148,8 +148,8 @@ export function BrandHome() {
             '@type': 'Organization',
             name: 'Code Go',
             url: 'https://shu26.cfd',
-            logo: 'https://shu26.cfd/logo.png',
-            image: 'https://shu26.cfd/logo.png',
+            logo: 'https://shu26.cfd/code-go-logo.svg',
+            image: 'https://shu26.cfd/code-go-logo.svg',
             description:
               'Code Go 是面向长期 AI Coding 的统一入口，覆盖 Codex API、Claude Code API、Codex中转、Claude中转与免费模型。',
           },

@@ -28,7 +28,7 @@
       "name": "视频生成"
     },
     {
-      "name": "视频生成/Sora兼容格式"
+      "name": "视频生成/OpenAI Video格式"
     },
     {
       "name": "视频生成/Kling格式"
@@ -550,7 +550,7 @@
         "description": "OpenAI 兼容的视频生成接口。\n\n参考文档: https://platform.openai.com/docs/api-reference/videos/create\n",
         "operationId": "createVideo",
         "tags": [
-          "视频生成/Sora兼容格式"
+          "视频生成/OpenAI Video格式"
         ],
         "parameters": [],
         "requestBody": {
@@ -561,7 +561,7 @@
                 "properties": {
                   "model": {
                     "description": "模型名称",
-                    "example": "sora-2",
+                    "example": "video-model",
                     "type": "string"
                   },
                   "prompt": {
@@ -655,9 +655,9 @@
                   ]
                 },
                 "example": {
-                  "id": "sora-2-123456",
+                  "id": "video-task-123456",
                   "object": "video",
-                  "model": "sora-2",
+                  "model": "video-model",
                   "status": "queued",
                   "progress": 0,
                   "created_at": 1764347090922,
@@ -693,7 +693,7 @@
         "description": "OpenAI 兼容的视频任务状态查询接口。\n\n返回视频任务的详细状态信息。\n",
         "operationId": "getVideo",
         "tags": [
-          "视频生成/Sora兼容格式"
+          "视频生成/OpenAI Video格式"
         ],
         "parameters": [
           {
@@ -701,7 +701,7 @@
             "in": "path",
             "description": "视频任务 ID",
             "required": true,
-            "example": "sora-2-123456",
+            "example": "video-task-123456",
             "schema": {
               "type": "string"
             }
@@ -748,9 +748,9 @@
                   ]
                 },
                 "example": {
-                  "id": "sora-2-123456",
+                  "id": "video-task-123456",
                   "object": "video",
-                  "model": "sora-2",
+                  "model": "video-model",
                   "status": "queued",
                   "progress": 0,
                   "created_at": 1764347090922,
@@ -786,7 +786,7 @@
         "description": "获取已完成视频任务的视频文件内容。\n\n此接口会代理返回视频文件流。\n",
         "operationId": "getVideoContent",
         "tags": [
-          "视频生成/Sora兼容格式"
+          "视频生成/OpenAI Video格式"
         ],
         "parameters": [
           {
@@ -4353,7 +4353,7 @@
           "model": {
             "type": "string",
             "description": "使用的模型",
-            "example": "sora"
+            "example": "kling-v1"
           },
           "status": {
             "type": "string",

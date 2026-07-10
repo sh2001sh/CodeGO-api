@@ -22,7 +22,7 @@ export function WalletWorkspaceShell(props: WalletWorkspaceShellProps) {
         <div
           className={
             props.sidebar
-              ? 'mx-auto grid w-full max-w-[1600px] items-start gap-4 xl:grid-cols-[minmax(0,1fr)_320px]'
+              ? 'mx-auto grid w-full max-w-[1600px] items-start gap-5 min-[1200px]:grid-cols-[minmax(0,1fr)_288px] 2xl:grid-cols-[minmax(0,1fr)_320px]'
               : 'mx-auto w-full max-w-[1360px]'
           }
         >
@@ -33,7 +33,11 @@ export function WalletWorkspaceShell(props: WalletWorkspaceShellProps) {
               {props.main}
             </div>
           )}
-          {props.sidebar ? props.sidebar : null}
+          {props.sidebar ? (
+            <aside className='min-[1200px]:sticky min-[1200px]:top-5'>
+              {props.sidebar}
+            </aside>
+          ) : null}
         </div>
       </SectionPageLayout.Content>
     </SectionPageLayout>

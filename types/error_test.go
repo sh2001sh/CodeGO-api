@@ -5,7 +5,7 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/QuantumNous/new-api/common"
+	platformtext "github.com/sh2001sh/new-api/internal/platform/textx"
 	"github.com/stretchr/testify/require"
 )
 
@@ -18,8 +18,8 @@ func TestNewAPIErrorStatusStringsSanitizeUpstreamQuotaLeak(t *testing.T) {
 		http.StatusForbidden,
 	)
 
-	require.Equal(t, common.UpstreamQuotaGenericMessage, apiErr.ErrorWithStatusCode())
-	require.Equal(t, common.UpstreamQuotaGenericMessage, apiErr.MaskSensitiveErrorWithStatusCode())
+	require.Equal(t, platformtext.UpstreamQuotaGenericMessage, apiErr.ErrorWithStatusCode())
+	require.Equal(t, platformtext.UpstreamQuotaGenericMessage, apiErr.MaskSensitiveErrorWithStatusCode())
 }
 
 func TestNewAPIErrorStatusStringsKeepLocalQuotaMessage(t *testing.T) {

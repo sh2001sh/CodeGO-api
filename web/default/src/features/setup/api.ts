@@ -27,6 +27,9 @@ export async function getSetupStatus(): Promise<SetupResponse> {
       params: {
         t: Date.now(),
       },
+      // Public routes must never remain blank while a local or temporarily
+      // unavailable backend leaves this guard request pending.
+      timeout: 2500,
       // Route guards use this endpoint during navigation. Avoid surfacing
       // transient gateway errors as global toasts on every page change.
       skipErrorHandler: true,

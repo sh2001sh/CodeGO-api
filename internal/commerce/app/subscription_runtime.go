@@ -1,0 +1,219 @@
+package app
+
+import (
+	"errors"
+	"fmt"
+	"github.com/sh2001sh/new-api/constant"
+	auditapp "github.com/sh2001sh/new-api/internal/audit/app"
+	auditschema "github.com/sh2001sh/new-api/internal/audit/schema"
+	commercedomain "github.com/sh2001sh/new-api/internal/commerce/domain"
+	commerceschema "github.com/sh2001sh/new-api/internal/commerce/schema"
+	identitystore "github.com/sh2001sh/new-api/internal/identity/store"
+	platformdb "github.com/sh2001sh/new-api/internal/platform/db"
+	"math"
+	"strings"
+
+	// ResolveSubscriptionPurchasePreview computes the current purchase action and payable amount.
+	platformruntime "github.com/sh2001sh/new-api/internal/platform/runtime"
+
+	"gorm.io/gorm"
+)
+
+func ResolveSubscriptionPurchasePreview(userID int, targetPlan *commerceschema.SubscriptionPlan) (*commercedomain.SubscriptionPurchasePreview, error) {
+	return resolveSubscriptionPurchasePreviewTx(nil, userID, targetPlan)
+}
+
+// CreatePendingSubscriptionOrderWithBlindBoxDiscount creates a pending order and reserves any discount prop.
+func CreatePendingSubscriptionOrderWithBlindBoxDiscount(order *commerceschema.SubscriptionOrder, baseMoney float64) (float64, error) {
+	if order == nil {
+		return 0, errors.New("order is nil")
+	}
+	if order.UserId <= 0 || strings.TrimSpace(order.TradeNo) == "" {
+		return 0, errors.New("invalid subscription order")
+	}
+	if baseMoney <= 0 {
+		baseMoney = order.Money
+	}
+
+	appliedRate := 0.0
+	err := platformdb.DB.Transaction(func(tx *gorm.DB) error {
+		order.Money = math.Round(baseMoney*100) / 100
+		prop, err := ReserveBlindBoxSubscriptionDiscountPropTx(tx, order.UserId, order.TradeNo)
+		if err != nil {
+			return err
+		}
+		if prop != nil {
+			appliedRate = prop.DiscountRate
+			order.Money = commercedomain.ApplyDiscountRateToMoney(baseMoney, prop.DiscountRate)
+		}
+		return tx.Create(order).Error
+	})
+	return appliedRate, err
+}
+
+// CompleteSubscriptionOrder completes a pending subscription order idempotently.
+func CompleteSubscriptionOrder(tradeNo string, providerPayload string, expectedPaymentProvider string, actualPaymentMethod string) error {
+	if strings.TrimSpace(tradeNo) == "" {
+		return errors.New("tradeNo is empty")
+	}
+
+	var logUserID int
+	var logPlanTitle string
+	var logMoney float64
+	var logPaymentMethod string
+	var upgradeGroup string
+	err := platformdb.DB.Transaction(func(tx *gorm.DB) error {
+		order := &commerceschema.SubscriptionOrder{}
+		if err := tx.Set("gorm:query_option", "FOR UPDATE").Where(subscriptionTradeNoColumn()+" = ?", tradeNo).First(order).Error; err != nil {
+			return commerceschema.ErrSubscriptionOrderNotFound
+		}
+		if expectedPaymentProvider != "" && order.PaymentProvider != expectedPaymentProvider {
+			return commerceschema.ErrPaymentMethodMismatch
+		}
+		if order.Status == constant.TopUpStatusSuccess {
+			return nil
+		}
+		if order.Status != constant.TopUpStatusPending {
+			return commerceschema.ErrSubscriptionOrderStatusInvalid
+		}
+
+		plan, err := getSubscriptionPlanRecordTx(tx, order.PlanId)
+		if err != nil {
+			return err
+		}
+		sub, preview, err := ApplySubscriptionPurchaseTx(tx, order.UserId, plan, "order")
+		if err != nil {
+			return err
+		}
+		if err := awardPackagePurchasePointsTx(tx, order.UserId, plan, order.Id); err != nil {
+			return err
+		}
+		if preview != nil {
+			upgradeGroup = strings.TrimSpace(sub.UpgradeGroup)
+		}
+		if err := upsertSubscriptionTopUpTx(tx, order); err != nil {
+			return err
+		}
+		purchaseType := commercedomain.ReferralPurchaseTypeMonthCard
+		if commercedomain.IsSubscriptionDayPassPlan(plan) {
+			purchaseType = commercedomain.ReferralPurchaseTypeDayPass
+		}
+		if err := awardReferralFirstPurchaseBonusTx(tx, order.UserId, purchaseType, "subscription_order", order.TradeNo); err != nil {
+			return err
+		}
+		if err := AwardReferralSubscriptionResetOpportunityTx(tx, order.UserId, purchaseType, "subscription_order", order.TradeNo); err != nil {
+			return err
+		}
+		if err := ConsumeReservedBlindBoxPropByTradeNoTx(tx, tradeNo, commerceschema.BlindBoxPropOrderTypeSubscription); err != nil {
+			return err
+		}
+		if err := ApplySubscriptionPurchaseBonusTx(tx, order.UserId, sub, plan, preview); err != nil {
+			return err
+		}
+		if err := ApplyGroupBuyPurchaseAfterPaymentTx(tx, order, plan, sub); err != nil {
+			return err
+		}
+
+		order.Status = constant.TopUpStatusSuccess
+		order.CompleteTime = platformruntime.GetTimestamp()
+		if providerPayload != "" {
+			order.ProviderPayload = providerPayload
+		}
+		if actualPaymentMethod != "" && order.PaymentMethod != actualPaymentMethod {
+			order.PaymentMethod = actualPaymentMethod
+		}
+		if err := tx.Save(order).Error; err != nil {
+			return err
+		}
+
+		logUserID = order.UserId
+		logPlanTitle = plan.Title
+		logMoney = order.Money
+		logPaymentMethod = order.PaymentMethod
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	if upgradeGroup != "" && logUserID > 0 {
+		_ = identitystore.UpdateUserGroupCache(logUserID, upgradeGroup)
+	}
+	if logUserID > 0 {
+		msg := fmt.Sprintf("订阅购买成功，套餐: %s，支付金额: %.2f，支付方式: %s", logPlanTitle, logMoney, logPaymentMethod)
+		auditapp.RecordLog(logUserID, auditschema.LogTypeTopup, msg)
+	}
+	return nil
+}
+
+// ExpireSubscriptionOrder marks a pending subscription order as expired.
+func ExpireSubscriptionOrder(tradeNo string, expectedPaymentProvider string) error {
+	if strings.TrimSpace(tradeNo) == "" {
+		return errors.New("tradeNo is empty")
+	}
+
+	return platformdb.DB.Transaction(func(tx *gorm.DB) error {
+		order := &commerceschema.SubscriptionOrder{}
+		if err := tx.Set("gorm:query_option", "FOR UPDATE").Where(subscriptionTradeNoColumn()+" = ?", tradeNo).First(order).Error; err != nil {
+			return commerceschema.ErrSubscriptionOrderNotFound
+		}
+		if expectedPaymentProvider != "" && order.PaymentProvider != expectedPaymentProvider {
+			return commerceschema.ErrPaymentMethodMismatch
+		}
+		if order.Status != constant.TopUpStatusPending {
+			return nil
+		}
+
+		order.Status = constant.TopUpStatusExpired
+		order.CompleteTime = platformruntime.GetTimestamp()
+		if err := tx.Save(order).Error; err != nil {
+			return err
+		}
+		return ReleaseReservedBlindBoxPropByTradeNoTx(tx, tradeNo, commerceschema.BlindBoxPropOrderTypeSubscription)
+	})
+}
+
+func upsertSubscriptionTopUpTx(tx *gorm.DB, order *commerceschema.SubscriptionOrder) error {
+	if tx == nil || order == nil {
+		return errors.New("invalid subscription order")
+	}
+
+	now := platformruntime.GetTimestamp()
+	topup := &commerceschema.TopUp{}
+	if err := tx.Where("trade_no = ?", order.TradeNo).First(topup).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			topup = &commerceschema.TopUp{
+				UserId:        order.UserId,
+				Amount:        0,
+				Money:         order.Money,
+				TradeNo:       order.TradeNo,
+				PaymentMethod: order.PaymentMethod,
+				CreateTime:    order.CreateTime,
+				CompleteTime:  now,
+				Status:        constant.TopUpStatusSuccess,
+			}
+			return tx.Create(topup).Error
+		}
+		return err
+	}
+
+	topup.Money = order.Money
+	if topup.PaymentMethod == "" {
+		topup.PaymentMethod = order.PaymentMethod
+	} else if topup.PaymentMethod != order.PaymentMethod {
+		return commerceschema.ErrPaymentMethodMismatch
+	}
+	if topup.CreateTime == 0 {
+		topup.CreateTime = order.CreateTime
+	}
+	topup.CompleteTime = now
+	topup.Status = constant.TopUpStatusSuccess
+	return tx.Save(topup).Error
+}
+
+func subscriptionTradeNoColumn() string {
+	if platformdb.UsingPostgreSQL {
+		return `"trade_no"`
+	}
+	return "`trade_no`"
+}

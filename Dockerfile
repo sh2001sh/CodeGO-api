@@ -13,6 +13,7 @@ ENV GO111MODULE=on CGO_ENABLED=0
 
 ARG TARGETOS
 ARG TARGETARCH
+ARG APP_PATH=./cmd/control-api
 ENV GOOS=${TARGETOS:-linux} GOARCH=${TARGETARCH:-amd64}
 ENV GOEXPERIMENT=greenteagc
 
@@ -23,7 +24,7 @@ RUN go mod download
 
 COPY . .
 COPY --from=builder /build/dist ./web/default/dist
-RUN go build -ldflags "-s -w -X 'github.com/QuantumNous/new-api/common.Version=$(cat VERSION)'" -o new-api
+RUN go build -ldflags "-s -w -X 'github.com/sh2001sh/new-api/internal/platform/config.Version=$(cat VERSION)'" -o app ${APP_PATH}
 
 FROM debian:bookworm-slim@sha256:f06537653ac770703bc45b4b113475bd402f451e85223f0f2837acbf89ab020a
 
@@ -32,8 +33,8 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/* \
     && update-ca-certificates
 
-COPY --from=builder2 /build/new-api /
+COPY --from=builder2 /build/app /app
 COPY LICENSE NOTICE THIRD-PARTY-LICENSES.md /licenses/
 EXPOSE 3000
 WORKDIR /data
-ENTRYPOINT ["/new-api"]
+ENTRYPOINT ["/app"]

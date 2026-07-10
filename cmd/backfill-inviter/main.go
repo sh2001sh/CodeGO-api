@@ -3,19 +3,23 @@ package main
 import (
 	"flag"
 	"fmt"
+	identityschema "github.com/sh2001sh/new-api/internal/identity/schema"
 	"log"
 	"sort"
 	"strconv"
 
-	"github.com/QuantumNous/new-api/model"
+	billingschema "github.com/sh2001sh/new-api/internal/billing/schema"
+	commerceapp "github.com/sh2001sh/new-api/internal/commerce/app"
+	platformdb "github.com/sh2001sh/new-api/internal/platform/db"
+	platformstore "github.com/sh2001sh/new-api/internal/platform/store"
 	"gorm.io/gorm"
 )
 
 type referralLedgerRow struct {
-	LedgerID         int   `gorm:"column:ledger_id"`
-	InviteeID        int   `gorm:"column:invitee_id"`
-	InviterSourceID  string `gorm:"column:inviter_source_id"`
-	CreatedAt        int64 `gorm:"column:created_at"`
+	LedgerID        int    `gorm:"column:ledger_id"`
+	InviteeID       int    `gorm:"column:invitee_id"`
+	InviterSourceID string `gorm:"column:inviter_source_id"`
+	CreatedAt       int64  `gorm:"column:created_at"`
 }
 
 type conflictRecord struct {
@@ -28,11 +32,14 @@ func main() {
 	limit := flag.Int("limit", 0, "optional max number of invitees to update")
 	flag.Parse()
 
-	if err := model.InitDB(); err != nil {
+	if err := platformstore.InitPrimaryDB(); err != nil {
 		log.Fatalf("init db failed: %v", err)
 	}
+	if err := commerceapp.MigrateBlindBoxLegacyCredits(); err != nil {
+		log.Fatalf("migrate blind box legacy credits failed: %v", err)
+	}
 	defer func() {
-		if err := model.CloseDB(); err != nil {
+		if err := platformstore.CloseDatabases(); err != nil {
 			log.Printf("close db failed: %v", err)
 		}
 	}()
@@ -99,12 +106,12 @@ type backfillPlanItem struct {
 
 func loadReferralLedgerRows() ([]referralLedgerRow, error) {
 	rows := make([]referralLedgerRow, 0)
-	err := model.DB.Table("point_ledgers AS pl").
+	err := platformdb.DB.Table("point_ledgers AS pl").
 		Select("pl.id AS ledger_id, pl.user_id AS invitee_id, pl.source_id AS inviter_source_id, pl.created_at").
 		Joins("JOIN users AS u ON u.id = pl.user_id").
 		Where("pl.source_type = ? AND pl.type = ? AND COALESCE(u.inviter_id, 0) = 0",
-			model.PointSourceReferralRegister,
-			model.PointLedgerTypeEarn,
+			billingschema.PointSourceReferralRegister,
+			billingschema.PointLedgerTypeEarn,
 		).
 		Order("pl.created_at ASC, pl.id ASC").
 		Scan(&rows).Error
@@ -156,9 +163,9 @@ func buildBackfillPlan(rows []referralLedgerRow) ([]backfillPlanItem, []conflict
 
 func applyBackfill(plans []backfillPlanItem) (int64, error) {
 	var updated int64
-	err := model.DB.Transaction(func(tx *gorm.DB) error {
+	err := platformdb.DB.Transaction(func(tx *gorm.DB) error {
 		for _, item := range plans {
-			result := tx.Model(&model.User{}).
+			result := tx.Model(&identityschema.User{}).
 				Where("id = ? AND COALESCE(inviter_id, 0) = 0", item.InviteeID).
 				Update("inviter_id", item.InviterID)
 			if result.Error != nil {

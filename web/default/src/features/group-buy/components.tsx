@@ -81,20 +81,20 @@ export function GroupBuyCard(props: {
           </span>
         </div>
 
-        <div className='grid grid-cols-2 gap-2 text-sm'>
-          <MetricTile
+        <div className='border-border/70 grid grid-cols-2 gap-x-6 gap-y-3 border-y py-3 text-sm'>
+          <MetricItem
             label='当前可结算额度'
             value={`$${props.item.base_quota_usd + unlockedBonus}`}
           />
-          <MetricTile
+          <MetricItem
             label='下一档目标'
             value={nextTier ? `${nextTier.count} 人团` : '已满 5 人团'}
           />
-          <MetricTile
+          <MetricItem
             label='下一档赠额'
             value={nextTier ? `+$${nextTier.bonus}` : `+$${props.item.bonus_at_5}`}
           />
-          <MetricTile
+          <MetricItem
             label='自动结算'
             value={
               hasActiveRoom
@@ -132,9 +132,9 @@ export function GroupBuyCard(props: {
           <Progress value={progress} />
         </div>
 
-        <div className='text-muted-foreground flex flex-wrap items-center justify-between gap-2 text-sm'>
-          <span>{nextRewardText(props.item)}</span>
-          <span className='flex items-center gap-1 tabular-nums'>
+        <div className='text-muted-foreground flex flex-wrap items-start justify-between gap-x-4 gap-y-1 text-sm'>
+          <span className='font-medium'>{nextRewardText(props.item)}</span>
+          <span className='flex items-center gap-1 whitespace-nowrap tabular-nums'>
             <Clock3 className='h-4 w-4' />
             {hasActiveRoom
               ? '满 5 人或 48 小时自动结算'
@@ -162,9 +162,9 @@ export function GroupBuyCard(props: {
   )
 }
 
-function MetricTile(props: { label: string; value: string }) {
+function MetricItem(props: { label: string; value: string }) {
   return (
-    <div className='border-border/70 bg-muted/25 rounded-2xl border px-3 py-2.5'>
+    <div className='min-w-0'>
       <div className='text-muted-foreground text-[11px] font-medium'>
         {props.label}
       </div>

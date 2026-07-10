@@ -1,0 +1,236 @@
+package app
+
+import (
+	"errors"
+	"fmt"
+	"github.com/sh2001sh/new-api/constant"
+	billingapp "github.com/sh2001sh/new-api/internal/billing/app"
+	blindboxsettings "github.com/sh2001sh/new-api/internal/commerce/blindboxsettings"
+	commercedomain "github.com/sh2001sh/new-api/internal/commerce/domain"
+	commerceschema "github.com/sh2001sh/new-api/internal/commerce/schema"
+	commercestore "github.com/sh2001sh/new-api/internal/commerce/store"
+	platformruntime "github.com/sh2001sh/new-api/internal/platform/runtime"
+	"strings"
+	"time"
+
+	// GetBlindBoxOverview returns the current blind-box overview snapshot for a user.
+	platformdb "github.com/sh2001sh/new-api/internal/platform/db"
+	"gorm.io/gorm"
+)
+
+func GetBlindBoxOverview(userID int, recentLimit int) (*commercedomain.BlindBoxOverview, error) {
+	if userID <= 0 {
+		return nil, errors.New("invalid userId")
+	}
+
+	now := platformruntime.GetTimestamp()
+	userQuota, err := billingapp.GetUserWalletQuota(userID)
+	if err != nil {
+		return nil, err
+	}
+	claudeQuota, err := billingapp.GetUserClaudeWalletQuota(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	var orders []commerceschema.BlindBoxOrder
+	if err := platformdb.DB.Where("user_id = ? AND status = ?", userID, constant.TopUpStatusSuccess).
+		Order("id desc").
+		Find(&orders).Error; err != nil {
+		return nil, err
+	}
+
+	overview := &commercedomain.BlindBoxOverview{}
+	for _, order := range orders {
+		remaining := order.Quantity - order.OpenedCount
+		if remaining > 0 {
+			overview.AvailableBoxes += remaining
+		}
+	}
+	if err := platformdb.DB.Model(&commerceschema.BlindBoxOrder{}).
+		Where("user_id = ? AND status = ?", userID, constant.TopUpStatusPending).
+		Select("COALESCE(SUM(quantity - opened_count), 0)").
+		Scan(&overview.PendingBoxes).Error; err != nil {
+		return nil, err
+	}
+
+	if recentLimit <= 0 {
+		recentLimit = 20
+	}
+	if err := platformdb.DB.Where("user_id = ?", userID).
+		Order("create_time desc, id desc").
+		Limit(recentLimit).
+		Find(&overview.RecentRecords).Error; err != nil {
+		return nil, err
+	}
+	if err := attachBlindBoxPropStateTx(platformdb.DB, overview.RecentRecords); err != nil {
+		return nil, err
+	}
+	for index := range overview.RecentRecords {
+		normalizeBlindBoxOpenRecordDisplay(&overview.RecentRecords[index])
+	}
+
+	overview.RemainingQuota = int64(userQuota)
+	overview.ClaudeQuota = int64(claudeQuota)
+
+	var pity commerceschema.BlindBoxPityState
+	if err := platformdb.DB.Where("user_id = ?", userID).First(&pity).Error; err == nil {
+		overview.PityProgress = pity.ConsecutiveLowRewards
+	}
+
+	setting := blindboxsettings.Get()
+	overview.PityThreshold = setting.PityThreshold
+	overview.EffectivePityThreshold = setting.PityThreshold
+	if appliedBonus, err := commercestore.LoadUserCompanionAppliedBonus(userID); err == nil &&
+		appliedBonus != nil &&
+		appliedBonus.Buff.BlindBoxPityReduction > 0 {
+		overview.EffectivePityThreshold -= appliedBonus.Buff.BlindBoxPityReduction
+		if overview.EffectivePityThreshold < 1 {
+			overview.EffectivePityThreshold = 1
+		}
+	}
+
+	dayStart, dayEnd := getBlindBoxDayRange(now)
+	monthStart, monthEnd := getBlindBoxMonthRange(now)
+	if overview.PurchasedToday, err = sumBlindBoxOrderQuantity(userID, dayStart, dayEnd); err != nil {
+		return nil, err
+	}
+	if overview.PurchasedThisMonth, err = sumBlindBoxOrderQuantity(userID, monthStart, monthEnd); err != nil {
+		return nil, err
+	}
+
+	return overview, nil
+}
+
+// IsBlindBoxFirstPurchaseEligible reports whether the user has no successful blind-box order yet.
+func IsBlindBoxFirstPurchaseEligible(userID int) (bool, error) {
+	if userID <= 0 {
+		return false, nil
+	}
+	count, err := countSuccessfulBlindBoxOrdersTx(platformdb.DB, userID, nil)
+	if err != nil {
+		return false, err
+	}
+	return count == 0, nil
+}
+
+// GetBlindBoxOrderByTradeNo returns a blind-box order by trade number.
+func GetBlindBoxOrderByTradeNo(tradeNo string) *commerceschema.BlindBoxOrder {
+	if strings.TrimSpace(tradeNo) == "" {
+		return nil
+	}
+	var order commerceschema.BlindBoxOrder
+	if err := platformdb.DB.Where("trade_no = ?", tradeNo).First(&order).Error; err != nil {
+		return nil
+	}
+	return &order
+}
+
+// GetBlindBoxOrderByTradeNoForUser returns a blind-box order for a specific user.
+func GetBlindBoxOrderByTradeNoForUser(tradeNo string, userID int) (*commerceschema.BlindBoxOrder, error) {
+	if strings.TrimSpace(tradeNo) == "" || userID <= 0 {
+		return nil, errors.New("invalid tradeNo or userId")
+	}
+	var order commerceschema.BlindBoxOrder
+	if err := platformdb.DB.Where("trade_no = ? AND user_id = ?", tradeNo, userID).First(&order).Error; err != nil {
+		return nil, err
+	}
+	return &order, nil
+}
+
+func getBlindBoxDayRange(now int64) (int64, int64) {
+	base := time.Unix(now, 0).In(time.Local)
+	start := time.Date(base.Year(), base.Month(), base.Day(), 0, 0, 0, 0, base.Location()).Unix()
+	return start, start + 24*3600
+}
+
+func getBlindBoxMonthRange(now int64) (int64, int64) {
+	base := time.Unix(now, 0).In(time.Local)
+	start := time.Date(base.Year(), base.Month(), 1, 0, 0, 0, 0, base.Location()).Unix()
+	return start, time.Date(base.Year(), base.Month()+1, 1, 0, 0, 0, 0, base.Location()).Unix()
+}
+
+func sumBlindBoxOrderQuantity(userID int, start, end int64) (int, error) {
+	type result struct {
+		Total int64 `gorm:"column:total"`
+	}
+	var row result
+	err := platformdb.DB.Model(&commerceschema.BlindBoxOrder{}).
+		Select("COALESCE(SUM(quantity), 0) AS total").
+		Where("user_id = ? AND create_time >= ? AND create_time < ? AND status <> ? AND money > 0", userID, start, end, constant.TopUpStatusExpired).
+		Scan(&row).Error
+	return int(row.Total), err
+}
+
+func countSuccessfulBlindBoxOrdersTx(tx *gorm.DB, userID int, beforeOrderID *int) (int64, error) {
+	var count int64
+	query := tx.Model(&commerceschema.BlindBoxOrder{}).
+		Where("user_id = ? AND status = ? AND money > 0", userID, constant.TopUpStatusSuccess)
+	if beforeOrderID != nil && *beforeOrderID > 0 {
+		query = query.Where("id < ?", *beforeOrderID)
+	}
+	err := query.Count(&count).Error
+	return count, err
+}
+
+func isFirstSuccessfulBlindBoxOrderTx(tx *gorm.DB, userID int, orderID int) (bool, error) {
+	if userID <= 0 || orderID <= 0 {
+		return false, nil
+	}
+	count, err := countSuccessfulBlindBoxOrdersTx(tx, userID, &orderID)
+	if err != nil {
+		return false, err
+	}
+	return count == 0, nil
+}
+
+func normalizeBlindBoxOpenRecordDisplay(record *commerceschema.BlindBoxOpenRecord) {
+	if record == nil {
+		return
+	}
+	if record.RewardTier == "first_purchase" {
+		record.RewardTitle = formatFirstPurchaseBlindBoxRewardTitle(record.RewardUSD)
+	}
+	if record.RewardType == commerceschema.BlindBoxRewardTypeQuota && record.RewardTitle == "" {
+		record.RewardTitle = fmt.Sprintf("%.2f 美元奖励", record.RewardUSD)
+	}
+	if record.RewardType == commerceschema.BlindBoxRewardTypeClaudeQuota && record.RewardTitle == "" {
+		record.RewardTitle = fmt.Sprintf("%.2f Claude 额度奖励", record.RewardUSD)
+	}
+	if record.RewardType == commerceschema.BlindBoxRewardTypeProp && record.RewardTitle == "" {
+		record.RewardTitle = "实用道具奖励"
+	}
+}
+
+func attachBlindBoxPropStateTx(tx *gorm.DB, records []commerceschema.BlindBoxOpenRecord) error {
+	if tx == nil || len(records) == 0 {
+		return nil
+	}
+	openRecordIDs := make([]int, 0, len(records))
+	indexByOpenRecordID := make(map[int]int, len(records))
+	for index := range records {
+		if records[index].RewardType != commerceschema.BlindBoxRewardTypeProp || records[index].Id <= 0 {
+			continue
+		}
+		openRecordIDs = append(openRecordIDs, records[index].Id)
+		indexByOpenRecordID[records[index].Id] = index
+	}
+	if len(openRecordIDs) == 0 {
+		return nil
+	}
+	var props []commerceschema.BlindBoxProp
+	if err := tx.Where("open_record_id IN ?", openRecordIDs).Find(&props).Error; err != nil {
+		return err
+	}
+	for _, prop := range props {
+		index, ok := indexByOpenRecordID[prop.OpenRecordId]
+		if !ok {
+			continue
+		}
+		records[index].PropId = prop.Id
+		records[index].PropType = prop.PropType
+		records[index].PropStatus = prop.Status
+		records[index].PropExpiresAt = prop.ExpiresAt
+	}
+	return nil
+}
