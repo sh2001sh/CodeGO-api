@@ -49,6 +49,8 @@ func TestVerifyReportsMissingBackfillAccounts(t *testing.T) {
 	require.NoError(t, db.Create(&identityschema.User{Id: 1, Username: "verify-user"}).Error)
 	require.NoError(t, db.Create(&identityschema.Token{Id: 2, UserId: 1, Key: "verify-token"}).Error)
 	require.NoError(t, db.Create(&commerceschema.UserSubscription{Id: 3, UserId: 1}).Error)
+	require.NoError(t, db.Create(&commerceschema.BlindBoxCredit{Id: 4, UserId: 1, MigratedAt: 0}).Error)
+	require.NoError(t, db.Create(&commerceschema.BlindBoxCredit{Id: 5, UserId: 1, MigratedAt: 1, RemainingAmount: 0, Status: commerceschema.BlindBoxCreditStatusExhausted}).Error)
 
 	report, err := verify(context.Background())
 	require.NoError(t, err)
@@ -57,5 +59,6 @@ func TestVerifyReportsMissingBackfillAccounts(t *testing.T) {
 	require.Equal(t, 1, report.MissingClaudeAccounts)
 	require.Equal(t, 1, report.MissingTokenAccounts)
 	require.Equal(t, 1, report.MissingSubscriptionFunds)
+	require.EqualValues(t, 1, report.LegacyBlindBoxCredits)
 	require.True(t, report.hasFailures(true))
 }

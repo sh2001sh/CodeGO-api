@@ -89,7 +89,9 @@ func verify(ctx context.Context) (verificationReport, error) {
 		return report, err
 	}
 	if platformdb.DB.Migrator().HasTable(&commerceschema.BlindBoxCredit{}) {
-		if err := platformdb.DB.WithContext(ctx).Model(&commerceschema.BlindBoxCredit{}).Count(&report.LegacyBlindBoxCredits).Error; err != nil {
+		if err := platformdb.DB.WithContext(ctx).Model(&commerceschema.BlindBoxCredit{}).
+			Where("migrated_at = ?", 0).
+			Count(&report.LegacyBlindBoxCredits).Error; err != nil {
 			return report, err
 		}
 	}
