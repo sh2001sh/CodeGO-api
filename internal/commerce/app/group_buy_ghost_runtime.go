@@ -11,6 +11,7 @@ import (
 	platformruntime "github.com/sh2001sh/new-api/internal/platform/runtime"
 	platformsecurity "github.com/sh2001sh/new-api/internal/platform/security"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	"math/rand"
 )
 
@@ -55,8 +56,16 @@ func initGhostUsersDB() ([]int, error) {
 			Status:      constant.UserStatusEnabled,
 			Group:       "ghost",
 		}
-		if err := platformdb.DB.Create(&newUser).Error; err != nil {
+		if err := platformdb.DB.Clauses(clause.OnConflict{
+			Columns:   []clause.Column{{Name: "username"}},
+			DoNothing: true,
+		}).Create(&newUser).Error; err != nil {
 			return nil, fmt.Errorf("failed to create ghost user %s: %w", username, err)
+		}
+		if newUser.Id == 0 {
+			if err := platformdb.DB.Where("username = ?", username).First(&newUser).Error; err != nil {
+				return nil, fmt.Errorf("failed to load concurrently created ghost user %s: %w", username, err)
+			}
 		}
 		ids = append(ids, newUser.Id)
 		platformobservability.SysLog(fmt.Sprintf("created ghost user: id=%d username=%s", newUser.Id, username))
