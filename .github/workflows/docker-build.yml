@@ -26,7 +26,9 @@ jobs:
     name: Build & push (${{ matrix.arch }})
     strategy:
       fail-fast: false
-      max-parallel: 1
+      # Two native runners mean only six authenticated base-image pulls total,
+      # well within the personal Docker Hub allowance while halving wall time.
+      max-parallel: 2
       matrix:
         arch: [amd64, arm64]
     runs-on: ${{ matrix.arch == 'amd64' && 'ubuntu-latest' || 'ubuntu-24.04-arm' }}
@@ -81,10 +83,10 @@ jobs:
           pull_with_retry() {
             local image="$1"
             local attempt=1
-            local delay=30
+            local delay=15
 
             while ! docker pull "$image"; do
-              if [ "$attempt" -ge 6 ]; then
+              if [ "$attempt" -ge 4 ]; then
                 echo "::error::Unable to pull $image after $attempt authenticated attempts"
                 return 1
               fi
@@ -104,7 +106,7 @@ jobs:
           build_service() {
             local service="$1"
             local attempt=1
-            local delay=30
+            local delay=15
 
             while ! docker buildx build \
               --platform "linux/${{ matrix.arch }}" \
@@ -122,7 +124,7 @@ jobs:
               --tag "${{ env.PRIMARY_DOCKER_IMAGE }}:${TAG}-${service}-${{ matrix.arch }}" \
               --tag "${{ env.PRIMARY_DOCKER_IMAGE }}:latest-${service}-${{ matrix.arch }}" \
               .; do
-              if [ "$attempt" -ge 6 ]; then
+              if [ "$attempt" -ge 4 ]; then
                 echo "::error::Build failed for ${service} after ${attempt} attempts"
                 return 1
               fi
