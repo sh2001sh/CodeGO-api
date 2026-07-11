@@ -4,8 +4,6 @@ import (
 	"context"
 	"strings"
 
-	auditapp "github.com/sh2001sh/new-api/internal/audit/app"
-	auditschema "github.com/sh2001sh/new-api/internal/audit/schema"
 	gatewayschema "github.com/sh2001sh/new-api/internal/gateway/schema"
 	platformdb "github.com/sh2001sh/new-api/internal/platform/db"
 	"github.com/sh2001sh/new-api/internal/workflow/temporal/contracts"
@@ -87,6 +85,5 @@ func (a *GatewayActivities) PublishRequestSettledEvent(ctx context.Context, inpu
 		Updates(map[string]any{"status": gatewayschema.RequestExecutionStatusSettled, "settlement_id": input.SettlementID, "actual_amount": input.ActualAmount}).Error; err != nil {
 		return err
 	}
-	auditapp.RecordLog(input.UserID, auditschema.LogTypeSystem, "request settlement workflow completed: "+input.RequestID)
 	return nil
 }

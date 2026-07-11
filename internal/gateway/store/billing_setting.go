@@ -20,29 +20,62 @@ type BillingSetting struct {
 	BillingExpr map[string]string `json:"billing_expr"`
 }
 
-var billingSetting = BillingSetting{
-	BillingMode: map[string]string{
-		"gpt-5.6-sol":   BillingModeTieredExpr,
-		"gpt-5.6-terra": BillingModeTieredExpr,
-		"gpt-5.6-luna":  BillingModeTieredExpr,
-		"gpt-5.5":       BillingModeTieredExpr,
-		"gpt-5.5-pro":   BillingModeTieredExpr,
-		"gpt-5.4":       BillingModeTieredExpr,
-		"gpt-5.4-mini":  BillingModeTieredExpr,
-		"gpt-5.4-nano":  BillingModeTieredExpr,
-		"gpt-5.4-pro":   BillingModeTieredExpr,
-	},
-	BillingExpr: map[string]string{
-		"gpt-5.6-sol":   `len <= 272000 ? tier("short_context", p * 5 + c * 30 + cr * 0.5 + cc * 6.25) : tier("long_context", p * 10 + c * 45 + cr * 1 + cc * 12.5)`,
-		"gpt-5.6-terra": `len <= 272000 ? tier("short_context", p * 2.5 + c * 15 + cr * 0.25 + cc * 3.125) : tier("long_context", p * 5 + c * 22.5 + cr * 0.5 + cc * 6.25)`,
-		"gpt-5.6-luna":  `len <= 272000 ? tier("short_context", p * 1 + c * 6 + cr * 0.1 + cc * 1.25) : tier("long_context", p * 2 + c * 9 + cr * 0.2 + cc * 2.5)`,
-		"gpt-5.5":       `len <= 272000 ? tier("short_context", p * 5 + c * 30 + cr * 0.5) : tier("long_context", p * 10 + c * 45 + cr * 1)`,
-		"gpt-5.5-pro":   `len <= 272000 ? tier("short_context", p * 30 + c * 180) : tier("long_context", p * 60 + c * 270)`,
-		"gpt-5.4":       `len <= 272000 ? tier("short_context", p * 2.5 + c * 15 + cr * 0.25) : tier("long_context", p * 5 + c * 22.5 + cr * 0.5)`,
-		"gpt-5.4-mini":  `tier("short_context", p * 0.75 + c * 4.5 + cr * 0.075)`,
-		"gpt-5.4-nano":  `tier("short_context", p * 0.2 + c * 1.25 + cr * 0.02)`,
-		"gpt-5.4-pro":   `len <= 272000 ? tier("short_context", p * 30 + c * 180) : tier("long_context", p * 60 + c * 270)`,
-	},
+var defaultBillingMode = map[string]string{
+	"gpt-5.6-sol":   BillingModeTieredExpr,
+	"gpt-5.6-terra": BillingModeTieredExpr,
+	"gpt-5.6-luna":  BillingModeTieredExpr,
+	"gpt-5.5":       BillingModeTieredExpr,
+	"gpt-5.5-pro":   BillingModeTieredExpr,
+	"gpt-5.4":       BillingModeTieredExpr,
+	"gpt-5.4-mini":  BillingModeTieredExpr,
+	"gpt-5.4-nano":  BillingModeTieredExpr,
+	"gpt-5.4-pro":   BillingModeTieredExpr,
+}
+
+var defaultBillingExpr = map[string]string{
+	"gpt-5.6-sol":   `len <= 272000 ? tier("short_context", p * 5 + c * 30 + cr * 0.5 + cc * 6.25) : tier("long_context", p * 10 + c * 45 + cr * 1 + cc * 12.5)`,
+	"gpt-5.6-terra": `len <= 272000 ? tier("short_context", p * 2.5 + c * 15 + cr * 0.25 + cc * 3.125) : tier("long_context", p * 5 + c * 22.5 + cr * 0.5 + cc * 6.25)`,
+	"gpt-5.6-luna":  `len <= 272000 ? tier("short_context", p * 1 + c * 6 + cr * 0.1 + cc * 1.25) : tier("long_context", p * 2 + c * 9 + cr * 0.2 + cc * 2.5)`,
+	"gpt-5.5":       `len <= 272000 ? tier("short_context", p * 5 + c * 30 + cr * 0.5) : tier("long_context", p * 10 + c * 45 + cr * 1)`,
+	"gpt-5.5-pro":   `len <= 272000 ? tier("short_context", p * 30 + c * 180) : tier("long_context", p * 60 + c * 270)`,
+	"gpt-5.4":       `len <= 272000 ? tier("short_context", p * 2.5 + c * 15 + cr * 0.25) : tier("long_context", p * 5 + c * 22.5 + cr * 0.5)`,
+	"gpt-5.4-mini":  `tier("short_context", p * 0.75 + c * 4.5 + cr * 0.075)`,
+	"gpt-5.4-nano":  `tier("short_context", p * 0.2 + c * 1.25 + cr * 0.02)`,
+	"gpt-5.4-pro":   `len <= 272000 ? tier("short_context", p * 30 + c * 180) : tier("long_context", p * 60 + c * 270)`,
+}
+
+var billingSetting = newDefaultBillingSetting()
+
+func newDefaultBillingSetting() BillingSetting {
+	return BillingSetting{
+		BillingMode: lo.Assign(defaultBillingMode),
+		BillingExpr: lo.Assign(defaultBillingExpr),
+	}
+}
+
+// RestoreMissingDefaultBillingRules preserves explicit persisted overrides while
+// backfilling built-in tiered rules absent from legacy configuration records.
+func RestoreMissingDefaultBillingRules() {
+	mergeMissingDefaultBillingRules(&billingSetting)
+}
+
+func mergeMissingDefaultBillingRules(setting *BillingSetting) {
+	if setting.BillingMode == nil {
+		setting.BillingMode = make(map[string]string)
+	}
+	if setting.BillingExpr == nil {
+		setting.BillingExpr = make(map[string]string)
+	}
+	for model, mode := range defaultBillingMode {
+		if _, ok := setting.BillingMode[model]; !ok {
+			setting.BillingMode[model] = mode
+		}
+	}
+	for model, expression := range defaultBillingExpr {
+		if _, ok := setting.BillingExpr[model]; !ok {
+			setting.BillingExpr[model] = expression
+		}
+	}
 }
 
 func init() {

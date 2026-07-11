@@ -73,3 +73,29 @@ func TestGPT54SnapshotUsesCurrentPricing(t *testing.T) {
 		}
 	}
 }
+
+func TestMergeMissingDefaultBillingRulesPreservesOverrides(t *testing.T) {
+	setting := BillingSetting{
+		BillingMode: map[string]string{
+			"gpt-5.6-sol": "ratio",
+		},
+		BillingExpr: map[string]string{
+			"gpt-5.6-sol": `tier("custom", p * 1)`,
+		},
+	}
+
+	mergeMissingDefaultBillingRules(&setting)
+
+	if setting.BillingMode["gpt-5.6-sol"] != "ratio" {
+		t.Fatalf("explicit billing mode was overwritten: %q", setting.BillingMode["gpt-5.6-sol"])
+	}
+	if setting.BillingExpr["gpt-5.6-sol"] != `tier("custom", p * 1)` {
+		t.Fatalf("explicit billing expression was overwritten: %q", setting.BillingExpr["gpt-5.6-sol"])
+	}
+	if setting.BillingMode["gpt-5.6-terra"] != BillingModeTieredExpr {
+		t.Fatalf("missing default billing mode was not restored: %q", setting.BillingMode["gpt-5.6-terra"])
+	}
+	if setting.BillingExpr["gpt-5.6-terra"] == "" {
+		t.Fatal("missing default billing expression was not restored")
+	}
+}

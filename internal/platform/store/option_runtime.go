@@ -367,6 +367,7 @@ func handleConfigUpdate(key, value string) bool {
 	case "tool_price_setting":
 		toolpricing.RebuildIndex()
 	case "billing_setting":
+		gatewaystore.RestoreMissingDefaultBillingRules()
 		gatewaystore.InvalidatePricingCache()
 		gatewaystore.InvalidateExposedDataCache()
 	case "theme":
