@@ -7,7 +7,6 @@ import (
 	"time"
 
 	billingapp "github.com/sh2001sh/new-api/internal/billing/app"
-	commercestore "github.com/sh2001sh/new-api/internal/commerce/store"
 	identitydomain "github.com/sh2001sh/new-api/internal/identity/domain"
 	identitystore "github.com/sh2001sh/new-api/internal/identity/store"
 	platformdb "github.com/sh2001sh/new-api/internal/platform/db"
@@ -69,12 +68,6 @@ func buildTodayCheckin(userID int) *identitydomain.Checkin {
 	if setting.MaxQuota > setting.MinQuota {
 		quotaAwarded = setting.MinQuota + rand.Intn(setting.MaxQuota-setting.MinQuota+1)
 	}
-	if appliedBonus, err := commercestore.LoadUserCompanionAppliedBonus(userID); err == nil &&
-		appliedBonus != nil &&
-		appliedBonus.Buff.CheckinBonusQuota > 0 {
-		quotaAwarded += int(appliedBonus.Buff.CheckinBonusQuota)
-	}
-
 	return &identitydomain.Checkin{
 		UserId:       userID,
 		CheckinDate:  time.Now().Format("2006-01-02"),

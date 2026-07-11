@@ -10,7 +10,6 @@ import (
 	platformdb "github.com/sh2001sh/new-api/internal/platform/db"
 	platformruntime "github.com/sh2001sh/new-api/internal/platform/runtime"
 	"gorm.io/gorm"
-	"math"
 	"math/rand"
 	"strings"
 	// OpenBlindBoxes opens the requested number of blind boxes for the user.
@@ -100,27 +99,7 @@ func openBlindBoxesTx(tx *gorm.DB, userID int, count int, orderID *int) ([]comme
 		return nil, err
 	}
 	effectivePityThreshold := setting.PityThreshold
-	blindBoxBonusQuota := int64(0)
-	blindBoxRewardRate := 0.0
-	blindBoxPityGuaranteeUSD := 0.0
 	firstPurchaseStartUSD := setting.FirstPurchaseGuaranteeUSD
-	if appliedBonus, bonusErr := getUserCompanionAppliedBonusTx(tx, userID); bonusErr == nil && appliedBonus != nil {
-		if appliedBonus.Buff.BlindBoxPityReduction > 0 {
-			effectivePityThreshold -= appliedBonus.Buff.BlindBoxPityReduction
-			if effectivePityThreshold < 1 {
-				effectivePityThreshold = 1
-			}
-		}
-		if appliedBonus.Buff.BlindBoxBonusQuota > 0 {
-			blindBoxBonusQuota = appliedBonus.Buff.BlindBoxBonusQuota
-		}
-		if appliedBonus.Buff.BlindBoxRewardRate > 0 {
-			blindBoxRewardRate = appliedBonus.Buff.BlindBoxRewardRate
-		}
-		if appliedBonus.Buff.BlindBoxPityGuaranteeUSD > 0 {
-			blindBoxPityGuaranteeUSD = appliedBonus.Buff.BlindBoxPityGuaranteeUSD
-		}
-	}
 
 	firstPurchaseOrderID := 0
 	if firstPurchaseStartUSD > 0 && len(orders) > 0 {
@@ -180,7 +159,7 @@ func openBlindBoxesTx(tx *gorm.DB, userID int, count int, orderID *int) ([]comme
 			tierWalletType := commerceschema.BlindBoxRewardWalletTypeDefault
 
 			if pityTriggered {
-				rewardUSD = setting.PityGuaranteeUSD + blindBoxPityGuaranteeUSD
+				rewardUSD = setting.PityGuaranteeUSD
 			} else {
 				if isFirstPurchaseOpen {
 					tierName = "first_purchase"
@@ -202,9 +181,6 @@ func openBlindBoxesTx(tx *gorm.DB, userID int, count int, orderID *int) ([]comme
 				)
 			}
 
-			if blindBoxRewardRate > 0 && rewardType != commerceschema.BlindBoxRewardTypeProp {
-				rewardUSD = math.Round(rewardUSD*(1+blindBoxRewardRate)*100) / 100
-			}
 			totalRewardUSD := rewardUSD
 
 			switch rewardType {
@@ -252,7 +228,7 @@ func openBlindBoxesTx(tx *gorm.DB, userID int, count int, orderID *int) ([]comme
 				records = append(records, record)
 				continue
 			default:
-				creditAmount := quotaUnitsFromBlindBoxUSD(totalRewardUSD) + blindBoxBonusQuota
+				creditAmount := quotaUnitsFromBlindBoxUSD(totalRewardUSD)
 				if creditAmount <= 0 {
 					return nil, fmt.Errorf("invalid blind box reward amount: %.2f", totalRewardUSD)
 				}

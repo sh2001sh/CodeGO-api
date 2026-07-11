@@ -1,16 +1,15 @@
 package app
 
 import (
-	auditschema "github.com/sh2001sh/new-api/internal/audit/schema"
 	"errors"
 	"fmt"
+	auditschema "github.com/sh2001sh/new-api/internal/audit/schema"
 	"math"
 	"math/rand"
 
 	auditapp "github.com/sh2001sh/new-api/internal/audit/app"
 	billingapp "github.com/sh2001sh/new-api/internal/billing/app"
 	blindboxsettings "github.com/sh2001sh/new-api/internal/commerce/blindboxsettings"
-	commercedomain "github.com/sh2001sh/new-api/internal/commerce/domain"
 	commerceschema "github.com/sh2001sh/new-api/internal/commerce/schema"
 	"github.com/sh2001sh/new-api/internal/platform/logger"
 	"gorm.io/gorm"
@@ -76,45 +75,6 @@ func creditBlindBoxRewardByWalletTx(tx *gorm.DB, userID int, amount int64, walle
 func applyBlindBoxWalletRewardTx(tx *gorm.DB, userID int, openRecordID int, amount int64, walletType commerceschema.BlindBoxRewardWalletType) error {
 	idempotencyKey := fmt.Sprintf("blind-box:reward:%d:%s", openRecordID, walletType)
 	return creditBlindBoxRewardByWalletTx(tx, userID, amount, walletType, idempotencyKey, "blind_box_reward")
-}
-
-func getUserCompanionAppliedBonusTx(tx *gorm.DB, userID int) (*commercedomain.CompanionAppliedBonus, error) {
-	pet, err := getUserEquippedCompanionPetTx(tx, userID)
-	if err != nil {
-		return nil, err
-	}
-	if pet == nil {
-		return nil, nil
-	}
-	level := pet.Level
-	if level < 1 {
-		level = 1
-	}
-	if level > commercedomain.CompanionPetMaxLevel {
-		level = commercedomain.CompanionPetMaxLevel
-	}
-	return &commercedomain.CompanionAppliedBonus{
-		Pet:            pet,
-		Buff:           commercedomain.BuildCompanionPetBuff(pet.AchievementKey, level),
-		EffectiveLevel: level,
-	}, nil
-}
-
-func getUserEquippedCompanionPetTx(tx *gorm.DB, userID int) (*commerceschema.UserCompanionPet, error) {
-	if userID <= 0 {
-		return nil, nil
-	}
-	var pet commerceschema.UserCompanionPet
-	err := tx.Where("user_id = ? AND equipped = ?", userID, true).
-		Order("updated_at desc, id asc").
-		First(&pet).Error
-	if err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return nil, nil
-		}
-		return nil, err
-	}
-	return &pet, nil
 }
 
 func applyFirstPurchaseMinimumGuarantee(isFirstPurchaseOpen bool, ordinaryMinimumUSD float64, claudeMinimumUSD float64, rewardUSD *float64, rewardType *string, walletType *commerceschema.BlindBoxRewardWalletType) {

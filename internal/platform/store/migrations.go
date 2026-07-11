@@ -40,6 +40,7 @@ func V2MigrationIDs() []string {
 		"20260711_subscription_order_fulfillment",
 		"20260711_gateway_execution_core",
 		"20260711_gateway_execution_trace",
+		"20260712_remove_pet_gamification",
 	}
 }
 
@@ -90,6 +91,20 @@ func ApplyV2Migrations(ctx context.Context, dryRun bool) error {
 				&gatewayschema.ExecutionAttempt{},
 				&gatewayschema.UsageEvidence{},
 			)
+		}},
+		{ID: "20260712_remove_pet_gamification", Run: func(tx *gorm.DB) error {
+			for _, tableName := range []string{
+				"user_companion_pets",
+				"daily_mission_rewards",
+				"achievement_unlocks",
+			} {
+				if tx.Migrator().HasTable(tableName) {
+					if err := tx.Migrator().DropTable(tableName); err != nil {
+						return err
+					}
+				}
+			}
+			return nil
 		}},
 	}
 	for _, step := range steps {

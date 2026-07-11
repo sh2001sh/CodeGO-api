@@ -374,7 +374,7 @@ func PostTextConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, us
 		}
 	}
 	if summary.Quota > 0 {
-		summary.Quota = applyCompanionConsumptionDiscount(relayInfo.UserId, summary.Quota)
+		summary.Quota = applyUsageConsumptionDiscount(relayInfo.UserId, summary.Quota)
 	}
 
 	if summary.WebSearchCallCount > 0 {

@@ -149,7 +149,6 @@ func setupDesktopHTTPTestDB(t *testing.T) *gorm.DB {
 		&billingschema.BillingOutboxEvent{},
 		&identitydomain.ImageWorkspaceItem{},
 		&identitydomain.Checkin{},
-		&commerceschema.UserCompanionPet{},
 		&commerceschema.SubscriptionResetOpportunityAccount{},
 		&commerceschema.SubscriptionResetOpportunityLedger{},
 		&identitydomain.TwoFA{},

@@ -1,12 +1,12 @@
 package app
 
 import (
-	auditschema "github.com/sh2001sh/new-api/internal/audit/schema"
 	"fmt"
 	"github.com/sh2001sh/new-api/constant"
 	"github.com/sh2001sh/new-api/dto"
 	auditapp "github.com/sh2001sh/new-api/internal/audit/app"
 	auditprojection "github.com/sh2001sh/new-api/internal/audit/projection"
+	auditschema "github.com/sh2001sh/new-api/internal/audit/schema"
 	"github.com/sh2001sh/new-api/internal/billing/domain/billingexpr"
 	relaycommon "github.com/sh2001sh/new-api/internal/gateway/runtime"
 	gatewaystore "github.com/sh2001sh/new-api/internal/gateway/store"
@@ -127,7 +127,7 @@ func PreWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, usag
 		ModelRatio: modelRatio,
 		GroupRatio: actualGroupRatio,
 	})
-	quota = applyCompanionConsumptionDiscount(relayInfo.UserId, quota)
+	quota = applyUsageConsumptionDiscount(relayInfo.UserId, quota)
 
 	if userQuota < quota {
 		return fmt.Errorf("user quota is not enough, user quota: %s, need quota: %s", logger.FormatQuota(userQuota), logger.FormatQuota(quota))
@@ -181,7 +181,7 @@ func PostWssConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, mod
 	if tieredOk {
 		quota = tieredQuota
 	}
-	quota = applyCompanionConsumptionDiscount(relayInfo.UserId, quota)
+	quota = applyUsageConsumptionDiscount(relayInfo.UserId, quota)
 
 	var logContent string
 	if !usePrice {
@@ -287,7 +287,7 @@ func PostAudioConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, u
 	if tieredOk {
 		quota = tieredQuota
 	}
-	quota = applyCompanionConsumptionDiscount(relayInfo.UserId, quota)
+	quota = applyUsageConsumptionDiscount(relayInfo.UserId, quota)
 
 	var logContent string
 	if !usePrice {

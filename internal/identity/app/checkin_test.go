@@ -5,7 +5,6 @@ import (
 	"github.com/sh2001sh/new-api/constant"
 	auditschema "github.com/sh2001sh/new-api/internal/audit/schema"
 	billingschema "github.com/sh2001sh/new-api/internal/billing/schema"
-	commerceschema "github.com/sh2001sh/new-api/internal/commerce/schema"
 	identitydomain "github.com/sh2001sh/new-api/internal/identity/domain"
 	identityschema "github.com/sh2001sh/new-api/internal/identity/schema"
 	identitystore "github.com/sh2001sh/new-api/internal/identity/store"
@@ -44,7 +43,6 @@ func setupCheckinAppTestDB(t *testing.T) *gorm.DB {
 		&identityschema.User{},
 		&auditschema.Log{},
 		&identitydomain.Checkin{},
-		&commerceschema.UserCompanionPet{},
 	))
 
 	t.Cleanup(func() {

@@ -132,6 +132,36 @@ func TestOaiResponsesHandlerPreservesCacheWriteTokens(t *testing.T) {
 	}, usage)
 }
 
+func TestOaiResponsesHandlerNormalizesCompatibleCacheWriteFields(t *testing.T) {
+	oldMode := gin.Mode()
+	gin.SetMode(gin.TestMode)
+	t.Cleanup(func() { gin.SetMode(oldMode) })
+
+	for _, fieldName := range []string{
+		"cache_creation_tokens",
+		"cache_creation_input_tokens",
+		"cache_write_tokens",
+		"cache_write_input_tokens",
+	} {
+		t.Run(fieldName, func(t *testing.T) {
+			recorder := httptest.NewRecorder()
+			c, _ := gin.CreateTestContext(recorder)
+			c.Request = httptest.NewRequest(http.MethodPost, "/v1/responses", nil)
+			body := `{"usage":{"input_tokens":120,"output_tokens":30,"total_tokens":150,"input_tokens_details":{"` + fieldName + `":20}}}`
+			resp := &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(strings.NewReader(body)),
+				Header:     http.Header{"Content-Type": []string{"application/json"}},
+			}
+
+			usage, err := OaiResponsesHandler(c, &relaycommon.RelayInfo{}, resp)
+
+			require.Nil(t, err)
+			require.Equal(t, 20, usage.PromptTokensDetails.CachedCreationTokens)
+		})
+	}
+}
+
 func TestOaiResponsesToChatStreamHandlerPreservesCacheWriteTokens(t *testing.T) {
 	oldMode := gin.Mode()
 	gin.SetMode(gin.TestMode)

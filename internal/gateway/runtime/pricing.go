@@ -6,8 +6,6 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/sh2001sh/new-api/internal/billing/domain/billingexpr"
-	commercedomain "github.com/sh2001sh/new-api/internal/commerce/domain"
-	commercestore "github.com/sh2001sh/new-api/internal/commerce/store"
 	gatewaystore "github.com/sh2001sh/new-api/internal/gateway/store"
 	identitystore "github.com/sh2001sh/new-api/internal/identity/store"
 	platformconfig "github.com/sh2001sh/new-api/internal/platform/config"
@@ -16,17 +14,6 @@ import (
 	platformruntime "github.com/sh2001sh/new-api/internal/platform/runtime"
 	"github.com/sh2001sh/new-api/types"
 )
-
-func applyCompanionPreconsumeDiscount(userID int, quota int) int {
-	if userID <= 0 || quota <= 0 {
-		return quota
-	}
-	appliedBonus, err := commercestore.LoadUserCompanionAppliedBonus(userID)
-	if err != nil || appliedBonus == nil {
-		return quota
-	}
-	return commercedomain.CompanionDiscountedQuota(quota, appliedBonus.Buff.ConsumptionDiscountRate)
-}
 
 func modelPriceNotConfiguredError(modelName string, userID int) error {
 	if identitystore.IsUserAdmin(userID) {
@@ -136,8 +123,6 @@ func ModelPriceHelper(c *gin.Context, info *RelayInfo, promptTokens int, meta *t
 			freeModel = true
 		}
 	}
-	preConsumedQuota = applyCompanionPreconsumeDiscount(info.UserId, preConsumedQuota)
-
 	priceData := types.PriceData{
 		FreeModel:            freeModel,
 		ModelPrice:           modelPrice,
@@ -205,8 +190,6 @@ func ModelPriceHelperPerCall(c *gin.Context, info *RelayInfo) (types.PriceData, 
 			freeModel = true
 		}
 	}
-	quota = applyCompanionPreconsumeDiscount(info.UserId, quota)
-
 	priceData := types.PriceData{
 		FreeModel:      freeModel,
 		ModelPrice:     modelPrice,
@@ -264,8 +247,6 @@ func modelPriceHelperTiered(c *gin.Context, info *RelayInfo, promptTokens int, m
 	if freeModel {
 		preConsumedQuota = 0
 	}
-	preConsumedQuota = applyCompanionPreconsumeDiscount(info.UserId, preConsumedQuota)
-
 	exprHash := billingexpr.ExprHashString(exprStr)
 	snapshot := &billingexpr.BillingSnapshot{
 		BillingMode:               gatewaystore.BillingModeTieredExpr,

@@ -17,17 +17,14 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useCallback, useMemo } from 'react'
-import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { toast } from 'sonner'
+import { useQuery } from '@tanstack/react-query'
 import { useCopyToClipboard } from '@/hooks/use-copy-to-clipboard'
-import { reportGamificationShareLink } from '@/features/gamification/api'
 import { getAffiliateRewardsOverview } from '../api'
 import { generateAffiliateLink } from '../lib'
 
 const AFFILIATE_OVERVIEW_QUERY_KEY = ['wallet', 'affiliate', 'overview'] as const
 
 export function useAffiliate() {
-  const queryClient = useQueryClient()
   const { copyToClipboard } = useCopyToClipboard()
 
   const overviewQuery = useQuery({
@@ -47,20 +44,8 @@ export function useAffiliate() {
 
   const copyAffiliateLink = useCallback(async () => {
     if (!affiliateLink) return
-    const copied = await copyToClipboard(affiliateLink)
-    if (!copied) return
-    try {
-      const response = await reportGamificationShareLink()
-      if (response.success && response.data?.claimed) {
-        toast.success('分享任务已完成，奖励已到账')
-        await queryClient.invalidateQueries({
-          queryKey: ['gamification', 'dashboard'],
-        })
-      }
-    } catch {
-      // Share succeeded even if reward report fails.
-    }
-  }, [affiliateLink, copyToClipboard, queryClient])
+    await copyToClipboard(affiliateLink)
+  }, [affiliateLink, copyToClipboard])
 
   return {
     overview: overviewQuery.data,

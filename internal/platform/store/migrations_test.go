@@ -27,6 +27,13 @@ func TestApplyV2MigrationsIsIdempotent(t *testing.T) {
 	platformdb.DB = db
 	platformdb.UsingSQLite = true
 	platformdb.UsingPostgreSQL = false
+	for _, tableName := range []string{
+		"user_companion_pets",
+		"daily_mission_rewards",
+		"achievement_unlocks",
+	} {
+		require.NoError(t, db.Exec("CREATE TABLE "+tableName+" (id integer primary key)").Error)
+	}
 
 	require.NoError(t, ApplyV2Migrations(context.Background(), false))
 	require.NoError(t, ApplyV2Migrations(context.Background(), false))
@@ -49,6 +56,13 @@ func TestApplyV2MigrationsIsIdempotent(t *testing.T) {
 		"gateway_usage_evidence",
 	} {
 		require.True(t, db.Migrator().HasTable(table), table)
+	}
+	for _, tableName := range []string{
+		"user_companion_pets",
+		"daily_mission_rewards",
+		"achievement_unlocks",
+	} {
+		require.False(t, db.Migrator().HasTable(tableName), tableName)
 	}
 }
 

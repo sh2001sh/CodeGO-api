@@ -96,10 +96,9 @@ export const guideSections: GuideSection[] = [
     id: 'dashboard',
     eyebrow: '05',
     title: '控制台概览',
-    summary:
-      '概览页会展示当前资金状态、宠物入口、任务进度和常用功能，适合作为日常使用的起点。',
+    summary: '概览页会展示当前资金状态和常用功能，适合作为日常使用的起点。',
     steps: [
-      '登录后先查看概览页，确认余额、套餐、盲盒和图鉴入口。',
+      '登录后先查看概览页，确认余额、套餐和盲盒入口。',
       '左侧侧边栏已经将套餐购买和盲盒活动单独拆分出来，钱包只保留资金与扣费策略。',
     ],
     images: [
@@ -111,41 +110,8 @@ export const guideSections: GuideSection[] = [
     ],
   },
   {
-    id: 'pets',
-    eyebrow: '06',
-    title: '宠物图鉴与增益',
-    summary:
-      '成就页里的每一只宠物都不再只是装饰。解锁后可以装备、升级，并把增益真实作用到任务、消费或盲盒链路。',
-    steps: [
-      '先在图鉴里查看已解锁和未解锁宠物，卡片会直接写清楚解锁方式。',
-      '已解锁宠物可以选择出战，但同一时间只能装备一只。',
-      '完成每日任务会给当前出战宠物发经验，也可以额外投喂额度给宠物。',
-      '宠物满级为 5 级，满足条件后即可继续升级。',
-    ],
-    diagram_title: '玩法链路',
-    diagram_steps: [
-      '点亮图鉴',
-      '选择一只出战',
-      '每日任务拿经验',
-      '投喂额度养宠物',
-      '增益作用到实际功能',
-    ],
-    notes: [
-      '当前出战宠物的增益会立即生效，切换宠物后会同步切换增益。',
-      '图鉴卡片会同时展示宠物等级、经验、下次升级消耗，以及解锁后一级效果和满级效果。',
-      '当前已经接入的宠物增益包含四类：每日任务额外奖励、开盒额外返还、盲盒保底推进、宠物升级折扣。',
-    ],
-    images: [
-      {
-        src: '/guide/14-pet-dex.png',
-        alt: '宠物图鉴页面',
-        caption: '宠物图鉴页会同时展示解锁状态、出战状态、等级进度和升级操作。',
-      },
-    ],
-  },
-  {
     id: 'keys',
-    eyebrow: '07',
+    eyebrow: '06',
     title: '创建 API Key',
     summary: '进入 API 密钥页面，创建用于脚本和客户端接入的访问密钥。',
     steps: [
@@ -168,7 +134,7 @@ export const guideSections: GuideSection[] = [
   },
   {
     id: 'script',
-    eyebrow: '08',
+    eyebrow: '07',
     title: '下载 Codex 配置脚本',
     summary:
       '在 API Key 列表的操作菜单中可以直接下载 Codex 配置脚本，用于快速完成本地 Codex 初始化。',
@@ -192,7 +158,7 @@ export const guideSections: GuideSection[] = [
   },
   {
     id: 'packages',
-    eyebrow: '09',
+    eyebrow: '08',
     title: '套餐选择',
     summary:
       '套餐购买已经从钱包中拆分出来，页面会单独展示月卡、日卡和右侧状态面板。',
@@ -215,12 +181,11 @@ export const guideSections: GuideSection[] = [
     ],
     notes: [
       '选择前先确认周期、总额度和适用场景，再进入订阅确认弹窗。',
-      '购买套餐本身也会推进成就解锁，部分宠物会因此进入图鉴。',
     ],
   },
   {
     id: 'blind-box',
-    eyebrow: '10',
+    eyebrow: '09',
     title: '盲盒活动',
     summary:
       '盲盒页会单独展示购买入口、奖励规则、结果弹窗和开奖记录。',
@@ -242,11 +207,6 @@ export const guideSections: GuideSection[] = [
         alt: '盲盒活动页面',
         caption: '盲盒页集中展示规则、概率和活动状态。',
       },
-      {
-        src: '/guide/15-blind-box-pet-buff.png',
-        alt: '盲盒宠物增益说明',
-        caption: '盲盒页会说明当前宠物对保底机制的影响。',
-      },
     ],
     notes: [
       '购买前先确认当前价格、数量和支付方式。',
@@ -256,7 +216,7 @@ export const guideSections: GuideSection[] = [
   },
   {
     id: 'wallet',
-    eyebrow: '11',
+    eyebrow: '10',
     title: '钱包与扣费顺序',
     summary:
       '钱包页现在只负责余额、兑换码、账单和扣费优先顺序设置，右侧栏继续保留策略配置。',

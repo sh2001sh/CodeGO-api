@@ -55,9 +55,6 @@ func TestMain(m *testing.M) {
 		&commerceschema.BlindBoxOpenRecord{},
 		&commerceschema.BlindBoxPityState{},
 		&billingschema.BonusQuotaCredit{},
-		&commerceschema.AchievementUnlock{},
-		&commerceschema.DailyMissionReward{},
-		&commerceschema.UserCompanionPet{},
 	); err != nil {
 		panic("failed to migrate: " + err.Error())
 	}
@@ -84,9 +81,6 @@ func truncate(t *testing.T) {
 		platformdb.DB.Exec("DELETE FROM blind_box_open_records")
 		platformdb.DB.Exec("DELETE FROM blind_box_pity_states")
 		platformdb.DB.Exec("DELETE FROM bonus_quota_credits")
-		platformdb.DB.Exec("DELETE FROM achievement_unlocks")
-		platformdb.DB.Exec("DELETE FROM daily_mission_rewards")
-		platformdb.DB.Exec("DELETE FROM user_companion_pets")
 	})
 }
 

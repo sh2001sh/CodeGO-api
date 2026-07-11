@@ -8,7 +8,6 @@ import (
 	blindboxsettings "github.com/sh2001sh/new-api/internal/commerce/blindboxsettings"
 	commercedomain "github.com/sh2001sh/new-api/internal/commerce/domain"
 	commerceschema "github.com/sh2001sh/new-api/internal/commerce/schema"
-	commercestore "github.com/sh2001sh/new-api/internal/commerce/store"
 	platformruntime "github.com/sh2001sh/new-api/internal/platform/runtime"
 	"strings"
 	"time"
@@ -81,14 +80,6 @@ func GetBlindBoxOverview(userID int, recentLimit int) (*commercedomain.BlindBoxO
 	setting := blindboxsettings.Get()
 	overview.PityThreshold = setting.PityThreshold
 	overview.EffectivePityThreshold = setting.PityThreshold
-	if appliedBonus, err := commercestore.LoadUserCompanionAppliedBonus(userID); err == nil &&
-		appliedBonus != nil &&
-		appliedBonus.Buff.BlindBoxPityReduction > 0 {
-		overview.EffectivePityThreshold -= appliedBonus.Buff.BlindBoxPityReduction
-		if overview.EffectivePityThreshold < 1 {
-			overview.EffectivePityThreshold = 1
-		}
-	}
 
 	dayStart, dayEnd := getBlindBoxDayRange(now)
 	monthStart, monthEnd := getBlindBoxMonthRange(now)

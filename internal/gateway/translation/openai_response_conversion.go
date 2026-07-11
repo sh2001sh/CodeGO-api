@@ -12,14 +12,14 @@ func buildClaudeUsageFromOpenAIUsage(oaiUsage *dto.Usage) *dto.ClaudeUsage {
 		return nil
 	}
 	cacheCreation5m, cacheCreation1h := tokenx.NormalizeCacheCreationSplit(
-		oaiUsage.PromptTokensDetails.CachedCreationTokens,
+		oaiUsage.PromptTokensDetails.GetCachedCreationTokens(),
 		oaiUsage.ClaudeCacheCreation5mTokens,
 		oaiUsage.ClaudeCacheCreation1hTokens,
 	)
 	usage := &dto.ClaudeUsage{
 		InputTokens:              oaiUsage.PromptTokens,
 		OutputTokens:             oaiUsage.CompletionTokens,
-		CacheCreationInputTokens: oaiUsage.PromptTokensDetails.CachedCreationTokens,
+		CacheCreationInputTokens: oaiUsage.PromptTokensDetails.GetCachedCreationTokens(),
 		CacheReadInputTokens:     oaiUsage.PromptTokensDetails.CachedTokens,
 	}
 	if cacheCreation5m > 0 || cacheCreation1h > 0 {

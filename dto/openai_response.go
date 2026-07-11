@@ -252,11 +252,31 @@ type OpenAIVideoResponse struct {
 }
 
 type InputTokenDetails struct {
-	CachedTokens         int `json:"cached_tokens"`
-	CachedCreationTokens int `json:"cached_creation_tokens,omitempty"`
-	TextTokens           int `json:"text_tokens"`
-	AudioTokens          int `json:"audio_tokens"`
-	ImageTokens          int `json:"image_tokens"`
+	CachedTokens             int `json:"cached_tokens"`
+	CachedCreationTokens     int `json:"cached_creation_tokens,omitempty"`
+	CacheCreationTokens      int `json:"cache_creation_tokens,omitempty"`
+	CacheCreationInputTokens int `json:"cache_creation_input_tokens,omitempty"`
+	CacheWriteTokens         int `json:"cache_write_tokens,omitempty"`
+	CacheWriteInputTokens    int `json:"cache_write_input_tokens,omitempty"`
+	TextTokens               int `json:"text_tokens"`
+	AudioTokens              int `json:"audio_tokens"`
+	ImageTokens              int `json:"image_tokens"`
+}
+
+// GetCachedCreationTokens normalizes cache-write usage reported by OpenAI-compatible upstreams.
+func (details InputTokenDetails) GetCachedCreationTokens() int {
+	for _, value := range []int{
+		details.CachedCreationTokens,
+		details.CacheCreationTokens,
+		details.CacheCreationInputTokens,
+		details.CacheWriteTokens,
+		details.CacheWriteInputTokens,
+	} {
+		if value > 0 {
+			return value
+		}
+	}
+	return 0
 }
 
 type OutputTokenDetails struct {
