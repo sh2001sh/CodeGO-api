@@ -104,6 +104,7 @@ jobs:
     needs: [build_single_arch]
     strategy:
       fail-fast: false
+      max-parallel: 1
       matrix:
         service: [control-api, gateway-api, ledger-worker, workflow-worker, db-migrate, ledger-backfill, v2-verify]
     runs-on: ubuntu-latest
@@ -133,17 +134,35 @@ jobs:
 
       - name: Create & push service manifests
         run: |
-          docker buildx imagetools create \
-            -t ${{ env.PRIMARY_DOCKER_IMAGE }}:${TAG}-${{ matrix.service }} \
-            ${{ env.PRIMARY_DOCKER_IMAGE }}:${TAG}-${{ matrix.service }}-amd64 \
-            ${{ env.PRIMARY_DOCKER_IMAGE }}:${TAG}-${{ matrix.service }}-arm64
-          docker buildx imagetools create \
-            -t ${{ env.PRIMARY_DOCKER_IMAGE }}:latest-${{ matrix.service }} \
-            ${{ env.PRIMARY_DOCKER_IMAGE }}:latest-${{ matrix.service }}-amd64 \
-            ${{ env.PRIMARY_DOCKER_IMAGE }}:latest-${{ matrix.service }}-arm64
+          create_manifest() {
+            local target="$1"
+            shift
+            local attempt=1
+            local delay=15
+
+            while ! docker buildx imagetools create -t "$target" "$@"; do
+              if [ "$attempt" -ge 6 ]; then
+                echo "::error::Failed to create $target after $attempt attempts"
+                return 1
+              fi
+              echo "Manifest creation failed (attempt $attempt); retrying in ${delay}s"
+              sleep "$delay"
+              attempt=$((attempt + 1))
+              delay=$((delay * 2))
+            done
+          }
+
+          create_manifest \
+            "${{ env.PRIMARY_DOCKER_IMAGE }}:${TAG}-${{ matrix.service }}" \
+            "${{ env.PRIMARY_DOCKER_IMAGE }}:${TAG}-${{ matrix.service }}-amd64" \
+            "${{ env.PRIMARY_DOCKER_IMAGE }}:${TAG}-${{ matrix.service }}-arm64"
+          create_manifest \
+            "${{ env.PRIMARY_DOCKER_IMAGE }}:latest-${{ matrix.service }}" \
+            "${{ env.PRIMARY_DOCKER_IMAGE }}:latest-${{ matrix.service }}-amd64" \
+            "${{ env.PRIMARY_DOCKER_IMAGE }}:latest-${{ matrix.service }}-arm64"
           if [ "${{ matrix.service }}" = "control-api" ]; then
-            docker buildx imagetools create -t ${{ env.PRIMARY_DOCKER_IMAGE }}:${TAG} ${{ env.PRIMARY_DOCKER_IMAGE }}:${TAG}-control-api
-            docker buildx imagetools create -t ${{ env.PRIMARY_DOCKER_IMAGE }}:latest ${{ env.PRIMARY_DOCKER_IMAGE }}:latest-control-api
+            create_manifest "${{ env.PRIMARY_DOCKER_IMAGE }}:${TAG}" "${{ env.PRIMARY_DOCKER_IMAGE }}:${TAG}-control-api"
+            create_manifest "${{ env.PRIMARY_DOCKER_IMAGE }}:latest" "${{ env.PRIMARY_DOCKER_IMAGE }}:latest-control-api"
           fi
 
       - name: Set up Go for cosign
