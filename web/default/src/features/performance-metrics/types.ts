@@ -45,10 +45,11 @@ export type PerformanceMetricsData = {
 
 export type PerfModelSummary = {
   model_name: string
+  avg_ttft_ms: number
   avg_latency_ms: number
   success_rate: number
   avg_tps: number
-  request_count?: number
+  request_count: number
 }
 
 export type PerfSummaryAllData = {

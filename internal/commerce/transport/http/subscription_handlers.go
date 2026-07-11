@@ -6,7 +6,54 @@ import (
 
 	"github.com/gin-gonic/gin"
 	commerceapp "github.com/sh2001sh/new-api/internal/commerce/app"
+	commerceschema "github.com/sh2001sh/new-api/internal/commerce/schema"
 )
+
+func quoteSubscriptionBooster(c *gin.Context) {
+	var req commerceapp.SubscriptionBoosterQuoteRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		httpapi.ApiErrorMsg(c, "invalid request")
+		return
+	}
+	payload, err := commerceapp.QuoteSubscriptionBooster(c.GetInt("id"), req)
+	if err != nil {
+		httpapi.ApiError(c, err)
+		return
+	}
+	httpapi.ApiSuccess(c, payload)
+}
+
+func purchaseSubscriptionBooster(c *gin.Context) {
+	var req commerceapp.SubscriptionBoosterPurchaseRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		httpapi.ApiErrorMsg(c, "invalid request")
+		return
+	}
+	if req.PaymentMethod == commerceschema.PaymentMethodStripe {
+		payload, err := commerceapp.CreateSubscriptionBoosterStripePayment(c.GetInt("id"), req)
+		if err != nil {
+			httpapi.ApiError(c, err)
+			return
+		}
+		httpapi.ApiSuccess(c, payload)
+		return
+	}
+	payload, err := commerceapp.CreateSubscriptionBoosterEpayPayment(c.GetInt("id"), req)
+	if err != nil {
+		httpapi.ApiError(c, err)
+		return
+	}
+	c.JSON(200, gin.H{"success": true, "data": payload, "url": payload.URL})
+}
+
+func getSubscriptionBoosterOrder(c *gin.Context) {
+	payload, err := commerceapp.BuildSubscriptionBoosterOrderStatusPayload(c.GetInt("id"), c.Param("id"))
+	if err != nil {
+		httpapi.ApiError(c, err)
+		return
+	}
+	httpapi.ApiSuccess(c, payload)
+}
 
 func getSubscriptionPlans(c *gin.Context) {
 	payload, err := commerceapp.ListSubscriptionPlans(c.GetInt("id"))

@@ -10,8 +10,9 @@ import {
   CardStaggerContainer,
   CardStaggerItem,
 } from '@/components/page-transition'
-import { SubscriptionPurchaseDialog } from '@/features/subscriptions/components/dialogs/subscription-purchase-dialog'
 import { PackagePlanCard } from '@/features/packages/package-plan-card'
+import { SubscriptionBoosterDialog } from '@/features/subscriptions/components/dialogs/subscription-booster-dialog'
+import { SubscriptionPurchaseDialog } from '@/features/subscriptions/components/dialogs/subscription-purchase-dialog'
 import {
   formatSubscriptionQuotaAmount,
   isDayPassPlan,
@@ -68,11 +69,15 @@ export function SubscriptionPlansCard({
   onSubscriptionRefresh,
   onPlansRefresh,
 }: SubscriptionPlansCardProps) {
+  const [now] = useState(() => Date.now() / 1000)
   const [refreshing, setRefreshing] = useState(false)
   const [purchaseOpen, setPurchaseOpen] = useState(false)
   const [selectedPlan, setSelectedPlan] = useState<PlanRecord | null>(null)
   const [selectedPurchaseType, setSelectedPurchaseType] =
     useState<SubscriptionPurchaseType>('normal')
+  const [boosterSubscription, setBoosterSubscription] =
+    useState<UserSubscriptionRecord | null>(null)
+  const [boosterTitle, setBoosterTitle] = useState('')
 
   const enableStripe = !!topupInfo?.enable_stripe_topup
   const enableCreem = !!topupInfo?.enable_creem_topup
@@ -251,7 +256,7 @@ export function SubscriptionPlansCard({
                   const remainDays = getRemainingDays(record)
                   const active =
                     subscription.status === 'active' &&
-                    subscription.end_time > Date.now() / 1000
+                    subscription.end_time > now
                   const totalExhausted = totalAmount > 0 && totalRemain <= 0
                   const periodExhausted =
                     !isMonthlyPlan &&
@@ -346,6 +351,38 @@ export function SubscriptionPlansCard({
                               }
                             />
                           </div>
+                          {active && isMonthlyPlan ? (
+                            <div className='flex flex-wrap gap-2 border-t pt-3'>
+                              <Button
+                                size='sm'
+                                onClick={() => {
+                                  setBoosterSubscription(record)
+                                  setBoosterTitle(title)
+                                }}
+                              >
+                                续量
+                              </Button>
+                              <Button
+                                size='sm'
+                                variant='outline'
+                                onClick={() => {
+                                  const planRecord =
+                                    plans.find(
+                                      (item) =>
+                                        item.plan?.id === subscription.plan_id
+                                    ) ?? null
+                                  setSelectedPlan(planRecord)
+                                  setSelectedPurchaseType('normal')
+                                  setPurchaseOpen(true)
+                                }}
+                              >
+                                提前续费
+                              </Button>
+                              <span className='text-muted-foreground self-center text-xs'>
+                                续量不延长到期时间
+                              </span>
+                            </div>
+                          ) : null}
                         </CardContent>
                       </Card>
                     </CardStaggerItem>
@@ -382,6 +419,16 @@ export function SubscriptionPlansCard({
             : undefined
         }
         purchaseType={selectedPurchaseType}
+      />
+      <SubscriptionBoosterDialog
+        open={boosterSubscription != null}
+        onOpenChange={(open) => {
+          if (!open) setBoosterSubscription(null)
+        }}
+        subscription={boosterSubscription?.subscription ?? null}
+        title={boosterTitle}
+        paymentMethod={enableStripe ? 'stripe' : (epayMethods[0]?.type ?? '')}
+        onCompleted={onSubscriptionRefresh}
       />
     </>
   )

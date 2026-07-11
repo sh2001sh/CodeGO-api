@@ -422,6 +422,10 @@ func ensureSubscriptionOrderTableSQLiteTx(db *gorm.DB) error {
 		{Name: "purchase_type", DDL: "`purchase_type` varchar(32) DEFAULT 'normal'"},
 		{Name: "group_buy_id", DDL: "`group_buy_id` bigint DEFAULT 0"},
 		{Name: "fulfillment_status", DDL: "`fulfillment_status` varchar(32) DEFAULT 'completed'"},
+		{Name: "target_subscription_id", DDL: "`target_subscription_id` int DEFAULT 0"},
+		{Name: "booster_quota", DDL: "`booster_quota` bigint DEFAULT 0"},
+		{Name: "booster_rate", DDL: "`booster_rate` decimal(10,6) DEFAULT 0"},
+		{Name: "booster_expires_at", DDL: "`booster_expires_at` bigint DEFAULT 0"},
 	}
 	for _, col := range required {
 		if _, ok := existing[col.Name]; ok {

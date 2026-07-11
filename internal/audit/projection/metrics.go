@@ -158,6 +158,8 @@ func QuerySummaryAll(hours int) (SummaryAllResult, error) {
 		cur.requestCount += snap.requestCount
 		cur.successCount += snap.successCount
 		cur.totalLatencyMs += snap.totalLatencyMs
+		cur.ttftSumMs += snap.ttftSumMs
+		cur.ttftCount += snap.ttftCount
 		cur.outputTokens += snap.outputTokens
 		cur.generationMs += snap.generationMs
 		totals[k.model] = cur
@@ -170,6 +172,7 @@ func QuerySummaryAll(hours int) (SummaryAllResult, error) {
 			continue
 		}
 		avgLatency := total.totalLatencyMs / total.requestCount
+		avgTtft := avg(total.ttftSumMs, total.ttftCount)
 		successRate := float64(total.successCount) / float64(total.requestCount) * 100
 		avgTps := 0.0
 		if total.generationMs > 0 {
@@ -177,6 +180,7 @@ func QuerySummaryAll(hours int) (SummaryAllResult, error) {
 		}
 		models = append(models, ModelSummary{
 			ModelName:    name,
+			AvgTtftMs:    avgTtft,
 			AvgLatencyMs: avgLatency,
 			SuccessRate:  math.Round(successRate*100) / 100,
 			AvgTps:       math.Round(avgTps*100) / 100,

@@ -201,6 +201,19 @@ export interface SubscriptionOrderStatus {
   complete_time?: number
 }
 
+export interface SubscriptionBoosterQuote {
+  subscription_id: number
+  plan_id: number
+  plan_title: string
+  quota: number
+  rate: number
+  amount_due: number
+  expires_at: number
+  min_quota: number
+  max_quota: number
+  quota_step: number
+}
+
 export interface CreateUserSubscriptionRequest {
   plan_id: number
 }

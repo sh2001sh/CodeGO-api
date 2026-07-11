@@ -38,6 +38,7 @@ const (
 
 const (
 	SubscriptionPurchaseTypeNormal    = "normal"
+	SubscriptionPurchaseTypeBooster   = "subscription_booster"
 	SubscriptionPurchaseTypeGroupBuy  = "group_buy"
 	SubscriptionPurchaseTypeJoinGroup = "join_group"
 )
@@ -154,12 +155,16 @@ type SubscriptionOrder struct {
 	PlanId int     `json:"plan_id" gorm:"index"`
 	Money  float64 `json:"money"`
 
-	TradeNo         string `json:"trade_no" gorm:"unique;type:varchar(255);index"`
-	PaymentMethod   string `json:"payment_method" gorm:"type:varchar(50)"`
-	PaymentProvider string `json:"payment_provider" gorm:"type:varchar(50);default:''"`
-	PurchaseType    string `json:"purchase_type" gorm:"type:varchar(32);default:'normal';index"`
-	GroupBuyId      int64  `json:"group_buy_id" gorm:"type:bigint;default:0;index"`
-	Status          string `json:"status"`
+	TradeNo              string  `json:"trade_no" gorm:"unique;type:varchar(255);index"`
+	PaymentMethod        string  `json:"payment_method" gorm:"type:varchar(50)"`
+	PaymentProvider      string  `json:"payment_provider" gorm:"type:varchar(50);default:''"`
+	PurchaseType         string  `json:"purchase_type" gorm:"type:varchar(32);default:'normal';index"`
+	GroupBuyId           int64   `json:"group_buy_id" gorm:"type:bigint;default:0;index"`
+	TargetSubscriptionId int     `json:"target_subscription_id" gorm:"type:int;default:0;index"`
+	BoosterQuota         int64   `json:"booster_quota" gorm:"type:bigint;default:0"`
+	BoosterRate          float64 `json:"booster_rate" gorm:"type:decimal(10,6);default:0"`
+	BoosterExpiresAt     int64   `json:"booster_expires_at" gorm:"type:bigint;default:0"`
+	Status               string  `json:"status"`
 	// FulfillmentStatus separates provider payment confirmation from benefits delivery.
 	// Existing historical rows default to completed so migrations cannot re-grant benefits.
 	FulfillmentStatus string `json:"fulfillment_status" gorm:"type:varchar(32);default:'completed';index"`

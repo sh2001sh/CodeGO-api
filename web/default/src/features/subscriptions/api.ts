@@ -33,6 +33,7 @@ import type {
   SubscriptionOrderStatus,
   SubscriptionClaudeConversionRecord,
   SubscriptionClaudeConversionResult,
+  SubscriptionBoosterQuote,
 } from './types'
 
 // ============================================================================
@@ -42,6 +43,30 @@ import type {
 export async function getAdminPlans(): Promise<ApiResponse<PlanRecord[]>> {
   const res = await api.get('/api/subscription/admin/plans')
   return res.data
+}
+
+export async function quoteSubscriptionBooster(payload: {
+  subscriptionId: number
+  quota: number
+}): Promise<ApiResponse<SubscriptionBoosterQuote>> {
+  const res = await api.post('/api/subscription/booster/quote', {
+    subscription_id: payload.subscriptionId,
+    quota: payload.quota,
+  })
+  return res.data
+}
+
+export async function purchaseSubscriptionBooster(payload: {
+  subscriptionId: number
+  quota: number
+  paymentMethod: string
+}): Promise<SubscriptionPayResponse & { url?: string }> {
+  const res = await api.post('/api/subscription/booster/purchase', {
+    subscription_id: payload.subscriptionId,
+    quota: payload.quota,
+    payment_method: payload.paymentMethod,
+  })
+  return { ...res.data, url: res.data.url }
 }
 
 export async function createPlan(

@@ -26,6 +26,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { SectionPageLayout } from '@/components/layout'
 import { FadeIn } from '@/components/page-transition'
 import { SiteSeo } from '@/components/seo'
+import { ModelValueComparison } from './components/models/model-value-comparison'
 import { ModelsChartPreferences } from './components/models/models-chart-preferences'
 import { ModelsFilter } from './components/models/models-filter-dialog'
 import { OverviewDashboard } from './components/overview/overview-dashboard'
@@ -57,12 +58,6 @@ const LazyLogStatCards = lazy(() =>
 const LazyModelCharts = lazy(() =>
   import('./components/models/model-charts').then((m) => ({
     default: m.ModelCharts,
-  }))
-)
-
-const LazyConsumptionDistributionChart = lazy(() =>
-  import('./components/models/consumption-distribution-chart').then((m) => ({
-    default: m.ConsumptionDistributionChart,
   }))
 )
 
@@ -158,6 +153,7 @@ export function Dashboard() {
     DASHBOARD_DEFAULT_SECTION) as DashboardSectionId
 
   const [modelData, setModelData] = useState<QuotaDataItem[]>([])
+  const [modelView, setModelView] = useState<'compare' | 'trend'>('compare')
   const [dataLoading, setDataLoading] = useState(false)
   const [chartPreferences, setChartPreferences] =
     useState<DashboardChartPreferences>(() => getSavedChartPreferences())
@@ -272,39 +268,42 @@ export function Dashboard() {
                   />
                 </Suspense>
               </FadeIn>
-              {isAdmin && (
+              <Tabs
+                value={modelView}
+                onValueChange={(value) =>
+                  setModelView(value as 'compare' | 'trend')
+                }
+              >
+                <TabsList>
+                  <TabsTrigger value='compare'>
+                    {t('Model comparison')}
+                  </TabsTrigger>
+                  <TabsTrigger value='trend'>{t('Usage trends')}</TabsTrigger>
+                </TabsList>
+              </Tabs>
+              {modelView === 'compare' && <ModelValueComparison />}
+              {modelView === 'trend' && isAdmin && (
                 <FadeIn delay={0.05}>
                   <Suspense fallback={<PerformanceOverviewFallback />}>
                     <LazyPerformanceOverview />
                   </Suspense>
                 </FadeIn>
               )}
-              <FadeIn delay={0.1}>
-                <Suspense fallback={<ModelChartsFallback />}>
-                  <LazyConsumptionDistributionChart
-                    data={modelData}
-                    loading={dataLoading}
-                    defaultChartType={
-                      chartPreferences.consumptionDistributionChart
-                    }
-                    timeGranularity={
-                      modelFilters.time_granularity || DEFAULT_TIME_GRANULARITY
-                    }
-                  />
-                </Suspense>
-              </FadeIn>
-              <FadeIn delay={0.15}>
-                <Suspense fallback={<ModelChartsFallback />}>
-                  <LazyModelCharts
-                    data={modelData}
-                    loading={dataLoading}
-                    defaultChartTab={chartPreferences.modelAnalyticsChart}
-                    timeGranularity={
-                      modelFilters.time_granularity || DEFAULT_TIME_GRANULARITY
-                    }
-                  />
-                </Suspense>
-              </FadeIn>
+              {modelView === 'trend' && (
+                <FadeIn delay={0.15}>
+                  <Suspense fallback={<ModelChartsFallback />}>
+                    <LazyModelCharts
+                      data={modelData}
+                      loading={dataLoading}
+                      defaultChartTab={chartPreferences.modelAnalyticsChart}
+                      timeGranularity={
+                        modelFilters.time_granularity ||
+                        DEFAULT_TIME_GRANULARITY
+                      }
+                    />
+                  </Suspense>
+                </FadeIn>
+              )}
             </>
           )}
           {activeSection === 'users' && (
