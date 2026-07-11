@@ -186,8 +186,8 @@ func rebuildUsageDaily(ctx context.Context) error {
 		return err
 	}
 	if err := platformdb.LogDB.WithContext(ctx).Model(&auditschema.Log{}).Where("type = ?", auditschema.LogTypeConsume).
-		Select(day + " AS day, channel AS channel_id, COUNT(*) AS request_count, COALESCE(SUM(prompt_tokens), 0) AS prompt_tokens, COALESCE(SUM(completion_tokens), 0) AS completion_tokens, COALESCE(SUM(quota), 0) AS quota").
-		Group(day + ", channel").Scan(&channelRows).Error; err != nil {
+		Select(day + " AS day, channel_id, COUNT(*) AS request_count, COALESCE(SUM(prompt_tokens), 0) AS prompt_tokens, COALESCE(SUM(completion_tokens), 0) AS completion_tokens, COALESCE(SUM(quota), 0) AS quota").
+		Group(day + ", channel_id").Scan(&channelRows).Error; err != nil {
 		return err
 	}
 	return platformdb.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
