@@ -122,11 +122,11 @@ func ModelPriceHelper(c *gin.Context, info *RelayInfo, promptTokens int, meta *t
 		preConsumedQuota = int(modelPrice * platformruntime.QuotaPerUnit * groupRatioInfo.GroupRatio)
 	}
 
-	if !gatewaystore.GetQuotaSetting().EnableFreeModelPreConsume {
-		if groupRatioInfo.GroupRatio == 0 {
-			preConsumedQuota = 0
-			freeModel = true
-		} else if usePrice {
+	if groupRatioInfo.GroupRatio == 0 {
+		preConsumedQuota = 0
+		freeModel = true
+	} else if !gatewaystore.GetQuotaSetting().EnableFreeModelPreConsume {
+		if usePrice {
 			if modelPrice == 0 {
 				preConsumedQuota = 0
 				freeModel = true
@@ -193,14 +193,14 @@ func ModelPriceHelperPerCall(c *gin.Context, info *RelayInfo) (types.PriceData, 
 
 	if usePrice {
 		quota = int(modelPrice * platformruntime.QuotaPerUnit * groupRatioInfo.GroupRatio)
-		if !gatewaystore.GetQuotaSetting().EnableFreeModelPreConsume && (groupRatioInfo.GroupRatio == 0 || modelPrice == 0) {
+		if groupRatioInfo.GroupRatio == 0 || (!gatewaystore.GetQuotaSetting().EnableFreeModelPreConsume && modelPrice == 0) {
 			quota = 0
 			freeModel = true
 		}
 	} else {
 		quota = int(modelRatio / 2 * platformruntime.QuotaPerUnit * groupRatioInfo.GroupRatio)
 		modelPrice = -1
-		if !gatewaystore.GetQuotaSetting().EnableFreeModelPreConsume && (groupRatioInfo.GroupRatio == 0 || modelRatio == 0) {
+		if groupRatioInfo.GroupRatio == 0 || (!gatewaystore.GetQuotaSetting().EnableFreeModelPreConsume && modelRatio == 0) {
 			quota = 0
 			freeModel = true
 		}
@@ -260,10 +260,9 @@ func modelPriceHelperTiered(c *gin.Context, info *RelayInfo, promptTokens int, m
 	quotaBeforeGroup := rawCost / 1_000_000 * platformruntime.QuotaPerUnit
 	preConsumedQuota := billingexpr.QuotaRound(quotaBeforeGroup * groupRatioInfo.GroupRatio)
 
-	freeModel := false
-	if !gatewaystore.GetQuotaSetting().EnableFreeModelPreConsume && groupRatioInfo.GroupRatio == 0 {
+	freeModel := groupRatioInfo.GroupRatio == 0
+	if freeModel {
 		preConsumedQuota = 0
-		freeModel = true
 	}
 	preConsumedQuota = applyCompanionPreconsumeDiscount(info.UserId, preConsumedQuota)
 
