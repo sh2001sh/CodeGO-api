@@ -2,7 +2,6 @@ package app
 
 import (
 	"fmt"
-	"github.com/bytedance/gopkg/util/gopool"
 	"github.com/sh2001sh/new-api/constant"
 	"github.com/sh2001sh/new-api/dto"
 	gatewayruntime "github.com/sh2001sh/new-api/internal/gateway/runtime"
@@ -13,15 +12,8 @@ import (
 	platformops "github.com/sh2001sh/new-api/internal/platform/opssettings"
 	platformtext "github.com/sh2001sh/new-api/internal/platform/textx"
 	"github.com/sh2001sh/new-api/types"
-	"strconv"
 	"strings"
-	"sync"
-	"time"
 )
-
-const channelModelProbeInterval = 5 * time.Minute
-
-var channelModelProbeTasks sync.Map
 
 func formatNotifyType(channelID int, status int) string {
 	return fmt.Sprintf("%s_%d_%d", dto.NotifyTypeChannelUpdate, channelID, status)
@@ -63,41 +55,21 @@ func EnableChannel(channelID int, usingKey string, channelName string) {
 	}
 }
 
-// ScheduleChannelModelProbe actively retests a failed upstream model until it
-// succeeds or the channel is disabled. One probe task is allowed per pair.
-func ScheduleChannelModelProbe(channelID int, modelName string, channelName string) {
-	if channelID <= 0 || strings.TrimSpace(modelName) == "" {
-		return
+// SelectCoolingAlternativeProbe returns one cooling backup route. The retry
+// chain reuses the current user request to verify it without extra requests.
+func SelectCoolingAlternativeProbe(channelID int, group string, modelName string) int {
+	alternatives, err := gatewaystore.LoadAlternativeEnabledChannels(channelID, group, modelName)
+	if err != nil {
+		platformobservability.SysError(fmt.Sprintf("查询模型 %s 的冷却备用渠道失败：%v", modelName, err))
+		return 0
 	}
-	probeKey := strconv.Itoa(channelID) + "\x00" + modelName
-	if _, loaded := channelModelProbeTasks.LoadOrStore(probeKey, struct{}{}); loaded {
-		return
-	}
-
-	gopool.Go(func() {
-		defer channelModelProbeTasks.Delete(probeKey)
-		for {
-			time.Sleep(channelModelProbeInterval)
-			channel, err := gatewaystore.GetCachedChannel(channelID)
-			if err != nil || channel.Status != constant.ChannelStatusEnabled {
-				return
-			}
-
-			elapsed, probeErr, localErr := TestChannelByID(channelID, modelName, "", false)
-			if localErr == nil && probeErr == nil {
-				gatewayruntime.RecordChannelSuccess(channelID, modelName, time.Duration(elapsed*float64(time.Second)))
-				platformobservability.SysLog(fmt.Sprintf("通道「%s」（#%d）的模型 %s 主动复测成功，已恢复路由", channelName, channelID, modelName))
-				return
-			}
-
-			gatewayruntime.MarkChannelModelUnavailable(channelID, modelName)
-			failure := localErr
-			if failure == nil && probeErr != nil {
-				failure = probeErr
-			}
-			platformobservability.SysLog(fmt.Sprintf("通道「%s」（#%d）的模型 %s 主动复测失败，将在 %s 后再次复测：%v", channelName, channelID, modelName, channelModelProbeInterval, failure))
+	for _, channel := range alternatives {
+		if channel == nil || !gatewayruntime.IsChannelCooling(channel.Id, modelName) {
+			continue
 		}
-	})
+		return channel.Id
+	}
+	return 0
 }
 
 // ShouldDisableChannel reports whether a channel failure should trigger auto-disable.

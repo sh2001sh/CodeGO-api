@@ -15,7 +15,7 @@ const (
 	ChannelHealthDegraded = "degraded"
 	ChannelHealthCooling  = "cooling"
 
-	channelHealthFailureThreshold = 3
+	channelHealthFailureThreshold = 5
 	channelHealthCooldownDuration = 2 * time.Minute
 	channelHealthTTL              = 20 * time.Minute
 	channelModelUnavailableTTL    = 5 * time.Minute
@@ -34,6 +34,7 @@ type ChannelHealth struct {
 	TTFTEWMAMilliseconds         float64   `json:"ttft_ewma_ms"`
 	LastSuccessAt                time.Time `json:"last_success_at"`
 	LastFailureAt                time.Time `json:"last_failure_at"`
+	LastFailureRequestID         string    `json:"last_failure_request_id"`
 
 	Window5StartedAt  time.Time `json:"window_5_started_at"`
 	Window5Requests   int       `json:"window_5_requests"`
@@ -92,26 +93,43 @@ func IsChannelCooling(channelID int, model string) bool {
 	return found && state.CoolingUntil.After(time.Now())
 }
 
-// MarkChannelModelUnavailable immediately opens the circuit for one upstream
-// model rejection. It keeps the channel available for its other models.
-func MarkChannelModelUnavailable(channelID int, model string) {
+// RecordChannelModelUnavailable opens the model circuit only after five
+// distinct user requests fail consecutively. Repeated retries of one request
+// count once so a single request cannot exhaust the error budget.
+func RecordChannelModelUnavailable(channelID int, model string, requestID string) bool {
 	if channelID <= 0 || model == "" {
-		return
+		return false
 	}
 	lock := channelHealthLock(channelID)
 	lock.Lock()
 	defer lock.Unlock()
 
 	now := time.Now().UTC()
-	_ = getChannelHealthCache().UpdateWithTTL(channelHealthKey(channelID, model), channelHealthTTL, func(state ChannelHealth, _ bool) (ChannelHealth, error) {
+	cooling := false
+	err := getChannelHealthCache().UpdateWithTTL(channelHealthKey(channelID, model), channelHealthTTL, func(state ChannelHealth, _ bool) (ChannelHealth, error) {
 		state.ChannelID = channelID
 		state.Model = model
-		state.State = ChannelHealthCooling
-		state.CoolingUntil = now.Add(channelModelUnavailableTTL)
 		state.LastFailureAt = now
 		recordChannelHealthWindow(&state, now, false)
+		if state.CoolingUntil.After(now) {
+			cooling = true
+			return state, nil
+		}
+		if requestID != "" && state.LastFailureRequestID == requestID {
+			return state, nil
+		}
+		state.LastFailureRequestID = requestID
+		state.ConsecutiveRetryableFailures++
+		if state.ConsecutiveRetryableFailures >= channelHealthFailureThreshold {
+			state.State = ChannelHealthCooling
+			state.CoolingUntil = now.Add(channelModelUnavailableTTL)
+			cooling = true
+		} else {
+			state.State = ChannelHealthDegraded
+		}
 		return state, nil
 	})
+	return err == nil && cooling
 }
 
 // RecordChannelRetryableFailure advances the shared circuit for a retryable upstream error.

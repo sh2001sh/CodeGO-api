@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"strconv"
 	"testing"
 	"time"
 
@@ -25,11 +26,15 @@ func TestChannelHealthCoolingAndRecovery(t *testing.T) {
 	require.Greater(t, state.TTFTEWMAMilliseconds, float64(0))
 }
 
-func TestMarkChannelModelUnavailableOnlyCoolsTargetModel(t *testing.T) {
+func TestModelUnavailableCoolsAfterFiveDistinctRequests(t *testing.T) {
 	require.NoError(t, resetChannelHealthForTest())
 	t.Cleanup(func() { require.NoError(t, resetChannelHealthForTest()) })
 
-	MarkChannelModelUnavailable(42, "gpt-unavailable")
+	for requestID := 1; requestID < channelHealthFailureThreshold; requestID++ {
+		require.False(t, RecordChannelModelUnavailable(42, "gpt-unavailable", strconv.Itoa(requestID)))
+	}
+	require.False(t, IsChannelCooling(42, "gpt-unavailable"))
+	require.True(t, RecordChannelModelUnavailable(42, "gpt-unavailable", "5"))
 	require.True(t, IsChannelCooling(42, "gpt-unavailable"))
 	require.False(t, IsChannelCooling(42, "gpt-available"))
 
@@ -37,4 +42,16 @@ func TestMarkChannelModelUnavailableOnlyCoolsTargetModel(t *testing.T) {
 	require.True(t, found)
 	require.Equal(t, ChannelHealthCooling, state.State)
 	require.WithinDuration(t, time.Now().Add(channelModelUnavailableTTL), state.CoolingUntil, time.Second)
+}
+
+func TestModelUnavailableRetriesWithinOneRequestCountOnce(t *testing.T) {
+	require.NoError(t, resetChannelHealthForTest())
+	t.Cleanup(func() { require.NoError(t, resetChannelHealthForTest()) })
+
+	for range 3 {
+		require.False(t, RecordChannelModelUnavailable(42, "gpt-unavailable", "request-1"))
+	}
+	state, found := GetChannelHealth(42, "gpt-unavailable")
+	require.True(t, found)
+	require.Equal(t, 1, state.ConsecutiveRetryableFailures)
 }

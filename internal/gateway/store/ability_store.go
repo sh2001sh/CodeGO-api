@@ -71,3 +71,30 @@ func HasAlternativeEnabledAbility(channelID int, group string, modelName string)
 		Count(&count).Error
 	return count > 0, err
 }
+
+// LoadAlternativeEnabledChannels loads enabled alternatives for one group/model
+// pair so the current user request can retry a cooling backup route.
+func LoadAlternativeEnabledChannels(channelID int, group string, modelName string) ([]*gatewayschema.Channel, error) {
+	if channelID <= 0 || group == "" || modelName == "" {
+		return nil, nil
+	}
+
+	models := []string{modelName}
+	if normalizedModel := FormatMatchingModelName(modelName); normalizedModel != "" && normalizedModel != modelName {
+		models = append(models, normalizedModel)
+	}
+	groupColumn := "`group`"
+	if platformdb.UsingPostgreSQL {
+		groupColumn = `"group"`
+	}
+	var channelIDs []int
+	if err := platformdb.DB.Model(&gatewayschema.Ability{}).
+		Where(groupColumn+" = ? AND model IN ? AND enabled = ? AND channel_id <> ?", group, models, true, channelID).
+		Distinct("channel_id").Pluck("channel_id", &channelIDs).Error; err != nil {
+		return nil, err
+	}
+	if len(channelIDs) == 0 {
+		return nil, nil
+	}
+	return LoadChannelsByIDs(channelIDs)
+}
