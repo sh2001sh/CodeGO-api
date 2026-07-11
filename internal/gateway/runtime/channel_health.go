@@ -94,7 +94,7 @@ func IsChannelCooling(channelID int, model string) bool {
 }
 
 // RecordChannelModelUnavailable opens the model circuit only after five
-// distinct user requests fail consecutively. Repeated retries of one request
+// distinct request IDs fail consecutively. Repeated retries of one request
 // count once so a single request cannot exhaust the error budget.
 func RecordChannelModelUnavailable(channelID int, model string, requestID string) bool {
 	if channelID <= 0 || model == "" {
