@@ -1,5 +1,9 @@
 name: Publish Docker image (Multi-arch)
 
+concurrency:
+  group: docker-image-publish
+  cancel-in-progress: false
+
 on:
   push:
     branches:
@@ -22,6 +26,10 @@ jobs:
     name: Build & push (${{ matrix.arch }})
     strategy:
       fail-fast: false
+      # Each build starts a fresh BuildKit daemon and resolves three Docker Hub
+      # base images. Serializing the matrix prevents the 14 jobs from exhausting
+      # Docker Hub's shared runner rate limit at the same time.
+      max-parallel: 1
       matrix:
         service: [control-api, gateway-api, ledger-worker, workflow-worker, db-migrate, ledger-backfill, v2-verify]
         arch: [amd64, arm64]
