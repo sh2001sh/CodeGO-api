@@ -1,9 +1,9 @@
 package app
 
 import (
-	auditschema "github.com/sh2001sh/new-api/internal/audit/schema"
 	"errors"
 	auditapp "github.com/sh2001sh/new-api/internal/audit/app"
+	auditschema "github.com/sh2001sh/new-api/internal/audit/schema"
 	identitydomain "github.com/sh2001sh/new-api/internal/identity/domain"
 	identityschema "github.com/sh2001sh/new-api/internal/identity/schema"
 	identitystore "github.com/sh2001sh/new-api/internal/identity/store"
@@ -63,7 +63,7 @@ type DesktopAccountSummaryResponse struct {
 	Tokens     DesktopTokenSummary    `json:"tokens"`
 	Usage      DesktopUsageSummary    `json:"usage"`
 	Service    DesktopServiceSummary  `json:"service"`
-	RecentLogs []*auditschema.Log           `json:"recent_logs"`
+	RecentLogs []*auditschema.Log     `json:"recent_logs"`
 	Actions    DesktopQuickActions    `json:"actions"`
 }
 
@@ -84,6 +84,10 @@ type DesktopUsageTrendResponse struct {
 // BuildDesktopAccountSummary aggregates desktop dashboard account data.
 func BuildDesktopAccountSummary(userID int) (*DesktopAccountSummaryResponse, error) {
 	user, err := LoadUserByID(userID, false)
+	if err != nil {
+		return nil, err
+	}
+	walletQuota, claudeWalletQuota, err := loadDisplayWalletQuotas(user)
 	if err != nil {
 		return nil, err
 	}
@@ -120,12 +124,12 @@ func BuildDesktopAccountSummary(userID int) (*DesktopAccountSummaryResponse, err
 			Username:           user.Username,
 			DisplayName:        user.DisplayName,
 			Group:              user.Group,
-			Quota:              user.Quota,
-			ClaudeQuota:        user.ClaudeQuota,
+			Quota:              walletQuota,
+			ClaudeQuota:        claudeWalletQuota,
 			UsedQuota:          user.UsedQuota,
 			RequestCount:       user.RequestCount,
-			QuotaUSD:           quotaToUSD(user.Quota),
-			ClaudeQuotaUSD:     quotaToUSD(user.ClaudeQuota),
+			QuotaUSD:           quotaToUSD(walletQuota),
+			ClaudeQuotaUSD:     quotaToUSD(claudeWalletQuota),
 			UsedQuotaUSD:       quotaToUSD(user.UsedQuota),
 			BillingPreference:  setting.BillingPreference,
 			FundingSourceOrder: setting.FundingSourceOrder,

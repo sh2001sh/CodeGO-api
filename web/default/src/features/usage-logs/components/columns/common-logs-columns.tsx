@@ -311,9 +311,9 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
               ? useChannel.join(' → ')
               : undefined
           const channelDisplay = log.channel_name
-            ? `${log.channel_name} #${log.channel}`
-            : `#${log.channel}`
-          const channelIdDisplay = `#${log.channel}`
+            ? `${log.channel_name} #${log.channel_id}`
+            : `#${log.channel_id}`
+          const channelIdDisplay = `#${log.channel_id}`
           const channelName = sensitiveVisible ? log.channel_name : '••••'
 
           return (
@@ -327,8 +327,8 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
                   <div className='relative inline-flex w-fit'>
                     <StatusBadge
                       label={channelIdDisplay}
-                      autoColor={String(log.channel)}
-                      copyText={String(log.channel)}
+                      autoColor={String(log.channel_id)}
+                      copyText={String(log.channel_id)}
                       size='sm'
                       className='font-mono'
                     />

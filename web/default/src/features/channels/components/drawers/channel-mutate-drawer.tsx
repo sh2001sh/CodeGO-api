@@ -465,8 +465,8 @@ export function ChannelMutateDrawer({
   const currentTypeLabel = useMemo(
     () =>
       CHANNEL_TYPE_OPTIONS.find((option) => option.value === currentType)
-        ?.label || `#${currentType}`,
-    [currentType]
+        ?.label || t('Unknown'),
+    [currentType, t]
   )
 
   const channelTypeOptions = useMemo(() => {
@@ -478,7 +478,7 @@ export function ChannelMutateDrawer({
     if (!options.some((option) => Number(option.value) === currentType)) {
       options.push({
         value: String(currentType),
-        label: `#${currentType}`,
+        label: t('Unknown'),
         icon: getLobeIcon(`${getChannelTypeIcon(currentType)}.Color`, 16),
       })
     }

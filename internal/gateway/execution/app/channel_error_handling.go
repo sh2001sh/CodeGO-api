@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	httpctx "github.com/sh2001sh/new-api/internal/platform/transport/http/httpctx"
+	"strings"
 	"time"
 
 	"github.com/bytedance/gopkg/util/gopool"
@@ -10,7 +11,9 @@ import (
 	"github.com/sh2001sh/new-api/constant"
 	auditapp "github.com/sh2001sh/new-api/internal/audit/app"
 	gatewayruntime "github.com/sh2001sh/new-api/internal/gateway/runtime"
+	gatewaystore "github.com/sh2001sh/new-api/internal/gateway/store"
 	"github.com/sh2001sh/new-api/internal/platform/logger"
+	platformobservability "github.com/sh2001sh/new-api/internal/platform/observability"
 	platformtext "github.com/sh2001sh/new-api/internal/platform/textx"
 	"github.com/sh2001sh/new-api/types"
 )
@@ -19,7 +22,20 @@ import (
 func ProcessChannelError(c *gin.Context, channelError types.ChannelError, err *types.NewAPIError) {
 	logger.LogError(c, fmt.Sprintf("channel error (channel #%d, status code: %d): %s", channelError.ChannelId, err.StatusCode, platformtext.LocalLogPreview(err.Error())))
 
-	if ShouldDisableChannel(err) && channelError.AutoBan {
+	modelName := c.GetString("original_model")
+	if IsModelUnavailableError(err) && modelName != "" {
+		group := selectedChannelGroup(c)
+		alternative, lookupErr := gatewaystore.HasAlternativeEnabledAbility(channelError.ChannelId, group, modelName)
+		if lookupErr != nil {
+			platformobservability.SysError(fmt.Sprintf("检查通道「%s」（#%d）的模型 %s 备用路由失败：%v", channelError.ChannelName, channelError.ChannelId, modelName, lookupErr))
+		} else if alternative {
+			gatewayruntime.MarkChannelModelUnavailable(channelError.ChannelId, modelName)
+			c.Set("model_unavailable_with_alternative", true)
+			platformobservability.SysLog(fmt.Sprintf("通道「%s」（#%d）的模型 %s 不可用，已临时熔断该模型路由并切换备用渠道", channelError.ChannelName, channelError.ChannelId, modelName))
+		} else {
+			platformobservability.SysLog(fmt.Sprintf("通道「%s」（#%d）的模型 %s 是唯一可用路由，保留渠道与模型路由", channelError.ChannelName, channelError.ChannelId, modelName))
+		}
+	} else if ShouldDisableChannel(err) && channelError.AutoBan {
 		gopool.Go(func() {
 			DisableChannel(channelError, err.ErrorWithStatusCode())
 		})
@@ -78,6 +94,31 @@ func ProcessChannelError(c *gin.Context, channelError types.ChannelError, err *t
 			other,
 		)
 	}
+}
+
+// IsModelUnavailableError identifies an upstream rejection that applies to
+// the requested model rather than to the entire channel credential.
+func IsModelUnavailableError(err *types.NewAPIError) bool {
+	if err == nil {
+		return false
+	}
+	if err.GetErrorCode() == types.ErrorCodeModelNotFound {
+		return true
+	}
+	if err.StatusCode != 400 && err.StatusCode != 404 {
+		return false
+	}
+	message := strings.ToLower(err.Error())
+	return strings.Contains(message, "model") &&
+		(strings.Contains(message, "not found") || strings.Contains(message, "not exist") || strings.Contains(message, "not support") || strings.Contains(message, "unavailable"))
+}
+
+func selectedChannelGroup(c *gin.Context) string {
+	group := httpctx.GetContextKeyString(c, constant.ContextKeyAutoGroup)
+	if group != "" {
+		return group
+	}
+	return httpctx.GetContextKeyString(c, constant.ContextKeyUsingGroup)
 }
 
 func isRetryableChannelFailure(err *types.NewAPIError) bool {

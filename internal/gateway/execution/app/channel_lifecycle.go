@@ -26,6 +26,15 @@ func DisableChannel(channelError types.ChannelError, reason string) {
 		platformobservability.SysLog(fmt.Sprintf("通道「%s」（#%d）未启用自动禁用功能，跳过禁用操作", channelError.ChannelName, channelError.ChannelId))
 		return
 	}
+	exclusive, err := gatewaystore.ChannelHasExclusiveEnabledAbility(channelError.ChannelId)
+	if err != nil {
+		platformobservability.SysError(fmt.Sprintf("检查通道「%s」（#%d）唯一模型路由失败，跳过自动禁用：%v", channelError.ChannelName, channelError.ChannelId, err))
+		return
+	}
+	if exclusive {
+		platformobservability.SysLog(fmt.Sprintf("通道「%s」（#%d）是至少一个分组模型的唯一可用渠道，跳过自动禁用", channelError.ChannelName, channelError.ChannelId))
+		return
+	}
 
 	success := gatewaystore.UpdateChannelStatus(channelError.ChannelId, channelError.UsingKey, constant.ChannelStatusAutoDisabled, reason)
 	if success {

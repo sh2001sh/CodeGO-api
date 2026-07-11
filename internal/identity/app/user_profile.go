@@ -2,8 +2,10 @@ package app
 
 import (
 	"github.com/sh2001sh/new-api/constant"
+	billingapp "github.com/sh2001sh/new-api/internal/billing/app"
 	gatewayroutingapp "github.com/sh2001sh/new-api/internal/gateway/routing/app"
 	identitydomain "github.com/sh2001sh/new-api/internal/identity/domain"
+	identityschema "github.com/sh2001sh/new-api/internal/identity/schema"
 	identitystore "github.com/sh2001sh/new-api/internal/identity/store"
 	platformruntime "github.com/sh2001sh/new-api/internal/platform/runtime"
 	"sort"
@@ -44,6 +46,10 @@ func GetSelfProfile(userID int, userRole int) (*SelfProfileResponse, error) {
 	if err != nil {
 		return nil, err
 	}
+	walletQuota, claudeWalletQuota, err := loadDisplayWalletQuotas(user)
+	if err != nil {
+		return nil, err
+	}
 
 	// Clear admin remarks before exposing the user payload.
 	user.Remark = ""
@@ -62,8 +68,8 @@ func GetSelfProfile(userID int, userRole int) (*SelfProfileResponse, error) {
 		WeChatId:        user.WeChatId,
 		TelegramId:      user.TelegramId,
 		Group:           user.Group,
-		Quota:           user.Quota,
-		ClaudeQuota:     user.ClaudeQuota,
+		Quota:           walletQuota,
+		ClaudeQuota:     claudeWalletQuota,
 		UsedQuota:       user.UsedQuota,
 		RequestCount:    user.RequestCount,
 		AffCode:         user.AffCode,
@@ -77,6 +83,21 @@ func GetSelfProfile(userID int, userRole int) (*SelfProfileResponse, error) {
 		SidebarModules:  userSetting.SidebarModules,
 		Permissions:     calculateUserPermissions(userRole),
 	}, nil
+}
+
+func loadDisplayWalletQuotas(user *identityschema.User) (int, int, error) {
+	if user == nil {
+		return 0, 0, nil
+	}
+	walletQuota, err := billingapp.GetUserWalletQuota(user.Id)
+	if err != nil {
+		return 0, 0, err
+	}
+	claudeWalletQuota, err := billingapp.GetUserClaudeWalletQuota(user.Id)
+	if err != nil {
+		return 0, 0, err
+	}
+	return walletQuota, claudeWalletQuota, nil
 }
 
 // ListUserModels returns the authenticated user's deduplicated model catalog.

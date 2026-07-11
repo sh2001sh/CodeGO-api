@@ -24,3 +24,17 @@ func TestChannelHealthCoolingAndRecovery(t *testing.T) {
 	require.Equal(t, 0, state.ConsecutiveRetryableFailures)
 	require.Greater(t, state.TTFTEWMAMilliseconds, float64(0))
 }
+
+func TestMarkChannelModelUnavailableOnlyCoolsTargetModel(t *testing.T) {
+	require.NoError(t, resetChannelHealthForTest())
+	t.Cleanup(func() { require.NoError(t, resetChannelHealthForTest()) })
+
+	MarkChannelModelUnavailable(42, "gpt-unavailable")
+	require.True(t, IsChannelCooling(42, "gpt-unavailable"))
+	require.False(t, IsChannelCooling(42, "gpt-available"))
+
+	state, found := GetChannelHealth(42, "gpt-unavailable")
+	require.True(t, found)
+	require.Equal(t, ChannelHealthCooling, state.State)
+	require.WithinDuration(t, time.Now().Add(channelModelUnavailableTTL), state.CoolingUntil, time.Second)
+}

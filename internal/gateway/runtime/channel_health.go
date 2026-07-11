@@ -18,6 +18,7 @@ const (
 	channelHealthFailureThreshold = 3
 	channelHealthCooldownDuration = 2 * time.Minute
 	channelHealthTTL              = 20 * time.Minute
+	channelModelUnavailableTTL    = 5 * time.Minute
 )
 
 // ChannelHealth captures the shared routing health for one channel/model pair.
@@ -89,6 +90,28 @@ func GetChannelHealth(channelID int, model string) (ChannelHealth, bool) {
 func IsChannelCooling(channelID int, model string) bool {
 	state, found := GetChannelHealth(channelID, model)
 	return found && state.CoolingUntil.After(time.Now())
+}
+
+// MarkChannelModelUnavailable immediately opens the circuit for one upstream
+// model rejection. It keeps the channel available for its other models.
+func MarkChannelModelUnavailable(channelID int, model string) {
+	if channelID <= 0 || model == "" {
+		return
+	}
+	lock := channelHealthLock(channelID)
+	lock.Lock()
+	defer lock.Unlock()
+
+	now := time.Now().UTC()
+	_ = getChannelHealthCache().UpdateWithTTL(channelHealthKey(channelID, model), channelHealthTTL, func(state ChannelHealth, _ bool) (ChannelHealth, error) {
+		state.ChannelID = channelID
+		state.Model = model
+		state.State = ChannelHealthCooling
+		state.CoolingUntil = now.Add(channelModelUnavailableTTL)
+		state.LastFailureAt = now
+		recordChannelHealthWindow(&state, now, false)
+		return state, nil
+	})
 }
 
 // RecordChannelRetryableFailure advances the shared circuit for a retryable upstream error.

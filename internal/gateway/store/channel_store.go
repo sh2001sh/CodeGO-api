@@ -759,10 +759,28 @@ func cacheUpdateChannelStatus(channelID int, status int) {
 	channelSyncLock.Lock()
 	defer channelSyncLock.Unlock()
 
-	if channel, ok := channelsIDM[channelID]; ok {
-		channel.Status = status
+	channel, ok := channelsIDM[channelID]
+	if !ok {
+		return
 	}
+	channel.Status = status
 	if status == constant.ChannelStatusEnabled {
+		for _, group := range strings.Split(channel.Group, ",") {
+			if _, ok := group2model2channels[group]; !ok {
+				group2model2channels[group] = make(map[string][]int)
+			}
+			for _, modelName := range strings.Split(channel.Models, ",") {
+				channelIDs := group2model2channels[group][modelName]
+				if isChannelIDInList(channelIDs, channelID) {
+					continue
+				}
+				channelIDs = append(channelIDs, channelID)
+				sort.Slice(channelIDs, func(i, j int) bool {
+					return channelsIDM[channelIDs[i]].GetPriority() > channelsIDM[channelIDs[j]].GetPriority()
+				})
+				group2model2channels[group][modelName] = channelIDs
+			}
+		}
 		return
 	}
 

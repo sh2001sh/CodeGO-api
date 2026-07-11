@@ -639,10 +639,10 @@ export function useChannelsColumns(): ColumnDef<Channel>[] {
           )
         }
 
-        const type = row.getValue('type') as number
+        const type = Number(row.getValue('type'))
         const typeNameKey = getChannelTypeLabel(type)
-        const typeName = t(typeNameKey)
-        const iconName = getChannelTypeIcon(type)
+        const typeName = Number.isFinite(type) ? t(typeNameKey) : t('Unknown')
+        const iconName = getChannelTypeIcon(Number.isFinite(type) ? type : 0)
         const icon = getLobeIcon(`${iconName}.Color`, 20)
         const channel = row.original as Channel
         const isMultiKey = isMultiKeyChannel(channel)

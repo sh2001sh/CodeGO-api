@@ -527,12 +527,12 @@ export function DetailsDialog(props: DetailsDialogProps) {
                 />
               )}
 
-              {props.isAdmin && props.log.channel > 0 && (
+              {props.isAdmin && props.log.channel_id > 0 && (
                 <DetailRow
                   label={t('Channel')}
                   value={
                     <span>
-                      {props.log.channel}
+                      {props.log.channel_id}
                       {props.log.channel_name && (
                         <span className='text-muted-foreground'>
                           {' '}
