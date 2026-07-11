@@ -26,6 +26,7 @@ func ProcessChannelError(c *gin.Context, channelError types.ChannelError, err *t
 	if IsModelUnavailableError(err) && modelName != "" {
 		group := selectedChannelGroup(c)
 		alternative, lookupErr := gatewaystore.HasAlternativeEnabledAbility(channelError.ChannelId, group, modelName)
+		ScheduleChannelModelProbe(channelError.ChannelId, modelName, channelError.ChannelName)
 		if lookupErr != nil {
 			platformobservability.SysError(fmt.Sprintf("检查通道「%s」（#%d）的模型 %s 备用路由失败：%v", channelError.ChannelName, channelError.ChannelId, modelName, lookupErr))
 		} else if alternative {
@@ -104,9 +105,6 @@ func IsModelUnavailableError(err *types.NewAPIError) bool {
 	}
 	if err.GetErrorCode() == types.ErrorCodeModelNotFound {
 		return true
-	}
-	if err.StatusCode != 400 && err.StatusCode != 404 {
-		return false
 	}
 	message := strings.ToLower(err.Error())
 	return strings.Contains(message, "model") &&

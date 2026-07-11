@@ -14,7 +14,7 @@ func TestIsModelUnavailableError(t *testing.T) {
 		errors.New("The model does not exist"), types.ErrorCodeModelNotFound, http.StatusNotFound,
 	)))
 	require.True(t, IsModelUnavailableError(types.NewOpenAIError(
-		errors.New("model not supported"), types.ErrorCodeBadResponseStatusCode, http.StatusNotFound,
+		errors.New("model not supported"), types.ErrorCodeBadResponseStatusCode, http.StatusBadRequest,
 	)))
 	require.False(t, IsModelUnavailableError(types.NewOpenAIError(
 		errors.New("invalid API key"), types.ErrorCodeBadResponseStatusCode, http.StatusUnauthorized,
