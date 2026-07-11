@@ -6,42 +6,76 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
+	"github.com/samber/hot"
 	"github.com/sh2001sh/new-api/constant"
+	platformcache "github.com/sh2001sh/new-api/internal/platform/cache"
+	"github.com/sh2001sh/new-api/internal/platform/cachex"
 	platformhttpctx "github.com/sh2001sh/new-api/internal/platform/transport/http/httpctx"
 )
 
 const (
 	autoGroupFailureThreshold = 3
 	autoGroupCooldownDuration = 2 * time.Minute
+	autoGroupCircuitTTL       = 10 * time.Minute
 )
 
 type autoGroupCircuit struct {
-	consecutiveFailures int
-	cooldownUntil       time.Time
+	ConsecutiveFailures int       `json:"consecutive_failures"`
+	CooldownUntil       time.Time `json:"cooldown_until"`
 }
 
-var autoGroupCircuits = struct {
-	sync.RWMutex
-	items map[string]autoGroupCircuit
-}{items: make(map[string]autoGroupCircuit)}
+var (
+	autoGroupCircuitCacheOnce sync.Once
+	autoGroupCircuitCache     *cachex.HybridCache[autoGroupCircuit]
+	autoGroupCircuitLocks     [64]sync.Mutex
+)
 
 func autoGroupCircuitKey(group string, model string) string {
 	return group + "\x00" + model
 }
 
+func getAutoGroupCircuitCache() *cachex.HybridCache[autoGroupCircuit] {
+	autoGroupCircuitCacheOnce.Do(func() {
+		autoGroupCircuitCache = cachex.NewHybridCache[autoGroupCircuit](cachex.HybridCacheConfig[autoGroupCircuit]{
+			Namespace:  cachex.Namespace("new-api:auto_group_circuit:v1"),
+			Redis:      platformcache.RDB,
+			RedisCodec: cachex.JSONCodec[autoGroupCircuit]{},
+			RedisEnabled: func() bool {
+				return platformcache.RedisEnabled && platformcache.RDB != nil
+			},
+			Memory: func() *hot.HotCache[string, autoGroupCircuit] {
+				return hot.NewHotCache[string, autoGroupCircuit](hot.LRU, 10_000).
+					WithTTL(autoGroupCircuitTTL).
+					WithJanitor().
+					Build()
+			},
+		})
+	})
+	return autoGroupCircuitCache
+}
+
+func autoGroupCircuitLock(key string) *sync.Mutex {
+	index := 0
+	for _, char := range key {
+		index = (index*31 + int(char)) % len(autoGroupCircuitLocks)
+	}
+	return &autoGroupCircuitLocks[index]
+}
+
 func isAutoGroupCooling(group string, model string, now time.Time) bool {
-	autoGroupCircuits.RLock()
-	defer autoGroupCircuits.RUnlock()
-	return autoGroupCircuits.items[autoGroupCircuitKey(group, model)].cooldownUntil.After(now)
+	state, found, err := getAutoGroupCircuitCache().Get(autoGroupCircuitKey(group, model))
+	return err == nil && found && state.CooldownUntil.After(now)
 }
 
 func recordAutoGroupSuccess(group string, model string) {
 	if group == "" || model == "" {
 		return
 	}
-	autoGroupCircuits.Lock()
-	delete(autoGroupCircuits.items, autoGroupCircuitKey(group, model))
-	autoGroupCircuits.Unlock()
+	key := autoGroupCircuitKey(group, model)
+	lock := autoGroupCircuitLock(key)
+	lock.Lock()
+	defer lock.Unlock()
+	_, _ = getAutoGroupCircuitCache().DeleteMany([]string{key})
 }
 
 func recordAutoGroupFailure(group string, model string, now time.Time) {
@@ -50,19 +84,37 @@ func recordAutoGroupFailure(group string, model string, now time.Time) {
 	}
 
 	key := autoGroupCircuitKey(group, model)
-	autoGroupCircuits.Lock()
-	defer autoGroupCircuits.Unlock()
+	lock := autoGroupCircuitLock(key)
+	lock.Lock()
+	defer lock.Unlock()
 
-	state := autoGroupCircuits.items[key]
-	if state.cooldownUntil.After(now) {
+	state, found, err := getAutoGroupCircuitCache().Get(key)
+	if err != nil {
 		return
 	}
-	state.consecutiveFailures++
-	if state.consecutiveFailures >= autoGroupFailureThreshold {
-		state.consecutiveFailures = 0
-		state.cooldownUntil = now.Add(autoGroupCooldownDuration)
+	if !found {
+		state = autoGroupCircuit{}
 	}
-	autoGroupCircuits.items[key] = state
+	if state.CooldownUntil.After(now) {
+		return
+	}
+	state.ConsecutiveFailures++
+	if state.ConsecutiveFailures >= autoGroupFailureThreshold {
+		state.ConsecutiveFailures = 0
+		state.CooldownUntil = now.Add(autoGroupCooldownDuration)
+	}
+	_ = getAutoGroupCircuitCache().SetWithTTL(key, state, autoGroupCircuitTTL)
+}
+
+func resetAutoGroupCircuitCacheForTest() error {
+	if autoGroupCircuitCache != nil {
+		if err := autoGroupCircuitCache.Purge(); err != nil {
+			return err
+		}
+	}
+	autoGroupCircuitCacheOnce = sync.Once{}
+	autoGroupCircuitCache = nil
+	return nil
 }
 
 // OrderAutoGroups returns permitted auto groups ordered by availability policy.

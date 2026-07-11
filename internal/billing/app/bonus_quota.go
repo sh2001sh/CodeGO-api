@@ -3,7 +3,6 @@ package app
 import (
 	"errors"
 	billingschema "github.com/sh2001sh/new-api/internal/billing/schema"
-	identityschema "github.com/sh2001sh/new-api/internal/identity/schema"
 	platformobservability "github.com/sh2001sh/new-api/internal/platform/observability"
 
 	identitystore "github.com/sh2001sh/new-api/internal/identity/store"
@@ -38,7 +37,7 @@ func GrantBonusWalletQuotaTx(tx *gorm.DB, userID int, amount int64, sourceType s
 	if err := tx.Create(&credit).Error; err != nil {
 		return false, err
 	}
-	if err := tx.Model(&identityschema.User{}).Where("id = ?", userID).Update("quota", gorm.Expr("quota + ?", amount)).Error; err != nil {
+	if err := CreditWalletQuotaTx(tx, userID, int(amount), key, "bonus_quota_credit"); err != nil {
 		return false, err
 	}
 	_ = identitystore.InvalidateUserCache(userID)

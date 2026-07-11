@@ -3,6 +3,10 @@ package app
 import (
 	"errors"
 	"time"
+
+	billingschema "github.com/sh2001sh/new-api/internal/billing/schema"
+	platformdb "github.com/sh2001sh/new-api/internal/platform/db"
+	"gorm.io/gorm"
 )
 
 type SubscriptionFundingPreConsumeResult struct {
@@ -19,9 +23,11 @@ type SubscriptionFundingPlanInfo struct {
 
 type SubscriptionFundingHooks struct {
 	PreConsume              func(requestID string, userID int, modelName string, amount int64) (*SubscriptionFundingPreConsumeResult, error)
+	ReserveAdditional       func(requestID string, subscriptionID int, modelName string, amount int64) error
 	GetPlanInfo             func(userSubscriptionID int) (*SubscriptionFundingPlanInfo, error)
 	PostConsumeDelta        func(subscriptionID int, modelName string, delta int64) error
 	RefundPreConsume        func(requestID string) error
+	SettleReservation       func(requestID string, subscriptionID int, modelName string, actualAmount int64) error
 	GetBlindBoxDiscountRate func(userID int) float64
 }
 
@@ -53,6 +59,10 @@ type FundingSource interface {
 	PreConsume(amount int) error
 	Settle(delta int) error
 	Refund() error
+}
+
+type ReservableFundingSource interface {
+	ReserveAdditional(amount int64) error
 }
 
 type WalletFunding struct {
@@ -124,6 +134,9 @@ type SubscriptionFunding struct {
 	AmountUsedAfter int64
 	PlanId          int
 	PlanTitle       string
+	reservationID   string
+	accountID       string
+	settlementID    string
 }
 
 func (s *SubscriptionFunding) Source() string { return BillingSourceSubscription }
@@ -140,6 +153,12 @@ func (s *SubscriptionFunding) PreConsume(_ int) error {
 	s.preConsumed = res.PreConsumed
 	s.AmountTotal = res.AmountTotal
 	s.AmountUsedAfter = res.AmountUsedAfter
+	if reservation, err := findSubscriptionReservation(s.requestID); err != nil {
+		return err
+	} else if reservation != nil {
+		s.reservationID = reservation.ReservationID
+		s.accountID = reservation.AccountID
+	}
 	if subscriptionFundingHooks.GetPlanInfo != nil {
 		if planInfo, err := subscriptionFundingHooks.GetPlanInfo(res.UserSubscriptionID); err == nil && planInfo != nil {
 			s.PlanId = planInfo.PlanID
@@ -150,7 +169,50 @@ func (s *SubscriptionFunding) PreConsume(_ int) error {
 }
 
 func (s *SubscriptionFunding) Settle(delta int) error {
+	actual := s.preConsumed + int64(delta)
+	if actual < 0 {
+		actual = 0
+	}
+	if s.reservationID != "" && subscriptionFundingHooks.SettleReservation != nil {
+		if err := subscriptionFundingHooks.SettleReservation(s.requestID, s.subscriptionID, s.modelName, actual); err != nil {
+			return err
+		}
+		return s.loadSettlement()
+	}
 	return postSubscriptionUsageDelta(s.subscriptionID, s.modelName, int64(delta))
+}
+
+func (s *SubscriptionFunding) ReservationID() string { return s.reservationID }
+
+func (s *SubscriptionFunding) AccountID() string { return s.accountID }
+
+func (s *SubscriptionFunding) SettlementID() string { return s.settlementID }
+
+func (s *SubscriptionFunding) loadSettlement() error {
+	if s.reservationID == "" {
+		return errors.New("subscription ledger reservation is missing")
+	}
+	var settlement billingschema.BillingSettlement
+	if err := platformdb.DB.Where("reservation_id = ?", s.reservationID).First(&settlement).Error; err != nil {
+		return err
+	}
+	s.settlementID = settlement.SettlementID
+	return nil
+}
+
+func (s *SubscriptionFunding) ReserveAdditional(amount int64) error {
+	if amount <= 0 {
+		return nil
+	}
+	if subscriptionFundingHooks.ReserveAdditional == nil {
+		return errors.New("subscription additional reservation hook is not registered")
+	}
+	if err := subscriptionFundingHooks.ReserveAdditional(s.requestID, s.subscriptionID, s.modelName, amount); err != nil {
+		return err
+	}
+	s.preConsumed += amount
+	s.AmountUsedAfter += amount
+	return nil
 }
 
 func (s *SubscriptionFunding) Refund() error {
@@ -163,6 +225,18 @@ func (s *SubscriptionFunding) Refund() error {
 	return refundWithRetry(func() error {
 		return subscriptionFundingHooks.RefundPreConsume(s.requestID)
 	})
+}
+
+func findSubscriptionReservation(requestID string) (*billingschema.BillingReservation, error) {
+	var reservation billingschema.BillingReservation
+	err := platformdb.DB.Where("idempotency_key = ?", "subscription:"+requestID+":reserve").First(&reservation).Error
+	if err == nil {
+		return &reservation, nil
+	}
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	return nil, err
 }
 
 func refundWithRetry(fn func() error) error {

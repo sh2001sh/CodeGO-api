@@ -15,27 +15,27 @@ This is an AI API gateway/proxy built with Go. It aggregates 40+ upstream AI pro
 
 ## Architecture
 
-Layered architecture: Router -> Controller -> Service -> Model
+Current target architecture follows `docs/architecture/codego-v2`: `cmd/*` binaries assemble modular code under `internal/*`.
 
 ```
-router/        — HTTP routing (API, relay, dashboard, web)
-controller/    — Request handlers
-service/       — Business logic
-model/         — Data models and DB access (GORM)
-relay/         — AI API relay/proxy with provider adapters
-  relay/channel/ — Provider-specific adapters (openai/, claude/, gemini/, aws/, etc.)
-middleware/    — Auth, rate limiting, CORS, logging, distribution
-setting/       — Configuration management (ratio, model, operation, system, performance)
-common/        — Shared utilities (JSON, crypto, Redis, env, rate-limit, etc.)
+cmd/           — Binary entrypoints (control-api, gateway-api, workflow-worker, ledger-worker)
+internal/      — Core backend modules and platform code
+  gateway/     — Routing, execution providers, stream lifecycle, HTTP transport
+  workflow/    — Async task orchestration and Temporal workers
+  billing/     — Quota, settlement, ledger-facing billing logic
+  commerce/    — Orders, subscriptions, payment flows
+  identity/    — Auth, sessions, user-facing identity flows
+  audit/       — Usage samples, audit trails, projections
+  adminops/    — Admin and operational actions
+  platform/    — Shared infra helpers (httpx, tokenx, filex, bootstrap, transport/http/middleware, etc.)
+model/         — Shared persistence models still in migration
+setting/       — Configuration management
 dto/           — Data transfer objects (request/response structs)
 constant/      — Constants (API types, channel types, context keys)
 types/         — Type definitions (relay formats, file sources, errors)
 i18n/          — Backend internationalization (go-i18n, en/zh)
-oauth/         — OAuth provider implementations
-pkg/           — Internal packages (cachex, ionet)
-web/             — Frontend container
- web/default/   — Default frontend (React 19, Rsbuild, Base UI, Tailwind)
-  web/default/src/i18n/ — Frontend internationalization (i18next, zh/en/fr/ru/ja/vi)
+web/           — Frontend container
+  web/default/ — Default frontend (React 19, Rsbuild, Base UI, Tailwind)
 ```
 
 ## Internationalization (i18n)
@@ -123,7 +123,7 @@ This includes but is not limited to:
 
 ### Rule 6: Upstream Relay Request DTOs — Preserve Explicit Zero Values
 
-For request structs that are parsed from client JSON and then re-marshaled to upstream providers (especially relay/convert paths):
+For request structs that are parsed from client JSON and then re-marshaled to upstream providers (especially gateway provider conversion paths):
 
 - Optional scalar fields MUST use pointer types with `omitempty` (e.g. `*int`, `*uint`, `*float64`, `*bool`), not non-pointer scalars.
 - Semantics MUST be:
@@ -131,6 +131,6 @@ For request structs that are parsed from client JSON and then re-marshaled to up
   - field explicitly set to zero/false => non-`nil` pointer => must still be sent upstream.
 - Avoid using non-pointer scalars with `omitempty` for optional request parameters, because zero values (`0`, `0.0`, `false`) will be silently dropped during marshal.
 
-### Rule 7: Billing Expression System — Read `pkg/billingexpr/expr.md`
+### Rule 7: Billing Expression System — Read `internal/billing/domain/billingexpr/expr.md`
 
-When working on tiered/dynamic billing (expression-based pricing), you MUST read `pkg/billingexpr/expr.md` first. It documents the design philosophy, expression language (variables, functions, examples), full system architecture (editor → storage → pre-consume → settlement → log display), token normalization rules (`p`/`c` auto-exclusion), quota conversion, and expression versioning. All code changes to the billing expression system must follow the patterns described in that document.
+When working on tiered/dynamic billing (expression-based pricing), you MUST read `internal/billing/domain/billingexpr/expr.md` first. It documents the design philosophy, expression language (variables, functions, examples), full system architecture (editor → storage → pre-consume → settlement → log display), token normalization rules (`p`/`c` auto-exclusion), quota conversion, and expression versioning. All code changes to the billing expression system must follow the patterns described in that document.

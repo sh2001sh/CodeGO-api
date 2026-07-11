@@ -2,12 +2,20 @@ package app
 
 import (
 	"errors"
+	"fmt"
 	"github.com/sh2001sh/new-api/constant"
 	"github.com/sh2001sh/new-api/dto"
 	"github.com/sh2001sh/new-api/i18n"
+	billingapp "github.com/sh2001sh/new-api/internal/billing/app"
 	commerceapp "github.com/sh2001sh/new-api/internal/commerce/app"
 	identitydomain "github.com/sh2001sh/new-api/internal/identity/domain"
+	identityschema "github.com/sh2001sh/new-api/internal/identity/schema"
 	identitystore "github.com/sh2001sh/new-api/internal/identity/store"
+	platformcache "github.com/sh2001sh/new-api/internal/platform/cache"
+	platformdb "github.com/sh2001sh/new-api/internal/platform/db"
+	"github.com/sh2001sh/new-api/internal/platform/logger"
+	platformruntime "github.com/sh2001sh/new-api/internal/platform/runtime"
+	"gorm.io/gorm"
 	"net/url"
 	"strings"
 )
@@ -69,12 +77,32 @@ func TransferAffiliateQuotaToBalance(userID int, quota int) error {
 		return ErrPaymentComplianceRequired
 	}
 
-	user, err := LoadUserByID(userID, true)
-	if err != nil {
-		return err
+	if float64(quota) < platformruntime.QuotaPerUnit {
+		return &TransferAffiliateQuotaError{Cause: fmt.Errorf("转移额度最小为%s", logger.LogQuota(int(platformruntime.QuotaPerUnit)))}
 	}
-	if err := identitystore.TransferAffQuotaToQuota(user.Id, quota); err != nil {
+	operationID := platformruntime.GetUUID()
+	var updatedUser *identityschema.User
+	if err := platformdb.DB.Transaction(func(tx *gorm.DB) error {
+		user := &identityschema.User{}
+		if err := tx.Set("gorm:query_option", "FOR UPDATE").First(user, userID).Error; err != nil {
+			return err
+		}
+		if user.AffQuota < quota {
+			return errors.New("邀请额度不足")
+		}
+		if err := billingapp.CreditWalletQuotaTx(tx, user.Id, quota, "affiliate-transfer:"+operationID, "affiliate_quota_transfer"); err != nil {
+			return err
+		}
+		if err := tx.Model(user).Update("aff_quota", gorm.Expr("aff_quota - ?", quota)).Error; err != nil {
+			return err
+		}
+		updatedUser = user
+		return nil
+	}); err != nil {
 		return &TransferAffiliateQuotaError{Cause: err}
+	}
+	if updatedUser != nil {
+		_ = platformcache.DeleteUserCache(updatedUser.Id)
 	}
 	return nil
 }

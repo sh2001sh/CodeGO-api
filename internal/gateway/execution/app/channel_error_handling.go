@@ -24,6 +24,10 @@ func ProcessChannelError(c *gin.Context, channelError types.ChannelError, err *t
 			DisableChannel(channelError, err.ErrorWithStatusCode())
 		})
 	}
+	if isRetryableChannelFailure(err) {
+		gatewayruntime.RecordChannelRetryableFailure(channelError.ChannelId, c.GetString("original_model"))
+		gatewayruntime.InvalidateChannelAffinityForCurrentRequest(c)
+	}
 
 	if constant.ErrorLogEnabled && types.IsRecordErrorLog(err) {
 		userID := c.GetInt("id")
@@ -50,6 +54,9 @@ func ProcessChannelError(c *gin.Context, channelError types.ChannelError, err *t
 			adminInfo["multi_key_index"] = httpctx.GetContextKeyInt(c, constant.ContextKeyChannelMultiKeyIndex)
 		}
 		gatewayruntime.AppendChannelAffinityAdminInfo(c, adminInfo)
+		if decision, ok := gatewayruntime.GetRouteDecision(c); ok {
+			adminInfo["route_decision"] = decision
+		}
 		other["admin_info"] = adminInfo
 
 		startTime := httpctx.GetContextKeyTime(c, constant.ContextKeyRequestStartTime)
@@ -71,4 +78,11 @@ func ProcessChannelError(c *gin.Context, channelError types.ChannelError, err *t
 			other,
 		)
 	}
+}
+
+func isRetryableChannelFailure(err *types.NewAPIError) bool {
+	if err == nil || types.IsSkipRetryError(err) {
+		return false
+	}
+	return types.IsChannelError(err) || err.StatusCode == 429 || err.StatusCode >= 500
 }

@@ -259,6 +259,16 @@ func migratePrimaryDB() error {
 	return platformdb.DB.AutoMigrate(&commerceschema.SubscriptionPlan{})
 }
 
+// BootstrapPrimarySchema creates the legacy application schema required by a
+// brand-new database before v2 migrations and historical backfill can run.
+// Existing production databases should use the versioned db-migrate path only.
+func BootstrapPrimarySchema() error {
+	if platformdb.DB == nil {
+		return fmt.Errorf("primary database is not initialized")
+	}
+	return migratePrimaryDB()
+}
+
 func migrateLogDB() error {
 	return platformdb.LogDB.AutoMigrate(&auditschema.Log{})
 }
@@ -285,8 +295,15 @@ func ensureSubscriptionPlanTableSQLite() error {
 	if !platformdb.UsingSQLite {
 		return nil
 	}
+	return ensureSubscriptionPlanTableSQLiteTx(platformdb.DB)
+}
+
+func ensureSubscriptionPlanTableSQLiteTx(db *gorm.DB) error {
+	if db == nil {
+		return fmt.Errorf("database is not initialized")
+	}
 	tableName := "subscription_plans"
-	if !platformdb.DB.Migrator().HasTable(tableName) {
+	if !db.Migrator().HasTable(tableName) {
 		createSQL := "CREATE TABLE `" + tableName + "` (\n" +
 			"`id` integer,\n" +
 			"`title` varchar(128) NOT NULL,\n" +
@@ -320,13 +337,13 @@ func ensureSubscriptionPlanTableSQLite() error {
 			"`updated_at` bigint,\n" +
 			"PRIMARY KEY (`id`)\n" +
 			")"
-		return platformdb.DB.Exec(createSQL).Error
+		return db.Exec(createSQL).Error
 	}
 
 	var cols []struct {
 		Name string `gorm:"column:name"`
 	}
-	if err := platformdb.DB.Raw("PRAGMA table_info(`" + tableName + "`)").Scan(&cols).Error; err != nil {
+	if err := db.Raw("PRAGMA table_info(`" + tableName + "`)").Scan(&cols).Error; err != nil {
 		return err
 	}
 	existing := make(map[string]struct{}, len(cols))
@@ -368,7 +385,7 @@ func ensureSubscriptionPlanTableSQLite() error {
 		if _, ok := existing[col.Name]; ok {
 			continue
 		}
-		if err := platformdb.DB.Exec("ALTER TABLE `" + tableName + "` ADD COLUMN " + col.DDL).Error; err != nil {
+		if err := db.Exec("ALTER TABLE `" + tableName + "` ADD COLUMN " + col.DDL).Error; err != nil {
 			return err
 		}
 	}
@@ -379,15 +396,22 @@ func ensureSubscriptionOrderTableSQLite() error {
 	if !platformdb.UsingSQLite {
 		return nil
 	}
+	return ensureSubscriptionOrderTableSQLiteTx(platformdb.DB)
+}
+
+func ensureSubscriptionOrderTableSQLiteTx(db *gorm.DB) error {
+	if db == nil {
+		return fmt.Errorf("database is not initialized")
+	}
 	tableName := "subscription_orders"
-	if !platformdb.DB.Migrator().HasTable(tableName) {
+	if !db.Migrator().HasTable(tableName) {
 		return nil
 	}
 
 	var cols []struct {
 		Name string `gorm:"column:name"`
 	}
-	if err := platformdb.DB.Raw("PRAGMA table_info(`" + tableName + "`)").Scan(&cols).Error; err != nil {
+	if err := db.Raw("PRAGMA table_info(`" + tableName + "`)").Scan(&cols).Error; err != nil {
 		return err
 	}
 	existing := make(map[string]struct{}, len(cols))
@@ -397,12 +421,49 @@ func ensureSubscriptionOrderTableSQLite() error {
 	required := []sqliteColumnDef{
 		{Name: "purchase_type", DDL: "`purchase_type` varchar(32) DEFAULT 'normal'"},
 		{Name: "group_buy_id", DDL: "`group_buy_id` bigint DEFAULT 0"},
+		{Name: "fulfillment_status", DDL: "`fulfillment_status` varchar(32) DEFAULT 'completed'"},
 	}
 	for _, col := range required {
 		if _, ok := existing[col.Name]; ok {
 			continue
 		}
-		if err := platformdb.DB.Exec("ALTER TABLE `" + tableName + "` ADD COLUMN " + col.DDL).Error; err != nil {
+		if err := db.Exec("ALTER TABLE `" + tableName + "` ADD COLUMN " + col.DDL).Error; err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func ensureUserSubscriptionTableSQLiteTx(db *gorm.DB) error {
+	if db == nil {
+		return fmt.Errorf("database is not initialized")
+	}
+	const tableName = "user_subscriptions"
+	var cols []struct {
+		Name string `gorm:"column:name"`
+	}
+	if err := db.Raw("PRAGMA table_info(`" + tableName + "`)").Scan(&cols).Error; err != nil {
+		return err
+	}
+	existing := make(map[string]struct{}, len(cols))
+	for _, col := range cols {
+		existing[col.Name] = struct{}{}
+	}
+	required := []sqliteColumnDef{
+		{Name: "period_amount", DDL: "`period_amount` bigint NOT NULL DEFAULT 0"},
+		{Name: "period_used", DDL: "`period_used` bigint NOT NULL DEFAULT 0"},
+		{Name: "model_limits", DDL: "`model_limits` text"},
+		{Name: "model_usage", DDL: "`model_usage` text"},
+		{Name: "last_reset_time", DDL: "`last_reset_time` bigint DEFAULT 0"},
+		{Name: "next_reset_time", DDL: "`next_reset_time` bigint DEFAULT 0"},
+		{Name: "upgrade_group", DDL: "`upgrade_group` varchar(64) DEFAULT ''"},
+		{Name: "prev_user_group", DDL: "`prev_user_group` varchar(64) DEFAULT ''"},
+	}
+	for _, col := range required {
+		if _, ok := existing[col.Name]; ok {
+			continue
+		}
+		if err := db.Exec("ALTER TABLE `" + tableName + "` ADD COLUMN " + col.DDL).Error; err != nil {
 			return err
 		}
 	}

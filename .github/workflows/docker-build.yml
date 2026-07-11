@@ -23,7 +23,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: [control-api, gateway-api, ledger-worker, workflow-worker]
+        service: [control-api, gateway-api, ledger-worker, workflow-worker, db-migrate, ledger-backfill, v2-verify]
         arch: [amd64, arm64]
     runs-on: ${{ matrix.arch == 'amd64' && 'ubuntu-latest' || 'ubuntu-24.04-arm' }}
 
@@ -105,7 +105,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        service: [control-api, gateway-api, ledger-worker, workflow-worker]
+        service: [control-api, gateway-api, ledger-worker, workflow-worker, db-migrate, ledger-backfill, v2-verify]
     runs-on: ubuntu-latest
     if: startsWith(github.ref, 'refs/tags/') || github.event_name == 'workflow_dispatch' || github.ref == 'refs/heads/main'
 

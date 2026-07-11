@@ -1,8 +1,11 @@
 package bootstrap
 
 import (
+	"context"
+	commerceapp "github.com/sh2001sh/new-api/internal/commerce/app"
 	platformconfig "github.com/sh2001sh/new-api/internal/platform/config"
 	platformobservability "github.com/sh2001sh/new-api/internal/platform/observability"
+	workflowapp "github.com/sh2001sh/new-api/internal/workflow/app"
 	workflowtemporal "github.com/sh2001sh/new-api/internal/workflow/temporal"
 )
 
@@ -13,16 +16,15 @@ func RunWorkflowWorker() {
 	defer closeDatabase()
 
 	cfg := workflowtemporal.LoadConfigFromEnv()
+	if !platformconfig.IsMasterNode {
+		platformobservability.FatalLog("workflow-worker requires master node role")
+		return
+	}
 	if err := startWorkflowWorkerBackgroundTasks(); err != nil {
 		platformobservability.FatalLog("failed to wire workflow runtime: " + err.Error())
 		return
 	}
 	startDiagnostics()
-
-	if !platformconfig.IsMasterNode {
-		platformobservability.FatalLog("workflow-worker requires master node role")
-		return
-	}
 
 	platformobservability.SysLog("workflow worker temporal runtime enabled")
 	if err := workflowtemporal.RunWorker(cfg, workflowtemporal.NewDefaultWorkerDependencies()); err != nil {
@@ -32,5 +34,10 @@ func RunWorkflowWorker() {
 
 func startWorkflowWorkerBackgroundTasks() error {
 	startOptionSyncLoop()
-	return applyRuntimeWiring("workflow-worker")
+	if err := applyRuntimeWiring("workflow-worker"); err != nil {
+		return err
+	}
+	workflowapp.StartSubscriptionResetScheduler(context.Background())
+	commerceapp.StartPendingOrderFulfillmentScheduler(context.Background())
+	return nil
 }

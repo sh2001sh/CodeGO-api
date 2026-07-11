@@ -263,6 +263,7 @@ func relayRequest(c *gin.Context, relayFormat types.RelayFormat) {
 
 		if newAPIError == nil {
 			gatewayroutingapp.RecordAutoGroupSuccess(c, relayInfo.OriginModelName)
+			relaycommon.RecordChannelSuccess(channel.Id, relayInfo.OriginModelName, 0)
 			relayInfo.LastError = nil
 			return
 		}
@@ -277,6 +278,7 @@ func relayRequest(c *gin.Context, relayFormat types.RelayFormat) {
 		if !shouldRetry(c, newAPIError, platformconfig.RetryTimes-retryParam.GetRetry()) {
 			break
 		}
+		relaycommon.RecordRouteDecisionRetry(c)
 		gatewayroutingapp.RecordAutoGroupFailure(c, relayInfo.OriginModelName)
 		if relayInfo.Billing != nil {
 			if refundErr := billingapp.RefundRelayBillingSync(c, relayInfo); refundErr != nil {

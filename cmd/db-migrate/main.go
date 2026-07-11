@@ -14,6 +14,7 @@ import (
 
 func main() {
 	dryRun := flag.Bool("dry-run", false, "report pending v2 migrations without applying them")
+	bootstrap := flag.Bool("bootstrap", false, "create the legacy base schema before applying v2 migrations; only for a new empty database")
 	flag.Parse()
 
 	platformconfig.IsMasterNode = true
@@ -24,6 +25,14 @@ func main() {
 		panic(fmt.Errorf("initialize primary database: %w", err))
 	}
 	defer platformstore.CloseDatabases()
+	if *bootstrap {
+		if *dryRun {
+			panic("--bootstrap cannot be combined with --dry-run")
+		}
+		if err := platformstore.BootstrapPrimarySchema(); err != nil {
+			panic(fmt.Errorf("bootstrap primary schema: %w", err))
+		}
+	}
 	if err := platformstore.ApplyV2Migrations(context.Background(), *dryRun); err != nil {
 		panic(err)
 	}

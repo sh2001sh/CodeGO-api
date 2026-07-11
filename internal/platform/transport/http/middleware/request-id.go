@@ -21,10 +21,17 @@ var _bp = func() string {
 func RequestId() func(c *gin.Context) {
 	return func(c *gin.Context) {
 		id := platformruntime.GetTimeString() + _bp + platformruntime.GetRandomString(8)
+		traceID := c.GetHeader(constant.TraceIdKey)
+		if traceID == "" {
+			traceID = id
+		}
 		c.Set(constant.RequestIdKey, id)
+		c.Set(constant.TraceIdKey, traceID)
 		ctx := context.WithValue(c.Request.Context(), constant.RequestIdKey, id)
+		ctx = context.WithValue(ctx, constant.TraceIdKey, traceID)
 		c.Request = c.Request.WithContext(ctx)
 		c.Header(constant.RequestIdKey, id)
+		c.Header(constant.TraceIdKey, traceID)
 		c.Next()
 	}
 }

@@ -434,6 +434,16 @@ func ShouldSkipRetryAfterChannelAffinityFailure(c *gin.Context) bool {
 	return meta.SkipRetry
 }
 
+// InvalidateChannelAffinityForCurrentRequest removes a stale affinity entry before normal routing resumes.
+func InvalidateChannelAffinityForCurrentRequest(c *gin.Context) {
+	cacheKey, _, ok := getChannelAffinityContext(c)
+	if !ok {
+		return
+	}
+	invalidateChannelAffinityCacheKey(cacheKey)
+	c.Set(ginKeyChannelAffinitySkipRetry, false)
+}
+
 // MarkChannelAffinityUsed stores audit metadata after a preferred affinity channel is selected.
 func MarkChannelAffinityUsed(c *gin.Context, selectedGroup string, channelID int) {
 	if c == nil || channelID <= 0 {

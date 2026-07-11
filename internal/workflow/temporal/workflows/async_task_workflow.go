@@ -69,6 +69,11 @@ func AsyncTaskWorkflow(ctx workflow.Context, input contracts.AsyncTaskWorkflowIn
 		}
 		finalizeLoaded = true
 	}
+	if finalizeLoaded && finalizeResult.SettlementStatus == "refunded" {
+		if err := workflow.ExecuteActivity(ctx, contracts.ActivityRefundReference, input).Get(ctx, nil); err != nil {
+			return nil, err
+		}
+	}
 	if err := workflow.ExecuteActivity(ctx, contracts.ActivityProjectTaskResult, input).Get(ctx, nil); err != nil {
 		return nil, err
 	}

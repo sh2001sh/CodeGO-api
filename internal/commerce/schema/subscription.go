@@ -43,6 +43,11 @@ const (
 )
 
 const (
+	SubscriptionOrderFulfillmentPending   = "pending"
+	SubscriptionOrderFulfillmentCompleted = "completed"
+)
+
+const (
 	SubscriptionPlanTypeMonthly = "monthly"
 	SubscriptionPlanTypeWeekly  = "weekly"
 	SubscriptionPlanTypeDaily   = "daily"
@@ -155,8 +160,11 @@ type SubscriptionOrder struct {
 	PurchaseType    string `json:"purchase_type" gorm:"type:varchar(32);default:'normal';index"`
 	GroupBuyId      int64  `json:"group_buy_id" gorm:"type:bigint;default:0;index"`
 	Status          string `json:"status"`
-	CreateTime      int64  `json:"create_time"`
-	CompleteTime    int64  `json:"complete_time"`
+	// FulfillmentStatus separates provider payment confirmation from benefits delivery.
+	// Existing historical rows default to completed so migrations cannot re-grant benefits.
+	FulfillmentStatus string `json:"fulfillment_status" gorm:"type:varchar(32);default:'completed';index"`
+	CreateTime        int64  `json:"create_time"`
+	CompleteTime      int64  `json:"complete_time"`
 
 	ProviderPayload string `json:"provider_payload" gorm:"type:text"`
 }

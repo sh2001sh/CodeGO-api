@@ -77,6 +77,18 @@ func migrateBlindBoxLegacyCreditsTx(tx *gorm.DB) error {
 // MigrateBlindBoxLegacyCredits migrates legacy blind-box credit rows into billing-backed wallets.
 func MigrateBlindBoxLegacyCredits() error {
 	return platformdb.DB.Transaction(func(tx *gorm.DB) error {
-		return migrateBlindBoxLegacyCreditsTx(tx)
+		return MigrateBlindBoxLegacyCreditsTx(tx)
 	})
+}
+
+// MigrateBlindBoxLegacyCreditsTx transfers outstanding legacy reward credits
+// into the ledger-backed wallets inside the caller's transaction.
+func MigrateBlindBoxLegacyCreditsTx(tx *gorm.DB) error {
+	if tx == nil {
+		return errors.New("transaction is required")
+	}
+	if !tx.Migrator().HasTable(&commerceschema.BlindBoxCredit{}) {
+		return nil
+	}
+	return migrateBlindBoxLegacyCreditsTx(tx)
 }

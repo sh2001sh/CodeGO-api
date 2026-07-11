@@ -2,10 +2,11 @@ package app
 
 import (
 	"errors"
-	identityschema "github.com/sh2001sh/new-api/internal/identity/schema"
+	"fmt"
 	"math/rand"
 	"time"
 
+	billingapp "github.com/sh2001sh/new-api/internal/billing/app"
 	commercestore "github.com/sh2001sh/new-api/internal/commerce/store"
 	identitydomain "github.com/sh2001sh/new-api/internal/identity/domain"
 	identitystore "github.com/sh2001sh/new-api/internal/identity/store"
@@ -49,9 +50,8 @@ func performUserCheckin(userID int) (*identitydomain.Checkin, error) {
 		if err := tx.Create(checkin).Error; err != nil {
 			return errors.New("签到失败，请稍后重试")
 		}
-		if err := tx.Model(&identityschema.User{}).
-			Where("id = ?", userID).
-			Update("quota", gorm.Expr("quota + ?", checkin.QuotaAwarded)).Error; err != nil {
+		idempotencyKey := "checkin:" + checkin.CheckinDate + ":" + fmt.Sprint(userID)
+		if err := billingapp.CreditWalletQuotaTx(tx, userID, checkin.QuotaAwarded, idempotencyKey, "daily_checkin_credit"); err != nil {
 			return errors.New("签到失败：更新额度出错")
 		}
 		return nil

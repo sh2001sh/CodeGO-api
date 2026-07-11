@@ -1,8 +1,8 @@
 package app
 
 import (
-	auditschema "github.com/sh2001sh/new-api/internal/audit/schema"
 	"fmt"
+	auditschema "github.com/sh2001sh/new-api/internal/audit/schema"
 	platformruntime "github.com/sh2001sh/new-api/internal/platform/runtime"
 	httpctx "github.com/sh2001sh/new-api/internal/platform/transport/http/httpctx"
 	"strings"
@@ -480,6 +480,14 @@ func PostTextConsumeQuota(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, us
 	}
 	if tieredBillingApplied {
 		InjectTieredBillingInfo(other, relayInfo, tieredResult)
+	}
+	if decision, ok := gatewayruntime.GetRouteDecision(ctx); ok {
+		adminInfo, _ := other["admin_info"].(map[string]interface{})
+		if adminInfo == nil {
+			adminInfo = make(map[string]interface{})
+		}
+		adminInfo["route_decision"] = decision
+		other["admin_info"] = adminInfo
 	}
 
 	auditapp.RecordConsumeLog(ctx, relayInfo.UserId, auditschema.RecordConsumeLogParams{

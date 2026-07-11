@@ -19,6 +19,9 @@ func init() {
 				AmountUsedAfter:    result.AmountUsedAfter,
 			}, nil
 		},
+		ReserveAdditional: func(requestID string, subscriptionID int, modelName string, amount int64) error {
+			return ReserveAdditionalSubscriptionQuota(requestID, subscriptionID, modelName, amount)
+		},
 		GetPlanInfo: func(userSubscriptionID int) (*billingapp.SubscriptionFundingPlanInfo, error) {
 			planInfo, err := GetSubscriptionPlanInfoByUserSubscriptionID(userSubscriptionID)
 			if err != nil {
@@ -37,6 +40,9 @@ func init() {
 		},
 		RefundPreConsume: func(requestID string) error {
 			return RefundSubscriptionPreConsume(requestID)
+		},
+		SettleReservation: func(requestID string, subscriptionID int, modelName string, actualAmount int64) error {
+			return SettleSubscriptionReservation(requestID, subscriptionID, modelName, actualAmount)
 		},
 		GetBlindBoxDiscountRate: func(userID int) float64 {
 			return GetUserBlindBoxConsumptionDiscountRate(userID)

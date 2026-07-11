@@ -97,3 +97,19 @@ func TestObserveChannelAffinityUsageCacheByRelayFormat_UnsupportedModeKeepsEmpty
 	require.EqualValues(t, 25, stats.CachedTokens)
 	require.Equal(t, "", stats.CachedTokenRateMode)
 }
+
+func TestInvalidateChannelAffinityForChannel(t *testing.T) {
+	require.NoError(t, ResetChannelAffinityCacheForTest())
+	t.Cleanup(func() { require.NoError(t, ResetChannelAffinityCacheForTest()) })
+
+	require.NoError(t, RecordPreferredChannel("test:affinity:one", 91, 600))
+	require.NoError(t, RecordPreferredChannel("test:affinity:two", 91, 600))
+
+	require.Equal(t, 2, InvalidateChannelAffinityForChannel(91))
+	_, found, err := GetPreferredChannel("test:affinity:one")
+	require.NoError(t, err)
+	require.False(t, found)
+	_, found, err = GetPreferredChannel("test:affinity:two")
+	require.NoError(t, err)
+	require.False(t, found)
+}

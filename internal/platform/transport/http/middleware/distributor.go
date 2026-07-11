@@ -85,6 +85,7 @@ func Distribute() func(c *gin.Context) {
 				}
 				var selectGroup string
 				usingGroup := httpctx.GetContextKeyString(c, constant.ContextKeyUsingGroup)
+				gatewayruntime.StartRouteDecision(c, modelRequest.Model, usingGroup)
 				// check path is /pg/chat/completions
 				if strings.HasPrefix(c.Request.URL.Path, "/pg/chat/completions") {
 					playgroundRequest := &dto.PlayGroundRequest{}
@@ -117,20 +118,19 @@ func Distribute() func(c *gin.Context) {
 				if preferredChannelID, found := gatewayruntime.GetPreferredChannelByAffinity(c, modelRequest.Model, usingGroup); found {
 					preferred, err := gatewaystore.GetCachedChannel(preferredChannelID)
 					if err == nil && preferred != nil {
-						if preferred.Status != constant.ChannelStatusEnabled {
-							if gatewayruntime.ShouldSkipRetryAfterChannelAffinityFailure(c) {
-								abortWithOpenAiMessage(c, http.StatusForbidden, i18n.T(c, i18n.MsgDistributorAffinityChannelDisabled))
-								return
-							}
+						if preferred.Status != constant.ChannelStatusEnabled || gatewayruntime.IsChannelCooling(preferred.Id, modelRequest.Model) {
+							gatewayruntime.InvalidateChannelAffinityForCurrentRequest(c)
+							gatewayruntime.ExcludeRouteDecisionCandidate(c, "stale_affinity")
 						} else if usingGroup == "auto" {
 							userGroup := httpctx.GetContextKeyString(c, constant.ContextKeyUserGroup)
 							autoGroups := gatewayroutingapp.GetUserAutoGroup(userGroup)
 							for _, g := range autoGroups {
-								if gatewaystore.IsChannelEnabledForGroupModel(g, modelRequest.Model, preferred.Id) {
+								if gatewaystore.IsChannelEnabledForGroupModel(g, modelRequest.Model, preferred.Id) && !gatewayruntime.IsChannelCooling(preferred.Id, modelRequest.Model) {
 									selectGroup = g
 									httpctx.SetContextKey(c, constant.ContextKeyAutoGroup, g)
 									channel = preferred
 									gatewayruntime.MarkChannelAffinityUsed(c, g, preferred.Id)
+									gatewayruntime.SelectRouteDecisionCandidate(c, g, preferred.Id, true)
 									break
 								}
 							}
@@ -138,6 +138,7 @@ func Distribute() func(c *gin.Context) {
 							channel = preferred
 							selectGroup = usingGroup
 							gatewayruntime.MarkChannelAffinityUsed(c, usingGroup, preferred.Id)
+							gatewayruntime.SelectRouteDecisionCandidate(c, usingGroup, preferred.Id, true)
 						}
 					}
 				}

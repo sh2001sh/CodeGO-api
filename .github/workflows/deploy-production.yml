@@ -83,7 +83,7 @@ jobs:
           ssh -i "$ssh_key" -p "$port" "$ssh_target" "mkdir -p '$PRODUCTION_DEPLOY_PATH'"
           scp -i "$ssh_key" -P "$port" "docker-compose.yml" "$ssh_target:$PRODUCTION_DEPLOY_PATH/docker-compose.yml"
 
-      - name: Deploy docker compose service
+      - name: Deploy CodeGo v2 runtime
         if: steps.config.outputs.enabled == 'true'
         shell: bash
         env:
@@ -98,7 +98,7 @@ jobs:
           port="${PRODUCTION_DEPLOY_PORT:-22}"
           ssh_key="$HOME/.ssh/new-api-production"
           ssh_target="${PRODUCTION_DEPLOY_USER}@${PRODUCTION_DEPLOY_HOST}"
-          service="${PRODUCTION_DEPLOY_SERVICE:-new-api}"
+          service="${PRODUCTION_DEPLOY_SERVICE:-}"
           post_command="${PRODUCTION_DEPLOY_POST_COMMAND:-}"
 
           printf -v q_path '%q' "$PRODUCTION_DEPLOY_PATH"
@@ -110,8 +110,37 @@ jobs:
           set -euo pipefail
           cd "$DEPLOY_PATH"
 
-          docker compose pull "$DEPLOY_SERVICE"
-          docker compose up -d "$DEPLOY_SERVICE"
+          if [ -n "$DEPLOY_SERVICE" ]; then
+            docker compose pull "$DEPLOY_SERVICE"
+            docker compose up -d "$DEPLOY_SERVICE"
+          else
+            docker compose pull
+            docker compose up -d
+          fi
+
+          if [ -z "$DEPLOY_SERVICE" ]; then
+            docker compose ps --format json > /tmp/codego-v2-compose-status.json
+            for runtime_service in control-api gateway-api workflow-worker ledger-worker; do
+              if ! grep -Eq "\"Service\":\"${runtime_service}\"" /tmp/codego-v2-compose-status.json; then
+                echo "CodeGo v2 runtime service '${runtime_service}' is not present in docker compose status" >&2
+                cat /tmp/codego-v2-compose-status.json >&2
+                exit 1
+              fi
+            done
+
+            verify_success=0
+            for _ in $(seq 1 24); do
+              if docker compose --profile verify run --rm v2-verify --strict; then
+                verify_success=1
+                break
+              fi
+              sleep 5
+            done
+            if [ "$verify_success" -ne 1 ]; then
+              echo "CodeGo v2 migration verification failed" >&2
+              exit 1
+            fi
+          fi
 
           if [ -n "$POST_COMMAND" ]; then
             eval "$POST_COMMAND"

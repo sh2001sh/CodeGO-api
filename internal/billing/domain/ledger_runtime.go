@@ -18,6 +18,7 @@ const (
 	LedgerEntryTypeSettleDebit    = "settle_debit"
 	LedgerEntryTypeSettleCredit   = "settle_credit"
 	LedgerEntryTypeGrantCredit    = "grant_credit"
+	LedgerEntryTypeAdjustment     = "adjustment"
 )
 
 var (
@@ -67,6 +68,50 @@ type ReleaseReservationParams struct {
 	ReservationID  string
 	IdempotencyKey string
 	ReasonCode     string
+}
+
+type RecordAdjustmentParams struct {
+	AccountID      string
+	IdempotencyKey string
+	ReasonCode     string
+	ReferenceType  string
+	ReferenceID    string
+	OperatorType   string
+	OperatorID     string
+}
+
+// RecordAdjustment records a zero-balance audit adjustment for state changes such
+// as a subscription-period reset. It never changes available or reserved funds.
+func RecordAdjustment(params RecordAdjustmentParams) (*billingschema.BillingLedgerEntry, error) {
+	if strings.TrimSpace(params.AccountID) == "" || strings.TrimSpace(params.IdempotencyKey) == "" {
+		return nil, fmt.Errorf("account_id and idempotency_key are required")
+	}
+	var entry billingschema.BillingLedgerEntry
+	err := platformdb.DB.Transaction(func(tx *gorm.DB) error {
+		if existing, found, err := findLedgerEntryByIdempotency(tx, params.IdempotencyKey); err != nil {
+			return err
+		} else if found {
+			if existing.AccountID != params.AccountID || existing.EntryType != LedgerEntryTypeAdjustment {
+				return ErrLedgerConflict
+			}
+			entry = *existing
+			return nil
+		}
+		entry = billingschema.BillingLedgerEntry{
+			AccountID: params.AccountID, ReferenceType: defaultIfEmpty(params.ReferenceType, "adjustment"),
+			ReferenceID: defaultIfEmpty(params.ReferenceID, params.AccountID), EntryType: LedgerEntryTypeAdjustment,
+			Direction: billingschema.BillingDirectionCredit, Amount: 0, IdempotencyKey: params.IdempotencyKey,
+			ReasonCode: defaultIfEmpty(params.ReasonCode, "adjustment"), OperatorType: defaultIfEmpty(params.OperatorType, "system"), OperatorID: params.OperatorID,
+		}
+		if err := tx.Create(&entry).Error; err != nil {
+			return err
+		}
+		return RecordOutboxEvent(tx, OutboxEventInput{AccountID: entry.AccountID, AggregateType: "ledger_entry", AggregateID: entry.EntryID, EventType: "billing.adjustment_recorded", IdempotencyKey: "outbox:" + entry.IdempotencyKey, Payload: entry})
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &entry, nil
 }
 
 // EnsureBillingAccount creates the billing account and its balance snapshot on first use.
@@ -326,83 +371,102 @@ func ReleaseReservation(params ReleaseReservationParams) (*billingschema.Billing
 
 	var reservation billingschema.BillingReservation
 	err := platformdb.DB.Transaction(func(tx *gorm.DB) error {
-		current, err := lockReservation(tx, params.ReservationID)
-		if err != nil {
-			return err
-		}
-		if current.Status == billingschema.BillingReservationStatusReleased {
-			reservation = *current
-			return nil
-		}
-		if current.Status != billingschema.BillingReservationStatusOpen {
-			return ErrReservationNotOpen
-		}
-
-		if existing, found, err := findLedgerEntryByIdempotency(tx, params.IdempotencyKey); err != nil {
-			return err
-		} else if found {
-			if existing.ReferenceID != current.ReservationID || existing.EntryType != LedgerEntryTypeReserveRelease {
-				return ErrLedgerConflict
-			}
-			current.Status = billingschema.BillingReservationStatusReleased
-			if err := tx.Model(current).Update("status", current.Status).Error; err != nil {
-				return err
-			}
-			reservation = *current
-			return nil
-		}
-
-		snapshot, err := ensureAndLockBalanceSnapshot(tx, current.AccountID)
-		if err != nil {
-			return err
-		}
-		if snapshot.ReservedBalance < current.ReservedAmount {
-			return fmt.Errorf("reserved balance underflow")
-		}
-		snapshot.AvailableBalance += current.ReservedAmount
-		snapshot.ReservedBalance -= current.ReservedAmount
-		if err := tx.Save(snapshot).Error; err != nil {
-			return err
-		}
-
-		current.Status = billingschema.BillingReservationStatusReleased
-		if err := tx.Save(current).Error; err != nil {
-			return err
-		}
-
-		balanceAfter := snapshot.AvailableBalance
-		entry := billingschema.BillingLedgerEntry{
-			AccountID:      current.AccountID,
-			ReferenceType:  "reservation",
-			ReferenceID:    current.ReservationID,
-			EntryType:      LedgerEntryTypeReserveRelease,
-			Direction:      billingschema.BillingDirectionCredit,
-			Amount:         current.ReservedAmount,
-			BalanceAfter:   &balanceAfter,
-			IdempotencyKey: strings.TrimSpace(params.IdempotencyKey),
-			ReasonCode:     defaultIfEmpty(strings.TrimSpace(params.ReasonCode), "reservation_release"),
-			OperatorType:   "system",
-		}
-		if err := tx.Create(&entry).Error; err != nil {
-			return err
-		}
-		if err := RecordOutboxEvent(tx, OutboxEventInput{
-			AccountID:      current.AccountID,
-			AggregateType:  "reservation",
-			AggregateID:    current.ReservationID,
-			EventType:      "billing.reservation_released",
-			IdempotencyKey: "outbox:" + entry.IdempotencyKey,
-			Payload:        current,
-		}); err != nil {
-			return err
-		}
-		reservation = *current
-		return nil
+		var innerErr error
+		reservation, innerErr = releaseReservationTx(tx, params)
+		return innerErr
 	})
 	if err != nil {
 		return nil, err
 	}
 	return &reservation, nil
+}
+
+// ReleaseReservationTx releases an open reservation inside the caller's transaction.
+func ReleaseReservationTx(tx *gorm.DB, params ReleaseReservationParams) (*billingschema.BillingReservation, error) {
+	if tx == nil {
+		return nil, fmt.Errorf("transaction is required")
+	}
+	if strings.TrimSpace(params.ReservationID) == "" || strings.TrimSpace(params.IdempotencyKey) == "" {
+		return nil, fmt.Errorf("reservation_id and idempotency_key are required")
+	}
+	reservation, err := releaseReservationTx(tx, params)
+	if err != nil {
+		return nil, err
+	}
+	return &reservation, nil
+}
+
+func releaseReservationTx(tx *gorm.DB, params ReleaseReservationParams) (billingschema.BillingReservation, error) {
+	var reservation billingschema.BillingReservation
+	current, err := lockReservation(tx, params.ReservationID)
+	if err != nil {
+		return reservation, err
+	}
+	if current.Status == billingschema.BillingReservationStatusReleased {
+		return *current, nil
+	}
+	if current.Status != billingschema.BillingReservationStatusOpen {
+		return reservation, ErrReservationNotOpen
+	}
+
+	if existing, found, err := findLedgerEntryByIdempotency(tx, params.IdempotencyKey); err != nil {
+		return reservation, err
+	} else if found {
+		if existing.ReferenceID != current.ReservationID || existing.EntryType != LedgerEntryTypeReserveRelease {
+			return reservation, ErrLedgerConflict
+		}
+		current.Status = billingschema.BillingReservationStatusReleased
+		if err := tx.Model(current).Update("status", current.Status).Error; err != nil {
+			return reservation, err
+		}
+		return *current, nil
+	}
+
+	snapshot, err := ensureAndLockBalanceSnapshot(tx, current.AccountID)
+	if err != nil {
+		return reservation, err
+	}
+	if snapshot.ReservedBalance < current.ReservedAmount {
+		return reservation, fmt.Errorf("reserved balance underflow")
+	}
+	snapshot.AvailableBalance += current.ReservedAmount
+	snapshot.ReservedBalance -= current.ReservedAmount
+	if err := tx.Save(snapshot).Error; err != nil {
+		return reservation, err
+	}
+
+	current.Status = billingschema.BillingReservationStatusReleased
+	if err := tx.Save(current).Error; err != nil {
+		return reservation, err
+	}
+
+	balanceAfter := snapshot.AvailableBalance
+	entry := billingschema.BillingLedgerEntry{
+		AccountID:      current.AccountID,
+		ReferenceType:  "reservation",
+		ReferenceID:    current.ReservationID,
+		EntryType:      LedgerEntryTypeReserveRelease,
+		Direction:      billingschema.BillingDirectionCredit,
+		Amount:         current.ReservedAmount,
+		BalanceAfter:   &balanceAfter,
+		IdempotencyKey: strings.TrimSpace(params.IdempotencyKey),
+		ReasonCode:     defaultIfEmpty(strings.TrimSpace(params.ReasonCode), "reservation_release"),
+		OperatorType:   "system",
+	}
+	if err := tx.Create(&entry).Error; err != nil {
+		return reservation, err
+	}
+	if err := RecordOutboxEvent(tx, OutboxEventInput{
+		AccountID:      current.AccountID,
+		AggregateType:  "reservation",
+		AggregateID:    current.ReservationID,
+		EventType:      "billing.reservation_released",
+		IdempotencyKey: "outbox:" + entry.IdempotencyKey,
+		Payload:        current,
+	}); err != nil {
+		return reservation, err
+	}
+	return *current, nil
 }
 
 // SettleReservation finalizes an open reservation and applies delta debit/credit.

@@ -24,9 +24,7 @@ func TestOrderAutoGroupsPrefersLowerRateUntilCooldown(t *testing.T) {
 		require.NoError(t, gatewaygroups.UpdateAutoGroupsByJsonString(originalAutoGroups))
 		require.NoError(t, gatewaygroups.UpdateUserUsableGroupsByJSONString(originalUsableGroups))
 		require.NoError(t, gatewaystore.UpdateGroupRatioByJSONString(originalRatios))
-		autoGroupCircuits.Lock()
-		autoGroupCircuits.items = make(map[string]autoGroupCircuit)
-		autoGroupCircuits.Unlock()
+		require.NoError(t, resetAutoGroupCircuitCacheForTest())
 	})
 
 	require.NoError(t, gatewaygroups.UpdateAutoGroupsByJsonString(`["low","high"]`))

@@ -1,6 +1,7 @@
 package app
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"github.com/sh2001sh/new-api/constant"
@@ -14,6 +15,7 @@ import (
 	"strings"
 
 	// ResolveSubscriptionPurchasePreview computes the current purchase action and payable amount.
+	platformobservability "github.com/sh2001sh/new-api/internal/platform/observability"
 	platformruntime "github.com/sh2001sh/new-api/internal/platform/runtime"
 
 	"gorm.io/gorm"
@@ -37,6 +39,7 @@ func CreatePendingSubscriptionOrderWithBlindBoxDiscount(order *commerceschema.Su
 
 	appliedRate := 0.0
 	err := platformdb.DB.Transaction(func(tx *gorm.DB) error {
+		order.FulfillmentStatus = commerceschema.SubscriptionOrderFulfillmentPending
 		order.Money = math.Round(baseMoney*100) / 100
 		prop, err := ReserveBlindBoxSubscriptionDiscountPropTx(tx, order.UserId, order.TradeNo)
 		if err != nil {
@@ -57,6 +60,62 @@ func CompleteSubscriptionOrder(tradeNo string, providerPayload string, expectedP
 		return errors.New("tradeNo is empty")
 	}
 
+	var completedOrder *commerceschema.SubscriptionOrder
+	err := platformdb.DB.Transaction(func(tx *gorm.DB) error {
+		order := &commerceschema.SubscriptionOrder{}
+		if err := tx.Set("gorm:query_option", "FOR UPDATE").Where(subscriptionTradeNoColumn()+" = ?", tradeNo).First(order).Error; err != nil {
+			return commerceschema.ErrSubscriptionOrderNotFound
+		}
+		if expectedPaymentProvider != "" && order.PaymentProvider != expectedPaymentProvider {
+			return commerceschema.ErrPaymentMethodMismatch
+		}
+		if order.Status == constant.TopUpStatusSuccess {
+			if order.FulfillmentStatus != commerceschema.SubscriptionOrderFulfillmentCompleted {
+				completedCopy := *order
+				completedOrder = &completedCopy
+			}
+			return nil
+		}
+		if order.Status != constant.TopUpStatusPending {
+			return commerceschema.ErrSubscriptionOrderStatusInvalid
+		}
+
+		order.Status = constant.TopUpStatusSuccess
+		order.FulfillmentStatus = commerceschema.SubscriptionOrderFulfillmentPending
+		order.CompleteTime = platformruntime.GetTimestamp()
+		if providerPayload != "" {
+			order.ProviderPayload = providerPayload
+		}
+		if actualPaymentMethod != "" && order.PaymentMethod != actualPaymentMethod {
+			order.PaymentMethod = actualPaymentMethod
+		}
+		if err := tx.Save(order).Error; err != nil {
+			return err
+		}
+
+		completedCopy := *order
+		completedOrder = &completedCopy
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	if completedOrder != nil {
+		if err := StartOrderFulfillmentWorkflow(context.Background(), completedOrder); err != nil {
+			platformobservability.SysLog("start order fulfillment workflow: " + err.Error())
+		}
+	}
+	return nil
+}
+
+// FulfillPaidSubscriptionOrder grants all purchased benefits exactly once. It is
+// invoked by OrderFulfillmentWorkflow after a payment callback commits success.
+func FulfillPaidSubscriptionOrder(tradeNo string) error {
+	if strings.TrimSpace(tradeNo) == "" {
+		return errors.New("tradeNo is empty")
+	}
+
 	var logUserID int
 	var logPlanTitle string
 	var logMoney float64
@@ -67,14 +126,11 @@ func CompleteSubscriptionOrder(tradeNo string, providerPayload string, expectedP
 		if err := tx.Set("gorm:query_option", "FOR UPDATE").Where(subscriptionTradeNoColumn()+" = ?", tradeNo).First(order).Error; err != nil {
 			return commerceschema.ErrSubscriptionOrderNotFound
 		}
-		if expectedPaymentProvider != "" && order.PaymentProvider != expectedPaymentProvider {
-			return commerceschema.ErrPaymentMethodMismatch
-		}
-		if order.Status == constant.TopUpStatusSuccess {
-			return nil
-		}
-		if order.Status != constant.TopUpStatusPending {
+		if order.Status != constant.TopUpStatusSuccess {
 			return commerceschema.ErrSubscriptionOrderStatusInvalid
+		}
+		if order.FulfillmentStatus == commerceschema.SubscriptionOrderFulfillmentCompleted {
+			return nil
 		}
 
 		plan, err := getSubscriptionPlanRecordTx(tx, order.PlanId)
@@ -114,18 +170,10 @@ func CompleteSubscriptionOrder(tradeNo string, providerPayload string, expectedP
 			return err
 		}
 
-		order.Status = constant.TopUpStatusSuccess
-		order.CompleteTime = platformruntime.GetTimestamp()
-		if providerPayload != "" {
-			order.ProviderPayload = providerPayload
-		}
-		if actualPaymentMethod != "" && order.PaymentMethod != actualPaymentMethod {
-			order.PaymentMethod = actualPaymentMethod
-		}
+		order.FulfillmentStatus = commerceschema.SubscriptionOrderFulfillmentCompleted
 		if err := tx.Save(order).Error; err != nil {
 			return err
 		}
-
 		logUserID = order.UserId
 		logPlanTitle = plan.Title
 		logMoney = order.Money
@@ -135,13 +183,11 @@ func CompleteSubscriptionOrder(tradeNo string, providerPayload string, expectedP
 	if err != nil {
 		return err
 	}
-
 	if upgradeGroup != "" && logUserID > 0 {
 		_ = identitystore.UpdateUserGroupCache(logUserID, upgradeGroup)
 	}
 	if logUserID > 0 {
-		msg := fmt.Sprintf("订阅购买成功，套餐: %s，支付金额: %.2f，支付方式: %s", logPlanTitle, logMoney, logPaymentMethod)
-		auditapp.RecordLog(logUserID, auditschema.LogTypeTopup, msg)
+		auditapp.RecordLog(logUserID, auditschema.LogTypeTopup, fmt.Sprintf("订阅购买成功，套餐: %s，支付金额: %.2f，支付方式: %s", logPlanTitle, logMoney, logPaymentMethod))
 	}
 	return nil
 }

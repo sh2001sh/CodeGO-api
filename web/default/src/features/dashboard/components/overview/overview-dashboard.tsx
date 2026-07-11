@@ -45,45 +45,42 @@ export function OverviewDashboard() {
   }
 
   return (
-    <div className='flex flex-col gap-4'>
+    <div className='flex flex-col gap-5'>
       <FadeIn>
         <OverviewHeroPanel guide={setupGuide} />
       </FadeIn>
 
-      <div className='grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(320px,340px)] xl:items-start'>
-        <CardStaggerContainer className='flex min-w-0 flex-col gap-4'>
-          <CardStaggerItem>
-            <SummaryCards />
-          </CardStaggerItem>
-          <CardStaggerItem>
-            <AnnouncementsPanel />
-          </CardStaggerItem>
-          <CardStaggerItem>
-            <FAQPanel />
-          </CardStaggerItem>
-        </CardStaggerContainer>
+      <CardStaggerContainer className='flex min-w-0 flex-col gap-5'>
+        <CardStaggerItem>
+          <SummaryCards />
+        </CardStaggerItem>
 
-        <CardStaggerContainer className='flex flex-col gap-4'>
-          <CardStaggerItem>
+        <CardStaggerItem>
+          <div className='grid gap-5 lg:grid-cols-[minmax(0,1.2fr)_minmax(0,0.8fr)]'>
             <CodeGoDesktopEntryPanel />
-          </CardStaggerItem>
-          <CardStaggerItem>
             <OverviewHealthPanel />
-          </CardStaggerItem>
-          <CardStaggerItem>
-            <RedemptionCodePanel
-              compact
-              title='兑换码'
-              description='充值码、套餐码或活动码可直接在这里兑换。'
-              topupLink={topupInfo?.topup_link}
-              redemptionCode={redemptionCode}
-              onRedemptionCodeChange={setRedemptionCode}
-              onRedeem={() => void handleRedeem()}
-              redeeming={redeeming}
-            />
-          </CardStaggerItem>
-        </CardStaggerContainer>
-      </div>
+          </div>
+        </CardStaggerItem>
+
+        <CardStaggerItem>
+          <div className='grid gap-5 lg:grid-cols-2'>
+            <AnnouncementsPanel />
+            <div className='flex flex-col gap-5'>
+              <RedemptionCodePanel
+                compact
+                title='兑换码'
+                description='充值码、套餐码或活动码可直接在这里兑换。'
+                topupLink={topupInfo?.topup_link}
+                redemptionCode={redemptionCode}
+                onRedemptionCodeChange={setRedemptionCode}
+                onRedeem={() => void handleRedeem()}
+                redeeming={redeeming}
+              />
+              <FAQPanel />
+            </div>
+          </div>
+        </CardStaggerItem>
+      </CardStaggerContainer>
     </div>
   )
 }

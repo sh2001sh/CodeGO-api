@@ -11,6 +11,7 @@ import (
 
 	"github.com/bytedance/gopkg/util/gopool"
 	"github.com/gin-gonic/gin"
+	billingdomain "github.com/sh2001sh/new-api/internal/billing/domain"
 	commercedomain "github.com/sh2001sh/new-api/internal/commerce/domain"
 	relaycommon "github.com/sh2001sh/new-api/internal/gateway/runtime"
 	"github.com/sh2001sh/new-api/internal/platform/logger"
@@ -47,13 +48,13 @@ func (s *BillingSession) Settle(actualQuota int) error {
 	if s.settled {
 		return nil
 	}
-
-	delta := actualQuota - s.preConsumedQuota
-	if delta == 0 {
-		s.settled = true
-		return nil
+	if s.trusted && s.preConsumedQuota == 0 && actualQuota > 0 {
+		if err := s.reserveTrustedSettlement(actualQuota); err != nil {
+			return err
+		}
 	}
 
+	delta := actualQuota - s.preConsumedQuota
 	if !s.fundingSettled {
 		if err := s.funding.Settle(delta); err != nil {
 			return err
@@ -83,6 +84,24 @@ func (s *BillingSession) Settle(actualQuota int) error {
 	return tokenErr
 }
 
+func (s *BillingSession) reserveTrustedSettlement(actualQuota int) error {
+	if err := s.funding.PreConsume(actualQuota); err != nil {
+		return err
+	}
+	if !s.relayInfo.IsPlayground {
+		if err := PreConsumeTokenQuota(s.relayInfo, actualQuota); err != nil {
+			if refundErr := s.funding.Refund(); refundErr != nil {
+				return errors.Join(err, fmt.Errorf("refund trusted funding reservation: %w", refundErr))
+			}
+			return err
+		}
+	}
+	s.preConsumedQuota = actualQuota
+	s.tokenConsumed = actualQuota
+	s.syncRelayInfo()
+	return nil
+}
+
 func (s *BillingSession) Refund(c *gin.Context) {
 	s.mu.Lock()
 	if s.settled || s.refunded || !s.needsRefundLocked() {
@@ -103,23 +122,11 @@ func (s *BillingSession) Refund(c *gin.Context) {
 	tokenKey := s.relayInfo.TokenKey
 	isPlayground := s.relayInfo.IsPlayground
 	tokenConsumed := s.tokenConsumed
-	extraReserved := s.extraReserved
-	subscriptionID := s.relayInfo.SubscriptionId
 	funding := s.funding
 
 	gopool.Go(func() {
 		if err := funding.Refund(); err != nil {
 			platformobservability.SysLog("error refunding billing source: " + err.Error())
-		}
-
-		if extraReserved > 0 && funding.Source() == BillingSourceSubscription && subscriptionID > 0 {
-			modelName := ""
-			if subFunding, ok := funding.(*SubscriptionFunding); ok {
-				modelName = subFunding.modelName
-			}
-			if err := postSubscriptionUsageDelta(subscriptionID, modelName, -int64(extraReserved)); err != nil {
-				platformobservability.SysLog("error refunding subscription extra reserved quota: " + err.Error())
-			}
 		}
 
 		if tokenConsumed > 0 && !isPlayground {
@@ -150,23 +157,11 @@ func (s *BillingSession) RefundSync(c *gin.Context) error {
 	tokenKey := s.relayInfo.TokenKey
 	isPlayground := s.relayInfo.IsPlayground
 	tokenConsumed := s.tokenConsumed
-	extraReserved := s.extraReserved
-	subscriptionID := s.relayInfo.SubscriptionId
 	funding := s.funding
 
 	var errs []error
 	if err := funding.Refund(); err != nil {
 		errs = append(errs, fmt.Errorf("refund funding source: %w", err))
-	}
-
-	if extraReserved > 0 && funding.Source() == BillingSourceSubscription && subscriptionID > 0 {
-		modelName := ""
-		if subFunding, ok := funding.(*SubscriptionFunding); ok {
-			modelName = subFunding.modelName
-		}
-		if err := postSubscriptionUsageDelta(subscriptionID, modelName, -int64(extraReserved)); err != nil {
-			errs = append(errs, fmt.Errorf("refund subscription extra reserved quota: %w", err))
-		}
 	}
 
 	if tokenConsumed > 0 && !isPlayground {
@@ -280,7 +275,7 @@ func (s *BillingSession) preConsume(c *gin.Context, quota int) *types.NewAPIErro
 			s.tokenConsumed = 0
 		}
 
-		if errors.Is(err, commercedomain.ErrBlindBoxInsufficientQuota) {
+		if errors.Is(err, billingdomain.ErrInsufficientBalance) || errors.Is(err, commercedomain.ErrBlindBoxInsufficientQuota) {
 			return types.NewErrorWithStatusCode(
 				fmt.Errorf("blind box quota insufficient: %s", err.Error()),
 				types.ErrorCodeInsufficientUserQuota,
@@ -310,6 +305,9 @@ func (s *BillingSession) preConsume(c *gin.Context, quota int) *types.NewAPIErro
 }
 
 func (s *BillingSession) reserveFunding(delta int) error {
+	if funding, ok := s.funding.(ReservableFundingSource); ok {
+		return funding.ReserveAdditional(int64(delta))
+	}
 	switch funding := s.funding.(type) {
 	case *WalletFunding:
 		if err := AdjustWalletQuota(funding.userID, delta); err != nil {
@@ -324,15 +322,6 @@ func (s *BillingSession) reserveFunding(delta int) error {
 		funding.consumed += delta
 		return nil
 	case *SubscriptionFunding:
-		if err := postSubscriptionUsageDelta(funding.subscriptionID, funding.modelName, int64(delta)); err != nil {
-			return types.NewErrorWithStatusCode(
-				fmt.Errorf("subscription quota insufficient or unavailable: %s", err.Error()),
-				types.ErrorCodeInsufficientUserQuota,
-				http.StatusForbidden,
-				types.ErrOptionWithSkipRetry(),
-				types.ErrOptionWithNoRecordErrorLog(),
-			)
-		}
 		return nil
 	default:
 		return types.NewError(
@@ -344,6 +333,9 @@ func (s *BillingSession) reserveFunding(delta int) error {
 }
 
 func (s *BillingSession) rollbackFundingReserve(delta int) {
+	if _, ok := s.funding.(ReservableFundingSource); ok {
+		return
+	}
 	switch funding := s.funding.(type) {
 	case *WalletFunding:
 		if err := AdjustWalletQuota(funding.userID, -delta); err != nil {
@@ -356,10 +348,6 @@ func (s *BillingSession) rollbackFundingReserve(delta int) {
 			platformobservability.SysLog("error rolling back claude wallet funding reserve: " + err.Error())
 		} else {
 			funding.consumed -= delta
-		}
-	case *SubscriptionFunding:
-		if err := postSubscriptionUsageDelta(funding.subscriptionID, funding.modelName, -int64(delta)); err != nil {
-			platformobservability.SysLog("error rolling back subscription funding reserve: " + err.Error())
 		}
 	}
 }
@@ -456,33 +444,23 @@ func NewBillingSession(c *gin.Context, relayInfo *relaycommon.RelayInfo, preCons
 		if err != nil {
 			return nil, types.NewError(err, types.ErrorCodeQueryDataError, types.ErrOptionWithSkipRetry())
 		}
-		if userQuota <= 0 {
+		if userQuota <= 0 || userQuota-preConsumedQuota < 0 {
 			return nil, types.NewErrorWithStatusCode(
-				fmt.Errorf("用户额度不足, 剩余额度: %s", logger.FormatQuota(userQuota)),
+				fmt.Errorf("站内余额不足, 当前余额: %s, 本次所需: %s", logger.FormatQuota(userQuota), logger.FormatQuota(preConsumedQuota)),
 				types.ErrorCodeInsufficientUserQuota,
 				http.StatusForbidden,
 				types.ErrOptionWithSkipRetry(),
 				types.ErrOptionWithNoRecordErrorLog(),
 			)
 		}
-		if userQuota-preConsumedQuota < 0 {
-			return nil, types.NewErrorWithStatusCode(
-				fmt.Errorf(
-					"站内余额不足, 当前余额: %s, 本次所需: %s",
-					logger.FormatQuota(userQuota),
-					logger.FormatQuota(preConsumedQuota),
-				),
-				types.ErrorCodeInsufficientUserQuota,
-				http.StatusForbidden,
-				types.ErrOptionWithSkipRetry(),
-				types.ErrOptionWithNoRecordErrorLog(),
-			)
-		}
-
 		relayInfo.UserQuota = userQuota
+		funding, err := NewLedgerRelayFunding(relayInfo.UserId, relayInfo.RequestId, BillingSourceWallet)
+		if err != nil {
+			return nil, types.NewError(err, types.ErrorCodeUpdateDataError, types.ErrOptionWithSkipRetry())
+		}
 		session := &BillingSession{
 			relayInfo: relayInfo,
-			funding:   &WalletFunding{userID: relayInfo.UserId},
+			funding:   funding,
 		}
 		if apiErr := session.preConsume(c, preConsumedQuota); apiErr != nil {
 			return nil, apiErr
@@ -495,33 +473,23 @@ func NewBillingSession(c *gin.Context, relayInfo *relaycommon.RelayInfo, preCons
 		if err != nil {
 			return nil, types.NewError(err, types.ErrorCodeQueryDataError, types.ErrOptionWithSkipRetry())
 		}
-		if claudeQuota <= 0 {
+		if claudeQuota <= 0 || claudeQuota-preConsumedQuota < 0 {
 			return nil, types.NewErrorWithStatusCode(
-				fmt.Errorf("Claude额度不足, 剩余额度: %s", logger.FormatQuota(claudeQuota)),
+				fmt.Errorf("Claude额度不足, 当前余额: %s, 本次所需: %s", logger.FormatQuota(claudeQuota), logger.FormatQuota(preConsumedQuota)),
 				types.ErrorCodeInsufficientUserQuota,
 				http.StatusForbidden,
 				types.ErrOptionWithSkipRetry(),
 				types.ErrOptionWithNoRecordErrorLog(),
 			)
 		}
-		if claudeQuota-preConsumedQuota < 0 {
-			return nil, types.NewErrorWithStatusCode(
-				fmt.Errorf(
-					"Claude额度不足, 当前余额: %s, 本次所需: %s",
-					logger.FormatQuota(claudeQuota),
-					logger.FormatQuota(preConsumedQuota),
-				),
-				types.ErrorCodeInsufficientUserQuota,
-				http.StatusForbidden,
-				types.ErrOptionWithSkipRetry(),
-				types.ErrOptionWithNoRecordErrorLog(),
-			)
-		}
-
 		relayInfo.UserQuota = claudeQuota
+		funding, err := NewLedgerRelayFunding(relayInfo.UserId, relayInfo.RequestId, BillingSourceClaudeWallet)
+		if err != nil {
+			return nil, types.NewError(err, types.ErrorCodeUpdateDataError, types.ErrOptionWithSkipRetry())
+		}
 		session := &BillingSession{
 			relayInfo: relayInfo,
-			funding:   &ClaudeWalletFunding{userID: relayInfo.UserId},
+			funding:   funding,
 		}
 		if apiErr := session.preConsume(c, preConsumedQuota); apiErr != nil {
 			return nil, apiErr

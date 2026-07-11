@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { formatQuota } from '@/lib/format'
 import { Progress } from '@/components/ui/progress'
 
@@ -12,8 +13,8 @@ type UsagePoint = {
 }
 
 export function UsageChart(props: { points: UsagePoint[] }) {
+  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null)
   const maxValue = Math.max(...props.points.map((point) => point.value), 1)
-  const currentValue = props.points.at(-1)?.value ?? 0
   const peakPoint =
     props.points.reduce<UsagePoint | null>((peak, point) => {
       if (!peak || point.value > peak.value) return point
@@ -25,10 +26,12 @@ export function UsageChart(props: { points: UsagePoint[] }) {
         props.points.length
       : 0
 
+  const displayPoint = hoveredIndex !== null ? props.points[hoveredIndex] : props.points.at(-1)
+
   return (
-    <div className='overview-glass-card overview-panel-backdrop p-4 sm:p-5'>
+    <div className='overview-glass-card overview-panel-backdrop p-5 sm:p-6'>
       <div className='flex flex-wrap items-center justify-between gap-3'>
-        <div>
+        <div className='min-w-0 flex-1'>
           <div className='text-muted-foreground text-[11px] font-medium tracking-[0.14em] uppercase'>
             用量概览
           </div>
@@ -36,41 +39,80 @@ export function UsageChart(props: { points: UsagePoint[] }) {
             最近 12 小时用量走势
           </div>
         </div>
-        <div className='border-border/70 bg-background/80 text-muted-foreground rounded-full border px-2.5 py-1 text-xs'>
+        <div className='border-border/70 bg-background/80 text-muted-foreground rounded-full border px-3 py-1.5 text-xs font-medium'>
           按小时统计
         </div>
       </div>
 
-      <div className='mt-4 grid gap-3 sm:grid-cols-3'>
-        <DataMetric label='当前时段' value={formatQuota(currentValue)} />
+      <div className='mt-5 grid gap-4 sm:grid-cols-3'>
+        <div className='overview-soft-card px-4 py-3.5'>
+          <div className='text-muted-foreground mb-1 text-xs font-medium'>
+            {hoveredIndex !== null ? '悬停时段' : '当前时段'}
+          </div>
+          <div className='text-foreground text-2xl font-semibold tabular-nums'>
+            {formatQuota(displayPoint?.value ?? 0)}
+          </div>
+          {displayPoint && (
+            <div className='text-muted-foreground mt-1 text-xs'>
+              {displayPoint.label}
+            </div>
+          )}
+        </div>
         <DataMetric
           label='峰值时段'
-          value={peakPoint ? `${formatQuota(peakPoint.value)} · ${peakPoint.label}` : '--'}
+          value={formatQuota(peakPoint?.value ?? 0)}
+          hint={peakPoint?.label}
         />
-        <DataMetric label='平均时段' value={formatQuota(averageValue)} />
+        <DataMetric
+          label='平均消耗'
+          value={formatQuota(averageValue)}
+          hint='12 小时平均'
+        />
       </div>
 
       {props.points.length > 0 ? (
-        <div className='overview-soft-card mt-4 p-4'>
-          <div className='grid h-[180px] grid-cols-12 items-end gap-2 sm:gap-2.5'>
+        <div
+          className='overview-soft-card relative mt-5 p-5'
+          onMouseLeave={() => setHoveredIndex(null)}
+        >
+          <div className='grid h-[200px] grid-cols-12 items-end gap-2.5 sm:gap-3'>
             {props.points.map((point, index) => {
               const isPeak = peakPoint?.label === point.label && peakPoint.value === point.value
               const isCurrent = index === props.points.length - 1
-              const height = Math.max(12, Math.round((point.value / maxValue) * 100))
+              const isHovered = hoveredIndex === index
+              const height = Math.max(8, Math.round((point.value / maxValue) * 100))
 
               return (
-                <div key={`${point.label}-${index}`} className='flex h-full flex-col justify-end gap-2'>
+                <div
+                  key={`${point.label}-${index}`}
+                  className='group relative flex h-full flex-col justify-end'
+                  onMouseEnter={() => setHoveredIndex(index)}
+                >
                   <div
-                    className={
-                      isPeak
-                        ? 'rounded-[18px_18px_10px_10px] bg-[linear-gradient(180deg,#f1ad75,#d96a39)] shadow-[0_12px_28px_rgba(217,106,57,0.18)]'
+                    className={`
+                      relative rounded-t-2xl transition-all duration-200
+                      ${isHovered ? 'shadow-lg' : ''}
+                      ${isPeak
+                        ? 'bg-gradient-to-b from-orange-400 to-orange-600'
                         : isCurrent
-                          ? 'rounded-[18px_18px_10px_10px] bg-[linear-gradient(180deg,#cfdcf4,#77aef9)]'
-                          : 'rounded-[18px_18px_10px_10px] bg-[linear-gradient(180deg,#e2e7ef,#c8d0dd)]'
-                    }
+                          ? 'bg-gradient-to-b from-blue-400 to-blue-600'
+                          : 'bg-gradient-to-b from-slate-300 to-slate-400 dark:from-slate-600 dark:to-slate-700'
+                      }
+                    `}
                     style={{ height: `${height}%` }}
-                  />
-                  <div className='text-muted-foreground text-center text-[11px] font-medium'>
+                  >
+                    {isHovered && (
+                      <div className='absolute -top-14 left-1/2 z-10 -translate-x-1/2 whitespace-nowrap rounded-lg border border-border bg-popover px-3 py-2 text-xs shadow-lg'>
+                        <div className='text-popover-foreground font-semibold'>
+                          {formatQuota(point.value)}
+                        </div>
+                        <div className='text-muted-foreground mt-0.5 text-[11px]'>
+                          {point.label}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                  <div className='text-muted-foreground mt-2 text-center text-[10px] font-medium'>
                     {point.label}
                   </div>
                 </div>
@@ -79,7 +121,7 @@ export function UsageChart(props: { points: UsagePoint[] }) {
           </div>
         </div>
       ) : (
-        <div className='border-border text-muted-foreground mt-4 flex min-h-[168px] items-center justify-center rounded-[20px] border border-dashed bg-background/70 px-4 py-8 text-center text-sm'>
+        <div className='border-border text-muted-foreground mt-5 flex min-h-[240px] items-center justify-center rounded-2xl border border-dashed bg-background/70 px-4 py-8 text-center text-sm'>
           最近 12 小时还没有可展示的用量数据。
         </div>
       )}

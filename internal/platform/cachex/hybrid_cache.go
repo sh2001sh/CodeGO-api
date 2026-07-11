@@ -128,6 +128,62 @@ func (c *HybridCache[V]) SetWithTTL(key string, v V, ttl time.Duration) error {
 	return nil
 }
 
+// UpdateWithTTL applies a read-modify-write update atomically when Redis backs the cache.
+// The memory fallback remains caller-synchronized because it is process-local by design.
+func (c *HybridCache[V]) UpdateWithTTL(key string, ttl time.Duration, update func(current V, found bool) (next V, err error)) error {
+	full := c.ns.FullKey(key)
+	if full == "" {
+		return nil
+	}
+	if !c.redisOn() {
+		current, found, err := c.memCache().Get(full)
+		if err != nil {
+			return err
+		}
+		next, err := update(current, found)
+		if err != nil {
+			return err
+		}
+		c.memCache().SetWithTTL(full, next, ttl)
+		return nil
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), defaultRedisOpTimeout)
+	defer cancel()
+	for attempts := 0; attempts < 5; attempts++ {
+		err := c.redis.Watch(ctx, func(tx *redis.Tx) error {
+			raw, err := tx.Get(ctx, full).Result()
+			var current V
+			found := err == nil
+			if err != nil && !errors.Is(err, redis.Nil) {
+				return err
+			}
+			if found {
+				if current, err = c.redisCodec.Decode(raw); err != nil {
+					return err
+				}
+			}
+			next, err := update(current, found)
+			if err != nil {
+				return err
+			}
+			encoded, err := c.redisCodec.Encode(next)
+			if err != nil {
+				return err
+			}
+			_, err = tx.TxPipelined(ctx, func(pipe redis.Pipeliner) error {
+				pipe.Set(ctx, full, encoded, ttl)
+				return nil
+			})
+			return err
+		}, full)
+		if !errors.Is(err, redis.TxFailedErr) {
+			return err
+		}
+	}
+	return redis.TxFailedErr
+}
+
 // Keys returns keys with valid values. In Redis, it returns all matching keys.
 func (c *HybridCache[V]) Keys() ([]string, error) {
 	if c.redisOn() {

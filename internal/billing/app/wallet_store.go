@@ -10,6 +10,7 @@ import (
 	platformdb "github.com/sh2001sh/new-api/internal/platform/db"
 	platformruntime "github.com/sh2001sh/new-api/internal/platform/runtime"
 	"gorm.io/gorm"
+	"strings"
 )
 
 const (
@@ -32,11 +33,51 @@ type mirroredWalletTxStore struct {
 }
 
 func GetUserWalletQuota(userID int) (int, error) {
-	return identitystore.LoadUserQuota(userID, false)
+	return getLedgerBackedWalletBalance(userID, billingAccountTypeWallet, func() (int, error) {
+		return identitystore.LoadUserQuota(userID, false)
+	})
 }
 
 func GetUserClaudeWalletQuota(userID int) (int, error) {
-	return identitystore.LoadUserClaudeQuota(userID, false)
+	return getLedgerBackedWalletBalance(userID, billingAccountTypeClaudeWallet, func() (int, error) {
+		return identitystore.LoadUserClaudeQuota(userID, false)
+	})
+}
+
+// getLedgerBackedWalletBalance treats the ledger snapshot as canonical after the
+// account has been bootstrapped. The legacy user column remains a compatibility
+// projection for code paths that have not yet been migrated.
+func getLedgerBackedWalletBalance(userID int, accountType string, legacyRead func() (int, error)) (int, error) {
+	if userID <= 0 {
+		return 0, errors.New("invalid user id")
+	}
+	var account billingschema.BillingAccount
+	err := platformdb.DB.Where("owner_type = ? AND owner_id = ? AND account_type = ? AND quota_unit = ?",
+		billingOwnerTypeUser, userID, accountType, billingQuotaUnitQuota,
+	).First(&account).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return legacyRead()
+	}
+	if isMissingBillingSchema(err) {
+		return legacyRead()
+	}
+	if err != nil {
+		return 0, err
+	}
+
+	var snapshot billingschema.BillingBalanceSnapshot
+	if err := platformdb.DB.Where("account_id = ?", account.AccountID).First(&snapshot).Error; err != nil {
+		return 0, err
+	}
+	return int(snapshot.AvailableBalance), nil
+}
+
+func isMissingBillingSchema(err error) bool {
+	if err == nil {
+		return false
+	}
+	message := strings.ToLower(err.Error())
+	return strings.Contains(message, "no such table") || strings.Contains(message, "does not exist")
 }
 
 func AdjustWalletQuota(userID int, delta int) error {

@@ -13,46 +13,47 @@ import (
 )
 
 const (
-	subscriptionResetTickInterval = 1 * time.Minute
-	subscriptionResetBatchSize    = 300
-	subscriptionCleanupInterval   = 30 * time.Minute
+	subscriptionMaintenanceTickInterval = 1 * time.Minute
+	subscriptionMaintenanceBatchSize    = 300
+	subscriptionCleanupInterval         = 30 * time.Minute
 )
 
 var (
-	subscriptionResetOnce    sync.Once
-	subscriptionResetRunning atomic.Bool
-	subscriptionCleanupLast  atomic.Int64
+	subscriptionMaintenanceOnce    sync.Once
+	subscriptionMaintenanceRunning atomic.Bool
+	subscriptionCleanupLast        atomic.Int64
 )
 
-func StartSubscriptionQuotaResetTask() {
-	subscriptionResetOnce.Do(func() {
+// StartSubscriptionMaintenanceTask owns non-workflow subscription maintenance.
+// Durable periodic quota resets are scheduled by workflow-worker through Temporal.
+func StartSubscriptionMaintenanceTask() {
+	subscriptionMaintenanceOnce.Do(func() {
 		if !platformconfig.IsMasterNode {
 			return
 		}
 		gopool.Go(func() {
-			logger.LogInfo(context.Background(), fmt.Sprintf("subscription quota reset task started: tick=%s", subscriptionResetTickInterval))
-			ticker := time.NewTicker(subscriptionResetTickInterval)
+			logger.LogInfo(context.Background(), fmt.Sprintf("subscription maintenance task started: tick=%s", subscriptionMaintenanceTickInterval))
+			ticker := time.NewTicker(subscriptionMaintenanceTickInterval)
 			defer ticker.Stop()
 
-			runSubscriptionQuotaResetOnce()
+			runSubscriptionMaintenanceOnce()
 			for range ticker.C {
-				runSubscriptionQuotaResetOnce()
+				runSubscriptionMaintenanceOnce()
 			}
 		})
 	})
 }
 
-func runSubscriptionQuotaResetOnce() {
-	if !subscriptionResetRunning.CompareAndSwap(false, true) {
+func runSubscriptionMaintenanceOnce() {
+	if !subscriptionMaintenanceRunning.CompareAndSwap(false, true) {
 		return
 	}
-	defer subscriptionResetRunning.Store(false)
+	defer subscriptionMaintenanceRunning.Store(false)
 
 	ctx := context.Background()
-	totalReset := 0
 	totalExpired := 0
 	for {
-		n, err := ExpireDueSubscriptions(subscriptionResetBatchSize)
+		n, err := ExpireDueSubscriptions(subscriptionMaintenanceBatchSize)
 		if err != nil {
 			logger.LogWarn(ctx, fmt.Sprintf("subscription expire task failed: %v", err))
 			return
@@ -61,21 +62,7 @@ func runSubscriptionQuotaResetOnce() {
 			break
 		}
 		totalExpired += n
-		if n < subscriptionResetBatchSize {
-			break
-		}
-	}
-	for {
-		n, err := ResetDueSubscriptions(subscriptionResetBatchSize)
-		if err != nil {
-			logger.LogWarn(ctx, fmt.Sprintf("subscription quota reset task failed: %v", err))
-			return
-		}
-		if n == 0 {
-			break
-		}
-		totalReset += n
-		if n < subscriptionResetBatchSize {
+		if n < subscriptionMaintenanceBatchSize {
 			break
 		}
 	}
@@ -85,7 +72,7 @@ func runSubscriptionQuotaResetOnce() {
 			subscriptionCleanupLast.Store(time.Now().Unix())
 		}
 	}
-	if platformconfig.DebugEnabled && (totalReset > 0 || totalExpired > 0) {
-		logger.LogDebug(ctx, "subscription maintenance: reset_count=%d, expired_count=%d", totalReset, totalExpired)
+	if platformconfig.DebugEnabled && totalExpired > 0 {
+		logger.LogDebug(ctx, "subscription maintenance: expired_count=%d", totalExpired)
 	}
 }

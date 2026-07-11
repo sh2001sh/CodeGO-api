@@ -33,8 +33,9 @@ func RunLedgerWorker() {
 func startLedgerWorkerBackgroundTasks() {
 	startOptionSyncLoop()
 	billingapp.StartLedgerWorker(context.Background())
+	billingapp.StartOperationalSLOMonitor(context.Background())
 	auditprojection.StartReadModelWorker(context.Background())
-	commerceapp.StartSubscriptionQuotaResetTask()
+	commerceapp.StartSubscriptionMaintenanceTask()
 	commerceapp.StartGroupBuySettlementTask()
 	identityapp.StartImageWorkspaceCleanupTask()
 	platformapp.StartIndexNowSubmissionTask(defaultweb.BuildFS())

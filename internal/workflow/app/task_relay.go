@@ -113,6 +113,7 @@ func SubmitRelayTask(c *gin.Context) {
 		result, taskErr = RelayTaskSubmit(c, relayInfo)
 		if taskErr == nil {
 			gatewayroutingapp.RecordAutoGroupSuccess(c, relayInfo.OriginModelName)
+			relaycommon.RecordChannelSuccess(channel.Id, relayInfo.OriginModelName, 0)
 			break
 		}
 
@@ -128,6 +129,7 @@ func SubmitRelayTask(c *gin.Context) {
 		if !shouldRetryTaskRelay(c, taskErr, platformconfig.RetryTimes-retryParam.GetRetry()) {
 			break
 		}
+		relaycommon.RecordRouteDecisionRetry(c)
 	}
 
 	useChannel := c.GetStringSlice("use_channel")

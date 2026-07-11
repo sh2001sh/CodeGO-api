@@ -332,6 +332,29 @@ func TestCalculateTextQuotaSummarySeparatesOpenRouterCacheCreationFromPromptBill
 	require.Equal(t, 3012, summary.Quota)
 }
 
+func TestCalculateTextQuotaSummaryBillsOpenAICacheCreation(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	w := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(w)
+	relayInfo := &relaycommon.RelayInfo{
+		OriginModelName: "gpt-5",
+		PriceData: types.PriceData{
+			ModelRatio: 1, CompletionRatio: 1, CacheCreationRatio: 1.25,
+			GroupRatioInfo: types.GroupRatioInfo{GroupRatio: 1},
+		},
+		StartTime: time.Now(),
+	}
+	usage := &dto.Usage{
+		PromptTokens: 1_000, CompletionTokens: 100,
+		PromptTokensDetails: dto.InputTokenDetails{CachedCreationTokens: 100},
+	}
+
+	summary := calculateTextQuotaSummary(ctx, relayInfo, usage)
+
+	// (1000 - 100) + 100*1.25 + 100 = 1125.
+	require.Equal(t, 1125, summary.Quota)
+}
+
 func TestCalculateTextQuotaSummaryKeepsPrePRClaudeOpenRouterBilling(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	w := httptest.NewRecorder()

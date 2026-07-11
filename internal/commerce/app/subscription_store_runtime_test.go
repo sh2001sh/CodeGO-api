@@ -195,6 +195,35 @@ func TestCompleteSubscriptionOrder_RejectsMismatchedPaymentProvider(t *testing.T
 	assert.Zero(t, topUpCount)
 }
 
+func TestPaidSubscriptionOrderRequiresWorkflowFulfillment(t *testing.T) {
+	db := setupRedemptionTestDB(t)
+
+	insertSubscriptionResetAppTestUser(t, 722, 0)
+	plan := insertSubscriptionResetAppTestPlan(t, 723, 0, int64(platformruntime.QuotaPerUnit)*10)
+	insertSubscriptionStoreTestOrder(t, "sub-workflow-order", 722, plan.Id, commerceschema.PaymentProviderStripe)
+
+	require.NoError(t, CompleteSubscriptionOrder("sub-workflow-order", `{"paid":true}`, commerceschema.PaymentProviderStripe, "card"))
+
+	var paid commerceschema.SubscriptionOrder
+	require.NoError(t, db.Where("trade_no = ?", "sub-workflow-order").First(&paid).Error)
+	assert.Equal(t, constant.TopUpStatusSuccess, paid.Status)
+	assert.Equal(t, commerceschema.SubscriptionOrderFulfillmentPending, paid.FulfillmentStatus)
+
+	var beforeCount int64
+	require.NoError(t, db.Model(&commerceschema.UserSubscription{}).Where("user_id = ?", paid.UserId).Count(&beforeCount).Error)
+	assert.Zero(t, beforeCount)
+
+	require.NoError(t, FulfillPaidSubscriptionOrder(paid.TradeNo))
+	require.NoError(t, FulfillPaidSubscriptionOrder(paid.TradeNo))
+
+	var fulfilled commerceschema.SubscriptionOrder
+	require.NoError(t, db.Where("trade_no = ?", paid.TradeNo).First(&fulfilled).Error)
+	assert.Equal(t, commerceschema.SubscriptionOrderFulfillmentCompleted, fulfilled.FulfillmentStatus)
+	var afterCount int64
+	require.NoError(t, db.Model(&commerceschema.UserSubscription{}).Where("user_id = ?", paid.UserId).Count(&afterCount).Error)
+	assert.EqualValues(t, 1, afterCount)
+}
+
 func TestExpireSubscriptionOrder_RejectsMismatchedPaymentProvider(t *testing.T) {
 	db := setupRedemptionTestDB(t)
 

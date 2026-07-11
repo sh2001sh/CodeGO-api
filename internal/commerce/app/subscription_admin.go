@@ -10,6 +10,7 @@ import (
 	platformobservability "github.com/sh2001sh/new-api/internal/platform/observability"
 	platformruntime "github.com/sh2001sh/new-api/internal/platform/runtime"
 	"strconv"
+	"time"
 
 	// ListAdminSubscriptionPlans returns all subscription plans for admin management.
 	"gorm.io/gorm"
@@ -191,6 +192,47 @@ func ResetAdminUserSubscriptionQuota(subscriptionID int, req AdminResetUserSubsc
 		"subscription_id": sub.Id,
 		"next_reset_time": sub.NextResetTime,
 	}, nil
+}
+
+// ResetSubscriptionPeriodProjection resets the current subscription period from workflow
+// orchestration. Ledger accounting is performed by the caller; this function updates the
+// compatibility projection without clearing the subscription's cumulative consumption.
+func ResetSubscriptionPeriodProjection(subscriptionID int) (*commerceschema.UserSubscription, error) {
+	if subscriptionID <= 0 {
+		return nil, errorsNew("invalid userSubscriptionId")
+	}
+	now := platformruntime.GetTimestamp()
+	var updated commerceschema.UserSubscription
+	err := platformdb.DB.Transaction(func(tx *gorm.DB) error {
+		sub := &commerceschema.UserSubscription{}
+		if err := tx.Set("gorm:query_option", "FOR UPDATE").Where("id = ?", subscriptionID).First(sub).Error; err != nil {
+			return err
+		}
+		plan, err := getSubscriptionPlanRecordTx(tx, sub.PlanId)
+		if err != nil {
+			return err
+		}
+		if commercedomain.NormalizeResetPeriod(plan.QuotaResetPeriod) == commerceschema.SubscriptionResetNever {
+			return errorsNew("subscription does not have a periodic quota")
+		}
+		if usesLegacySubscriptionPeriodicQuota(plan, sub) {
+			sub.AmountUsed = 0
+		} else {
+			sub.PeriodUsed = 0
+		}
+		sub.ModelUsage = ""
+		sub.LastResetTime = now
+		sub.NextResetTime = calcNextSubscriptionResetTime(time.Unix(now, 0), plan, sub.EndTime)
+		if err := tx.Save(sub).Error; err != nil {
+			return err
+		}
+		updated = *sub
+		return nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return &updated, nil
 }
 
 func subscriptionAdminMessagePayload(message string) any {

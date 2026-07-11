@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/sh2001sh/new-api/constant"
 	gatewaygroups "github.com/sh2001sh/new-api/internal/gateway/groupsettings"
+	gatewayruntime "github.com/sh2001sh/new-api/internal/gateway/runtime"
 	gatewayschema "github.com/sh2001sh/new-api/internal/gateway/schema"
 	gatewaystore "github.com/sh2001sh/new-api/internal/gateway/store"
 	platformconfig "github.com/sh2001sh/new-api/internal/platform/config"
@@ -60,6 +61,7 @@ func CacheGetRandomSatisfiedChannel(param *RetryParam) (*gatewayschema.Channel, 
 			return nil, selectGroup, errors.New("auto groups is not enabled")
 		}
 		autoGroups := OrderAutoGroups(userGroup, param.ModelName)
+		gatewayruntime.UpdateRouteDecisionCandidates(param.Ctx, len(autoGroups))
 
 		startGroupIndex := 0
 		crossGroupRetry := httpctx.GetContextKeyBool(param.Ctx, constant.ContextKeyTokenCrossGroupRetry)
@@ -78,8 +80,9 @@ func CacheGetRandomSatisfiedChannel(param *RetryParam) (*gatewayschema.Channel, 
 			}
 			logger.LogDebug(param.Ctx, "Auto selecting group: %s, priorityRetry: %d", autoGroup, priorityRetry)
 
-			channel, _ = gatewaystore.GetRandomSatisfiedChannel(autoGroup, param.ModelName, priorityRetry)
+			channel, _ = getHealthySatisfiedChannel(autoGroup, param.ModelName, priorityRetry)
 			if channel == nil {
+				gatewayruntime.ExcludeRouteDecisionCandidate(param.Ctx, "no_healthy_channel")
 				logger.LogDebug(param.Ctx, "No available channel in group %s for model %s at priorityRetry %d, trying next group", autoGroup, param.ModelName, priorityRetry)
 				httpctx.SetContextKey(param.Ctx, constant.ContextKeyAutoGroupIndex, i+1)
 				httpctx.SetContextKey(param.Ctx, constant.ContextKeyAutoGroupRetryIndex, 0)
@@ -88,6 +91,7 @@ func CacheGetRandomSatisfiedChannel(param *RetryParam) (*gatewayschema.Channel, 
 			}
 			httpctx.SetContextKey(param.Ctx, constant.ContextKeyAutoGroup, autoGroup)
 			selectGroup = autoGroup
+			gatewayruntime.SelectRouteDecisionCandidate(param.Ctx, autoGroup, channel.Id, false)
 			logger.LogDebug(param.Ctx, "Auto selected group: %s", autoGroup)
 
 			if crossGroupRetry && priorityRetry >= platformconfig.RetryTimes {
@@ -101,10 +105,39 @@ func CacheGetRandomSatisfiedChannel(param *RetryParam) (*gatewayschema.Channel, 
 			break
 		}
 	} else {
-		channel, err = gatewaystore.GetRandomSatisfiedChannel(param.TokenGroup, param.ModelName, param.GetRetry())
+		channel, err = getHealthySatisfiedChannel(param.TokenGroup, param.ModelName, param.GetRetry())
+		if channel != nil {
+			gatewayruntime.SelectRouteDecisionCandidate(param.Ctx, param.TokenGroup, channel.Id, false)
+		}
 		if err != nil {
 			return nil, param.TokenGroup, err
 		}
 	}
 	return channel, selectGroup, nil
+}
+
+func getHealthySatisfiedChannel(group string, modelName string, retry int) (*gatewayschema.Channel, error) {
+	const maxSelectionAttempts = 16
+	var degradedCandidate *gatewayschema.Channel
+	for attempt := 0; attempt < maxSelectionAttempts; attempt++ {
+		channel, err := gatewaystore.GetRandomSatisfiedChannel(group, modelName, retry)
+		if err != nil || channel == nil {
+			if degradedCandidate != nil && err == nil {
+				return degradedCandidate, nil
+			}
+			return channel, err
+		}
+		health, found := gatewayruntime.GetChannelHealth(channel.Id, modelName)
+		if found && health.State == gatewayruntime.ChannelHealthCooling {
+			continue
+		}
+		if found && health.State == gatewayruntime.ChannelHealthDegraded {
+			if degradedCandidate == nil {
+				degradedCandidate = channel
+			}
+			continue
+		}
+		return channel, nil
+	}
+	return degradedCandidate, nil
 }

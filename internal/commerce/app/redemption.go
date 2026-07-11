@@ -7,10 +7,10 @@ import (
 	"github.com/sh2001sh/new-api/i18n"
 	auditapp "github.com/sh2001sh/new-api/internal/audit/app"
 	auditschema "github.com/sh2001sh/new-api/internal/audit/schema"
+	billingapp "github.com/sh2001sh/new-api/internal/billing/app"
 	commercedomain "github.com/sh2001sh/new-api/internal/commerce/domain"
 	commercestore "github.com/sh2001sh/new-api/internal/commerce/paymentsettings"
 	commerceschema "github.com/sh2001sh/new-api/internal/commerce/schema"
-	identityschema "github.com/sh2001sh/new-api/internal/identity/schema"
 	platformdb "github.com/sh2001sh/new-api/internal/platform/db"
 	"github.com/sh2001sh/new-api/internal/platform/logger"
 	platformobservability "github.com/sh2001sh/new-api/internal/platform/observability"
@@ -151,11 +151,12 @@ func RedeemCode(userID int, key string) (*RedemptionResult, error) {
 			result.BlindBoxRecords = records
 		default:
 			walletType := commercedomain.NormalizeWalletType(redemption.WalletType)
-			field := "quota"
+			idempotencyKey := fmt.Sprintf("redemption:%d:%s", redemption.Id, walletType)
 			if walletType == commerceschema.WalletTypeClaude {
-				field = "claude_quota"
-			}
-			if err := tx.Model(&identityschema.User{}).Where("id = ?", userID).Update(field, gorm.Expr(field+" + ?", redemption.Quota)).Error; err != nil {
+				if err := billingapp.CreditClaudeWalletQuotaTx(tx, userID, redemption.Quota, idempotencyKey, "redemption_credit"); err != nil {
+					return err
+				}
+			} else if err := billingapp.CreditWalletQuotaTx(tx, userID, redemption.Quota, idempotencyKey, "redemption_credit"); err != nil {
 				return err
 			}
 			result.Quota = redemption.Quota

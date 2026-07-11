@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"context"
 	"fmt"
 	gatewaystore "github.com/sh2001sh/new-api/internal/gateway/store"
 	platformobservability "github.com/sh2001sh/new-api/internal/platform/observability"
@@ -32,7 +33,11 @@ var (
 	channelAffinityUsageCacheStatsCache *cachex.HybridCache[ChannelAffinityUsageCacheCounters]
 
 	channelAffinityUsageCacheStatsLocks [64]sync.Mutex
+	channelAffinityIndexMu              sync.Mutex
+	channelAffinityIndex                = make(map[int]map[string]struct{})
 )
+
+const channelAffinityIndexNamespace = "new-api:channel_affinity_index:v1"
 
 type ChannelAffinityStatsContext struct {
 	RuleName       string
@@ -119,7 +124,90 @@ func RecordPreferredChannel(cacheKey string, channelID int, ttlSeconds int) erro
 	if ttlSeconds <= 0 {
 		ttlSeconds = 3600
 	}
-	return getChannelAffinityCache().SetWithTTL(cacheKey, channelID, time.Duration(ttlSeconds)*time.Second)
+	if err := getChannelAffinityCache().SetWithTTL(cacheKey, channelID, time.Duration(ttlSeconds)*time.Second); err != nil {
+		return err
+	}
+	recordChannelAffinityIndex(channelID, cacheKey, time.Duration(ttlSeconds)*time.Second)
+	return nil
+}
+
+func channelAffinityIndexKey(channelID int) string {
+	return fmt.Sprintf("%s:%d", channelAffinityIndexNamespace, channelID)
+}
+
+func recordChannelAffinityIndex(channelID int, cacheKey string, ttl time.Duration) {
+	if channelID <= 0 || strings.TrimSpace(cacheKey) == "" {
+		return
+	}
+	channelAffinityIndexMu.Lock()
+	keys := channelAffinityIndex[channelID]
+	if keys == nil {
+		keys = make(map[string]struct{})
+		channelAffinityIndex[channelID] = keys
+	}
+	keys[cacheKey] = struct{}{}
+	channelAffinityIndexMu.Unlock()
+
+	if !platformcache.RedisEnabled || platformcache.RDB == nil {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+	defer cancel()
+	pipe := platformcache.RDB.TxPipeline()
+	pipe.SAdd(ctx, channelAffinityIndexKey(channelID), cacheKey)
+	pipe.Expire(ctx, channelAffinityIndexKey(channelID), ttl)
+	_, _ = pipe.Exec(ctx)
+}
+
+// InvalidateChannelAffinityForChannel clears all affinity entries that currently point to a channel.
+// Redis stores the reverse index so disabled channels are invalidated across gateway replicas.
+func InvalidateChannelAffinityForChannel(channelID int) int {
+	if channelID <= 0 {
+		return 0
+	}
+	keys := make(map[string]struct{})
+	channelAffinityIndexMu.Lock()
+	for key := range channelAffinityIndex[channelID] {
+		keys[key] = struct{}{}
+	}
+	delete(channelAffinityIndex, channelID)
+	channelAffinityIndexMu.Unlock()
+
+	if platformcache.RedisEnabled && platformcache.RDB != nil {
+		ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
+		redisKeys, err := platformcache.RDB.SMembers(ctx, channelAffinityIndexKey(channelID)).Result()
+		if err == nil {
+			for _, key := range redisKeys {
+				keys[key] = struct{}{}
+			}
+		}
+		_ = platformcache.RDB.Del(ctx, channelAffinityIndexKey(channelID)).Err()
+		cancel()
+	}
+
+	cacheKeys := make([]string, 0, len(keys))
+	for key := range keys {
+		cacheKeys = append(cacheKeys, key)
+	}
+	deleted, err := getChannelAffinityCache().DeleteMany(cacheKeys)
+	if err != nil {
+		platformobservability.SysError(fmt.Sprintf("channel affinity invalidation failed: channel_id=%d, err=%v", channelID, err))
+		return 0
+	}
+	count := 0
+	for _, didDelete := range deleted {
+		if didDelete {
+			count++
+		}
+	}
+	return count
+}
+
+func invalidateChannelAffinityCacheKey(cacheKey string) {
+	if strings.TrimSpace(cacheKey) == "" {
+		return
+	}
+	_, _ = getChannelAffinityCache().DeleteMany([]string{cacheKey})
 }
 
 func ResetChannelAffinityCacheForTest() error {
@@ -130,6 +218,9 @@ func ResetChannelAffinityCacheForTest() error {
 	}
 	channelAffinityCacheOnce = sync.Once{}
 	channelAffinityCache = nil
+	channelAffinityIndexMu.Lock()
+	channelAffinityIndex = make(map[int]map[string]struct{})
+	channelAffinityIndexMu.Unlock()
 	return nil
 }
 

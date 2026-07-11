@@ -509,7 +509,6 @@ cute pixel baby dragon, short horns, tiny wings, glowing chest scale, guardian m
 
 如果你要，我下一步可以继续直接给你：
 
-- 一份 **更适合 Midjourney / GPT Image / 即梦 / SDXL 的逐只提示词版本**
+- 一份 **更适合 GPT Image / 即梦 / SDXL 的逐只提示词版本**
 - 一份 **适合像素画师的外包 Brief 版本**
 - 一份 **前端资源命名与替换规范**
-

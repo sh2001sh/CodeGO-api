@@ -172,6 +172,8 @@ func TestRedeemCodeClaudeQuotaAddsClaudeQuotaOnly(t *testing.T) {
 	require.NoError(t, db.Where("id = ?", user.Id).First(&savedUser).Error)
 	assert.Equal(t, 1200, savedUser.Quota)
 	assert.Equal(t, 1100, savedUser.ClaudeQuota)
+	snapshot := loadCommerceBillingSnapshot(t, user.Id, "claude_wallet")
+	assert.EqualValues(t, 1100, snapshot.AvailableBalance)
 }
 
 func loadCommerceBillingSnapshot(t *testing.T, userID int, accountType string) *billingschema.BillingBalanceSnapshot {

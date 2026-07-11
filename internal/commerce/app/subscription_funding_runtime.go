@@ -3,6 +3,8 @@ package app
 import (
 	"errors"
 	"fmt"
+	billingdomain "github.com/sh2001sh/new-api/internal/billing/domain"
+	billingschema "github.com/sh2001sh/new-api/internal/billing/schema"
 	commercedomain "github.com/sh2001sh/new-api/internal/commerce/domain"
 	commerceschema "github.com/sh2001sh/new-api/internal/commerce/schema"
 	"strings"
@@ -123,6 +125,9 @@ func PreConsumeUserSubscription(requestID string, userID int, modelName string, 
 				}
 				return err
 			}
+			if err := reserveSubscriptionLedgerTx(tx, &sub, record); err != nil {
+				return err
+			}
 
 			if err := applySubscriptionUsageDelta(plan, &sub, record.ModelName, amount); err != nil {
 				return err
@@ -146,6 +151,89 @@ func PreConsumeUserSubscription(requestID string, userID int, modelName string, 
 	return result, nil
 }
 
+func reserveSubscriptionLedgerTx(tx *gorm.DB, sub *commerceschema.UserSubscription, record *commerceschema.SubscriptionPreConsumeRecord) error {
+	if sub == nil || record == nil || sub.AmountTotal <= 0 {
+		return nil
+	}
+	account, err := billingdomain.EnsureBillingAccountTx(tx, billingdomain.EnsureAccountParams{
+		AccountType: "subscription",
+		OwnerType:   "user_subscription",
+		OwnerID:     int64(sub.Id),
+		QuotaUnit:   "quota",
+	})
+	if err != nil {
+		return err
+	}
+
+	var entryCount int64
+	if err := tx.Model(&billingschema.BillingLedgerEntry{}).Where("account_id = ?", account.AccountID).Count(&entryCount).Error; err != nil {
+		return err
+	}
+	if entryCount == 0 {
+		available := sub.AmountTotal - sub.AmountUsed
+		if available > 0 {
+			if _, err := billingdomain.CreditAccountTx(tx, billingdomain.CreditAccountParams{
+				AccountID:      account.AccountID,
+				Amount:         available,
+				IdempotencyKey: fmt.Sprintf("subscription-bootstrap:%d", sub.Id),
+				ReasonCode:     "subscription_balance_bootstrap",
+				ReferenceType:  "user_subscription",
+				ReferenceID:    fmt.Sprintf("%d", sub.Id),
+				OperatorType:   "subscription_projection",
+				OperatorID:     record.RequestId,
+			}); err != nil {
+				return err
+			}
+		}
+	}
+	_, err = billingdomain.CreateReservationTx(tx, billingdomain.CreateReservationParams{
+		AccountID:      account.AccountID,
+		RequestID:      record.RequestId,
+		ReservedAmount: record.PreConsumed,
+		IdempotencyKey: "subscription:" + record.RequestId + ":reserve",
+	})
+	return err
+}
+
+// ReserveAdditionalSubscriptionQuota reserves a confirmed extra amount for a request.
+// The subscription fields remain a query projection; ledger reservations enforce balance.
+func ReserveAdditionalSubscriptionQuota(requestID string, subscriptionID int, modelName string, amount int64) error {
+	if strings.TrimSpace(requestID) == "" || subscriptionID <= 0 || amount <= 0 {
+		return errors.New("requestId, subscriptionId and amount are required")
+	}
+	return platformdb.DB.Transaction(func(tx *gorm.DB) error {
+		sub := &commerceschema.UserSubscription{}
+		if err := tx.Set("gorm:query_option", "FOR UPDATE").Where("id = ?", subscriptionID).First(sub).Error; err != nil {
+			return err
+		}
+		now := commercestore.GetDBTimestamp()
+		if sub.Status != "active" || sub.EndTime <= now {
+			return errors.New("subscription is no longer active")
+		}
+		plan, err := getSubscriptionPlanRecordTx(tx, sub.PlanId)
+		if err != nil {
+			return err
+		}
+		if err := applySubscriptionUsageDelta(plan, sub, modelName, amount); err != nil {
+			return err
+		}
+		if err := tx.Save(sub).Error; err != nil {
+			return err
+		}
+		account, err := billingdomain.EnsureBillingAccountTx(tx, billingdomain.EnsureAccountParams{
+			AccountType: "subscription", OwnerType: "user_subscription", OwnerID: int64(subscriptionID), QuotaUnit: "quota",
+		})
+		if err != nil {
+			return err
+		}
+		_, err = billingdomain.CreateReservationTx(tx, billingdomain.CreateReservationParams{
+			AccountID: account.AccountID, RequestID: requestID, ReservedAmount: amount,
+			IdempotencyKey: fmt.Sprintf("subscription:%s:reserve-extra:%d", requestID, amount),
+		})
+		return err
+	})
+}
+
 // RefundSubscriptionPreConsume refunds a previous subscription pre-consume idempotently.
 func RefundSubscriptionPreConsume(requestID string) error {
 	if strings.TrimSpace(requestID) == "" {
@@ -166,12 +254,138 @@ func RefundSubscriptionPreConsume(requestID string) error {
 			record.Status = "refunded"
 			return tx.Save(record).Error
 		}
-		if err := postConsumeUserSubscriptionUsageDeltaTx(tx, record.UserSubscriptionId, record.ModelName, -record.PreConsumed); err != nil {
+		releasedAmount, err := releaseSubscriptionReservationTx(tx, record)
+		if err != nil {
+			return err
+		}
+		if err := postConsumeUserSubscriptionUsageDeltaTx(tx, record.UserSubscriptionId, record.ModelName, -releasedAmount); err != nil {
 			return err
 		}
 		record.Status = "refunded"
 		return tx.Save(record).Error
 	})
+}
+
+// SettleSubscriptionReservation atomically settles the ledger reservation and updates
+// the subscription usage projection to the confirmed upstream usage.
+func SettleSubscriptionReservation(requestID string, subscriptionID int, modelName string, actualAmount int64) error {
+	if strings.TrimSpace(requestID) == "" {
+		return errors.New("requestId is empty")
+	}
+	if subscriptionID <= 0 {
+		return errors.New("invalid userSubscriptionId")
+	}
+	if actualAmount < 0 {
+		return errors.New("actual amount cannot be negative")
+	}
+
+	return platformdb.DB.Transaction(func(tx *gorm.DB) error {
+		record := &commerceschema.SubscriptionPreConsumeRecord{}
+		if err := tx.Set("gorm:query_option", "FOR UPDATE").Where("request_id = ?", requestID).First(record).Error; err != nil {
+			return err
+		}
+		if record.UserSubscriptionId != subscriptionID {
+			return errors.New("subscription reservation ownership mismatch")
+		}
+		if record.Status == "refunded" {
+			return errors.New("subscription pre-consume already refunded")
+		}
+		return settleSubscriptionReservationTx(tx, record, actualAmount)
+	})
+}
+
+func settleSubscriptionReservationTx(tx *gorm.DB, record *commerceschema.SubscriptionPreConsumeRecord, actualAmount int64) error {
+	reservations, err := findOpenSubscriptionReservationsTx(tx, record.RequestId)
+	if err != nil {
+		return err
+	}
+	if len(reservations) == 0 {
+		var settledCount int64
+		if err := tx.Model(&billingschema.BillingReservation{}).
+			Where("request_id = ? AND status = ?", record.RequestId, billingschema.BillingReservationStatusSettled).
+			Count(&settledCount).Error; err != nil {
+			return err
+		}
+		if settledCount > 0 {
+			return nil
+		}
+		return errors.New("subscription ledger reservation is missing")
+	}
+
+	remaining := actualAmount
+	reservedTotal := int64(0)
+	for index, reservation := range reservations {
+		reservedTotal += reservation.ReservedAmount
+		settledAmount := reservation.ReservedAmount
+		if remaining < settledAmount {
+			settledAmount = remaining
+		}
+		if index == len(reservations)-1 && remaining > settledAmount {
+			settledAmount = remaining
+		}
+		if _, err := billingdomain.SettleReservationTx(tx, billingdomain.SettleReservationParams{
+			ReservationID:   reservation.ReservationID,
+			UsageEvidenceID: record.RequestId,
+			ActualAmount:    settledAmount,
+			IdempotencyKey:  "subscription:" + record.RequestId + ":settle:" + reservation.ReservationID,
+		}); err != nil {
+			return err
+		}
+		remaining -= settledAmount
+		if remaining < 0 {
+			remaining = 0
+		}
+	}
+	if remaining > 0 {
+		return errors.New("subscription ledger reservation is insufficient")
+	}
+	if actualAmount != reservedTotal {
+		return postConsumeUserSubscriptionUsageDeltaTx(tx, record.UserSubscriptionId, record.ModelName, actualAmount-reservedTotal)
+	}
+	return nil
+}
+
+func releaseSubscriptionReservationTx(tx *gorm.DB, record *commerceschema.SubscriptionPreConsumeRecord) (int64, error) {
+	reservations, err := findOpenSubscriptionReservationsTx(tx, record.RequestId)
+	if err != nil {
+		return 0, err
+	}
+	if len(reservations) == 0 {
+		return 0, errors.New("subscription ledger reservation is missing")
+	}
+	releasedAmount := int64(0)
+	for _, reservation := range reservations {
+		releasedAmount += reservation.ReservedAmount
+		if _, err := billingdomain.ReleaseReservationTx(tx, billingdomain.ReleaseReservationParams{
+			ReservationID:  reservation.ReservationID,
+			IdempotencyKey: "subscription:" + record.RequestId + ":release:" + reservation.ReservationID,
+			ReasonCode:     "relay_failed_before_settlement",
+		}); err != nil {
+			return 0, err
+		}
+	}
+	return releasedAmount, nil
+}
+
+func findSubscriptionReservationTx(tx *gorm.DB, requestID string) (*billingschema.BillingReservation, error) {
+	var reservation billingschema.BillingReservation
+	err := tx.Where("idempotency_key = ?", "subscription:"+requestID+":reserve").First(&reservation).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &reservation, nil
+}
+
+func findOpenSubscriptionReservationsTx(tx *gorm.DB, requestID string) ([]billingschema.BillingReservation, error) {
+	var reservations []billingschema.BillingReservation
+	if err := tx.Where("request_id = ? AND status = ?", requestID, billingschema.BillingReservationStatusOpen).
+		Order("created_at asc, reservation_id asc").Find(&reservations).Error; err != nil {
+		return nil, err
+	}
+	return reservations, nil
 }
 
 // PostConsumeUserSubscriptionDelta updates total subscription usage without model-specific usage.

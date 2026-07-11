@@ -1,102 +1,159 @@
-# New-API Docker Compose Configuration
-# 
-# Quick Start:
-#   1. docker-compose up -d
-#   2. Access at http://localhost:3000
-#   3. Optional: set NEW_API_IMAGE in .env to use a different published image
+# CodeGo v2 production runtime.
 #
-# Using MySQL instead of PostgreSQL:
-#   1. Comment out the postgres service and SQL_DSN line 15
-#   2. Uncomment the mysql service and SQL_DSN line 16
-#   3. Uncomment mysql in depends_on (line 28)
-#   4. Uncomment mysql_data in volumes section (line 64)
-#
-# ⚠️  IMPORTANT: Change all default passwords before deploying to production!
+# Required .env values: SQL_DSN, REDIS_CONN_STRING, POSTGRES_PASSWORD.
+# Start the v2 runtime: docker compose up -d
+# Start an intentionally supplied pre-v2 fallback image: docker compose --profile legacy up -d legacy-api
 
 services:
-  new-api:
-    network_mode: host
-    image: ${NEW_API_IMAGE:-s2644752646/new-api:latest}
-    container_name: new-api
-    restart: always
-    command: --log-dir /app/logs
-    ports:
-      - "3000:3000"
-    volumes:
-      - ./data:/data
-      - ./logs:/app/logs
-    environment:
-      - SQL_DSN=postgresql://neondb_owner:newapi2001@localhost:5432/neondb # ⚠️ IMPORTANT: Change the password in production!
-#      - SQL_DSN=root:123456@tcp(mysql:3306)/new-api  # Point to the mysql service, uncomment if using MySQL
-      - REDIS_CONN_STRING=rediss://default:AVNS_Z8638taFon55XW-QTsz@valkey-3df33062-newapi-sh.b.aivencloud.com:10659 # ⚠️ IMPORTANT: Change the password in production!
-      - TRUSTED_PROXIES=127.0.0.1,::1,10.0.0.0/8,172.16.0.0/12,192.168.0.0/16,fc00::/7
-      - CODEGO_DESKTOP_RELEASE_MANIFEST_FILE=/data/codego-release/codego-desktop-release-manifest.json
-      - CODEGO_DESKTOP_RELEASE_GITHUB_FALLBACK_ENABLED=true
-      - CODEGO_DESKTOP_RELEASE_GITHUB_REPOSITORY=sh2001sh/CodeGO
-      - TZ=Asia/Shanghai
-      - ERROR_LOG_ENABLED=true # 是否启用错误日志记录 (Whether to enable error log recording)
-      - BATCH_UPDATE_ENABLED=true  # 是否启用批量更新 (Whether to enable batch update)
-      - NODE_NAME=new-api-node-1  # 节点名称，用于审计日志中标识节点身份；多节点/容器部署时建议设置 (Node name used in audit logs; recommended when running multiple instances or in containers)
-#      - STREAMING_TIMEOUT=300  # 流模式无响应超时时间，单位秒，默认120秒，如果出现空补全可以尝试改为更大值 （Streaming timeout in seconds, default is 120s. Increase if experiencing empty completions）
-#      - SESSION_SECRET=random_string  # 多机部署时设置，必须修改这个随机字符串！！ （multi-node deployment, set this to a random string!!!!!!!）
-#      - SESSION_COOKIE_SECURE=true  # HTTPS 部署建议开启安全 Cookie
-#      - SESSION_COOKIE_TRUSTED_URL=https://your-domain.com
-#      - SYNC_FREQUENCY=60  # Uncomment if regular database syncing is needed
-#      - GOOGLE_ANALYTICS_ID=G-XXXXXXXXXX  # Google Analytics 的测量 ID (Google Analytics Measurement ID)
-#      - UMAMI_WEBSITE_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx  # Umami 网站 ID (Umami Website ID)
-#      - UMAMI_SCRIPT_URL=https://analytics.umami.is/script.js  # Umami 脚本 URL，默认为官方地址 (Umami Script URL, defaults to official URL)
-
+  db-migrate:
+    image: ${NEW_API_IMAGE:-s2644752646/new-api}:${NEW_API_VERSION:-latest}-db-migrate
+    environment: &migration-environment
+      SQL_DSN: ${SQL_DSN:?set SQL_DSN in .env}
+      TZ: ${TZ:-Asia/Shanghai}
+      NODE_TYPE: master
     depends_on:
-      - redis
-      - postgres
-#      - mysql  # Uncomment if using MySQL
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  ledger-backfill:
+    image: ${NEW_API_IMAGE:-s2644752646/new-api}:${NEW_API_VERSION:-latest}-ledger-backfill
+    command: ["--apply"]
+    environment:
+      <<: *migration-environment
+    depends_on:
+      db-migrate:
+        condition: service_completed_successfully
+    restart: "no"
+
+  v2-verify:
+    image: ${NEW_API_IMAGE:-s2644752646/new-api}:${NEW_API_VERSION:-latest}-v2-verify
+    profiles: ["verify"]
+    environment:
+      <<: *migration-environment
+    depends_on:
+      ledger-backfill:
+        condition: service_completed_successfully
+    restart: "no"
+
+  control-api:
+    image: ${NEW_API_IMAGE:-s2644752646/new-api}:${NEW_API_VERSION:-latest}-control-api
+    environment: &runtime-environment
+      SQL_DSN: ${SQL_DSN:?set SQL_DSN in .env}
+      REDIS_CONN_STRING: ${REDIS_CONN_STRING:?set REDIS_CONN_STRING in .env}
+      TZ: ${TZ:-Asia/Shanghai}
+      NODE_TYPE: master
+      CONTROL_PORT: "3000"
+      NODE_NAME: ${CONTROL_NODE_NAME:-control-api-1}
+      TEMPORAL_HOSTPORT: ${TEMPORAL_HOSTPORT:-temporal:7233}
+      TEMPORAL_NAMESPACE: ${TEMPORAL_NAMESPACE:-default}
+    ports:
+      - "${CONTROL_PORT:-3000}:3000"
+    depends_on: &runtime-depends-on
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+      db-migrate:
+        condition: service_completed_successfully
+      ledger-backfill:
+        condition: service_completed_successfully
+      temporal:
+        condition: service_started
     healthcheck:
       test: ["CMD-SHELL", "wget -q -O - http://localhost:3000/api/status | grep -Eq '\"success\":[[:space:]]*true' || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
+      start_period: 20s
+    restart: unless-stopped
+
+  gateway-api:
+    image: ${NEW_API_IMAGE:-s2644752646/new-api}:${NEW_API_VERSION:-latest}-gateway-api
+    environment:
+      <<: *runtime-environment
+      NODE_TYPE: slave
+      GATEWAY_PORT: "3001"
+      NODE_NAME: ${GATEWAY_NODE_NAME:-gateway-api-1}
+    ports:
+      - "${GATEWAY_PORT:-3001}:3001"
+    depends_on: *runtime-depends-on
+    restart: unless-stopped
+
+  workflow-worker:
+    image: ${NEW_API_IMAGE:-s2644752646/new-api}:${NEW_API_VERSION:-latest}-workflow-worker
+    environment:
+      <<: *runtime-environment
+      TEMPORAL_HOSTPORT: ${TEMPORAL_HOSTPORT:-temporal:7233}
+      TEMPORAL_NAMESPACE: ${TEMPORAL_NAMESPACE:-default}
+      NODE_NAME: ${WORKFLOW_NODE_NAME:-workflow-worker-1}
+    depends_on:
+      <<: *runtime-depends-on
+    restart: unless-stopped
+
+  ledger-worker:
+    image: ${NEW_API_IMAGE:-s2644752646/new-api}:${NEW_API_VERSION:-latest}-ledger-worker
+    environment:
+      <<: *runtime-environment
+      NODE_NAME: ${LEDGER_NODE_NAME:-ledger-worker-1}
+    depends_on: *runtime-depends-on
+    restart: unless-stopped
+
+  # This service is deliberately opt-in and must point to a known pre-v2 image.
+  # It is not a compatibility alias for a v2 control-api image.
+  legacy-api:
+    image: ${NEW_API_LEGACY_IMAGE:-s2644752646/new-api:legacy-image-must-be-configured}
+    profiles: ["legacy"]
+    environment:
+      SQL_DSN: ${SQL_DSN:?set SQL_DSN in .env}
+      REDIS_CONN_STRING: ${REDIS_CONN_STRING:?set REDIS_CONN_STRING in .env}
+      TZ: ${TZ:-Asia/Shanghai}
+      NODE_TYPE: master
+      NODE_NAME: ${LEGACY_NODE_NAME:-legacy-api-1}
+    ports:
+      - "${LEGACY_PORT:-3002}:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
 
   redis:
-    image: redis:latest
-    container_name: redis
-    restart: always
-    command: ["redis-server", "--requirepass", "123456"]  # ⚠️ IMPORTANT: Change this password in production!
-    networks:
-      - new-api-network
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+
+  temporal:
+    image: temporalio/auto-setup:1.25.2
+    environment:
+      DB: postgres12
+      DB_PORT: "5432"
+      POSTGRES_SEEDS: postgres
+      POSTGRES_USER: ${POSTGRES_USER:-newapi}
+      POSTGRES_PWD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
 
   postgres:
-    image: postgres:15
-    container_name: postgres
-    restart: always
+    image: postgres:15-alpine
     environment:
-      POSTGRES_USER: root
-      POSTGRES_PASSWORD: 123456  # ⚠️ IMPORTANT: Change this password in production!
-      POSTGRES_DB: new-api
+      POSTGRES_USER: ${POSTGRES_USER:-newapi}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-newapi}
     volumes:
-      - pg_data:/var/lib/postgresql/data
-    networks:
-      - new-api-network
-#    ports:
-#      - "5432:5432"  # Uncomment if you need to access PostgreSQL from outside Docker
-
-#  mysql:
-#    image: mysql:8.2
-#    container_name: mysql
-#    restart: always
-#    environment:
-#      MYSQL_ROOT_PASSWORD: 123456  # ⚠️ IMPORTANT: Change this password in production!
-#      MYSQL_DATABASE: new-api
-#    volumes:
-#      - mysql_data:/var/lib/mysql
-#    networks:
-#      - new-api-network
-#    ports:
-#      - "3306:3306"  # Uncomment if you need to access MySQL from outside Docker
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+    restart: unless-stopped
 
 volumes:
-  pg_data:
-#  mysql_data:
-
-networks:
-  new-api-network:
-    driver: bridge
+  postgres-data:
+  redis-data:

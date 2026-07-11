@@ -1,11 +1,15 @@
 package app
 
 import (
+	"context"
 	"fmt"
 
+	"github.com/bytedance/gopkg/util/gopool"
 	"github.com/gin-gonic/gin"
+	"github.com/sh2001sh/new-api/constant"
 	relaycommon "github.com/sh2001sh/new-api/internal/gateway/runtime"
 	"github.com/sh2001sh/new-api/internal/platform/logger"
+	platformobservability "github.com/sh2001sh/new-api/internal/platform/observability"
 	"github.com/sh2001sh/new-api/types"
 )
 
@@ -61,6 +65,11 @@ func SettleRelayBilling(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, actu
 		if err := relayInfo.Billing.Settle(actualQuota); err != nil {
 			return err
 		}
+		if session, ok := relayInfo.Billing.(*BillingSession); ok {
+			if funding, ok := session.funding.(settlementProjectionFunding); ok {
+				startRequestSettlementProjection(ctx, relayInfo, funding, actualQuota)
+			}
+		}
 
 		if actualQuota != 0 {
 			if relayInfo.BillingSource == BillingSourceSubscription {
@@ -77,4 +86,40 @@ func SettleRelayBilling(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, actu
 		return PostConsumeQuota(relayInfo, quotaDelta, relayInfo.FinalPreConsumedQuota, true)
 	}
 	return nil
+}
+
+type settlementProjectionFunding interface {
+	AccountID() string
+	ReservationID() string
+	SettlementID() string
+}
+
+func startRequestSettlementProjection(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, funding settlementProjectionFunding, actualQuota int) {
+	if relayInfo == nil || funding == nil || funding.SettlementID() == "" {
+		return
+	}
+	params := RequestSettlementWorkflowParams{
+		RequestID:       relayInfo.RequestId,
+		TraceID:         traceIDFromContext(ctx),
+		UserID:          relayInfo.UserId,
+		TokenID:         relayInfo.TokenId,
+		AccountID:       funding.AccountID(),
+		ReservationID:   funding.ReservationID(),
+		SettlementID:    funding.SettlementID(),
+		UsageEvidenceID: relayInfo.RequestId,
+		ReservedAmount:  int64(relayInfo.FinalPreConsumedQuota),
+		ActualAmount:    int64(actualQuota),
+	}
+	gopool.Go(func() {
+		if err := StartRequestSettlementWorkflow(context.Background(), params); err != nil {
+			platformobservability.SysError("schedule request settlement workflow: " + err.Error())
+		}
+	})
+}
+
+func traceIDFromContext(ctx *gin.Context) string {
+	if ctx == nil {
+		return ""
+	}
+	return ctx.GetString(constant.TraceIdKey)
 }

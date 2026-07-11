@@ -66,6 +66,19 @@ func RunLedgerWorkerBatch(ctx context.Context, limit int) (int, error) {
 	return processed, nil
 }
 
+// RebuildBalanceSnapshot recalculates one account projection from immutable ledger data.
+func RebuildBalanceSnapshot(ctx context.Context, accountID string) error {
+	if platformdb.DB == nil {
+		return fmt.Errorf("primary database is not initialized")
+	}
+	if accountID == "" {
+		return fmt.Errorf("account id is required")
+	}
+	return platformdb.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
+		return rebuildBalanceSnapshotTx(tx, accountID)
+	})
+}
+
 func processLedgerOutboxEvent(ctx context.Context, eventID string) error {
 	return platformdb.DB.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		var event billingschema.BillingOutboxEvent
@@ -123,6 +136,10 @@ func rebuildBalanceSnapshotTx(tx *gorm.DB, accountID string) error {
 		Scan(&openReserved).Error; err != nil {
 		return err
 	}
+	var existing billingschema.BillingBalanceSnapshot
+	if err := tx.Where("account_id = ?", accountID).First(&existing).Error; err != nil && err != gorm.ErrRecordNotFound {
+		return err
+	}
 
 	snapshot := billingschema.BillingBalanceSnapshot{AccountID: accountID, ReservedBalance: openReserved}
 	for _, entry := range entries {
@@ -142,6 +159,20 @@ func rebuildBalanceSnapshotTx(tx *gorm.DB, accountID string) error {
 			snapshot.RefundedTotal += -settlement.DeltaAmount
 		}
 	}
+	if snapshotDiffers(existing, snapshot) {
+		platformobservability.SysError(fmt.Sprintf(
+			"ledger snapshot reconciliation mismatch account_id=%s actual=%+v expected=%+v",
+			accountID, existing, snapshot,
+		))
+	}
 
 	return tx.Save(&snapshot).Error
+}
+
+func snapshotDiffers(actual billingschema.BillingBalanceSnapshot, expected billingschema.BillingBalanceSnapshot) bool {
+	return actual.AvailableBalance != expected.AvailableBalance ||
+		actual.ReservedBalance != expected.ReservedBalance ||
+		actual.ConsumedTotal != expected.ConsumedTotal ||
+		actual.RefundedTotal != expected.RefundedTotal ||
+		actual.GrantedTotal != expected.GrantedTotal
 }

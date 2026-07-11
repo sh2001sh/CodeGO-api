@@ -51,7 +51,6 @@
 </p>
 
 </div>
-
 ## 📝 Project Description
 
 > [!IMPORTANT]
@@ -169,7 +168,6 @@ docker run --name new-api -d --restart always \
 ### 📖 [Official Documentation](https://docs.newapi.pro/en/docs) | [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/sh2001sh/new-api)
 
 </div>
-
 **Quick Navigation:**
 
 | Category | Link |
@@ -267,7 +265,6 @@ docker run --name new-api -d --restart always \
 |---------|------|------|
 | 🤖 OpenAI-Compatible | OpenAI compatible models | [Documentation](https://docs.newapi.pro/en/docs/api/ai-model/chat/openai/createchatcompletion) |
 | 🤖 OpenAI Responses | OpenAI Responses format | [Documentation](https://docs.newapi.pro/en/docs/api/ai-model/chat/openai/createresponse) |
-| 🎨 Midjourney-Proxy | [Midjourney-Proxy(Plus)](https://github.com/novicezk/midjourney-proxy) | [Documentation](https://doc.newapi.pro/api/midjourney-proxy-image) |
 | 🎵 Suno-API | [Suno API](https://github.com/Suno-API/Suno-API) | [Documentation](https://doc.newapi.pro/api/suno-music) |
 | 🔄 Rerank | Cohere, Jina | [Documentation](https://docs.newapi.pro/en/docs/api/ai-model/rerank/creatererank) |
 | 💬 Claude | Messages format | [Documentation](https://docs.newapi.pro/en/docs/api/ai-model/chat/createmessage) |
@@ -417,8 +414,6 @@ docker run --name new-api -d --restart always \
 | Project | Description |
 |------|------|
 | [One API](https://github.com/songquanpeng/one-api) | Original project base |
-| [Midjourney-Proxy](https://github.com/novicezk/midjourney-proxy) | Midjourney interface support |
-
 ### Supporting Tools
 
 | Project | Description |
@@ -460,7 +455,7 @@ contributors.` in the appropriate legal notices and in any prominent about,
 legal, footer, or attribution location presented by the user interface.
 
 Modified versions that present a user interface must also preserve a visible
-link to the original project: <https://github.com/QuantumNous/new-api>.
+link to the original project: <https://github.com/sh2001sh/new-api>.
 
 This is an open-source project developed based on [One API](https://github.com/songquanpeng/one-api) (MIT License).
 

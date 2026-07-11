@@ -105,6 +105,128 @@ func TestBillingSessionSettleAdjustsWalletAndTokenToActualUsage(t *testing.T) {
 	require.Equal(t, 5500, userQuota)
 }
 
+func TestBillingSessionUsesOneReservationForRelayLifecycle(t *testing.T) {
+	truncate(t)
+	seedUser(t, 1012, 10000)
+	seedToken(t, 2012, 1012, "sk-ledger-lifecycle", 10000)
+
+	ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
+	info := &relaycommon.RelayInfo{
+		UserId:          1012,
+		TokenId:         2012,
+		TokenKey:        "sk-ledger-lifecycle",
+		OriginModelName: "gpt-5",
+		RequestId:       "req-ledger-lifecycle",
+		IsPlayground:    true,
+		ForcePreConsume: true,
+		UserSetting:     dto.UserSetting{BillingPreference: "wallet_only"},
+	}
+
+	session, apiErr := NewBillingSession(ctx, info, 3000)
+	require.Nil(t, apiErr)
+	funding, ok := session.funding.(*LedgerRelayFunding)
+	require.True(t, ok)
+	require.NotEmpty(t, funding.ReservationID())
+
+	var reservation billingschema.BillingReservation
+	require.NoError(t, platformdb.DB.Where("reservation_id = ?", funding.ReservationID()).First(&reservation).Error)
+	require.Equal(t, "req-ledger-lifecycle", reservation.RequestID)
+	require.Equal(t, billingschema.BillingReservationStatusOpen, reservation.Status)
+
+	require.NoError(t, session.Settle(2500))
+	require.NotEmpty(t, funding.SettlementID())
+	require.NoError(t, platformdb.DB.Where("reservation_id = ?", funding.ReservationID()).First(&reservation).Error)
+	require.Equal(t, billingschema.BillingReservationStatusSettled, reservation.Status)
+
+	var settlement billingschema.BillingSettlement
+	require.NoError(t, platformdb.DB.Where("settlement_id = ?", funding.SettlementID()).First(&settlement).Error)
+	require.Equal(t, funding.ReservationID(), settlement.ReservationID)
+	require.EqualValues(t, 2500, settlement.ActualAmount)
+}
+
+func TestBillingSessionSettlesExactPreConsumeIntoLedger(t *testing.T) {
+	truncate(t)
+	seedUser(t, 1014, 10_000)
+	seedToken(t, 2014, 1014, "sk-exact-ledger-settle", 10_000)
+
+	ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
+	info := &relaycommon.RelayInfo{
+		UserId: 1014, TokenId: 2014, TokenKey: "sk-exact-ledger-settle", OriginModelName: "gpt-5",
+		RequestId: "req-exact-ledger-settle", IsPlayground: true, ForcePreConsume: true,
+		UserSetting: dto.UserSetting{BillingPreference: "wallet_only"},
+	}
+	session, apiErr := NewBillingSession(ctx, info, 3_000)
+	require.Nil(t, apiErr)
+	require.NoError(t, session.Settle(3_000))
+
+	funding := session.funding.(*LedgerRelayFunding)
+	var reservation billingschema.BillingReservation
+	require.NoError(t, platformdb.DB.Where("reservation_id = ?", funding.ReservationID()).First(&reservation).Error)
+	require.Equal(t, billingschema.BillingReservationStatusSettled, reservation.Status)
+	var settlement billingschema.BillingSettlement
+	require.NoError(t, platformdb.DB.Where("reservation_id = ?", funding.ReservationID()).First(&settlement).Error)
+	require.EqualValues(t, 3_000, settlement.ActualAmount)
+}
+
+func TestTrustedBillingSessionCreatesReservationAtSettlement(t *testing.T) {
+	truncate(t)
+	const trustedQuota = 6_000_000
+	seedUser(t, 1015, trustedQuota)
+	require.NoError(t, platformdb.DB.Create(&identityschema.Token{
+		Id: 2015, UserId: 1015, Key: "sk-trusted-ledger-settle", Name: "trusted", Status: constant.TokenStatusEnabled,
+		UnlimitedQuota: true,
+	}).Error)
+
+	ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
+	info := &relaycommon.RelayInfo{
+		UserId: 1015, UserQuota: trustedQuota, TokenId: 2015, TokenKey: "sk-trusted-ledger-settle", TokenUnlimited: true,
+		OriginModelName: "gpt-5", RequestId: "req-trusted-ledger-settle", IsPlayground: true,
+		UserSetting: dto.UserSetting{BillingPreference: "wallet_only"},
+	}
+	session, apiErr := NewBillingSession(ctx, info, 1_000)
+	require.Nil(t, apiErr)
+	require.Equal(t, 0, session.GetPreConsumedQuota())
+	require.NoError(t, session.Settle(1_000))
+
+	funding := session.funding.(*LedgerRelayFunding)
+	var reservation billingschema.BillingReservation
+	require.NoError(t, platformdb.DB.Where("reservation_id = ?", funding.ReservationID()).First(&reservation).Error)
+	require.Equal(t, billingschema.BillingReservationStatusSettled, reservation.Status)
+	var settlement billingschema.BillingSettlement
+	require.NoError(t, platformdb.DB.Where("reservation_id = ?", funding.ReservationID()).First(&settlement).Error)
+	require.EqualValues(t, 1_000, settlement.ActualAmount)
+}
+
+func TestBillingSessionRequestReplayDoesNotProjectWalletTwice(t *testing.T) {
+	truncate(t)
+	seedUser(t, 1013, 10000)
+	seedToken(t, 2013, 1013, "sk-ledger-replay", 10000)
+
+	ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
+	info := &relaycommon.RelayInfo{
+		UserId:          1013,
+		TokenId:         2013,
+		TokenKey:        "sk-ledger-replay",
+		OriginModelName: "gpt-5",
+		RequestId:       "req-ledger-replay",
+		IsPlayground:    true,
+		ForcePreConsume: true,
+		UserSetting:     dto.UserSetting{BillingPreference: "wallet_only"},
+	}
+
+	first, apiErr := NewBillingSession(ctx, info, 3000)
+	require.Nil(t, apiErr)
+	second, apiErr := NewBillingSession(ctx, info, 3000)
+	require.Nil(t, apiErr)
+
+	firstFunding := first.funding.(*LedgerRelayFunding)
+	secondFunding := second.funding.(*LedgerRelayFunding)
+	require.Equal(t, firstFunding.ReservationID(), secondFunding.ReservationID())
+	userQuota, err := identitystore.LoadUserQuota(1013, false)
+	require.NoError(t, err)
+	require.Equal(t, 7000, userQuota)
+}
+
 func TestBridgeSeparatesWalletAndClaudeLedgerAccounts(t *testing.T) {
 	truncate(t)
 	require.NoError(t, platformdb.DB.Create(&identityschema.User{

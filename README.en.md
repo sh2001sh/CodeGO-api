@@ -46,7 +46,6 @@
 </p>
 
 </div>
-
 ## 📝 Project Description
 
 > [!NOTE]  
@@ -106,7 +105,7 @@
 
 ```bash
 # Clone the project
-git clone https://github.com/QuantumNous/new-api.git
+git clone https://github.com/sh2001sh/new-api.git
 cd new-api
 
 # Edit docker-compose.yml configuration
@@ -158,10 +157,9 @@ docker run --name new-api -d --restart always \
 
 <div align="center">
 
-### 📖 [Official Documentation](https://docs.newapi.pro/en/docs) | [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/QuantumNous/new-api)
+### 📖 [Official Documentation](https://docs.newapi.pro/en/docs) | [![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/sh2001sh/new-api)
 
 </div>
-
 **Quick Navigation:**
 
 | Category | Link |
@@ -257,7 +255,6 @@ docker run --name new-api -d --restart always \
 | Model Type | Description | Documentation |
 |---------|------|------|
 | 🤖 OpenAI GPTs | gpt-4-gizmo-* series | - |
-| 🎨 Midjourney-Proxy | [Midjourney-Proxy(Plus)](https://github.com/novicezk/midjourney-proxy) | [Documentation](https://doc.newapi.pro/en/api/midjourney-proxy-image) |
 | 🎵 Suno-API | [Suno API](https://github.com/Suno-API/Suno-API) | [Documentation](https://doc.newapi.pro/en/api/suno-music) |
 | 🔄 Rerank | Cohere, Jina | [Documentation](https://docs.newapi.pro/en/docs/api/ai-model/rerank/create-rerank) |
 | 💬 Claude | Messages format | [Documentation](https://docs.newapi.pro/en/docs/api/ai-model/chat/create-message) |
@@ -333,7 +330,7 @@ docker run --name new-api -d --restart always \
 
 ```bash
 # Clone the project
-git clone https://github.com/QuantumNous/new-api.git
+git clone https://github.com/sh2001sh/new-api.git
 cd new-api
 
 # Edit configuration
@@ -407,8 +404,6 @@ docker run --name new-api -d --restart always \
 | Project | Description |
 |------|------|
 | [One API](https://github.com/songquanpeng/one-api) | Original project base |
-| [Midjourney-Proxy](https://github.com/novicezk/midjourney-proxy) | Midjourney interface support |
-
 ### Supporting Tools
 
 | Project | Description |

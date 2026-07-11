@@ -6,6 +6,7 @@ import (
 	"github.com/sh2001sh/new-api/constant"
 	"github.com/sh2001sh/new-api/dto"
 	gatewaydomain "github.com/sh2001sh/new-api/internal/gateway/domain"
+	gatewayruntime "github.com/sh2001sh/new-api/internal/gateway/runtime"
 	gatewayschema "github.com/sh2001sh/new-api/internal/gateway/schema"
 	gatewaystore "github.com/sh2001sh/new-api/internal/gateway/store"
 	platformencoding "github.com/sh2001sh/new-api/internal/platform/encodingx"
@@ -289,6 +290,9 @@ func UpdateChannel(patch ChannelPatch) (*ChannelPatch, error) {
 	if err := gatewaystore.UpdateChannel(&patch.Channel); err != nil {
 		return nil, err
 	}
+	if originChannel.Status == constant.ChannelStatusEnabled && patch.Status != constant.ChannelStatusEnabled {
+		gatewayruntime.InvalidateChannelAffinityForChannel(patch.Id)
+	}
 	refreshChannelRuntimeCache()
 	patch.Key = ""
 	sanitizeChannel(&patch.Channel)
@@ -300,6 +304,7 @@ func DeleteChannel(id int) error {
 	if err := gatewaystore.DeleteChannelByID(id); err != nil {
 		return err
 	}
+	gatewayruntime.InvalidateChannelAffinityForChannel(id)
 	refreshChannelRuntimeCache()
 	return nil
 }

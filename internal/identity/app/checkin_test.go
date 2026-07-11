@@ -4,6 +4,7 @@ import (
 	"github.com/glebarez/sqlite"
 	"github.com/sh2001sh/new-api/constant"
 	auditschema "github.com/sh2001sh/new-api/internal/audit/schema"
+	billingschema "github.com/sh2001sh/new-api/internal/billing/schema"
 	commerceschema "github.com/sh2001sh/new-api/internal/commerce/schema"
 	identitydomain "github.com/sh2001sh/new-api/internal/identity/domain"
 	identityschema "github.com/sh2001sh/new-api/internal/identity/schema"
@@ -34,6 +35,12 @@ func setupCheckinAppTestDB(t *testing.T) *gorm.DB {
 	platformdb.LogDB = db
 
 	require.NoError(t, db.AutoMigrate(
+		&billingschema.BillingAccount{},
+		&billingschema.BillingBalanceSnapshot{},
+		&billingschema.BillingLedgerEntry{},
+		&billingschema.BillingReservation{},
+		&billingschema.BillingSettlement{},
+		&billingschema.BillingOutboxEvent{},
 		&identityschema.User{},
 		&auditschema.Log{},
 		&identitydomain.Checkin{},
@@ -117,6 +124,12 @@ func TestPerformCheckinCreatesRecordUpdatesQuotaAndWritesAuditLog(t *testing.T) 
 	require.NoError(t, db.Where("user_id = ?", user.Id).Find(&records).Error)
 	require.Len(t, records, 1)
 	assert.Equal(t, 120, records[0].QuotaAwarded)
+
+	var account billingschema.BillingAccount
+	require.NoError(t, db.Where("owner_type = ? AND owner_id = ? AND account_type = ?", "user", user.Id, "wallet").First(&account).Error)
+	var snapshot billingschema.BillingBalanceSnapshot
+	require.NoError(t, db.Where("account_id = ?", account.AccountID).First(&snapshot).Error)
+	assert.EqualValues(t, 620, snapshot.AvailableBalance)
 
 	var logs []auditschema.Log
 	require.NoError(t, db.Where("user_id = ? AND type = ?", user.Id, auditschema.LogTypeSystem).Find(&logs).Error)

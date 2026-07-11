@@ -2,13 +2,10 @@ package store
 
 import (
 	"errors"
-	"fmt"
 	identityschema "github.com/sh2001sh/new-api/internal/identity/schema"
 
 	platformcache "github.com/sh2001sh/new-api/internal/platform/cache"
 	platformdb "github.com/sh2001sh/new-api/internal/platform/db"
-	"github.com/sh2001sh/new-api/internal/platform/logger"
-	platformruntime "github.com/sh2001sh/new-api/internal/platform/runtime"
 	platformsecurity "github.com/sh2001sh/new-api/internal/platform/security"
 )
 
@@ -124,37 +121,6 @@ func DeleteUserByID(userID int) error {
 		return err
 	}
 	return platformcache.DeleteUserCache(userID)
-}
-
-func TransferAffQuotaToQuota(userID int, quota int) error {
-	if float64(quota) < platformruntime.QuotaPerUnit {
-		return fmt.Errorf("转移额度最小为%s！", logger.LogQuota(int(platformruntime.QuotaPerUnit)))
-	}
-
-	tx := platformdb.DB.Begin()
-	if tx.Error != nil {
-		return tx.Error
-	}
-	defer tx.Rollback()
-
-	user := identityschema.User{}
-	if err := tx.Set("gorm:query_option", "FOR UPDATE").First(&user, userID).Error; err != nil {
-		return err
-	}
-	if user.AffQuota < quota {
-		return errors.New("邀请额度不足！")
-	}
-
-	user.AffQuota -= quota
-	user.Quota += quota
-	if err := tx.Save(&user).Error; err != nil {
-		return err
-	}
-	if err := tx.Commit().Error; err != nil {
-		return err
-	}
-
-	return platformcache.WriteUserCache(user.Id, user.ToBaseUser())
 }
 
 func UpdateUserGitHubID(userID int, newGitHubID string) error {

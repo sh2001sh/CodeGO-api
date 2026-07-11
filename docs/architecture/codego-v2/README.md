@@ -33,6 +33,12 @@
 - `17-fourth-layer-overview.zh-CN.md`
   - 第四层实施包总览
   - 说明第四层产物的组成、使用顺序与落地边界
+- `18-auto-routing-trusted-billing.zh-CN.md`
+  - 单一 Auto 智能路由与可信计费方案
+  - 覆盖渠道级健康熔断、亲和性自动失效、账本闭环与内部服务保障
+- `19-production-migration-runbook.zh-CN.md`
+  - CodeGo v2 生产迁移 Runbook
+  - 覆盖数据库迁移、历史账本回填、独立进程切换与灰度验收
 - `10-openapi-control-plane.yaml`
   - 控制面 OpenAPI 草案
   - 覆盖身份、商品、订单、管理员手动重置订阅配额接口

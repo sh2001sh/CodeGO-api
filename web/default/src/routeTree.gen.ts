@@ -51,6 +51,7 @@ import { Route as AuthenticatedRedemptionCodesIndexRouteImport } from './routes/
 import { Route as AuthenticatedProfileIndexRouteImport } from './routes/_authenticated/profile/index'
 import { Route as AuthenticatedPlaygroundIndexRouteImport } from './routes/_authenticated/playground/index'
 import { Route as AuthenticatedPackagesIndexRouteImport } from './routes/_authenticated/packages/index'
+import { Route as AuthenticatedOperationsIndexRouteImport } from './routes/_authenticated/operations/index'
 import { Route as AuthenticatedModelsIndexRouteImport } from './routes/_authenticated/models/index'
 import { Route as AuthenticatedKeysIndexRouteImport } from './routes/_authenticated/keys/index'
 import { Route as AuthenticatedInviteRewardsIndexRouteImport } from './routes/_authenticated/invite-rewards/index'
@@ -298,6 +299,12 @@ const AuthenticatedPackagesIndexRoute =
     path: '/packages/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedOperationsIndexRoute =
+  AuthenticatedOperationsIndexRouteImport.update({
+    id: '/operations/',
+    path: '/operations/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedModelsIndexRoute =
   AuthenticatedModelsIndexRouteImport.update({
     id: '/models/',
@@ -516,6 +523,7 @@ export interface FileRoutesByFullPath {
   '/invite-rewards/': typeof AuthenticatedInviteRewardsIndexRoute
   '/keys/': typeof AuthenticatedKeysIndexRoute
   '/models/': typeof AuthenticatedModelsIndexRoute
+  '/operations/': typeof AuthenticatedOperationsIndexRoute
   '/packages/': typeof AuthenticatedPackagesIndexRoute
   '/playground/': typeof AuthenticatedPlaygroundIndexRoute
   '/profile/': typeof AuthenticatedProfileIndexRoute
@@ -586,6 +594,7 @@ export interface FileRoutesByTo {
   '/invite-rewards': typeof AuthenticatedInviteRewardsIndexRoute
   '/keys': typeof AuthenticatedKeysIndexRoute
   '/models': typeof AuthenticatedModelsIndexRoute
+  '/operations': typeof AuthenticatedOperationsIndexRoute
   '/packages': typeof AuthenticatedPackagesIndexRoute
   '/playground': typeof AuthenticatedPlaygroundIndexRoute
   '/profile': typeof AuthenticatedProfileIndexRoute
@@ -660,6 +669,7 @@ export interface FileRoutesById {
   '/_authenticated/invite-rewards/': typeof AuthenticatedInviteRewardsIndexRoute
   '/_authenticated/keys/': typeof AuthenticatedKeysIndexRoute
   '/_authenticated/models/': typeof AuthenticatedModelsIndexRoute
+  '/_authenticated/operations/': typeof AuthenticatedOperationsIndexRoute
   '/_authenticated/packages/': typeof AuthenticatedPackagesIndexRoute
   '/_authenticated/playground/': typeof AuthenticatedPlaygroundIndexRoute
   '/_authenticated/profile/': typeof AuthenticatedProfileIndexRoute
@@ -733,6 +743,7 @@ export interface FileRouteTypes {
     | '/invite-rewards/'
     | '/keys/'
     | '/models/'
+    | '/operations/'
     | '/packages/'
     | '/playground/'
     | '/profile/'
@@ -803,6 +814,7 @@ export interface FileRouteTypes {
     | '/invite-rewards'
     | '/keys'
     | '/models'
+    | '/operations'
     | '/packages'
     | '/playground'
     | '/profile'
@@ -876,6 +888,7 @@ export interface FileRouteTypes {
     | '/_authenticated/invite-rewards/'
     | '/_authenticated/keys/'
     | '/_authenticated/models/'
+    | '/_authenticated/operations/'
     | '/_authenticated/packages/'
     | '/_authenticated/playground/'
     | '/_authenticated/profile/'
@@ -1226,6 +1239,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedPackagesIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/operations/': {
+      id: '/_authenticated/operations/'
+      path: '/operations'
+      fullPath: '/operations/'
+      preLoaderRoute: typeof AuthenticatedOperationsIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/models/': {
       id: '/_authenticated/models/'
       path: '/models'
@@ -1530,6 +1550,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedInviteRewardsIndexRoute: typeof AuthenticatedInviteRewardsIndexRoute
   AuthenticatedKeysIndexRoute: typeof AuthenticatedKeysIndexRoute
   AuthenticatedModelsIndexRoute: typeof AuthenticatedModelsIndexRoute
+  AuthenticatedOperationsIndexRoute: typeof AuthenticatedOperationsIndexRoute
   AuthenticatedPackagesIndexRoute: typeof AuthenticatedPackagesIndexRoute
   AuthenticatedPlaygroundIndexRoute: typeof AuthenticatedPlaygroundIndexRoute
   AuthenticatedProfileIndexRoute: typeof AuthenticatedProfileIndexRoute
@@ -1558,6 +1579,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedInviteRewardsIndexRoute: AuthenticatedInviteRewardsIndexRoute,
   AuthenticatedKeysIndexRoute: AuthenticatedKeysIndexRoute,
   AuthenticatedModelsIndexRoute: AuthenticatedModelsIndexRoute,
+  AuthenticatedOperationsIndexRoute: AuthenticatedOperationsIndexRoute,
   AuthenticatedPackagesIndexRoute: AuthenticatedPackagesIndexRoute,
   AuthenticatedPlaygroundIndexRoute: AuthenticatedPlaygroundIndexRoute,
   AuthenticatedProfileIndexRoute: AuthenticatedProfileIndexRoute,

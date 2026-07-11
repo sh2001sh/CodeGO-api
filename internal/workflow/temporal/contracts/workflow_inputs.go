@@ -21,9 +21,15 @@ type AsyncTaskWorkflowInput struct {
 type RequestSettlementWorkflowInput struct {
 	WorkflowVersion string          `json:"workflow_version"`
 	RequestID       string          `json:"request_id"`
+	TraceID         string          `json:"trace_id"`
 	UserID          int             `json:"user_id"`
 	TokenID         int             `json:"token_id"`
 	AccountID       string          `json:"account_id"`
+	ReservationID   string          `json:"reservation_id"`
+	SettlementID    string          `json:"settlement_id"`
+	UsageEvidenceID string          `json:"usage_evidence_id"`
+	ReservedAmount  int64           `json:"reserved_amount"`
+	ActualAmount    int64           `json:"actual_amount"`
 	RoutePlanID     string          `json:"route_plan_id"`
 	FundingPolicy   string          `json:"funding_policy"`
 	RequestPayload  json.RawMessage `json:"request_payload"`
