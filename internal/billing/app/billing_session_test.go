@@ -4,7 +4,9 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/sh2001sh/new-api/constant"
 	"github.com/sh2001sh/new-api/dto"
+	billingdomain "github.com/sh2001sh/new-api/internal/billing/domain"
 	billingschema "github.com/sh2001sh/new-api/internal/billing/schema"
+	commercedomain "github.com/sh2001sh/new-api/internal/commerce/domain"
 	relaycommon "github.com/sh2001sh/new-api/internal/gateway/runtime"
 	identityschema "github.com/sh2001sh/new-api/internal/identity/schema"
 	identitystore "github.com/sh2001sh/new-api/internal/identity/store"
@@ -352,6 +354,18 @@ func TestNewBillingSessionReturnsLocalClaudeQuotaMessage(t *testing.T) {
 		"Claude额度不足, 当前余额: "+logger.FormatQuota(750)+", 本次所需: "+logger.FormatQuota(2364),
 		apiErr.Error(),
 	)
+}
+
+func TestFundingInsufficientErrorUsesFundingSource(t *testing.T) {
+	subscriptionErr := newFundingInsufficientError(BillingSourceSubscription, billingdomain.ErrInsufficientBalance)
+	require.NotNil(t, subscriptionErr)
+	require.Equal(t, types.ErrorCodeInsufficientUserQuota, subscriptionErr.GetErrorCode())
+	require.Contains(t, subscriptionErr.Error(), "subscription quota insufficient")
+	require.NotContains(t, subscriptionErr.Error(), "blind box")
+
+	blindBoxErr := newFundingInsufficientError(BillingSourceSubscription, commercedomain.ErrBlindBoxInsufficientQuota)
+	require.NotNil(t, blindBoxErr)
+	require.Contains(t, blindBoxErr.Error(), "blind box quota insufficient")
 }
 
 func loadBillingSnapshot(t *testing.T, userID int, accountType string) *billingschema.BillingBalanceSnapshot {

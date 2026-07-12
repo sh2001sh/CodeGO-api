@@ -275,14 +275,8 @@ func (s *BillingSession) preConsume(c *gin.Context, quota int) *types.NewAPIErro
 			s.tokenConsumed = 0
 		}
 
-		if errors.Is(err, billingdomain.ErrInsufficientBalance) || errors.Is(err, commercedomain.ErrBlindBoxInsufficientQuota) {
-			return types.NewErrorWithStatusCode(
-				fmt.Errorf("blind box quota insufficient: %s", err.Error()),
-				types.ErrorCodeInsufficientUserQuota,
-				http.StatusForbidden,
-				types.ErrOptionWithSkipRetry(),
-				types.ErrOptionWithNoRecordErrorLog(),
-			)
+		if insufficientErr := newFundingInsufficientError(s.funding.Source(), err); insufficientErr != nil {
+			return insufficientErr
 		}
 
 		errMsg := err.Error()
@@ -302,6 +296,33 @@ func (s *BillingSession) preConsume(c *gin.Context, quota int) *types.NewAPIErro
 	s.preConsumedQuota = effectiveQuota
 	s.syncRelayInfo()
 	return nil
+}
+
+func newFundingInsufficientError(source string, err error) *types.NewAPIError {
+	var message string
+	switch {
+	case errors.Is(err, commercedomain.ErrBlindBoxInsufficientQuota):
+		message = "blind box quota insufficient"
+	case errors.Is(err, billingdomain.ErrInsufficientBalance):
+		switch source {
+		case BillingSourceSubscription:
+			message = "subscription quota insufficient or unavailable"
+		case BillingSourceClaudeWallet:
+			message = "Claude wallet quota insufficient"
+		default:
+			message = "wallet quota insufficient"
+		}
+	default:
+		return nil
+	}
+
+	return types.NewErrorWithStatusCode(
+		fmt.Errorf("%s: %s", message, err.Error()),
+		types.ErrorCodeInsufficientUserQuota,
+		http.StatusForbidden,
+		types.ErrOptionWithSkipRetry(),
+		types.ErrOptionWithNoRecordErrorLog(),
+	)
 }
 
 func (s *BillingSession) reserveFunding(delta int) error {

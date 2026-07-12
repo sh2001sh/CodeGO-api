@@ -1,6 +1,8 @@
 package app
 
 import (
+	billingdomain "github.com/sh2001sh/new-api/internal/billing/domain"
+	billingschema "github.com/sh2001sh/new-api/internal/billing/schema"
 	commerceschema "github.com/sh2001sh/new-api/internal/commerce/schema"
 	platformdb "github.com/sh2001sh/new-api/internal/platform/db"
 	platformruntime "github.com/sh2001sh/new-api/internal/platform/runtime"
@@ -124,6 +126,16 @@ func TestEnsureDefaultSubscriptionPlans_RepairsCollapsedMonthlyQuotaSnapshot(t *
 		NextResetTime: now + 6*86400,
 	}
 	require.NoError(t, db.Create(collapsedSub).Error)
+	account, err := billingdomain.EnsureBillingAccount(billingdomain.EnsureAccountParams{
+		AccountType: "subscription", OwnerType: "user_subscription", OwnerID: int64(collapsedSub.Id), QuotaUnit: "quota",
+	})
+	require.NoError(t, err)
+	legacyAvailable := collapsedSub.AmountTotal - collapsedSub.AmountUsed
+	_, err = billingdomain.CreditAccount(billingdomain.CreditAccountParams{
+		AccountID: account.AccountID, Amount: legacyAvailable, IdempotencyKey: "legacy-subscription-credit",
+		ReasonCode: "test", ReferenceType: "user_subscription", ReferenceID: "9601", OperatorType: "test", OperatorID: "seed",
+	})
+	require.NoError(t, err)
 
 	require.NoError(t, EnsureDefaultSubscriptionPlans())
 
@@ -135,6 +147,10 @@ func TestEnsureDefaultSubscriptionPlans_RepairsCollapsedMonthlyQuotaSnapshot(t *
 	assert.Zero(t, reloadedSub.PeriodUsed)
 	assert.Zero(t, reloadedSub.LastResetTime)
 	assert.Zero(t, reloadedSub.NextResetTime)
+
+	var snapshot billingschema.BillingBalanceSnapshot
+	require.NoError(t, db.Where("account_id = ?", account.AccountID).First(&snapshot).Error)
+	assert.Equal(t, monthPlan.TotalAmount-reloadedSub.AmountUsed, snapshot.AvailableBalance)
 }
 
 func TestEnsureDefaultSubscriptionPlans_UpdatesLegacyBonusColumnsWithoutMissingColumnError(t *testing.T) {
