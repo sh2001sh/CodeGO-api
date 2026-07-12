@@ -39,6 +39,14 @@ type desktopSummaryResponse struct {
 		UsedQuotaUSD       float64  `json:"used_quota_usd"`
 		FundingSourceOrder []string `json:"funding_source_order"`
 	} `json:"account"`
+	Subscriptions []struct {
+		PlanTitle      string  `json:"plan_title"`
+		AmountTotalUSD float64 `json:"amount_total_usd"`
+		AmountUsedUSD  float64 `json:"amount_used_usd"`
+		RemainingUSD   float64 `json:"remaining_usd"`
+		Unlimited      bool    `json:"unlimited"`
+		EndTime        int64   `json:"end_time"`
+	} `json:"subscriptions"`
 	Tokens struct {
 		Total        int                `json:"total"`
 		DesktopToken *tokenResponseItem `json:"desktop_token"`
@@ -221,6 +229,29 @@ func TestGetDesktopAccountSummaryReturnsAggregatedDesktopData(t *testing.T) {
 	if err := db.Create(user).Error; err != nil {
 		t.Fatalf("failed to seed user: %v", err)
 	}
+	plan := &commerceschema.SubscriptionPlan{
+		Title:         "Standard 月卡",
+		Enabled:       true,
+		PlanType:      commerceschema.SubscriptionPlanTypeMonthly,
+		TotalAmount:   int64(platformruntime.QuotaPerUnit * 100),
+		DurationUnit:  commerceschema.SubscriptionDurationMonth,
+		DurationValue: 1,
+	}
+	if err := db.Create(plan).Error; err != nil {
+		t.Fatalf("failed to seed subscription plan: %v", err)
+	}
+	now := time.Now().Unix()
+	if err := db.Create(&commerceschema.UserSubscription{
+		UserId:      user.Id,
+		PlanId:      plan.Id,
+		Status:      "active",
+		StartTime:   now - 3600,
+		EndTime:     now + 30*24*3600,
+		AmountTotal: int64(platformruntime.QuotaPerUnit * 100),
+		AmountUsed:  int64(platformruntime.QuotaPerUnit * 24),
+	}).Error; err != nil {
+		t.Fatalf("failed to seed active subscription: %v", err)
+	}
 
 	token := seedDesktopToken(t, db, 1, identityapp.BuildDesktopTokenName("Default"), "desktoptoken123456")
 	if err := auditapp.RecordLogTx(nil, user.Id, auditschema.LogTypeConsume, "desktop log entry"); err != nil {
@@ -250,6 +281,18 @@ func TestGetDesktopAccountSummaryReturnsAggregatedDesktopData(t *testing.T) {
 	}
 	if payload.Account.UsedQuotaUSD != 0.5 {
 		t.Fatalf("expected used quota usd 0.5, got %v", payload.Account.UsedQuotaUSD)
+	}
+	if len(payload.Subscriptions) != 1 {
+		t.Fatalf("expected one active subscription, got %d", len(payload.Subscriptions))
+	}
+	if payload.Subscriptions[0].PlanTitle != "Standard 月卡" {
+		t.Fatalf("expected active plan title, got %q", payload.Subscriptions[0].PlanTitle)
+	}
+	if payload.Subscriptions[0].AmountTotalUSD != 100 || payload.Subscriptions[0].AmountUsedUSD != 24 || payload.Subscriptions[0].RemainingUSD != 76 {
+		t.Fatalf("unexpected subscription quota snapshot: %+v", payload.Subscriptions[0])
+	}
+	if payload.Subscriptions[0].Unlimited {
+		t.Fatal("expected finite subscription quota")
 	}
 	if payload.Tokens.Total != 1 {
 		t.Fatalf("expected token total 1, got %d", payload.Tokens.Total)

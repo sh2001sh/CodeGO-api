@@ -2,8 +2,10 @@ package app
 
 import (
 	"errors"
+	"fmt"
 	auditapp "github.com/sh2001sh/new-api/internal/audit/app"
 	auditschema "github.com/sh2001sh/new-api/internal/audit/schema"
+	commerceapp "github.com/sh2001sh/new-api/internal/commerce/app"
 	identitydomain "github.com/sh2001sh/new-api/internal/identity/domain"
 	identityschema "github.com/sh2001sh/new-api/internal/identity/schema"
 	identitystore "github.com/sh2001sh/new-api/internal/identity/store"
@@ -36,6 +38,23 @@ type DesktopTokenSummary struct {
 	DesktopToken *identityschema.Token `json:"desktop_token,omitempty"`
 }
 
+// DesktopSubscriptionSnapshot is the compact active-plan view used by the desktop console.
+type DesktopSubscriptionSnapshot struct {
+	ID                 int     `json:"id"`
+	PlanID             int     `json:"plan_id"`
+	PlanTitle          string  `json:"plan_title"`
+	AmountTotalUSD     float64 `json:"amount_total_usd"`
+	AmountUsedUSD      float64 `json:"amount_used_usd"`
+	RemainingUSD       float64 `json:"remaining_usd"`
+	Unlimited          bool    `json:"unlimited"`
+	PeriodAmountUSD    float64 `json:"period_amount_usd"`
+	PeriodUsedUSD      float64 `json:"period_used_usd"`
+	PeriodRemainingUSD float64 `json:"period_remaining_usd"`
+	StartTime          int64   `json:"start_time"`
+	EndTime            int64   `json:"end_time"`
+	NextResetTime      int64   `json:"next_reset_time"`
+}
+
 type DesktopUsageSummary struct {
 	AvailableModels []string `json:"available_models"`
 	TodayUSD        float64  `json:"today_usd"`
@@ -59,12 +78,13 @@ type DesktopQuickActions struct {
 }
 
 type DesktopAccountSummaryResponse struct {
-	Account    DesktopAccountSnapshot `json:"account"`
-	Tokens     DesktopTokenSummary    `json:"tokens"`
-	Usage      DesktopUsageSummary    `json:"usage"`
-	Service    DesktopServiceSummary  `json:"service"`
-	RecentLogs []*auditschema.Log     `json:"recent_logs"`
-	Actions    DesktopQuickActions    `json:"actions"`
+	Account       DesktopAccountSnapshot        `json:"account"`
+	Subscriptions []DesktopSubscriptionSnapshot `json:"subscriptions"`
+	Tokens        DesktopTokenSummary           `json:"tokens"`
+	Usage         DesktopUsageSummary           `json:"usage"`
+	Service       DesktopServiceSummary         `json:"service"`
+	RecentLogs    []*auditschema.Log            `json:"recent_logs"`
+	Actions       DesktopQuickActions           `json:"actions"`
 }
 
 type DesktopUsageTrendItem struct {
@@ -117,6 +137,10 @@ func BuildDesktopAccountSummary(userID int) (*DesktopAccountSummaryResponse, err
 	serverAddress := NormalizeDesktopServerAddress("")
 	usageSummary := summarizeDesktopUsage(recentLogs)
 	usageSummary.AvailableModels = ListDesktopAvailableModels(user.Group)
+	subscriptions, err := buildDesktopSubscriptionSnapshots(userID)
+	if err != nil {
+		return nil, err
+	}
 
 	return &DesktopAccountSummaryResponse{
 		Account: DesktopAccountSnapshot{
@@ -134,6 +158,7 @@ func BuildDesktopAccountSummary(userID int) (*DesktopAccountSummaryResponse, err
 			BillingPreference:  setting.BillingPreference,
 			FundingSourceOrder: setting.FundingSourceOrder,
 		},
+		Subscriptions: subscriptions,
 		Tokens: DesktopTokenSummary{
 			Total:        int(tokenCount),
 			DesktopToken: BuildMaskedTokenResponse(defaultDesktopToken),
@@ -148,6 +173,59 @@ func BuildDesktopAccountSummary(userID int) (*DesktopAccountSummaryResponse, err
 			LogsPath:      "/usage-logs",
 		},
 	}, nil
+}
+
+func buildDesktopSubscriptionSnapshots(userID int) ([]DesktopSubscriptionSnapshot, error) {
+	activeSubscriptions, err := commerceapp.GetAllActiveUserSubscriptions(userID)
+	if err != nil {
+		return nil, err
+	}
+
+	result := make([]DesktopSubscriptionSnapshot, 0, len(activeSubscriptions))
+	for _, item := range activeSubscriptions {
+		subscription := item.Subscription
+		if subscription == nil {
+			continue
+		}
+
+		planTitle := fmt.Sprintf("Plan #%d", subscription.PlanId)
+		if plan, planErr := commerceapp.GetSubscriptionPlanByID(subscription.PlanId); planErr == nil && plan != nil {
+			if trimmedTitle := strings.TrimSpace(plan.Title); trimmedTitle != "" {
+				planTitle = trimmedTitle
+			}
+		}
+
+		amountTotal := subscription.AmountTotal
+		amountUsed := subscription.AmountUsed
+		remaining := amountTotal - amountUsed
+		if remaining < 0 {
+			remaining = 0
+		}
+		periodAmount := subscription.PeriodAmount
+		periodUsed := subscription.PeriodUsed
+		periodRemaining := periodAmount - periodUsed
+		if periodRemaining < 0 {
+			periodRemaining = 0
+		}
+
+		result = append(result, DesktopSubscriptionSnapshot{
+			ID:                 subscription.Id,
+			PlanID:             subscription.PlanId,
+			PlanTitle:          planTitle,
+			AmountTotalUSD:     quotaToUSD(int(amountTotal)),
+			AmountUsedUSD:      quotaToUSD(int(amountUsed)),
+			RemainingUSD:       quotaToUSD(int(remaining)),
+			Unlimited:          amountTotal <= 0,
+			PeriodAmountUSD:    quotaToUSD(int(periodAmount)),
+			PeriodUsedUSD:      quotaToUSD(int(periodUsed)),
+			PeriodRemainingUSD: quotaToUSD(int(periodRemaining)),
+			StartTime:          subscription.StartTime,
+			EndTime:            subscription.EndTime,
+			NextResetTime:      subscription.NextResetTime,
+		})
+	}
+
+	return result, nil
 }
 
 // BuildDesktopUsageLogsPage loads desktop usage logs with standard paging.
