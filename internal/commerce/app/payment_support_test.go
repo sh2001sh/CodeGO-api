@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	commercestore "github.com/sh2001sh/new-api/internal/commerce/paymentsettings"
+	commerceschema "github.com/sh2001sh/new-api/internal/commerce/schema"
 	"github.com/stretchr/testify/require"
 )
 
@@ -174,4 +175,10 @@ func TestEpayWebhookEnabledRequiresTopUpAndWebhookConfig(t *testing.T) {
 
 	commercestore.PayMethods = nil
 	require.False(t, IsEpayWebhookEnabled())
+}
+
+func TestIsXunhuPaymentMethodRoutesLegacyWxpayToXunhu(t *testing.T) {
+	require.True(t, IsXunhuPaymentMethod(commerceschema.PaymentMethodXunhu))
+	require.True(t, IsXunhuPaymentMethod("wxpay"))
+	require.False(t, IsXunhuPaymentMethod("alipay"))
 }

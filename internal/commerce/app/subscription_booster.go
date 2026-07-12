@@ -62,6 +62,40 @@ func CreateSubscriptionBoosterEpayPayment(userID int, req SubscriptionBoosterPur
 	return &SubscriptionEpayCheckoutPayload{SubscriptionCheckoutPayload: SubscriptionCheckoutPayload{OrderID: tradeNo, AmountDue: order.Money, Action: "booster"}, Form: params, URL: uri}, nil
 }
 
+// CreateSubscriptionBoosterXunhuPayment creates a WeChat checkout for a subscription booster.
+func CreateSubscriptionBoosterXunhuPayment(userID int, req SubscriptionBoosterPurchaseRequest) (*SubscriptionXunhuCheckoutPayload, error) {
+	quote, err := QuoteSubscriptionBooster(userID, req.SubscriptionBoosterQuoteRequest)
+	if err != nil {
+		return nil, err
+	}
+	if commercestore.XunhuMinTopUp > 0 && quote.AmountDue < float64(commercestore.XunhuMinTopUp) {
+		return nil, fmt.Errorf("minimum XunhuPay payment is %d CNY", commercestore.XunhuMinTopUp)
+	}
+
+	callback := CallbackAddress()
+	tradeNo := fmt.Sprintf("SUBBOOST%dNO%s%d", userID, platformruntime.GetRandomString(6), time.Now().Unix())
+	order, err := createPendingBoosterOrder(userID, quote, commerceschema.PaymentMethodXunhu, commerceschema.PaymentProviderXunhu, tradeNo)
+	if err != nil {
+		return nil, err
+	}
+	payment, err := CreateXunhuOrder(
+		tradeNo,
+		"BOOST:"+quote.PlanTitle,
+		order.Money,
+		callback+"/api/subscription/xunhu/notify",
+		callback+"/api/subscription/xunhu/return?trade_no="+tradeNo,
+	)
+	if err != nil {
+		_ = ExpireSubscriptionOrder(tradeNo, commerceschema.PaymentProviderXunhu)
+		return nil, errors.New(FormatXunhuCreatePaymentError(err))
+	}
+	return &SubscriptionXunhuCheckoutPayload{
+		SubscriptionCheckoutPayload: SubscriptionCheckoutPayload{OrderID: tradeNo, AmountDue: order.Money, Action: "booster"},
+		PayURL:                      payment.PayURL,
+		QRCodeURL:                   payment.QRCodeURL,
+	}, nil
+}
+
 func CreateSubscriptionBoosterStripePayment(userID int, req SubscriptionBoosterPurchaseRequest) (*SubscriptionStripeCheckoutPayload, error) {
 	quote, err := QuoteSubscriptionBooster(userID, req.SubscriptionBoosterQuoteRequest)
 	if err != nil {

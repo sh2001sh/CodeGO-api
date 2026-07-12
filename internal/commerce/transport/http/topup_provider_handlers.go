@@ -295,11 +295,14 @@ func WaffoPancakeWebhook(c *gin.Context) {
 }
 
 func RequestXunhuPay(c *gin.Context) {
-	var req commerceapp.EpayRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(stdhttp.StatusOK, gin.H{"message": "error", "data": "鍙傛暟閿欒"})
+	req, ok := bindTopUpPaymentRequest(c)
+	if !ok {
 		return
 	}
+	respondXunhuTopUp(c, req)
+}
+
+func respondXunhuTopUp(c *gin.Context, req commerceapp.EpayRequest) {
 	payload, err := commerceapp.CreateXunhuTopUp(c.Request.Context(), c.GetInt("id"), req)
 	if err != nil {
 		c.JSON(stdhttp.StatusOK, gin.H{"message": "error", "data": err.Error()})

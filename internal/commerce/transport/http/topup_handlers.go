@@ -51,11 +51,36 @@ func RedeemTopUpCode(c *gin.Context) {
 }
 
 func RequestEpay(c *gin.Context) {
+	req, ok := bindTopUpPaymentRequest(c)
+	if !ok {
+		return
+	}
+	respondEpayTopUp(c, req)
+}
+
+// RequestTopUpPayment routes every WeChat payment identifier to XunhuPay.
+func RequestTopUpPayment(c *gin.Context) {
+	req, ok := bindTopUpPaymentRequest(c)
+	if !ok {
+		return
+	}
+	if commerceapp.IsXunhuPaymentMethod(req.PaymentMethod) {
+		respondXunhuTopUp(c, req)
+		return
+	}
+	respondEpayTopUp(c, req)
+}
+
+func bindTopUpPaymentRequest(c *gin.Context) (commerceapp.EpayRequest, bool) {
 	var req commerceapp.EpayRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(stdhttp.StatusOK, gin.H{"message": "error", "data": "参数错误"})
-		return
+		return commerceapp.EpayRequest{}, false
 	}
+	return req, true
+}
+
+func respondEpayTopUp(c *gin.Context, req commerceapp.EpayRequest) {
 	response, err := commerceapp.CreateEpayTopUp(c.GetInt("id"), req)
 	if err != nil {
 		c.JSON(stdhttp.StatusOK, gin.H{"message": "error", "data": err.Error()})

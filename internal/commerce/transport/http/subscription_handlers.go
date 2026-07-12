@@ -38,6 +38,15 @@ func purchaseSubscriptionBooster(c *gin.Context) {
 		httpapi.ApiSuccess(c, payload)
 		return
 	}
+	if commerceapp.IsXunhuPaymentMethod(req.PaymentMethod) {
+		payload, err := commerceapp.CreateSubscriptionBoosterXunhuPayment(c.GetInt("id"), req)
+		if err != nil {
+			httpapi.ApiError(c, err)
+			return
+		}
+		httpapi.ApiSuccess(c, payload)
+		return
+	}
 	payload, err := commerceapp.CreateSubscriptionBoosterEpayPayment(c.GetInt("id"), req)
 	if err != nil {
 		httpapi.ApiError(c, err)

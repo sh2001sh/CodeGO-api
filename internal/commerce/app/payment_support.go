@@ -373,10 +373,7 @@ func VerifyXunhuHash(params map[string]string) bool {
 
 func IsXunhuPaymentMethod(method string) bool {
 	trimmed := strings.TrimSpace(method)
-	if trimmed == commerceschema.PaymentMethodXunhu {
-		return true
-	}
-	return commercestore.XunhuEnabled && trimmed == "wxpay"
+	return trimmed == commerceschema.PaymentMethodXunhu || trimmed == "wxpay"
 }
 
 func FormatXunhuCreatePaymentError(err error) string {
