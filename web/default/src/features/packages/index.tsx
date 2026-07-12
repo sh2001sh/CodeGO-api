@@ -25,8 +25,7 @@ import {
   CardStaggerContainer,
   CardStaggerItem,
 } from '@/components/page-transition'
-import { SiteSeo } from '@/components/seo'
-import { SubscriptionBoosterDialog } from '@/features/subscriptions/components/dialogs/subscription-booster-dialog'
+import { SubscriptionFuelDialog } from '@/features/subscriptions/components/dialogs/subscription-fuel-dialog'
 import { SubscriptionPurchaseDialog } from '@/features/subscriptions/components/dialogs/subscription-purchase-dialog'
 import type {
   PlanRecord,
@@ -90,9 +89,13 @@ export function PackagesPage() {
     useState<SubscriptionPurchaseType>('normal')
   const [purchaseOpen, setPurchaseOpen] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
-  const [boosterSubscription, setBoosterSubscription] =
+  const [fuelSubscription, setFuelSubscription] =
     useState<UserSubscriptionRecord | null>(null)
-  const [boosterTitle, setBoosterTitle] = useState('')
+  const [fuelTitle, setFuelTitle] = useState('')
+  const [fuelConfig, setFuelConfig] = useState({
+    minimumQuota: 500_000,
+    quotaStep: 500_000,
+  })
   const groupedPlans = useGroupedPlans(workspace.publicPlans)
   const topupInfo = workspace.topupInfo
   const epayMethods = useMemo(
@@ -108,6 +111,47 @@ export function PackagesPage() {
     }
     return map
   }, [workspace.subscriptionData?.all_subscriptions])
+  const currentSubscription = workspace.subscriptionData?.subscriptions[0]
+  const shouldPrioritizeMonthlyPlans = Boolean(currentSubscription)
+  const primaryPlanZones: Array<{
+    id: 'starter' | 'monthly'
+    title: string
+    description: string
+  }> = shouldPrioritizeMonthlyPlans
+    ? [
+        {
+          id: 'monthly',
+          title: '月卡专区',
+          description: '适合持续开发与团队日常调用。连续续费可按阶梯获得额外额度。',
+        },
+        {
+          id: 'starter',
+          title: '新人专区',
+          description: '低门槛体验，限购 1 次。购买后 72 小时内升级月卡可获得额外额度奖励。',
+        },
+      ]
+    : [
+        {
+          id: 'starter',
+          title: '新人专区',
+          description: '低门槛体验，限购 1 次。购买后 72 小时内升级月卡可获得额外额度奖励。',
+        },
+        {
+          id: 'monthly',
+          title: '月卡专区',
+          description: '适合持续开发与团队日常调用。连续续费可按阶梯获得额外额度。',
+        },
+      ]
+
+  const openFuel = (
+    subscription: UserSubscriptionRecord,
+    title: string,
+    config: { minimumQuota: number; quotaStep: number }
+  ) => {
+    setFuelSubscription(subscription)
+    setFuelTitle(title)
+    setFuelConfig(config)
+  }
 
   const handleRefresh = async () => {
     setRefreshing(true)
@@ -132,18 +176,22 @@ export function PackagesPage() {
 
   return (
     <>
-      <SiteSeo
-        title='套餐'
-        description='购买新人体验卡、月卡、周卡和日卡，查看当前套餐额度与续费升级入口。'
-        canonicalPath='/packages'
-        robots='noindex,follow'
-      />
       <WalletWorkspaceShell
         title='套餐'
         description='按使用节奏选择新人体验卡、月卡或短期补量卡。支持拼团的套餐会直接展示 2/3/5 人成团后的最终额度。'
+        canonicalPath='/packages'
         framedMain={false}
         main={
           <CardStaggerContainer className='space-y-4'>
+            <CardStaggerItem>
+              <CurrentPackagePanel
+                subscriptions={workspace.subscriptionData?.subscriptions || []}
+                plans={workspace.publicPlans}
+                loading={workspace.subscriptionLoading}
+                onFuel={openFuel}
+              />
+            </CardStaggerItem>
+
             <CardStaggerItem>
               <TitledCard
                 title='套餐购买'
@@ -167,24 +215,24 @@ export function PackagesPage() {
                 }
                 contentClassName='space-y-5'
               >
-                <PlanZone
-                  title='新人专区'
-                  description='低门槛体验，限购 1 次。购买后 72 小时内升级月卡可获得额外额度奖励。'
-                  plans={groupedPlans.starter}
-                  loading={workspace.publicPlansLoading}
-                  onPurchase={openPurchase}
-                  purchaseCountMap={purchaseCountMap}
-                />
-                {groupedPlans.monthly.length > 0 && (
-                  <PlanZone
-                    title='月卡专区'
-                    description='适合持续开发与团队日常调用。连续续费可按阶梯获得额外额度。'
-                    plans={groupedPlans.monthly}
-                    loading={workspace.publicPlansLoading}
-                    onPurchase={openPurchase}
-                    purchaseCountMap={purchaseCountMap}
-                  />
-                )}
+                {primaryPlanZones.map((zone) => {
+                  if (zone.id === 'monthly' && groupedPlans.monthly.length === 0) {
+                    return null
+                  }
+                  return (
+                    <PlanZone
+                      key={zone.id}
+                      title={zone.title}
+                      description={zone.description}
+                      plans={groupedPlans[zone.id]}
+                      loading={workspace.publicPlansLoading}
+                      onPurchase={openPurchase}
+                      purchaseCountMap={purchaseCountMap}
+                      currentSubscription={currentSubscription}
+                      onFuel={openFuel}
+                    />
+                  )
+                })}
                 {groupedPlans.shortterm.length > 0 && (
                   <PlanZone
                     title='短期补量专区'
@@ -193,25 +241,13 @@ export function PackagesPage() {
                     loading={workspace.publicPlansLoading}
                     onPurchase={openPurchase}
                     purchaseCountMap={purchaseCountMap}
+                    currentSubscription={currentSubscription}
+                    onFuel={openFuel}
                   />
                 )}
               </TitledCard>
             </CardStaggerItem>
 
-            <CardStaggerItem>
-              <CurrentPackagePanel
-                subscriptions={workspace.subscriptionData?.subscriptions || []}
-                plans={workspace.publicPlans}
-                loading={workspace.subscriptionLoading}
-                boosterEnabled={
-                  workspace.subscriptionData?.booster_config?.enabled ?? false
-                }
-                onBooster={(subscription, title) => {
-                  setBoosterSubscription(subscription)
-                  setBoosterTitle(title)
-                }}
-              />
-            </CardStaggerItem>
           </CardStaggerContainer>
         }
         sidebar={
@@ -248,20 +284,21 @@ export function PackagesPage() {
             : undefined
         }
       />
-      <SubscriptionBoosterDialog
-        open={boosterSubscription != null}
-        onOpenChange={(open) => {
-          if (!open) setBoosterSubscription(null)
-        }}
-        subscription={boosterSubscription?.subscription ?? null}
-        title={boosterTitle}
-        paymentMethod={
-          topupInfo?.enable_stripe_topup
-            ? 'stripe'
-            : (epayMethods[0]?.type ?? '')
-        }
-        onCompleted={workspace.fetchSubscriptionData}
-      />
+      {fuelSubscription ? (
+        <SubscriptionFuelDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setFuelSubscription(null)
+          }}
+          subscription={fuelSubscription.subscription}
+          title={fuelTitle}
+          minimumQuota={fuelConfig.minimumQuota}
+          quotaStep={fuelConfig.quotaStep}
+          paymentMethods={epayMethods}
+          enableStripe={!!topupInfo?.enable_stripe_topup}
+          onCompleted={workspace.fetchSubscriptionData}
+        />
+      ) : null}
     </>
   )
 }

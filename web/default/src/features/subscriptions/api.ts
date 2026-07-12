@@ -33,7 +33,7 @@ import type {
   SubscriptionOrderStatus,
   SubscriptionClaudeConversionRecord,
   SubscriptionClaudeConversionResult,
-  SubscriptionBoosterQuote,
+  SubscriptionFuelQuote,
 } from './types'
 
 // ============================================================================
@@ -45,23 +45,23 @@ export async function getAdminPlans(): Promise<ApiResponse<PlanRecord[]>> {
   return res.data
 }
 
-export async function quoteSubscriptionBooster(payload: {
+export async function quoteSubscriptionFuel(payload: {
   subscriptionId: number
   quota: number
-}): Promise<ApiResponse<SubscriptionBoosterQuote>> {
-  const res = await api.post('/api/subscription/booster/quote', {
+}): Promise<ApiResponse<SubscriptionFuelQuote>> {
+  const res = await api.post('/api/subscription/fuel/quote', {
     subscription_id: payload.subscriptionId,
     quota: payload.quota,
   })
   return res.data
 }
 
-export async function purchaseSubscriptionBooster(payload: {
+export async function purchaseSubscriptionFuel(payload: {
   subscriptionId: number
   quota: number
   paymentMethod: string
 }): Promise<SubscriptionPayResponse & { url?: string }> {
-  const res = await api.post('/api/subscription/booster/purchase', {
+  const res = await api.post('/api/subscription/fuel/purchase', {
     subscription_id: payload.subscriptionId,
     quota: payload.quota,
     payment_method: payload.paymentMethod,

@@ -179,3 +179,25 @@ func TestEnsureDefaultSubscriptionPlans_UpdatesLegacyBonusColumnsWithoutMissingC
 	assert.Equal(t, preset.RenewalBonus3, reloadedPlan.RenewalBonus3)
 	assert.Equal(t, preset.RenewalBonus4, reloadedPlan.RenewalBonus4)
 }
+
+func TestEnsureDefaultSubscriptionPlans_UpdatesFuelConfiguration(t *testing.T) {
+	db := setupRedemptionTestDB(t)
+
+	preset := requirePresetPlanByTitle(t, "Lite月卡")
+	legacyPlan := preset
+	legacyPlan.Id = 9801
+	legacyPlan.FuelEnabled = false
+	legacyPlan.FuelUnitPrice = 0
+	legacyPlan.FuelMinQuota = 0
+	legacyPlan.FuelQuotaStep = 0
+	require.NoError(t, db.Create(&legacyPlan).Error)
+
+	require.NoError(t, EnsureDefaultSubscriptionPlans())
+
+	var reloadedPlan commerceschema.SubscriptionPlan
+	require.NoError(t, db.Where("id = ?", legacyPlan.Id).First(&reloadedPlan).Error)
+	assert.Equal(t, preset.FuelEnabled, reloadedPlan.FuelEnabled)
+	assert.Equal(t, preset.FuelUnitPrice, reloadedPlan.FuelUnitPrice)
+	assert.Equal(t, preset.FuelMinQuota, reloadedPlan.FuelMinQuota)
+	assert.Equal(t, preset.FuelQuotaStep, reloadedPlan.FuelQuotaStep)
+}

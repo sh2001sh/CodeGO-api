@@ -112,17 +112,6 @@ func ApplySubscriptionPurchaseFields(order *commerceschema.SubscriptionOrder, pu
 	order.GroupBuyId = groupBuyID
 }
 
-func applySubscriptionBoosterFields(order *commerceschema.SubscriptionOrder, quote *SubscriptionBoosterQuote) {
-	if order == nil || quote == nil {
-		return
-	}
-	order.PurchaseType = commerceschema.SubscriptionPurchaseTypeBooster
-	order.TargetSubscriptionId = quote.SubscriptionID
-	order.BoosterQuota = quote.Quota
-	order.BoosterRate = quote.Rate
-	order.BoosterExpiresAt = quote.ExpiresAt
-}
-
 func PrepareSubscriptionPurchase(userID int, req SubscriptionPurchaseFields) (*commerceschema.SubscriptionPlan, *commercedomain.SubscriptionPurchasePreview, string, int64, error) {
 	plan, err := GetSubscriptionPlanByID(req.PlanID)
 	if err != nil {

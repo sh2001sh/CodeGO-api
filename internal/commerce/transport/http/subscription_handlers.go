@@ -9,13 +9,13 @@ import (
 	commerceschema "github.com/sh2001sh/new-api/internal/commerce/schema"
 )
 
-func quoteSubscriptionBooster(c *gin.Context) {
-	var req commerceapp.SubscriptionBoosterQuoteRequest
+func quoteSubscriptionFuel(c *gin.Context) {
+	var req commerceapp.SubscriptionFuelQuoteRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		httpapi.ApiErrorMsg(c, "invalid request")
 		return
 	}
-	payload, err := commerceapp.QuoteSubscriptionBooster(c.GetInt("id"), req)
+	payload, err := commerceapp.QuoteSubscriptionFuel(c.GetInt("id"), req)
 	if err != nil {
 		httpapi.ApiError(c, err)
 		return
@@ -23,14 +23,14 @@ func quoteSubscriptionBooster(c *gin.Context) {
 	httpapi.ApiSuccess(c, payload)
 }
 
-func purchaseSubscriptionBooster(c *gin.Context) {
-	var req commerceapp.SubscriptionBoosterPurchaseRequest
+func purchaseSubscriptionFuel(c *gin.Context) {
+	var req commerceapp.SubscriptionFuelPurchaseRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		httpapi.ApiErrorMsg(c, "invalid request")
 		return
 	}
 	if req.PaymentMethod == commerceschema.PaymentMethodStripe {
-		payload, err := commerceapp.CreateSubscriptionBoosterStripePayment(c.GetInt("id"), req)
+		payload, err := commerceapp.CreateSubscriptionFuelStripePayment(c.GetInt("id"), req)
 		if err != nil {
 			httpapi.ApiError(c, err)
 			return
@@ -39,7 +39,7 @@ func purchaseSubscriptionBooster(c *gin.Context) {
 		return
 	}
 	if commerceapp.IsXunhuPaymentMethod(req.PaymentMethod) {
-		payload, err := commerceapp.CreateSubscriptionBoosterXunhuPayment(c.GetInt("id"), req)
+		payload, err := commerceapp.CreateSubscriptionFuelXunhuPayment(c.GetInt("id"), req)
 		if err != nil {
 			httpapi.ApiError(c, err)
 			return
@@ -47,21 +47,12 @@ func purchaseSubscriptionBooster(c *gin.Context) {
 		httpapi.ApiSuccess(c, payload)
 		return
 	}
-	payload, err := commerceapp.CreateSubscriptionBoosterEpayPayment(c.GetInt("id"), req)
+	payload, err := commerceapp.CreateSubscriptionFuelEpayPayment(c.GetInt("id"), req)
 	if err != nil {
 		httpapi.ApiError(c, err)
 		return
 	}
 	c.JSON(200, gin.H{"success": true, "data": payload, "url": payload.URL})
-}
-
-func getSubscriptionBoosterOrder(c *gin.Context) {
-	payload, err := commerceapp.BuildSubscriptionBoosterOrderStatusPayload(c.GetInt("id"), c.Param("id"))
-	if err != nil {
-		httpapi.ApiError(c, err)
-		return
-	}
-	httpapi.ApiSuccess(c, payload)
 }
 
 func getSubscriptionPlans(c *gin.Context) {

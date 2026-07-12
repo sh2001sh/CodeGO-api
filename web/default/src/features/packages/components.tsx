@@ -18,13 +18,12 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useMemo } from 'react'
 import { Link } from '@tanstack/react-router'
-import { Crown } from 'lucide-react'
+import { Crown, Fuel } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Skeleton } from '@/components/ui/skeleton'
-import { TitledCard } from '@/components/ui/titled-card'
 import {
-  isMonthlyCardPlan,
+  formatSubscriptionPlanTitle,
   subscriptionQuotaUnitsToUSD,
 } from '@/features/subscriptions/lib'
 import type {
@@ -33,6 +32,8 @@ import type {
   UserSubscriptionRecord,
 } from '@/features/subscriptions/types'
 import { PackagePlanCard } from './package-plan-card'
+
+type FuelConfig = { minimumQuota: number; quotaStep: number }
 
 export function PlanZone(props: {
   title: string
@@ -43,6 +44,12 @@ export function PlanZone(props: {
   onPurchase: (
     record: PlanRecord,
     purchaseType?: SubscriptionPurchaseType
+  ) => void
+  currentSubscription?: UserSubscriptionRecord
+  onFuel?: (
+    subscription: UserSubscriptionRecord,
+    title: string,
+    config: FuelConfig
   ) => void
 }) {
   return (
@@ -71,6 +78,8 @@ export function PlanZone(props: {
               onPurchase={(purchaseType) =>
                 props.onPurchase(record, purchaseType)
               }
+              currentSubscription={props.currentSubscription}
+              onFuel={props.onFuel}
             />
           ))}
         </div>
@@ -87,8 +96,11 @@ export function CurrentPackagePanel(props: {
   subscriptions: UserSubscriptionRecord[]
   plans: PlanRecord[]
   loading: boolean
-  boosterEnabled: boolean
-  onBooster: (subscription: UserSubscriptionRecord, title: string) => void
+  onFuel: (
+    subscription: UserSubscriptionRecord,
+    title: string,
+    config: FuelConfig
+  ) => void
 }) {
   const planMap = useMemo(() => {
     const map = new Map<number, PlanRecord['plan']>()
@@ -100,86 +112,71 @@ export function CurrentPackagePanel(props: {
     ? planMap.get(current.subscription.plan_id)
     : undefined
   const currentTitle =
-    currentPlan?.title ||
+    formatSubscriptionPlanTitle(currentPlan?.title) ||
     (current ? `套餐 #${current.subscription.plan_id}` : '')
-  const canBoost =
-    props.boosterEnabled &&
+  const canFuel =
     Boolean(current) &&
-    isMonthlyCardPlan(currentPlan) &&
-    current!.subscription.status === 'active'
-
+    current?.subscription.status === 'active' &&
+    currentPlan?.fuel_enabled === true &&
+    (currentPlan?.fuel_min_quota || 0) > 0 &&
+    (currentPlan?.fuel_quota_step || 0) > 0
   if (!props.loading && !current) {
-    return (
-      <TitledCard
-        title='我的当前套餐'
-        description='暂未生效套餐。可先购买新人体验卡，或直接选择 Standard 月卡。'
-        icon={<Crown className='h-4 w-4' />}
-        contentClassName='hidden'
-      />
-    )
+    return null
   }
 
   return (
-    <TitledCard
-      title='我的当前套餐'
-      description='当前生效套餐、剩余额度与续费/升级入口。'
-      icon={<Crown className='h-4 w-4' />}
-    >
+    <section className='border-border bg-card flex flex-wrap items-center gap-x-4 gap-y-3 rounded-lg border px-4 py-3'>
       {props.loading ? (
-        <Skeleton className='h-28 rounded-2xl' />
+        <Skeleton className='h-8 w-full sm:w-96' />
       ) : current ? (
-        <div className='space-y-3'>
-          <div className='flex flex-wrap items-start justify-between gap-3'>
-            <div>
-              <div className='text-foreground text-lg font-semibold'>
-                {currentTitle}
-              </div>
-              <div className='text-muted-foreground mt-1 text-sm'>
-                至{' '}
-                {new Date(
-                  current.subscription.end_time * 1000
-                ).toLocaleDateString()}
-              </div>
-            </div>
-            <div className='flex gap-2'>
-              {canBoost ? (
-                <Button onClick={() => props.onBooster(current, currentTitle)}>
-                  续量
-                </Button>
-              ) : null}
-              <Button variant='outline' render={<Link to='/packages' />}>
-                续费
-              </Button>
-              <Button render={<Link to='/packages' />}>升级</Button>
-            </div>
+        <>
+          <div className='flex min-w-0 items-center gap-2'>
+            <Crown className='text-primary size-4 shrink-0' />
+            <span className='text-foreground truncate text-sm font-semibold'>
+              当前：{currentTitle}
+            </span>
           </div>
-          <Progress
-            value={
-              current.subscription.amount_total > 0
-                ? Math.round(
-                    (current.subscription.amount_used /
-                      current.subscription.amount_total) *
-                      100
-                  )
-                : 0
-            }
-          />
-          <div className='text-muted-foreground text-sm'>
+          <div className='text-muted-foreground text-sm tabular-nums'>
             剩余 $
             {Math.max(
               0,
               subscriptionQuotaUnitsToUSD(
-                current.subscription.amount_total -
-                  current.subscription.amount_used
+                current.subscription.amount_total - current.subscription.amount_used
               )
             ).toFixed(2)}
-            /$
-            {subscriptionQuotaUnitsToUSD(
-              current.subscription.amount_total
-            ).toFixed(2)}
+            /${subscriptionQuotaUnitsToUSD(current.subscription.amount_total).toFixed(2)}
           </div>
-        </div>
+          <Progress
+            className='order-last w-full sm:order-none sm:min-w-32 sm:flex-1'
+            value={
+              current.subscription.amount_total > 0
+                ? Math.round(
+                    (current.subscription.amount_used / current.subscription.amount_total) * 100
+                  )
+                : 0
+            }
+          />
+          <div className='ml-auto flex gap-2'>
+            {canFuel ? (
+              <Button
+                size='sm'
+                onClick={() =>
+                  props.onFuel(current, currentTitle, {
+                    minimumQuota: currentPlan?.fuel_min_quota || 0,
+                    quotaStep: currentPlan?.fuel_quota_step || 0,
+                  })
+                }
+              >
+                <Fuel className='mr-1 size-4' />
+                加油
+              </Button>
+            ) : null}
+            <Button size='sm' variant='outline' render={<Link to='/packages' />}>
+              续费
+            </Button>
+          </div>
+        </>
       ) : null}
-    </TitledCard>
+    </section>
   )
 }

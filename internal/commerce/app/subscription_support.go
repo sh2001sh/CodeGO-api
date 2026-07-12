@@ -119,6 +119,12 @@ func validateSubscriptionPlanInput(plan *commerceschema.SubscriptionPlan) error 
 	if plan.RenewalBonus2 < 0 || plan.RenewalBonus3 < 0 || plan.RenewalBonus4 < 0 {
 		return errors.New("renewal bonus must be >= 0")
 	}
+	if plan.FuelUnitPrice < 0 || plan.FuelMinQuota < 0 || plan.FuelQuotaStep < 0 {
+		return errors.New("fuel settings must be >= 0")
+	}
+	if plan.FuelEnabled && (!isMonthlySubscriptionPlan(plan) || plan.FuelUnitPrice <= 0 || plan.FuelMinQuota <= 0 || plan.FuelQuotaStep <= 0) {
+		return errors.New("enabled fuel requires a monthly plan, price, minimum quota, and quota step")
+	}
 	if plan.TotalAmount < 0 || plan.PeriodAmount < 0 {
 		return errors.New("quota values must be >= 0")
 	}

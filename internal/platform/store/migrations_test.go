@@ -102,48 +102,6 @@ func TestSubscriptionFulfillmentMigrationMarksHistoricalSuccessCompleted(t *test
 	require.Empty(t, pending.FulfillmentStatus)
 }
 
-func TestSubscriptionBoosterMigrationRestoresMissingOrderColumns(t *testing.T) {
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
-	require.NoError(t, err)
-	originalDB := platformdb.DB
-	originalSQLite := platformdb.UsingSQLite
-	originalPostgreSQL := platformdb.UsingPostgreSQL
-	t.Cleanup(func() {
-		platformdb.DB = originalDB
-		platformdb.UsingSQLite = originalSQLite
-		platformdb.UsingPostgreSQL = originalPostgreSQL
-	})
-	platformdb.DB = db
-	platformdb.UsingSQLite = true
-	platformdb.UsingPostgreSQL = false
-
-	require.NoError(t, db.Exec(`CREATE TABLE subscription_orders (
-		id integer primary key,
-		user_id integer,
-		plan_id integer,
-		money real,
-		trade_no text,
-		payment_method text,
-		payment_provider text,
-		purchase_type text DEFAULT 'normal',
-		group_buy_id bigint DEFAULT 0,
-		status text,
-		fulfillment_status text DEFAULT 'completed',
-		create_time bigint,
-		complete_time bigint,
-		provider_payload text
-	)`).Error)
-	require.NoError(t, db.AutoMigrate(&schemaMigration{}))
-	for _, migrationID := range V2MigrationIDs()[:len(V2MigrationIDs())-1] {
-		require.NoError(t, db.Create(&schemaMigration{ID: migrationID}).Error)
-	}
-
-	require.NoError(t, ApplyV2Migrations(context.Background(), false))
-	for _, column := range []string{"target_subscription_id", "booster_quota", "booster_rate", "booster_expires_at"} {
-		require.True(t, db.Migrator().HasColumn(&commerceschema.SubscriptionOrder{}, column), column)
-	}
-}
-
 func TestBootstrapPrimarySchemaThenApplyV2Migrations(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{Logger: logger.Default.LogMode(logger.Silent)})
 	require.NoError(t, err)

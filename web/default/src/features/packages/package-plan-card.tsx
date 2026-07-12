@@ -1,5 +1,5 @@
-import { ArrowRight, ChevronDown, Sparkles } from 'lucide-react'
 import { useState } from 'react'
+import { ArrowRight, ChevronDown, Sparkles } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -7,6 +7,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import {
   formatDuration,
   formatSubscriptionPlanPrice,
+  formatSubscriptionPlanTitle,
   formatSubscriptionQuotaAmount,
   getSubscriptionDisabledReasonText,
   getSubscriptionPlanActionLabel,
@@ -16,17 +17,24 @@ import {
 import type {
   PlanRecord,
   SubscriptionPurchaseType,
+  UserSubscriptionRecord,
 } from '@/features/subscriptions/types'
 
 export function PackagePlanCard(props: {
   record: PlanRecord
   purchaseCount: number
   onPurchase: (purchaseType?: SubscriptionPurchaseType) => void
+  currentSubscription?: UserSubscriptionRecord
+  onFuel?: (
+    subscription: UserSubscriptionRecord,
+    title: string,
+    config: { minimumQuota: number; quotaStep: number }
+  ) => void
 }) {
   const { t } = useTranslation()
   const [showDetails, setShowDetails] = useState(false)
   const plan = props.record.plan
-  const title = plan.title || '套餐'
+  const title = formatSubscriptionPlanTitle(plan.title) || '套餐'
   const isRecommended = title.includes('Standard')
   const groupBuyEnabled = plan.group_buy_enabled === true
   const limit = Number(plan.max_purchase_per_user || 0)
@@ -38,6 +46,14 @@ export function PackagePlanCard(props: {
     getSubscriptionDisabledReasonText(props.record.disabled_reason) ||
     '当前还有更高档且未用完的生效套餐，暂不支持直接降级。'
   const tierRows = buildPackageQuotaTiers(plan)
+  const isCurrentPlan =
+    props.currentSubscription?.subscription.plan_id === plan.id
+  const canFuel =
+    isCurrentPlan &&
+    props.currentSubscription?.subscription.status === 'active' &&
+    plan.fuel_enabled === true &&
+    Number(plan.fuel_min_quota || 0) > 0 &&
+    Number(plan.fuel_quota_step || 0) > 0
 
   return (
     <Card
@@ -57,9 +73,12 @@ export function PackagePlanCard(props: {
           <div className='text-muted-foreground text-xs font-medium'>
             {getSubscriptionPlanSubtitle(plan)}
           </div>
-          <h4 className='text-foreground mt-1 text-lg font-bold'>
-            {title}
-          </h4>
+          <h4 className='text-foreground mt-1 text-lg font-bold'>{title}</h4>
+          {isCurrentPlan && (
+            <span className='border-primary/25 bg-primary/10 text-primary mt-2 inline-flex rounded-md border px-2 py-1 text-xs font-semibold'>
+              当前使用中
+            </span>
+          )}
         </div>
 
         <div className='text-center'>
@@ -93,7 +112,9 @@ export function PackagePlanCard(props: {
                 <span className='text-primary font-semibold'>
                   {formatSubscriptionQuotaAmount(
                     baseQuota +
-                      parseSubscriptionQuotaUSDToUnits(plan.group_buy_bonus_2 || 0)
+                      parseSubscriptionQuotaUSDToUnits(
+                        plan.group_buy_bonus_2 || 0
+                      )
                   )}
                 </span>
               </div>
@@ -102,7 +123,9 @@ export function PackagePlanCard(props: {
                 <span className='text-primary font-semibold'>
                   {formatSubscriptionQuotaAmount(
                     baseQuota +
-                      parseSubscriptionQuotaUSDToUnits(plan.group_buy_bonus_3 || 0)
+                      parseSubscriptionQuotaUSDToUnits(
+                        plan.group_buy_bonus_3 || 0
+                      )
                   )}
                 </span>
               </div>
@@ -111,7 +134,9 @@ export function PackagePlanCard(props: {
                 <span className='text-primary font-semibold'>
                   {formatSubscriptionQuotaAmount(
                     baseQuota +
-                      parseSubscriptionQuotaUSDToUnits(plan.group_buy_bonus_5 || 0)
+                      parseSubscriptionQuotaUSDToUnits(
+                        plan.group_buy_bonus_5 || 0
+                      )
                   )}
                 </span>
               </div>
@@ -124,8 +149,12 @@ export function PackagePlanCard(props: {
             <div className='space-y-1.5 text-xs'>
               {tierRows.map((tier) => (
                 <div key={tier.label} className='flex justify-between'>
-                  <span className='text-muted-foreground'>{tier.label}: {tier.detail}</span>
-                  <span className='text-foreground font-medium'>{tier.value}</span>
+                  <span className='text-muted-foreground'>
+                    {tier.label}: {tier.detail}
+                  </span>
+                  <span className='text-foreground font-medium'>
+                    {tier.value}
+                  </span>
                 </div>
               ))}
             </div>
@@ -139,13 +168,31 @@ export function PackagePlanCard(props: {
 
         <button
           onClick={() => setShowDetails(!showDetails)}
-          className='text-primary -mx-4 flex items-center justify-center gap-1 py-1 text-xs font-medium transition-colors hover:text-primary/80'
+          className='text-primary hover:text-primary/80 -mx-4 flex items-center justify-center gap-1 py-1 text-xs font-medium transition-colors'
         >
           {showDetails ? '收起' : '查看'}详情
-          <ChevronDown className={cn('h-3.5 w-3.5 transition-transform', showDetails && 'rotate-180')} />
+          <ChevronDown
+            className={cn(
+              'h-3.5 w-3.5 transition-transform',
+              showDetails && 'rotate-180'
+            )}
+          />
         </button>
 
         <div className='mt-auto space-y-2'>
+          {canFuel && props.currentSubscription && props.onFuel && (
+            <Button
+              className='w-full'
+              onClick={() =>
+                props.onFuel?.(props.currentSubscription!, title, {
+                  minimumQuota: Number(plan.fuel_min_quota || 0),
+                  quotaStep: Number(plan.fuel_quota_step || 0),
+                })
+              }
+            >
+              为当前月卡加油
+            </Button>
+          )}
           <Button
             className='w-full'
             disabled={limitReached || props.record.action === 'disabled'}

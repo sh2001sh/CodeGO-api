@@ -48,6 +48,10 @@ export const subscriptionPlanSchema = z.object({
   renewal_bonus_2: z.number().default(0).optional(),
   renewal_bonus_3: z.number().default(0).optional(),
   renewal_bonus_4: z.number().default(0).optional(),
+  fuel_enabled: z.boolean().default(false).optional(),
+  fuel_unit_price: z.number().default(0).optional(),
+  fuel_min_quota: z.number().default(0).optional(),
+  fuel_quota_step: z.number().default(0).optional(),
   total_amount: z.number(),
   period_amount: z.number().optional(),
   model_limits: z.string().optional(),
@@ -189,6 +193,19 @@ export interface SubscriptionPayResponse {
   url?: string
 }
 
+export interface SubscriptionFuelQuote {
+  subscription_id: number
+  plan_id: number
+  plan_title: string
+  quota: number
+  unit_price: number
+  amount_due: number
+  expires_at: number
+  min_quota: number
+  quota_step: number
+  quota_per_unit: number
+}
+
 export interface SubscriptionOrderStatus {
   trade_no: string
   status: 'pending' | 'success' | 'expired' | string
@@ -199,20 +216,6 @@ export interface SubscriptionOrderStatus {
   payment_provider?: string
   create_time?: number
   complete_time?: number
-}
-
-export interface SubscriptionBoosterQuote {
-  subscription_id: number
-  plan_id: number
-  plan_title: string
-  quota: number
-  rate: number
-  amount_due: number
-  expires_at: number
-  min_quota: number
-  max_quota: number
-  quota_step: number
-  quota_per_unit: number
 }
 
 export interface CreateUserSubscriptionRequest {
@@ -248,9 +251,6 @@ export interface SelfSubscriptionData {
   claude_quota: number
   conversion_config: SubscriptionClaudeConversionConfig
   recent_conversions: SubscriptionClaudeConversionRecord[]
-  booster_config?: {
-    enabled: boolean
-  }
 }
 
 export type FundingSource = 'subscription' | 'wallet'

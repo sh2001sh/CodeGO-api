@@ -38,10 +38,8 @@ const PLAN_DISCOUNT_TEXT_MAP: Array<{
 ]
 
 function trimText(value?: string | null): string {
-  // Strip NUL bytes that can leak in from upstream payloads before trimming.
-  // eslint-disable-next-line no-control-regex
   return String(value || '')
-    .replace(/\u0000/g, '')
+    .replaceAll(String.fromCharCode(0), '')
     .trim()
 }
 
@@ -82,6 +80,13 @@ export function parseSubscriptionQuotaUSDToUnits(
 
 export function normalizeSubscriptionText(value?: string | null): string {
   return trimText(value)
+}
+
+export function formatSubscriptionPlanTitle(value?: string | null): string {
+  return normalizeSubscriptionText(value).replace(
+    /([A-Za-z])(?=[\u4e00-\u9fff])/g,
+    '$1 '
+  )
 }
 
 export function getSubscriptionDisabledReasonText(

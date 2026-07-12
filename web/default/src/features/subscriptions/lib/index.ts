@@ -20,6 +20,7 @@ export { formatDuration, formatResetPeriod, formatTimestamp } from './format'
 export {
   formatSubscriptionQuotaAmount,
   formatSubscriptionPlanPrice,
+  formatSubscriptionPlanTitle,
   getSubscriptionPlanActionLabel,
   getSubscriptionDisabledReasonText,
   getSubscriptionPlanDescription,

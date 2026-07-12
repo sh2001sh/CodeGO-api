@@ -132,14 +132,16 @@ func FulfillPaidSubscriptionOrder(tradeNo string) error {
 		if order.FulfillmentStatus == commerceschema.SubscriptionOrderFulfillmentCompleted {
 			return nil
 		}
-		if order.PurchaseType == commerceschema.SubscriptionPurchaseTypeBooster {
-			if err := fulfillSubscriptionBoosterTx(tx, order); err != nil {
+		if order.PurchaseType == "subscription_booster" {
+			return errors.New("legacy subscription booster orders are no longer fulfillable")
+		}
+		if order.PurchaseType == commerceschema.SubscriptionPurchaseTypeFuel {
+			if err := fulfillSubscriptionFuelTx(tx, order); err != nil {
 				return err
 			}
 			order.FulfillmentStatus = commerceschema.SubscriptionOrderFulfillmentCompleted
 			return tx.Save(order).Error
 		}
-
 		plan, err := getSubscriptionPlanRecordTx(tx, order.PlanId)
 		if err != nil {
 			return err

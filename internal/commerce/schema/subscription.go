@@ -38,7 +38,7 @@ const (
 
 const (
 	SubscriptionPurchaseTypeNormal    = "normal"
-	SubscriptionPurchaseTypeBooster   = "subscription_booster"
+	SubscriptionPurchaseTypeFuel      = "subscription_fuel"
 	SubscriptionPurchaseTypeGroupBuy  = "group_buy"
 	SubscriptionPurchaseTypeJoinGroup = "join_group"
 )
@@ -86,6 +86,10 @@ type SubscriptionPlan struct {
 	RenewalBonus2   float64 `json:"renewal_bonus_2" gorm:"column:renewal_bonus2;type:decimal(8,4);default:0"`
 	RenewalBonus3   float64 `json:"renewal_bonus_3" gorm:"column:renewal_bonus3;type:decimal(8,4);default:0"`
 	RenewalBonus4   float64 `json:"renewal_bonus_4" gorm:"column:renewal_bonus4;type:decimal(8,4);default:0"`
+	FuelEnabled     bool    `json:"fuel_enabled" gorm:"default:false"`
+	FuelUnitPrice   float64 `json:"fuel_unit_price" gorm:"type:decimal(10,4);default:0"`
+	FuelMinQuota    int64   `json:"fuel_min_quota" gorm:"type:bigint;default:0"`
+	FuelQuotaStep   int64   `json:"fuel_quota_step" gorm:"type:bigint;default:0"`
 
 	UpgradeGroup string `json:"upgrade_group" gorm:"type:varchar(64);default:''"`
 	TotalAmount  int64  `json:"total_amount" gorm:"type:bigint;not null;default:0"`
@@ -161,9 +165,9 @@ type SubscriptionOrder struct {
 	PurchaseType         string  `json:"purchase_type" gorm:"type:varchar(32);default:'normal';index"`
 	GroupBuyId           int64   `json:"group_buy_id" gorm:"type:bigint;default:0;index"`
 	TargetSubscriptionId int     `json:"target_subscription_id" gorm:"type:int;default:0;index"`
-	BoosterQuota         int64   `json:"booster_quota" gorm:"type:bigint;default:0"`
-	BoosterRate          float64 `json:"booster_rate" gorm:"type:decimal(10,6);default:0"`
-	BoosterExpiresAt     int64   `json:"booster_expires_at" gorm:"type:bigint;default:0"`
+	FuelQuota            int64   `json:"fuel_quota" gorm:"type:bigint;default:0"`
+	FuelUnitPrice        float64 `json:"fuel_unit_price" gorm:"type:decimal(10,4);default:0"`
+	FuelExpiresAt        int64   `json:"fuel_expires_at" gorm:"type:bigint;default:0"`
 	Status               string  `json:"status"`
 	// FulfillmentStatus separates provider payment confirmation from benefits delivery.
 	// Existing historical rows default to completed so migrations cannot re-grant benefits.

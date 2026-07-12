@@ -33,7 +33,6 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
 import {
   Select,
   SelectContent,
@@ -52,6 +51,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { Switch } from '@/components/ui/switch'
+import { Textarea } from '@/components/ui/textarea'
 import { createPlan, updatePlan, getGroups } from '../api'
 import { getDurationUnitOptions, getResetPeriodOptions } from '../constants'
 import {
@@ -444,6 +444,102 @@ export function SubscriptionsMutateDrawer({
               </div>
             </div>
 
+            {isMonthlyCard ? (
+              <div className='space-y-3 rounded-lg border p-4'>
+                <div className='flex items-start justify-between gap-3'>
+                  <div>
+                    <FormLabel>动态加油包</FormLabel>
+                    <FormDescription>
+                      用户可按本套餐的单价自定义补充额度，不延长月卡有效期。
+                    </FormDescription>
+                  </div>
+                  <FormField
+                    control={form.control}
+                    name='fuel_enabled'
+                    render={({ field }) => (
+                      <FormControl>
+                        <Switch
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                    )}
+                  />
+                </div>
+                <div className='grid grid-cols-1 gap-3 sm:grid-cols-3'>
+                  <FormField
+                    control={form.control}
+                    name='fuel_unit_price'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>加油单价（元 / $1 额度）</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            type='number'
+                            min={0}
+                            step='0.001'
+                            onChange={(event) =>
+                              field.onChange(
+                                Number.parseFloat(event.target.value) || 0
+                              )
+                            }
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name='fuel_min_quota'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>最低加油额度（$）</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            type='number'
+                            min={0}
+                            step='1'
+                            onChange={(event) =>
+                              field.onChange(
+                                Number.parseFloat(event.target.value) || 0
+                              )
+                            }
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name='fuel_quota_step'
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>额度递增步长（$）</FormLabel>
+                        <FormControl>
+                          <Input
+                            {...field}
+                            type='number'
+                            min={0}
+                            step='1'
+                            onChange={(event) =>
+                              field.onChange(
+                                Number.parseFloat(event.target.value) || 0
+                              )
+                            }
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              </div>
+            ) : null}
+
             {/* Duration Settings */}
             <div className='space-y-4'>
               <h3 className='flex items-center gap-2 text-sm font-medium'>
@@ -575,7 +671,9 @@ export function SubscriptionsMutateDrawer({
                       </Select>
                       {isMonthlyCard && (
                         <FormDescription>
-                          {t('Monthly cards do not reset. Total quota is usable for the whole month.')}
+                          {t(
+                            'Monthly cards do not reset. Total quota is usable for the whole month.'
+                          )}
                         </FormDescription>
                       )}
                       <FormMessage />
@@ -628,7 +726,9 @@ export function SubscriptionsMutateDrawer({
                       />
                     </FormControl>
                     <FormDescription>
-                      {t('Optional per-model quota caps copied to each new subscription')}
+                      {t(
+                        'Optional per-model quota caps copied to each new subscription'
+                      )}
                     </FormDescription>
                     <FormMessage />
                   </FormItem>

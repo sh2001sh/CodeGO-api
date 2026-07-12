@@ -70,6 +70,10 @@ func defaultSubscriptionPlans() []commerceschema.SubscriptionPlan {
 			RenewalBonus2:      0.03,
 			RenewalBonus3:      0.05,
 			RenewalBonus4:      0.08,
+			FuelEnabled:        true,
+			FuelUnitPrice:      0.175,
+			FuelMinQuota:       quotaUnitsFromUSD(10),
+			FuelQuotaStep:      quotaUnitsFromUSD(10),
 		},
 		{
 			Title:            "Standard月卡",
@@ -92,6 +96,10 @@ func defaultSubscriptionPlans() []commerceschema.SubscriptionPlan {
 			RenewalBonus2:    0.03,
 			RenewalBonus3:    0.05,
 			RenewalBonus4:    0.08,
+			FuelEnabled:      true,
+			FuelUnitPrice:    0.170,
+			FuelMinQuota:     quotaUnitsFromUSD(10),
+			FuelQuotaStep:    quotaUnitsFromUSD(10),
 		},
 		{
 			Title:            "Pro月卡",
@@ -114,6 +122,10 @@ func defaultSubscriptionPlans() []commerceschema.SubscriptionPlan {
 			RenewalBonus2:    0.03,
 			RenewalBonus3:    0.05,
 			RenewalBonus4:    0.08,
+			FuelEnabled:      true,
+			FuelUnitPrice:    0.160,
+			FuelMinQuota:     quotaUnitsFromUSD(10),
+			FuelQuotaStep:    quotaUnitsFromUSD(10),
 		},
 		{
 			Title:            "Ultra月卡",
@@ -136,6 +148,10 @@ func defaultSubscriptionPlans() []commerceschema.SubscriptionPlan {
 			RenewalBonus2:    0.03,
 			RenewalBonus3:    0.05,
 			RenewalBonus4:    0.08,
+			FuelEnabled:      true,
+			FuelUnitPrice:    0.150,
+			FuelMinQuota:     quotaUnitsFromUSD(10),
+			FuelQuotaStep:    quotaUnitsFromUSD(10),
 		},
 		{
 			Title:              "新人体验卡",
@@ -311,6 +327,18 @@ func syncPresetSubscriptionPlanFields(existing *commerceschema.SubscriptionPlan,
 	}
 	if existing.RenewalBonus4 != preset.RenewalBonus4 {
 		updates["renewal_bonus4"] = preset.RenewalBonus4
+	}
+	if existing.FuelEnabled != preset.FuelEnabled {
+		updates["fuel_enabled"] = preset.FuelEnabled
+	}
+	if existing.FuelUnitPrice != preset.FuelUnitPrice {
+		updates["fuel_unit_price"] = preset.FuelUnitPrice
+	}
+	if existing.FuelMinQuota != preset.FuelMinQuota {
+		updates["fuel_min_quota"] = preset.FuelMinQuota
+	}
+	if existing.FuelQuotaStep != preset.FuelQuotaStep {
+		updates["fuel_quota_step"] = preset.FuelQuotaStep
 	}
 	if existing.UpgradeGroup != preset.UpgradeGroup {
 		updates["upgrade_group"] = preset.UpgradeGroup

@@ -58,6 +58,10 @@ export function getPlanFormSchema(t: TFunction) {
     upgrade_group: z.string().optional(),
     stripe_price_id: z.string().optional(),
     creem_product_id: z.string().optional(),
+    fuel_enabled: z.boolean(),
+    fuel_unit_price: z.coerce.number().min(0),
+    fuel_min_quota: z.coerce.number().min(0),
+    fuel_quota_step: z.coerce.number().min(0),
   })
 }
 
@@ -83,6 +87,10 @@ export const PLAN_FORM_DEFAULTS: PlanFormValues = {
   upgrade_group: '',
   stripe_price_id: '',
   creem_product_id: '',
+  fuel_enabled: false,
+  fuel_unit_price: 0,
+  fuel_min_quota: 0,
+  fuel_quota_step: 0,
 }
 
 export function planToFormValues(plan: SubscriptionPlan): PlanFormValues {
@@ -106,6 +114,10 @@ export function planToFormValues(plan: SubscriptionPlan): PlanFormValues {
     upgrade_group: plan.upgrade_group || '',
     stripe_price_id: plan.stripe_price_id || '',
     creem_product_id: plan.creem_product_id || '',
+    fuel_enabled: plan.fuel_enabled === true,
+    fuel_unit_price: Number(plan.fuel_unit_price || 0),
+    fuel_min_quota: subscriptionQuotaUnitsToUSD(plan.fuel_min_quota),
+    fuel_quota_step: subscriptionQuotaUnitsToUSD(plan.fuel_quota_step),
   }
 }
 
@@ -146,6 +158,10 @@ export function formValuesToPlanPayload(values: PlanFormValues): PlanPayload {
       upgrade_group: values.upgrade_group || '',
       stripe_price_id: values.stripe_price_id || '',
       creem_product_id: values.creem_product_id || '',
+      fuel_enabled: isMonthlyCard && values.fuel_enabled,
+      fuel_unit_price: Number(values.fuel_unit_price || 0),
+      fuel_min_quota: parseSubscriptionQuotaUSDToUnits(values.fuel_min_quota),
+      fuel_quota_step: parseSubscriptionQuotaUSDToUnits(values.fuel_quota_step),
     },
   }
 }

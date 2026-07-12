@@ -324,6 +324,10 @@ func ensureSubscriptionPlanTableSQLiteTx(db *gorm.DB) error {
 			"`renewal_bonus2` decimal(8,4) DEFAULT 0,\n" +
 			"`renewal_bonus3` decimal(8,4) DEFAULT 0,\n" +
 			"`renewal_bonus4` decimal(8,4) DEFAULT 0,\n" +
+			"`fuel_enabled` numeric DEFAULT 0,\n" +
+			"`fuel_unit_price` decimal(10,4) DEFAULT 0,\n" +
+			"`fuel_min_quota` bigint DEFAULT 0,\n" +
+			"`fuel_quota_step` bigint DEFAULT 0,\n" +
 			"`upgrade_group` varchar(64) DEFAULT '',\n" +
 			"`total_amount` bigint NOT NULL DEFAULT 0,\n" +
 			"`period_amount` bigint NOT NULL DEFAULT 0,\n" +
@@ -369,6 +373,10 @@ func ensureSubscriptionPlanTableSQLiteTx(db *gorm.DB) error {
 		{Name: "renewal_bonus2", DDL: "`renewal_bonus2` decimal(8,4) DEFAULT 0"},
 		{Name: "renewal_bonus3", DDL: "`renewal_bonus3` decimal(8,4) DEFAULT 0"},
 		{Name: "renewal_bonus4", DDL: "`renewal_bonus4` decimal(8,4) DEFAULT 0"},
+		{Name: "fuel_enabled", DDL: "`fuel_enabled` numeric DEFAULT 0"},
+		{Name: "fuel_unit_price", DDL: "`fuel_unit_price` decimal(10,4) DEFAULT 0"},
+		{Name: "fuel_min_quota", DDL: "`fuel_min_quota` bigint DEFAULT 0"},
+		{Name: "fuel_quota_step", DDL: "`fuel_quota_step` bigint DEFAULT 0"},
 		{Name: "upgrade_group", DDL: "`upgrade_group` varchar(64) DEFAULT ''"},
 		{Name: "total_amount", DDL: "`total_amount` bigint NOT NULL DEFAULT 0"},
 		{Name: "period_amount", DDL: "`period_amount` bigint NOT NULL DEFAULT 0"},
@@ -423,6 +431,9 @@ func ensureSubscriptionOrderTableSQLiteTx(db *gorm.DB) error {
 		{Name: "booster_quota", DDL: "`booster_quota` bigint DEFAULT 0"},
 		{Name: "booster_rate", DDL: "`booster_rate` decimal(10,6) DEFAULT 0"},
 		{Name: "booster_expires_at", DDL: "`booster_expires_at` bigint DEFAULT 0"},
+		{Name: "fuel_quota", DDL: "`fuel_quota` bigint DEFAULT 0"},
+		{Name: "fuel_unit_price", DDL: "`fuel_unit_price` decimal(10,4) DEFAULT 0"},
+		{Name: "fuel_expires_at", DDL: "`fuel_expires_at` bigint DEFAULT 0"},
 	}
 	for _, col := range required {
 		if _, ok := existing[col.Name]; ok {
