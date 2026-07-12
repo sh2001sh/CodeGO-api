@@ -30,8 +30,10 @@ type Props = {
 
 export function SubscriptionBoosterDialog(props: Props) {
   const { t } = useTranslation()
-  const [quota, setQuota] = useState(500_000)
+  const [amount, setAmount] = useState(1)
   const [quote, setQuote] = useState<SubscriptionBoosterQuote | null>(null)
+  const quotaPerUnit = quote?.quota_per_unit ?? 500_000
+  const quota = Math.round(amount * quotaPerUnit)
   const quoteMutation = useMutation({
     mutationFn: quoteSubscriptionBooster,
     onSuccess: (response) => setQuote(response.data ?? null),
@@ -78,15 +80,15 @@ export function SubscriptionBoosterDialog(props: Props) {
             </div>
           </div>
           <div className='space-y-2'>
-            <Label htmlFor='booster-quota'>{t('Booster quota')}</Label>
+            <Label htmlFor='booster-quota'>{t('Booster amount (USD)')}</Label>
             <Input
               id='booster-quota'
               type='number'
-              min={quote?.min_quota ?? 500_000}
-              max={quote?.max_quota ?? 500_000_000}
-              step={quote?.quota_step ?? 500_000}
-              value={quota}
-              onChange={(event) => setQuota(Number(event.target.value))}
+              min={(quote?.min_quota ?? 500_000) / quotaPerUnit}
+              max={(quote?.max_quota ?? 500_000_000) / quotaPerUnit}
+              step={(quote?.quota_step ?? 500_000) / quotaPerUnit}
+              value={amount}
+              onChange={(event) => setAmount(Number(event.target.value))}
             />
             <p className='text-muted-foreground text-xs'>
               {t(

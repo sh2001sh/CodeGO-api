@@ -212,6 +212,7 @@ export interface SubscriptionBoosterQuote {
   min_quota: number
   max_quota: number
   quota_step: number
+  quota_per_unit: number
 }
 
 export interface CreateUserSubscriptionRequest {

@@ -149,6 +149,18 @@ const BILLING_SECTIONS = [
           PayMethods: settings.PayMethods,
           AmountOptions: settings['payment_setting.amount_options'],
           AmountDiscount: settings['payment_setting.amount_discount'],
+          SubscriptionBoosterEnabled:
+            settings['payment_setting.subscription_booster_enabled'],
+          SubscriptionBoosterRate:
+            settings['payment_setting.subscription_booster_rate'],
+          SubscriptionBoosterMinQuota:
+            settings['payment_setting.subscription_booster_min_quota'],
+          SubscriptionBoosterMaxQuota:
+            settings['payment_setting.subscription_booster_max_quota'],
+          SubscriptionBoosterQuotaStep:
+            settings['payment_setting.subscription_booster_quota_step'],
+          SubscriptionBoosterDailyLimit:
+            settings['payment_setting.subscription_booster_daily_limit'],
           StripeApiSecret: settings.StripeApiSecret,
           StripeWebhookSecret: settings.StripeWebhookSecret,
           StripePriceId: settings.StripePriceId,
@@ -224,15 +236,16 @@ const BILLING_SECTIONS = [
   {
     id: 'blind-box',
     titleKey: 'Blind Box Event',
-    descriptionKey: 'Configure blind box pricing, probability tiers, and pity rules',
+    descriptionKey:
+      'Configure blind box pricing, probability tiers, and pity rules',
     build: (settings: BillingSettings) => (
-        <BlindBoxSettingsSection
-          defaultValues={{
-            enabled: settings['blind_box_setting.enabled'],
-            unitPrice: settings['blind_box_setting.unit_price'],
-            dailyLimit: settings['blind_box_setting.daily_limit'],
-            monthlyLimit: settings['blind_box_setting.monthly_limit'],
-            dailyOpenLimit: settings['blind_box_setting.daily_open_limit'],
+      <BlindBoxSettingsSection
+        defaultValues={{
+          enabled: settings['blind_box_setting.enabled'],
+          unitPrice: settings['blind_box_setting.unit_price'],
+          dailyLimit: settings['blind_box_setting.daily_limit'],
+          monthlyLimit: settings['blind_box_setting.monthly_limit'],
+          dailyOpenLimit: settings['blind_box_setting.daily_open_limit'],
           firstPurchaseGuaranteeUSD:
             settings['blind_box_setting.first_purchase_guarantee_usd'],
           pityThreshold: settings['blind_box_setting.pity_threshold'],

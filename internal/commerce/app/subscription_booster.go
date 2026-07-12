@@ -87,14 +87,28 @@ func CreateSubscriptionBoosterStripePayment(userID int, req SubscriptionBoosterP
 	return &SubscriptionStripeCheckoutPayload{SubscriptionCheckoutPayload: SubscriptionCheckoutPayload{OrderID: referenceID, AmountDue: order.Money, Action: "booster"}, PayLink: link}, nil
 }
 
-const (
-	SubscriptionBoosterDefaultRate = 0.12
-	SubscriptionBoosterMinQuota    = int64(500_000)
-	SubscriptionBoosterMaxQuota    = int64(500_000_000)
-	SubscriptionBoosterQuotaStep   = int64(500_000)
-)
-
 var ErrSubscriptionBoosterUnavailable = errors.New("subscription booster unavailable")
+
+type subscriptionBoosterConfig struct {
+	Enabled    bool
+	Rate       float64
+	MinQuota   int64
+	MaxQuota   int64
+	QuotaStep  int64
+	DailyLimit int
+}
+
+func currentSubscriptionBoosterConfig() subscriptionBoosterConfig {
+	setting := commercestore.GetPaymentSetting()
+	return subscriptionBoosterConfig{
+		Enabled:    setting.SubscriptionBoosterEnabled,
+		Rate:       setting.SubscriptionBoosterRate,
+		MinQuota:   setting.SubscriptionBoosterMinQuota,
+		MaxQuota:   setting.SubscriptionBoosterMaxQuota,
+		QuotaStep:  setting.SubscriptionBoosterQuotaStep,
+		DailyLimit: setting.SubscriptionBoosterDailyLimit,
+	}
+}
 
 type SubscriptionBoosterQuoteRequest struct {
 	SubscriptionID int   `json:"subscription_id"`
@@ -112,11 +126,23 @@ type SubscriptionBoosterQuote struct {
 	MinQuota       int64   `json:"min_quota"`
 	MaxQuota       int64   `json:"max_quota"`
 	QuotaStep      int64   `json:"quota_step"`
+	QuotaPerUnit   int64   `json:"quota_per_unit"`
 }
 
 func QuoteSubscriptionBooster(userID int, req SubscriptionBoosterQuoteRequest) (*SubscriptionBoosterQuote, error) {
-	if userID <= 0 || req.SubscriptionID <= 0 || req.Quota < SubscriptionBoosterMinQuota || req.Quota > SubscriptionBoosterMaxQuota || req.Quota%SubscriptionBoosterQuotaStep != 0 {
+	config := currentSubscriptionBoosterConfig()
+	if !config.Enabled || config.Rate <= 0 || config.MinQuota <= 0 || config.MaxQuota < config.MinQuota || config.QuotaStep <= 0 {
 		return nil, ErrSubscriptionBoosterUnavailable
+	}
+	if userID <= 0 || req.SubscriptionID <= 0 || req.Quota < config.MinQuota || req.Quota > config.MaxQuota || req.Quota%config.QuotaStep != 0 {
+		return nil, ErrSubscriptionBoosterUnavailable
+	}
+	if config.DailyLimit > 0 {
+		startOfDay := time.Now().Truncate(24 * time.Hour).Unix()
+		var count int64
+		if err := platformdb.DB.Model(&commerceschema.SubscriptionOrder{}).Where("user_id = ? AND purchase_type = ? AND create_time >= ? AND status <> ?", userID, commerceschema.SubscriptionPurchaseTypeBooster, startOfDay, constant.TopUpStatusExpired).Count(&count).Error; err != nil || count >= int64(config.DailyLimit) {
+			return nil, ErrSubscriptionBoosterUnavailable
+		}
 	}
 	var sub commerceschema.UserSubscription
 	if err := platformdb.DB.Where("id = ? AND user_id = ?", req.SubscriptionID, userID).First(&sub).Error; err != nil {
@@ -130,8 +156,8 @@ func QuoteSubscriptionBooster(userID int, req SubscriptionBoosterQuoteRequest) (
 		return nil, ErrSubscriptionBoosterUnavailable
 	}
 	units := float64(req.Quota) / float64(platformruntime.QuotaPerUnit)
-	amount := math.Round(units*SubscriptionBoosterDefaultRate*100) / 100
-	return &SubscriptionBoosterQuote{SubscriptionID: sub.Id, PlanID: plan.Id, PlanTitle: plan.Title, Quota: req.Quota, Rate: SubscriptionBoosterDefaultRate, AmountDue: amount, ExpiresAt: sub.EndTime, MinQuota: SubscriptionBoosterMinQuota, MaxQuota: SubscriptionBoosterMaxQuota, QuotaStep: SubscriptionBoosterQuotaStep}, nil
+	amount := math.Round(units*config.Rate*100) / 100
+	return &SubscriptionBoosterQuote{SubscriptionID: sub.Id, PlanID: plan.Id, PlanTitle: plan.Title, Quota: req.Quota, Rate: config.Rate, AmountDue: amount, ExpiresAt: sub.EndTime, MinQuota: config.MinQuota, MaxQuota: config.MaxQuota, QuotaStep: config.QuotaStep, QuotaPerUnit: int64(platformruntime.QuotaPerUnit)}, nil
 }
 
 func fulfillSubscriptionBoosterTx(tx *gorm.DB, order *commerceschema.SubscriptionOrder) error {

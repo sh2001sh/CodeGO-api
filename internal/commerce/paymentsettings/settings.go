@@ -8,8 +8,14 @@ import (
 )
 
 type PaymentSetting struct {
-	AmountOptions  []int           `json:"amount_options"`
-	AmountDiscount map[int]float64 `json:"amount_discount"`
+	AmountOptions                 []int           `json:"amount_options"`
+	AmountDiscount                map[int]float64 `json:"amount_discount"`
+	SubscriptionBoosterEnabled    bool            `json:"subscription_booster_enabled"`
+	SubscriptionBoosterRate       float64         `json:"subscription_booster_rate"`
+	SubscriptionBoosterMinQuota   int64           `json:"subscription_booster_min_quota"`
+	SubscriptionBoosterMaxQuota   int64           `json:"subscription_booster_max_quota"`
+	SubscriptionBoosterQuotaStep  int64           `json:"subscription_booster_quota_step"`
+	SubscriptionBoosterDailyLimit int             `json:"subscription_booster_daily_limit"`
 
 	ComplianceConfirmed    bool   `json:"compliance_confirmed"`
 	ComplianceTermsVersion string `json:"compliance_terms_version"`
@@ -21,8 +27,14 @@ type PaymentSetting struct {
 const CurrentComplianceTermsVersion = "v1"
 
 var paymentSetting = PaymentSetting{
-	AmountOptions:  []int{10, 20, 50, 100, 200, 500},
-	AmountDiscount: map[int]float64{},
+	AmountOptions:                 []int{10, 20, 50, 100, 200, 500},
+	AmountDiscount:                map[int]float64{},
+	SubscriptionBoosterEnabled:    true,
+	SubscriptionBoosterRate:       0.12,
+	SubscriptionBoosterMinQuota:   500_000,
+	SubscriptionBoosterMaxQuota:   500_000_000,
+	SubscriptionBoosterQuotaStep:  500_000,
+	SubscriptionBoosterDailyLimit: 10,
 }
 
 var PayAddress = ""
