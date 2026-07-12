@@ -41,6 +41,7 @@ func V2MigrationIDs() []string {
 		"20260711_gateway_execution_core",
 		"20260711_gateway_execution_trace",
 		"20260712_remove_pet_gamification",
+		"20260712_subscription_booster_columns",
 	}
 }
 
@@ -106,6 +107,7 @@ func ApplyV2Migrations(ctx context.Context, dryRun bool) error {
 			}
 			return nil
 		}},
+		{ID: "20260712_subscription_booster_columns", Run: migrateSubscriptionOrder},
 	}
 	for _, step := range steps {
 		var applied schemaMigration
