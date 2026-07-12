@@ -26,10 +26,12 @@ import {
   CardStaggerItem,
 } from '@/components/page-transition'
 import { SiteSeo } from '@/components/seo'
+import { SubscriptionBoosterDialog } from '@/features/subscriptions/components/dialogs/subscription-booster-dialog'
 import { SubscriptionPurchaseDialog } from '@/features/subscriptions/components/dialogs/subscription-purchase-dialog'
 import type {
   PlanRecord,
   SubscriptionPurchaseType,
+  UserSubscriptionRecord,
 } from '@/features/subscriptions/types'
 import { getEpayMethods } from '@/features/wallet/components/subscription-plans-card'
 import { WalletStatsCard } from '@/features/wallet/components/wallet-stats-card'
@@ -88,6 +90,9 @@ export function PackagesPage() {
     useState<SubscriptionPurchaseType>('normal')
   const [purchaseOpen, setPurchaseOpen] = useState(false)
   const [refreshing, setRefreshing] = useState(false)
+  const [boosterSubscription, setBoosterSubscription] =
+    useState<UserSubscriptionRecord | null>(null)
+  const [boosterTitle, setBoosterTitle] = useState('')
   const groupedPlans = useGroupedPlans(workspace.publicPlans)
   const topupInfo = workspace.topupInfo
   const epayMethods = useMemo(
@@ -95,15 +100,14 @@ export function PackagesPage() {
     [topupInfo?.pay_methods]
   )
 
-  const allSubscriptions = workspace.subscriptionData?.all_subscriptions || []
   const purchaseCountMap = useMemo(() => {
     const map = new Map<number, number>()
-    for (const item of allSubscriptions) {
+    for (const item of workspace.subscriptionData?.all_subscriptions ?? []) {
       const planId = item.subscription?.plan_id
       if (planId) map.set(planId, (map.get(planId) || 0) + 1)
     }
     return map
-  }, [allSubscriptions])
+  }, [workspace.subscriptionData?.all_subscriptions])
 
   const handleRefresh = async () => {
     setRefreshing(true)
@@ -199,6 +203,13 @@ export function PackagesPage() {
                 subscriptions={workspace.subscriptionData?.subscriptions || []}
                 plans={workspace.publicPlans}
                 loading={workspace.subscriptionLoading}
+                boosterEnabled={
+                  workspace.subscriptionData?.booster_config?.enabled ?? false
+                }
+                onBooster={(subscription, title) => {
+                  setBoosterSubscription(subscription)
+                  setBoosterTitle(title)
+                }}
               />
             </CardStaggerItem>
           </CardStaggerContainer>
@@ -236,6 +247,20 @@ export function PackagesPage() {
             ? purchaseCountMap.get(selectedPlan.plan.id)
             : undefined
         }
+      />
+      <SubscriptionBoosterDialog
+        open={boosterSubscription != null}
+        onOpenChange={(open) => {
+          if (!open) setBoosterSubscription(null)
+        }}
+        subscription={boosterSubscription?.subscription ?? null}
+        title={boosterTitle}
+        paymentMethod={
+          topupInfo?.enable_stripe_topup
+            ? 'stripe'
+            : (epayMethods[0]?.type ?? '')
+        }
+        onCompleted={workspace.fetchSubscriptionData}
       />
     </>
   )

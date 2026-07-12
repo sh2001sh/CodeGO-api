@@ -178,6 +178,9 @@ func BuildSubscriptionSelfPayload(userID int) (map[string]any, error) {
 		"claude_quota":           claudeQuota,
 		"conversion_config":      GetSubscriptionClaudeConversionConfig(),
 		"recent_conversions":     recentConversions,
+		"booster_config": map[string]any{
+			"enabled": currentSubscriptionBoosterConfig().Enabled,
+		},
 	}, nil
 }
 

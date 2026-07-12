@@ -23,7 +23,10 @@ import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Skeleton } from '@/components/ui/skeleton'
 import { TitledCard } from '@/components/ui/titled-card'
-import { subscriptionQuotaUnitsToUSD } from '@/features/subscriptions/lib'
+import {
+  isMonthlyCardPlan,
+  subscriptionQuotaUnitsToUSD,
+} from '@/features/subscriptions/lib'
 import type {
   PlanRecord,
   SubscriptionPurchaseType,
@@ -84,6 +87,8 @@ export function CurrentPackagePanel(props: {
   subscriptions: UserSubscriptionRecord[]
   plans: PlanRecord[]
   loading: boolean
+  boosterEnabled: boolean
+  onBooster: (subscription: UserSubscriptionRecord, title: string) => void
 }) {
   const planMap = useMemo(() => {
     const map = new Map<number, PlanRecord['plan']>()
@@ -91,6 +96,17 @@ export function CurrentPackagePanel(props: {
     return map
   }, [props.plans])
   const current = props.subscriptions[0]
+  const currentPlan = current
+    ? planMap.get(current.subscription.plan_id)
+    : undefined
+  const currentTitle =
+    currentPlan?.title ||
+    (current ? `套餐 #${current.subscription.plan_id}` : '')
+  const canBoost =
+    props.boosterEnabled &&
+    Boolean(current) &&
+    isMonthlyCardPlan(currentPlan) &&
+    current!.subscription.status === 'active'
 
   if (!props.loading && !current) {
     return (
@@ -116,8 +132,7 @@ export function CurrentPackagePanel(props: {
           <div className='flex flex-wrap items-start justify-between gap-3'>
             <div>
               <div className='text-foreground text-lg font-semibold'>
-                {planMap.get(current.subscription.plan_id)?.title ||
-                  `套餐 #${current.subscription.plan_id}`}
+                {currentTitle}
               </div>
               <div className='text-muted-foreground mt-1 text-sm'>
                 至{' '}
@@ -127,6 +142,11 @@ export function CurrentPackagePanel(props: {
               </div>
             </div>
             <div className='flex gap-2'>
+              {canBoost ? (
+                <Button onClick={() => props.onBooster(current, currentTitle)}>
+                  续量
+                </Button>
+              ) : null}
               <Button variant='outline' render={<Link to='/packages' />}>
                 续费
               </Button>

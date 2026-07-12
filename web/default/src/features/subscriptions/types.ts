@@ -248,6 +248,9 @@ export interface SelfSubscriptionData {
   claude_quota: number
   conversion_config: SubscriptionClaudeConversionConfig
   recent_conversions: SubscriptionClaudeConversionRecord[]
+  booster_config?: {
+    enabled: boolean
+  }
 }
 
 export type FundingSource = 'subscription' | 'wallet'
