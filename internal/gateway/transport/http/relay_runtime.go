@@ -159,7 +159,7 @@ func finalizeRelayError(c *gin.Context, relayFormat types.RelayFormat, ws *webso
 		return
 	}
 	rawMessageWithRequestID := platformtext.MessageWithRequestID(apiErr.Error(), requestID)
-	if types.IsUpstreamError(apiErr) {
+	if types.IsRemoteProviderError(apiErr) {
 		rawMessageWithRequestID = platformtext.SanitizeUpstreamQuotaErrorMessage(rawMessageWithRequestID)
 	}
 	apiErr.SetMessage(rawMessageWithRequestID)
