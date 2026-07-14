@@ -215,6 +215,7 @@ func migratePrimaryDB() error {
 		&commerceschema.SubscriptionPreConsumeRecord{},
 		&commerceschema.GroupBuyOrder{},
 		&commerceschema.BlindBoxOrder{},
+		&commerceschema.BlindBoxGrant{},
 		&commerceschema.BlindBoxCredit{},
 		&commerceschema.BlindBoxOpenRecord{},
 		&commerceschema.BlindBoxProp{},

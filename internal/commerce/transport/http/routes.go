@@ -84,6 +84,7 @@ func RegisterCommerceRoutes(apiRouter *gin.RouterGroup, anonymousRequestBodyLimi
 	blindBoxAdminRoute.Use(middleware.AdminAuth())
 	{
 		blindBoxAdminRoute.GET("/users/:id/overview", adminGetBlindBoxUserOverview)
+		blindBoxAdminRoute.POST("/users/:id/grants", adminGrantBlindBoxes)
 	}
 
 	apiRouter.POST("/blind-box/epay/notify", anonymousRequestBodyLimit, blindBoxEpayNotify)

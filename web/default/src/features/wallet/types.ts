@@ -376,6 +376,17 @@ export interface BlindBoxRecord {
   prop_expires_at?: number
 }
 
+export interface BlindBoxGrant {
+  id: number
+  user_id: number
+  admin_user_id: number
+  blind_box_order_id: number
+  quantity: number
+  reason: string
+  trade_no: string
+  created_at: number
+}
+
 export interface BlindBoxOverview {
   available_boxes: number
   pending_boxes: number
@@ -409,6 +420,7 @@ export interface BlindBoxSelfData {
   pay_methods: PaymentMethod[]
   overview: BlindBoxOverview
   props: BlindBoxProp[]
+  grants?: BlindBoxGrant[]
 }
 
 export interface BlindBoxOrderStatus {

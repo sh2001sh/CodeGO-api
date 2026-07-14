@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { createFileRoute, useNavigate } from '@tanstack/react-router'
-import { PublicLayout } from '@/components/layout'
+import { useAuthStore } from '@/stores/auth-store'
+import { AuthenticatedLayout, PublicLayout } from '@/components/layout'
 import { BountyMarket } from '@/features/bounties'
 import type { BountyTaskStatus } from '@/features/bounties/types'
 
@@ -49,37 +50,40 @@ export const Route = createFileRoute('/bounties/')({
 function BountiesRoute() {
   const search = Route.useSearch()
   const navigate = useNavigate({ from: Route.fullPath })
+  const user = useAuthStore((state) => state.auth.user)
+  const content = (
+    <BountyMarket
+      search={
+        search as {
+          scope?: 'all' | 'mine_published' | 'mine_assigned' | 'mine_disputes'
+          keyword?: string
+          wallet_type?: 'all' | 'wallet' | 'claude_wallet'
+          status?:
+            | 'all'
+            | 'available'
+            | 'active'
+            | 'ending_soon'
+            | BountyTaskStatus
+          sort?: 'latest' | 'reward_desc' | 'deadline_asc'
+          tag?: string
+          min_reward?: number
+          max_reward?: number
+          page?: number
+        }
+      }
+      onSearchChange={(next) => {
+        void navigate({ search: (previous) => ({ ...previous, ...next }) })
+      }}
+    />
+  )
+
+  if (user) {
+    return <AuthenticatedLayout>{content}</AuthenticatedLayout>
+  }
+
   return (
     <PublicLayout showMainContainer={false}>
-      <div className='pt-16'>
-        <BountyMarket
-          search={
-            search as {
-              scope?:
-                | 'all'
-                | 'mine_published'
-                | 'mine_assigned'
-                | 'mine_disputes'
-              keyword?: string
-              wallet_type?: 'all' | 'wallet' | 'claude_wallet'
-              status?:
-                | 'all'
-                | 'available'
-                | 'active'
-                | 'ending_soon'
-                | BountyTaskStatus
-              sort?: 'latest' | 'reward_desc' | 'deadline_asc'
-              tag?: string
-              min_reward?: number
-              max_reward?: number
-              page?: number
-            }
-          }
-          onSearchChange={(next) => {
-            void navigate({ search: (previous) => ({ ...previous, ...next }) })
-          }}
-        />
-      </div>
+      <div className='pt-16'>{content}</div>
     </PublicLayout>
   )
 }

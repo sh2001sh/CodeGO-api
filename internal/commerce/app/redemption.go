@@ -232,6 +232,7 @@ func createBlindBoxRedemptionOrderTx(tx *gorm.DB, userID int, quantity int, rede
 		TradeNo:         tradeNo,
 		PaymentMethod:   "redemption",
 		PaymentProvider: "redemption",
+		Source:          commerceschema.BlindBoxOrderSourcePurchase,
 		Status:          constant.TopUpStatusSuccess,
 		CreateTime:      platformruntime.GetTimestamp(),
 		CompleteTime:    platformruntime.GetTimestamp(),

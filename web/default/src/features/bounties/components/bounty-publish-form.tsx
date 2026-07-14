@@ -1,4 +1,4 @@
-import type { UseFormReturn } from 'react-hook-form'
+import { Controller, type UseFormReturn } from 'react-hook-form'
 import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { DrawerFooter } from '@/components/ui/drawer'
@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { Textarea } from '@/components/ui/textarea'
+import { DateTimePicker } from '@/components/datetime-picker'
 import type { BountyFormValues } from '../lib/bounty-form'
 
 interface BountyPublishFormProps {
@@ -160,11 +161,19 @@ export function BountyPublishForm(props: BountyPublishFormProps) {
         </div>
         <div className='space-y-2'>
           <Label htmlFor='bounty-deadline'>{t('Delivery deadline')} *</Label>
-          <Input
-            id='bounty-deadline'
-            type='datetime-local'
-            {...form.register('deadline_at')}
-            aria-invalid={Boolean(form.formState.errors.deadline_at)}
+          <Controller
+            control={form.control}
+            name='deadline_at'
+            render={({ field }) => (
+              <DateTimePicker
+                id='bounty-deadline'
+                value={field.value ? new Date(field.value) : undefined}
+                onChange={(date) => field.onChange(formatLocalDateTime(date))}
+                placeholder={t('Select delivery deadline')}
+                ariaInvalid={Boolean(form.formState.errors.deadline_at)}
+                minDateTime={getNextMinute()}
+              />
+            )}
           />
           {form.formState.errors.deadline_at ? (
             <p className='text-destructive text-xs'>
@@ -181,4 +190,14 @@ export function BountyPublishForm(props: BountyPublishFormProps) {
       </DrawerFooter>
     </form>
   )
+}
+
+function formatLocalDateTime(date: Date | undefined) {
+  if (!date) return ''
+  const pad = (value: number) => String(value).padStart(2, '0')
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`
+}
+
+function getNextMinute() {
+  return new Date(Math.ceil(Date.now() / 60000) * 60000)
 }

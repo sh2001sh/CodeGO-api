@@ -102,13 +102,19 @@ func openBlindBoxesTx(tx *gorm.DB, userID int, count int, orderID *int) ([]comme
 	firstPurchaseStartUSD := setting.FirstPurchaseGuaranteeUSD
 
 	firstPurchaseOrderID := 0
-	if firstPurchaseStartUSD > 0 && len(orders) > 0 {
-		isFirstOrder, err := isFirstSuccessfulBlindBoxOrderTx(tx, userID, orders[0].Id)
-		if err != nil {
-			return nil, err
-		}
-		if isFirstOrder && orders[0].OpenedCount == 0 {
-			firstPurchaseOrderID = orders[0].Id
+	if firstPurchaseStartUSD > 0 {
+		for index := range orders {
+			if orders[index].Money <= 0 || orders[index].OpenedCount != 0 {
+				continue
+			}
+			isFirstOrder, err := isFirstSuccessfulBlindBoxOrderTx(tx, userID, orders[index].Id)
+			if err != nil {
+				return nil, err
+			}
+			if isFirstOrder {
+				firstPurchaseOrderID = orders[index].Id
+				break
+			}
 		}
 	}
 

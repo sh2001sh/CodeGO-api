@@ -32,6 +32,28 @@ func adminGetBlindBoxUserOverview(c *gin.Context) {
 	httpapi.ApiSuccess(c, payload)
 }
 
+func adminGrantBlindBoxes(c *gin.Context) {
+	userID, err := strconv.Atoi(c.Param("id"))
+	if err != nil || userID <= 0 {
+		httpapi.ApiErrorMsg(c, "invalid user id")
+		return
+	}
+	var req commerceapp.AdminBlindBoxGrantRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		httpapi.ApiErrorMsg(c, "invalid request")
+		return
+	}
+	result, err := commerceapp.GrantBlindBoxes(userID, c.GetInt("id"), req)
+	if err != nil {
+		httpapi.ApiError(c, err)
+		return
+	}
+	httpapi.ApiSuccess(c, gin.H{
+		"grant": result.Grant,
+		"order": result.Order,
+	})
+}
+
 func useBlindBoxProp(c *gin.Context) {
 	propID, err := strconv.Atoi(c.Param("id"))
 	if err != nil || propID <= 0 {

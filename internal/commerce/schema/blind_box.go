@@ -11,6 +11,9 @@ const (
 	BlindBoxRewardTypeProp         = "prop"
 	BlindBoxRewardTypeSubscription = "subscription"
 
+	BlindBoxOrderSourcePurchase   = "purchase"
+	BlindBoxOrderSourceAdminGrant = "admin_grant"
+
 	BlindBoxCreditStatusActive    = "active"
 	BlindBoxCreditStatusExhausted = "exhausted"
 )
@@ -26,11 +29,24 @@ type BlindBoxOrder struct {
 	TradeNo         string `json:"trade_no" gorm:"unique;type:varchar(255);index"`
 	PaymentMethod   string `json:"payment_method" gorm:"type:varchar(50)"`
 	PaymentProvider string `json:"payment_provider" gorm:"type:varchar(50);default:''"`
+	Source          string `json:"source" gorm:"type:varchar(32);default:'purchase';index"`
 	Status          string `json:"status" gorm:"type:varchar(32);index"`
 	CreateTime      int64  `json:"create_time" gorm:"index"`
 	CompleteTime    int64  `json:"complete_time"`
 
 	ProviderPayload string `json:"provider_payload" gorm:"type:text"`
+}
+
+type BlindBoxGrant struct {
+	Id              int    `json:"id"`
+	UserId          int    `json:"user_id" gorm:"index"`
+	AdminUserId     int    `json:"admin_user_id" gorm:"index"`
+	BlindBoxOrderId int    `json:"blind_box_order_id" gorm:"index"`
+	Quantity        int    `json:"quantity"`
+	Reason          string `json:"reason" gorm:"type:varchar(255)"`
+	IdempotencyKey  string `json:"-" gorm:"type:varchar(128);uniqueIndex:idx_blind_box_grants_idempotency"`
+	TradeNo         string `json:"trade_no" gorm:"type:varchar(255);uniqueIndex"`
+	CreatedAt       int64  `json:"created_at" gorm:"bigint;index"`
 }
 
 type BlindBoxCredit struct {

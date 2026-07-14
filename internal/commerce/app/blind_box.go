@@ -74,6 +74,10 @@ func BuildBlindBoxAdminOverviewPayload(userID int) (map[string]any, error) {
 	if err != nil {
 		return nil, err
 	}
+	grants, err := ListUserBlindBoxGrants(userID, 20)
+	if err != nil {
+		return nil, err
+	}
 	return map[string]any{
 		"enabled":                           enabled,
 		"unit_price":                        setting.UnitPrice,
@@ -91,6 +95,7 @@ func BuildBlindBoxAdminOverviewPayload(userID int) (map[string]any, error) {
 		"low_reward_threshold_usd":          setting.LowRewardThresholdUSD,
 		"overview":                          overview,
 		"props":                             props,
+		"grants":                            grants,
 	}, nil
 }
 

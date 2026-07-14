@@ -1,10 +1,19 @@
+import { AlertCircle, ChevronDown, Gift, Loader2, Sparkles } from 'lucide-react'
+import { motion, useReducedMotion, type Variants } from 'motion/react'
+import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { cn } from '@/lib/utils'
-import { motion, useReducedMotion, type Variants } from 'motion/react'
-import { AlertCircle, ChevronDown, Gift, Loader2, Sparkles } from 'lucide-react'
-import type { BlindBoxSelfData, BlindBoxTier, PaymentMethod } from '../types'
-import { PaymentMethodSelector, PityStatusCard } from './blind-box-view-parts'
+import type {
+  BlindBoxProp,
+  BlindBoxSelfData,
+  BlindBoxTier,
+  PaymentMethod,
+} from '../types'
+import {
+  BlindBoxPropsList,
+  PaymentMethodSelector,
+  PityStatusCard,
+} from './blind-box-view-parts'
 
 const STACK: Variants = {
   hidden: {},
@@ -28,6 +37,7 @@ interface BlindBoxCardViewProps {
   onPaymentMethodChange: (method: PaymentMethod) => void
   onPay: () => void
   onManualOpen: (count: number) => void
+  onUseProp: (prop: BlindBoxProp) => void
   onTogglePrizeNotice: () => void
   onClosePrizeNotice: () => void
 }
@@ -112,6 +122,14 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
         </div>
       ) : null}
 
+      {props.data?.props?.length ? (
+        <BlindBoxPropsList
+          props={props.data.props}
+          disabled={props.openingCount !== null || props.paying}
+          onUse={props.onUseProp}
+        />
+      ) : null}
+
       <PityStatusCard
         firstPurchaseEligible={firstPurchaseEligible}
         firstPurchaseUsd={firstPurchaseStartUSD}
@@ -122,7 +140,9 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
 
       <div>
         <div className='flex items-center justify-between gap-3'>
-          <div className='text-foreground text-base font-semibold'>选择数量</div>
+          <div className='text-foreground text-base font-semibold'>
+            选择数量
+          </div>
           <div className='text-muted-foreground text-sm'>
             单价 ¥{props.data?.unit_price?.toFixed(1) || '0.0'}
           </div>
@@ -164,10 +184,10 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
         />
       </div>
 
-      <div className='overflow-hidden rounded-2xl border border-border/50 bg-gradient-to-br from-background to-muted/30 p-4 shadow-sm'>
+      <div className='border-border/50 from-background to-muted/30 overflow-hidden rounded-2xl border bg-gradient-to-br p-4 shadow-sm'>
         <div className='flex flex-wrap items-center justify-between gap-4'>
           <div>
-            <div className='text-muted-foreground text-xs font-medium uppercase tracking-wide'>
+            <div className='text-muted-foreground text-xs font-medium tracking-wide uppercase'>
               应付金额
             </div>
             <div className='text-foreground mt-1 text-2xl font-semibold tabular-nums'>
@@ -211,7 +231,9 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
       {props.showPrizeNotice ? (
         <div className='overview-glass-card rounded-2xl p-4'>
           <div className='mb-3 flex items-center justify-between gap-3'>
-            <div className='text-foreground text-sm font-semibold'>盲盒奖池</div>
+            <div className='text-foreground text-sm font-semibold'>
+              盲盒奖池
+            </div>
             <Button
               type='button'
               variant='ghost'
@@ -224,7 +246,9 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
           </div>
           <div className='space-y-4 text-sm'>
             <div className='rounded-xl border border-amber-500/20 bg-amber-500/5 p-3'>
-              <div className='text-foreground text-sm font-semibold'>大奖包含</div>
+              <div className='text-foreground text-sm font-semibold'>
+                大奖包含
+              </div>
               <div className='text-muted-foreground mt-1 text-xs leading-5'>
                 80-120 美元普通额度、40-80 Claude 额度、隐藏款
                 {` ${props.data?.subscription_plan_title || 'Lite 月卡'}`}
@@ -243,7 +267,9 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
             </div>
 
             <div>
-              <div className='text-foreground text-sm font-semibold'>常规奖池</div>
+              <div className='text-foreground text-sm font-semibold'>
+                常规奖池
+              </div>
               <div className='mt-2 space-y-3'>
                 <div>
                   <div className='text-foreground text-xs font-medium'>
@@ -288,7 +314,9 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
                 </div>
 
                 <div>
-                  <div className='text-foreground text-xs font-medium'>道具</div>
+                  <div className='text-foreground text-xs font-medium'>
+                    道具
+                  </div>
                   <div className='mt-1.5 space-y-2'>
                     {groupedTiers.props.map((tier) => (
                       <div
@@ -307,15 +335,18 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
             </div>
 
             <div>
-              <div className='text-foreground text-sm font-semibold'>隐藏款</div>
+              <div className='text-foreground text-sm font-semibold'>
+                隐藏款
+              </div>
               <div className='mt-2 flex items-center justify-between'>
                 <span className='text-foreground'>
-                  {(props.data?.subscription_plan_title || 'Lite 月卡') + '（隐藏款）'}
+                  {(props.data?.subscription_plan_title || 'Lite 月卡') +
+                    '（隐藏款）'}
                 </span>
                 <span className='text-muted-foreground font-medium tabular-nums'>
-                  {((props.data?.subscription_prize_probability || 0) * 100).toFixed(
-                    1
-                  )}
+                  {(
+                    (props.data?.subscription_prize_probability || 0) * 100
+                  ).toFixed(1)}
                   %
                 </span>
               </div>
@@ -334,10 +365,13 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
             </div>
 
             <div>
-              <div className='text-foreground text-sm font-semibold'>保底规则</div>
+              <div className='text-foreground text-sm font-semibold'>
+                保底规则
+              </div>
               <div className='text-muted-foreground mt-2 space-y-1.5 text-xs leading-5'>
                 <div>
-                  连续 {props.data?.pity_threshold || 0} 次未获得高价值奖励后，下次将触发保底。
+                  连续 {props.data?.pity_threshold || 0}{' '}
+                  次未获得高价值奖励后，下次将触发保底。
                 </div>
                 <div>
                   保底奖励按 ${(props.data?.pity_guarantee_usd || 0).toFixed(0)}{' '}
@@ -347,7 +381,9 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
             </div>
 
             <div>
-              <div className='text-foreground text-sm font-semibold'>首抽奖励</div>
+              <div className='text-foreground text-sm font-semibold'>
+                首抽奖励
+              </div>
               <div className='text-muted-foreground mt-2 text-xs leading-5'>
                 首购保底20刀普通额度。首次购买盲盒后，首抽普通额度最低保底 $
                 {firstPurchaseStartUSD.toFixed(0)}。

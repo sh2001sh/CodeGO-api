@@ -48,6 +48,7 @@ func V2MigrationIDs() []string {
 		"20260713_bounty_delivery_summary",
 		"20260713_bounty_submission_version_index",
 		"20260714_user_external_id",
+		"20260715_blind_box_admin_grants",
 	}
 }
 
@@ -132,6 +133,9 @@ func ApplyV2Migrations(ctx context.Context, dryRun bool) error {
 			return tx.Migrator().CreateIndex(&bountyschema.BountySubmission{}, indexName)
 		}},
 		{ID: "20260714_user_external_id", Run: migrateUserExternalIDs},
+		{ID: "20260715_blind_box_admin_grants", Run: func(tx *gorm.DB) error {
+			return tx.AutoMigrate(&commerceschema.BlindBoxOrder{}, &commerceschema.BlindBoxGrant{})
+		}},
 	}
 	for _, step := range steps {
 		var applied schemaMigration
