@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/sh2001sh/new-api/constant"
+	billingschema "github.com/sh2001sh/new-api/internal/billing/schema"
 	commerceschema "github.com/sh2001sh/new-api/internal/commerce/schema"
 	identityschema "github.com/sh2001sh/new-api/internal/identity/schema"
 	"github.com/stretchr/testify/assert"
@@ -69,11 +70,11 @@ func TestRenewUserSubscriptionWithPlanTx_RestartsTermAndRefreshesQuota(t *testin
 		UserId:       user.Id,
 		PlanId:       plan.Id,
 		AmountTotal:  1000,
-		AmountUsed:   600,
+		AmountUsed:   0,
 		PeriodAmount: 400,
-		PeriodUsed:   250,
+		PeriodUsed:   0,
 		ModelLimits:  plan.ModelLimits,
-		ModelUsage:   `{"gpt-test":250}`,
+		ModelUsage:   "",
 		StartTime:    oldStart,
 		EndTime:      time.Now().Add(15 * 24 * time.Hour).Unix(),
 		Status:       "active",
@@ -81,6 +82,10 @@ func TestRenewUserSubscriptionWithPlanTx_RestartsTermAndRefreshesQuota(t *testin
 	require.NoError(t, db.Create(plan).Error)
 	require.NoError(t, db.Create(user).Error)
 	require.NoError(t, db.Create(subscription).Error)
+	ensureSubscriptionPreConsumeRecordSchema(t)
+	_, err := PreConsumeUserSubscription("renewal-ledger-old-cycle", user.Id, "gpt-other", 300)
+	require.NoError(t, err)
+	require.NoError(t, SettleSubscriptionReservation("renewal-ledger-old-cycle", subscription.Id, "gpt-other", 300))
 
 	beforeRenewal := time.Now().Unix()
 	var renewed *commerceschema.UserSubscription
@@ -102,4 +107,10 @@ func TestRenewUserSubscriptionWithPlanTx_RestartsTermAndRefreshesQuota(t *testin
 	assert.Equal(t, plan.PeriodAmount, renewed.PeriodAmount)
 	assert.Zero(t, renewed.PeriodUsed)
 	assert.Empty(t, renewed.ModelUsage)
+
+	var account billingschema.BillingAccount
+	require.NoError(t, db.Where("owner_type = ? AND owner_id = ?", "user_subscription", subscription.Id).First(&account).Error)
+	var snapshot billingschema.BillingBalanceSnapshot
+	require.NoError(t, db.Where("account_id = ?", account.AccountID).First(&snapshot).Error)
+	assert.Equal(t, plan.TotalAmount, snapshot.AvailableBalance)
 }

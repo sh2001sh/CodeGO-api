@@ -267,6 +267,9 @@ func renewUserSubscriptionWithPlanTx(tx *gorm.DB, sub *commerceschema.UserSubscr
 	if err := tx.Save(sub).Error; err != nil {
 		return nil, err
 	}
+	if err := replenishSubscriptionLedgerForCycleTx(tx, sub, "renewal"); err != nil {
+		return nil, err
+	}
 	return sub, nil
 }
 
@@ -306,6 +309,9 @@ func upgradeUserSubscriptionWithPlanTx(tx *gorm.DB, sub *commerceschema.UserSubs
 		}
 	}
 	if err := tx.Save(sub).Error; err != nil {
+		return nil, err
+	}
+	if err := replenishSubscriptionLedgerForCycleTx(tx, sub, "upgrade"); err != nil {
 		return nil, err
 	}
 	return sub, nil
