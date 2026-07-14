@@ -156,14 +156,14 @@ func defaultSubscriptionPlans() []commerceschema.SubscriptionPlan {
 		{
 			Title:              "新人体验卡",
 			Subtitle:           "新人专区",
-			PriceAmount:        2.9,
+			PriceAmount:        1.9,
 			Currency:           "CNY",
 			DurationUnit:       commerceschema.SubscriptionDurationDay,
 			DurationValue:      1,
 			Enabled:            true,
 			InternalOnly:       false,
 			SortOrder:          90,
-			TotalAmount:        quotaUnitsFromUSD(10),
+			TotalAmount:        quotaUnitsFromUSD(15),
 			QuotaResetPeriod:   commerceschema.SubscriptionResetNever,
 			MaxPurchasePerUser: 1,
 			PlanType:           commerceschema.SubscriptionPlanTypeStarter,
@@ -172,7 +172,7 @@ func defaultSubscriptionPlans() []commerceschema.SubscriptionPlan {
 		{
 			Title:            "标准周卡",
 			Subtitle:         "周卡",
-			PriceAmount:      39,
+			PriceAmount:      34.9,
 			Currency:         "CNY",
 			DurationUnit:     commerceschema.SubscriptionDurationDay,
 			DurationValue:    7,
@@ -190,7 +190,7 @@ func defaultSubscriptionPlans() []commerceschema.SubscriptionPlan {
 		{
 			Title:            "50刀日卡",
 			Subtitle:         "日卡",
-			PriceAmount:      9.9,
+			PriceAmount:      8.9,
 			Currency:         "CNY",
 			DurationUnit:     commerceschema.SubscriptionDurationDay,
 			DurationValue:    1,
@@ -208,7 +208,7 @@ func defaultSubscriptionPlans() []commerceschema.SubscriptionPlan {
 		{
 			Title:            "100刀日卡",
 			Subtitle:         "日卡",
-			PriceAmount:      18.9,
+			PriceAmount:      16.9,
 			Currency:         "CNY",
 			DurationUnit:     commerceschema.SubscriptionDurationDay,
 			DurationValue:    1,
