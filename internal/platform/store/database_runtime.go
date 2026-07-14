@@ -6,6 +6,7 @@ import (
 	auditdomain "github.com/sh2001sh/new-api/internal/audit/domain"
 	auditschema "github.com/sh2001sh/new-api/internal/audit/schema"
 	billingschema "github.com/sh2001sh/new-api/internal/billing/schema"
+	bountyschema "github.com/sh2001sh/new-api/internal/bounty/schema"
 	commerceschema "github.com/sh2001sh/new-api/internal/commerce/schema"
 	gatewayschema "github.com/sh2001sh/new-api/internal/gateway/schema"
 	identitydomain "github.com/sh2001sh/new-api/internal/identity/domain"
@@ -235,6 +236,15 @@ func migratePrimaryDB() error {
 		&identitydomain.DesktopDiagnosticReport{},
 		&identitydomain.DesktopTelemetryEvent{},
 		&identitydomain.ImageWorkspaceItem{},
+		&bountyschema.BountyTask{},
+		&bountyschema.BountyApplication{},
+		&bountyschema.BountyMaterialRequest{},
+		&bountyschema.BountyMaterialReply{},
+		&bountyschema.BountySubmission{},
+		&bountyschema.BountyDispute{},
+		&bountyschema.BountyEvent{},
+		&bountyschema.BountyNotification{},
+		&bountyschema.BountyReport{},
 	)
 	if err != nil {
 		return err

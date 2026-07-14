@@ -6,6 +6,7 @@ import (
 	"time"
 
 	billingschema "github.com/sh2001sh/new-api/internal/billing/schema"
+	bountyschema "github.com/sh2001sh/new-api/internal/bounty/schema"
 	commerceschema "github.com/sh2001sh/new-api/internal/commerce/schema"
 	gatewayschema "github.com/sh2001sh/new-api/internal/gateway/schema"
 	platformdb "github.com/sh2001sh/new-api/internal/platform/db"
@@ -41,6 +42,10 @@ func V2MigrationIDs() []string {
 		"20260711_gateway_execution_core",
 		"20260711_gateway_execution_trace",
 		"20260712_remove_pet_gamification",
+		"20260713_bounty_market",
+		"20260713_bounty_market_followups",
+		"20260713_bounty_delivery_summary",
+		"20260713_bounty_submission_version_index",
 	}
 }
 
@@ -105,6 +110,24 @@ func ApplyV2Migrations(ctx context.Context, dryRun bool) error {
 				}
 			}
 			return nil
+		}},
+		{ID: "20260713_bounty_market", Run: func(tx *gorm.DB) error {
+			return bountyschema.AutoMigrateModels(tx)
+		}},
+		{ID: "20260713_bounty_market_followups", Run: func(tx *gorm.DB) error {
+			return bountyschema.AutoMigrateModels(tx)
+		}},
+		{ID: "20260713_bounty_delivery_summary", Run: func(tx *gorm.DB) error {
+			return tx.AutoMigrate(&bountyschema.BountySubmission{})
+		}},
+		{ID: "20260713_bounty_submission_version_index", Run: func(tx *gorm.DB) error {
+			indexName := "uq_bounty_submissions_task_version"
+			if tx.Migrator().HasIndex(&bountyschema.BountySubmission{}, indexName) {
+				if err := tx.Migrator().DropIndex(&bountyschema.BountySubmission{}, indexName); err != nil {
+					return err
+				}
+			}
+			return tx.Migrator().CreateIndex(&bountyschema.BountySubmission{}, indexName)
 		}},
 	}
 	for _, step := range steps {

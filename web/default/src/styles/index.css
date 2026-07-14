@@ -578,6 +578,63 @@ For commercial licensing, please contact support@quantumnous.com
   }
 }
 
+.bounty-status {
+  display: inline-flex;
+  min-height: 24px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0.2rem 0.55rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.bounty-status-default {
+  background: color-mix(in oklch, var(--muted) 72%, transparent);
+  color: var(--foreground);
+}
+
+.bounty-status-muted {
+  background: color-mix(in oklch, var(--muted) 84%, transparent);
+  color: var(--muted-foreground);
+}
+
+.bounty-status-info {
+  background: color-mix(in oklch, var(--info) 14%, transparent);
+  color: var(--info);
+}
+
+.bounty-status-warning {
+  background: color-mix(in oklch, var(--warning) 18%, transparent);
+  color: color-mix(in oklch, var(--warning) 76%, var(--foreground));
+}
+
+.bounty-status-success {
+  background: color-mix(in oklch, var(--success) 16%, transparent);
+  color: color-mix(in oklch, var(--success) 78%, var(--foreground));
+}
+
+.bounty-status-danger {
+  background: color-mix(in oklch, var(--destructive) 14%, transparent);
+  color: var(--destructive);
+}
+
+.bounty-image-error {
+  display: flex;
+  min-height: 8rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.5rem;
+  border: 1px solid color-mix(in oklch, var(--border) 70%, transparent);
+  background: color-mix(in oklch, var(--muted) 30%, transparent);
+}
+
+.bounty-image-error .bounty-image-error-content {
+  display: inline-flex;
+}
+
 @utility container {
   margin-inline: auto;
   padding-inline: 2rem;

@@ -18,6 +18,7 @@ import {
   Ticket,
   User,
   Users,
+  HandCoins,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { WORKSPACE_IDS } from '@/components/layout/lib/workspace-registry'
@@ -98,6 +99,11 @@ export function useSidebarData(): SidebarData {
             icon: Package,
           },
           {
+            title: t('Bounties'),
+            url: '/bounties',
+            icon: HandCoins,
+          },
+          {
             title: t('Group buying'),
             url: '/group-buy',
             icon: Users,
@@ -165,6 +171,11 @@ export function useSidebarData(): SidebarData {
             title: t('Operations'),
             url: '/operations',
             icon: ShieldCheck,
+          },
+          {
+            title: t('Bounty management'),
+            url: '/bounties/admin',
+            icon: HandCoins,
           },
         ],
       },

@@ -21,6 +21,7 @@ import { Route as SetupIndexRouteImport } from './routes/setup/index'
 import { Route as PricingIndexRouteImport } from './routes/pricing/index'
 import { Route as GuideIndexRouteImport } from './routes/guide/index'
 import { Route as DownloadIndexRouteImport } from './routes/download/index'
+import { Route as BountiesIndexRouteImport } from './routes/bounties/index'
 import { Route as AboutIndexRouteImport } from './routes/about/index'
 import { Route as TopicsSlugRouteImport } from './routes/topics/$slug'
 import { Route as OauthProviderRouteImport } from './routes/oauth/$provider'
@@ -28,6 +29,7 @@ import { Route as MiniappLandingRouteImport } from './routes/miniapp/landing'
 import { Route as DesktopAuthorizeRouteImport } from './routes/desktop/authorize'
 import { Route as ConsoleTopupRouteImport } from './routes/console/topup'
 import { Route as ConsoleLogRouteImport } from './routes/console/log'
+import { Route as BountiesTaskIdRouteImport } from './routes/bounties/$taskId'
 import { Route as AuthenticatedChat2linkRouteImport } from './routes/_authenticated/chat2link'
 import { Route as errors503RouteImport } from './routes/(errors)/503'
 import { Route as errors500RouteImport } from './routes/(errors)/500'
@@ -66,6 +68,7 @@ import { Route as AuthenticatedModelsSectionRouteImport } from './routes/_authen
 import { Route as AuthenticatedErrorsErrorRouteImport } from './routes/_authenticated/errors/$error'
 import { Route as AuthenticatedDashboardSectionRouteImport } from './routes/_authenticated/dashboard/$section'
 import { Route as AuthenticatedChatChatIdRouteImport } from './routes/_authenticated/chat/$chatId'
+import { Route as AuthenticatedBountiesAdminRouteImport } from './routes/_authenticated/bounties/admin'
 import { Route as authUserResetRouteImport } from './routes/(auth)/user/reset'
 import { Route as AuthenticatedSystemSettingsSiteIndexRouteImport } from './routes/_authenticated/system-settings/site/index'
 import { Route as AuthenticatedSystemSettingsSecurityIndexRouteImport } from './routes/_authenticated/system-settings/security/index'
@@ -140,6 +143,11 @@ const DownloadIndexRoute = DownloadIndexRouteImport.update({
   path: '/download/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const BountiesIndexRoute = BountiesIndexRouteImport.update({
+  id: '/bounties/',
+  path: '/bounties/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const AboutIndexRoute = AboutIndexRouteImport.update({
   id: '/about/',
   path: '/about/',
@@ -173,6 +181,11 @@ const ConsoleTopupRoute = ConsoleTopupRouteImport.update({
 const ConsoleLogRoute = ConsoleLogRouteImport.update({
   id: '/console/log',
   path: '/console/log',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const BountiesTaskIdRoute = BountiesTaskIdRouteImport.update({
+  id: '/bounties/$taskId',
+  path: '/bounties/$taskId',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedChat2linkRoute = AuthenticatedChat2linkRouteImport.update({
@@ -387,6 +400,12 @@ const AuthenticatedChatChatIdRoute = AuthenticatedChatChatIdRouteImport.update({
   path: '/chat/$chatId',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedBountiesAdminRoute =
+  AuthenticatedBountiesAdminRouteImport.update({
+    id: '/bounties/admin',
+    path: '/bounties/admin',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const authUserResetRoute = authUserResetRouteImport.update({
   id: '/user/reset',
   path: '/user/reset',
@@ -496,6 +515,7 @@ export interface FileRoutesByFullPath {
   '/500': typeof errors500Route
   '/503': typeof errors503Route
   '/chat2link': typeof AuthenticatedChat2linkRoute
+  '/bounties/$taskId': typeof BountiesTaskIdRoute
   '/console/log': typeof ConsoleLogRoute
   '/console/topup': typeof ConsoleTopupRoute
   '/desktop/authorize': typeof DesktopAuthorizeRoute
@@ -503,12 +523,14 @@ export interface FileRoutesByFullPath {
   '/oauth/$provider': typeof OauthProviderRoute
   '/topics/$slug': typeof TopicsSlugRoute
   '/about/': typeof AboutIndexRoute
+  '/bounties/': typeof BountiesIndexRoute
   '/download/': typeof DownloadIndexRoute
   '/guide/': typeof GuideIndexRoute
   '/pricing/': typeof PricingIndexRoute
   '/setup/': typeof SetupIndexRoute
   '/topics/': typeof TopicsIndexRoute
   '/user/reset': typeof authUserResetRoute
+  '/bounties/admin': typeof AuthenticatedBountiesAdminRoute
   '/chat/$chatId': typeof AuthenticatedChatChatIdRoute
   '/dashboard/$section': typeof AuthenticatedDashboardSectionRoute
   '/errors/$error': typeof AuthenticatedErrorsErrorRoute
@@ -567,6 +589,7 @@ export interface FileRoutesByTo {
   '/500': typeof errors500Route
   '/503': typeof errors503Route
   '/chat2link': typeof AuthenticatedChat2linkRoute
+  '/bounties/$taskId': typeof BountiesTaskIdRoute
   '/console/log': typeof ConsoleLogRoute
   '/console/topup': typeof ConsoleTopupRoute
   '/desktop/authorize': typeof DesktopAuthorizeRoute
@@ -574,12 +597,14 @@ export interface FileRoutesByTo {
   '/oauth/$provider': typeof OauthProviderRoute
   '/topics/$slug': typeof TopicsSlugRoute
   '/about': typeof AboutIndexRoute
+  '/bounties': typeof BountiesIndexRoute
   '/download': typeof DownloadIndexRoute
   '/guide': typeof GuideIndexRoute
   '/pricing': typeof PricingIndexRoute
   '/setup': typeof SetupIndexRoute
   '/topics': typeof TopicsIndexRoute
   '/user/reset': typeof authUserResetRoute
+  '/bounties/admin': typeof AuthenticatedBountiesAdminRoute
   '/chat/$chatId': typeof AuthenticatedChatChatIdRoute
   '/dashboard/$section': typeof AuthenticatedDashboardSectionRoute
   '/errors/$error': typeof AuthenticatedErrorsErrorRoute
@@ -642,6 +667,7 @@ export interface FileRoutesById {
   '/(errors)/500': typeof errors500Route
   '/(errors)/503': typeof errors503Route
   '/_authenticated/chat2link': typeof AuthenticatedChat2linkRoute
+  '/bounties/$taskId': typeof BountiesTaskIdRoute
   '/console/log': typeof ConsoleLogRoute
   '/console/topup': typeof ConsoleTopupRoute
   '/desktop/authorize': typeof DesktopAuthorizeRoute
@@ -649,12 +675,14 @@ export interface FileRoutesById {
   '/oauth/$provider': typeof OauthProviderRoute
   '/topics/$slug': typeof TopicsSlugRoute
   '/about/': typeof AboutIndexRoute
+  '/bounties/': typeof BountiesIndexRoute
   '/download/': typeof DownloadIndexRoute
   '/guide/': typeof GuideIndexRoute
   '/pricing/': typeof PricingIndexRoute
   '/setup/': typeof SetupIndexRoute
   '/topics/': typeof TopicsIndexRoute
   '/(auth)/user/reset': typeof authUserResetRoute
+  '/_authenticated/bounties/admin': typeof AuthenticatedBountiesAdminRoute
   '/_authenticated/chat/$chatId': typeof AuthenticatedChatChatIdRoute
   '/_authenticated/dashboard/$section': typeof AuthenticatedDashboardSectionRoute
   '/_authenticated/errors/$error': typeof AuthenticatedErrorsErrorRoute
@@ -716,6 +744,7 @@ export interface FileRouteTypes {
     | '/500'
     | '/503'
     | '/chat2link'
+    | '/bounties/$taskId'
     | '/console/log'
     | '/console/topup'
     | '/desktop/authorize'
@@ -723,12 +752,14 @@ export interface FileRouteTypes {
     | '/oauth/$provider'
     | '/topics/$slug'
     | '/about/'
+    | '/bounties/'
     | '/download/'
     | '/guide/'
     | '/pricing/'
     | '/setup/'
     | '/topics/'
     | '/user/reset'
+    | '/bounties/admin'
     | '/chat/$chatId'
     | '/dashboard/$section'
     | '/errors/$error'
@@ -787,6 +818,7 @@ export interface FileRouteTypes {
     | '/500'
     | '/503'
     | '/chat2link'
+    | '/bounties/$taskId'
     | '/console/log'
     | '/console/topup'
     | '/desktop/authorize'
@@ -794,12 +826,14 @@ export interface FileRouteTypes {
     | '/oauth/$provider'
     | '/topics/$slug'
     | '/about'
+    | '/bounties'
     | '/download'
     | '/guide'
     | '/pricing'
     | '/setup'
     | '/topics'
     | '/user/reset'
+    | '/bounties/admin'
     | '/chat/$chatId'
     | '/dashboard/$section'
     | '/errors/$error'
@@ -861,6 +895,7 @@ export interface FileRouteTypes {
     | '/(errors)/500'
     | '/(errors)/503'
     | '/_authenticated/chat2link'
+    | '/bounties/$taskId'
     | '/console/log'
     | '/console/topup'
     | '/desktop/authorize'
@@ -868,12 +903,14 @@ export interface FileRouteTypes {
     | '/oauth/$provider'
     | '/topics/$slug'
     | '/about/'
+    | '/bounties/'
     | '/download/'
     | '/guide/'
     | '/pricing/'
     | '/setup/'
     | '/topics/'
     | '/(auth)/user/reset'
+    | '/_authenticated/bounties/admin'
     | '/_authenticated/chat/$chatId'
     | '/_authenticated/dashboard/$section'
     | '/_authenticated/errors/$error'
@@ -928,6 +965,7 @@ export interface RootRouteChildren {
   errors404Route: typeof errors404Route
   errors500Route: typeof errors500Route
   errors503Route: typeof errors503Route
+  BountiesTaskIdRoute: typeof BountiesTaskIdRoute
   ConsoleLogRoute: typeof ConsoleLogRoute
   ConsoleTopupRoute: typeof ConsoleTopupRoute
   DesktopAuthorizeRoute: typeof DesktopAuthorizeRoute
@@ -935,6 +973,7 @@ export interface RootRouteChildren {
   OauthProviderRoute: typeof OauthProviderRoute
   TopicsSlugRoute: typeof TopicsSlugRoute
   AboutIndexRoute: typeof AboutIndexRoute
+  BountiesIndexRoute: typeof BountiesIndexRoute
   DownloadIndexRoute: typeof DownloadIndexRoute
   GuideIndexRoute: typeof GuideIndexRoute
   PricingIndexRoute: typeof PricingIndexRoute
@@ -1029,6 +1068,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof DownloadIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/bounties/': {
+      id: '/bounties/'
+      path: '/bounties'
+      fullPath: '/bounties/'
+      preLoaderRoute: typeof BountiesIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/about/': {
       id: '/about/'
       path: '/about'
@@ -1076,6 +1122,13 @@ declare module '@tanstack/react-router' {
       path: '/console/log'
       fullPath: '/console/log'
       preLoaderRoute: typeof ConsoleLogRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/bounties/$taskId': {
+      id: '/bounties/$taskId'
+      path: '/bounties/$taskId'
+      fullPath: '/bounties/$taskId'
+      preLoaderRoute: typeof BountiesTaskIdRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/chat2link': {
@@ -1344,6 +1397,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedChatChatIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/bounties/admin': {
+      id: '/_authenticated/bounties/admin'
+      path: '/bounties/admin'
+      fullPath: '/bounties/admin'
+      preLoaderRoute: typeof AuthenticatedBountiesAdminRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/(auth)/user/reset': {
       id: '/(auth)/user/reset'
       path: '/user/reset'
@@ -1536,6 +1596,7 @@ const AuthenticatedSystemSettingsRouteRouteWithChildren =
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedSystemSettingsRouteRoute: typeof AuthenticatedSystemSettingsRouteRouteWithChildren
   AuthenticatedChat2linkRoute: typeof AuthenticatedChat2linkRoute
+  AuthenticatedBountiesAdminRoute: typeof AuthenticatedBountiesAdminRoute
   AuthenticatedChatChatIdRoute: typeof AuthenticatedChatChatIdRoute
   AuthenticatedDashboardSectionRoute: typeof AuthenticatedDashboardSectionRoute
   AuthenticatedErrorsErrorRoute: typeof AuthenticatedErrorsErrorRoute
@@ -1565,6 +1626,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedSystemSettingsRouteRoute:
     AuthenticatedSystemSettingsRouteRouteWithChildren,
   AuthenticatedChat2linkRoute: AuthenticatedChat2linkRoute,
+  AuthenticatedBountiesAdminRoute: AuthenticatedBountiesAdminRoute,
   AuthenticatedChatChatIdRoute: AuthenticatedChatChatIdRoute,
   AuthenticatedDashboardSectionRoute: AuthenticatedDashboardSectionRoute,
   AuthenticatedErrorsErrorRoute: AuthenticatedErrorsErrorRoute,
@@ -1607,6 +1669,7 @@ const rootRouteChildren: RootRouteChildren = {
   errors404Route: errors404Route,
   errors500Route: errors500Route,
   errors503Route: errors503Route,
+  BountiesTaskIdRoute: BountiesTaskIdRoute,
   ConsoleLogRoute: ConsoleLogRoute,
   ConsoleTopupRoute: ConsoleTopupRoute,
   DesktopAuthorizeRoute: DesktopAuthorizeRoute,
@@ -1614,6 +1677,7 @@ const rootRouteChildren: RootRouteChildren = {
   OauthProviderRoute: OauthProviderRoute,
   TopicsSlugRoute: TopicsSlugRoute,
   AboutIndexRoute: AboutIndexRoute,
+  BountiesIndexRoute: BountiesIndexRoute,
   DownloadIndexRoute: DownloadIndexRoute,
   GuideIndexRoute: GuideIndexRoute,
   PricingIndexRoute: PricingIndexRoute,
