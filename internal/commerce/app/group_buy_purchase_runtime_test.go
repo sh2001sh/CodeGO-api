@@ -1,14 +1,19 @@
 package app
 
 import (
-	identityschema "github.com/sh2001sh/new-api/internal/identity/schema"
+	"fmt"
+	"testing"
+	"time"
+
 	"github.com/sh2001sh/new-api/constant"
+	billingdomain "github.com/sh2001sh/new-api/internal/billing/domain"
+	billingschema "github.com/sh2001sh/new-api/internal/billing/schema"
 	commerceschema "github.com/sh2001sh/new-api/internal/commerce/schema"
+	identityschema "github.com/sh2001sh/new-api/internal/identity/schema"
 	platformruntime "github.com/sh2001sh/new-api/internal/platform/runtime"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"testing"
-	"time"
+	"gorm.io/gorm"
 )
 
 func TestSettleGroupBuyOrderAddsBonusToSubscriptionInsteadOfWallet(t *testing.T) {
@@ -69,6 +74,20 @@ func TestSettleGroupBuyOrderAddsBonusToSubscriptionInsteadOfWallet(t *testing.T)
 	}
 	for _, sub := range subs {
 		require.NoError(t, db.Create(sub).Error)
+		require.NoError(t, db.Transaction(func(tx *gorm.DB) error {
+			account, err := billingdomain.EnsureBillingAccountTx(tx, billingdomain.EnsureAccountParams{
+				AccountType: "subscription", OwnerType: "user_subscription", OwnerID: int64(sub.Id), QuotaUnit: "quota",
+			})
+			if err != nil {
+				return err
+			}
+			_, err = billingdomain.CreditAccountTx(tx, billingdomain.CreditAccountParams{
+				AccountID: account.AccountID, Amount: sub.AmountTotal - sub.AmountUsed,
+				IdempotencyKey: fmt.Sprintf("test-subscription-bootstrap:%d", sub.Id),
+				ReasonCode:     "test_subscription_bootstrap",
+			})
+			return err
+		}))
 	}
 
 	order := &commerceschema.GroupBuyOrder{
@@ -100,6 +119,12 @@ func TestSettleGroupBuyOrderAddsBonusToSubscriptionInsteadOfWallet(t *testing.T)
 	for _, sub := range refreshedSubs {
 		assert.Equal(t, plan.TotalAmount+expectedBonusQuota, sub.AmountTotal)
 		assert.Equal(t, plan.PeriodAmount+expectedBonusQuota, sub.PeriodAmount)
+
+		var account billingschema.BillingAccount
+		require.NoError(t, db.Where("owner_type = ? AND owner_id = ? AND account_type = ?", "user_subscription", sub.Id, "subscription").First(&account).Error)
+		var snapshot billingschema.BillingBalanceSnapshot
+		require.NoError(t, db.Where("account_id = ?", account.AccountID).First(&snapshot).Error)
+		assert.Equal(t, sub.AmountTotal-sub.AmountUsed, snapshot.AvailableBalance)
 	}
 
 	var refreshedUsers []identityschema.User

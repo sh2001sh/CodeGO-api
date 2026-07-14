@@ -1,10 +1,14 @@
 package app
 
 import (
+	"errors"
 	"fmt"
+
 	"github.com/sh2001sh/new-api/constant"
 	auditapp "github.com/sh2001sh/new-api/internal/audit/app"
 	auditschema "github.com/sh2001sh/new-api/internal/audit/schema"
+	billingdomain "github.com/sh2001sh/new-api/internal/billing/domain"
+	billingschema "github.com/sh2001sh/new-api/internal/billing/schema"
 	commercedomain "github.com/sh2001sh/new-api/internal/commerce/domain"
 	commerceschema "github.com/sh2001sh/new-api/internal/commerce/schema"
 	platformruntime "github.com/sh2001sh/new-api/internal/platform/runtime"
@@ -103,12 +107,42 @@ func addSubscriptionBonusTx(tx *gorm.DB, sub *commerceschema.UserSubscription, b
 	if sub.PeriodAmount > 0 {
 		sub.PeriodAmount += bonusQuota
 	}
-	return tx.Model(&commerceschema.UserSubscription{}).Where("id = ?", sub.Id).
+	if err := tx.Model(&commerceschema.UserSubscription{}).Where("id = ?", sub.Id).
 		Updates(map[string]any{
 			"amount_total":  sub.AmountTotal,
 			"period_amount": sub.PeriodAmount,
 			"updated_at":    platformruntime.GetTimestamp(),
-		}).Error
+		}).Error; err != nil {
+		return err
+	}
+	return creditMaterializedSubscriptionBonusTx(tx, sub, bonusQuota)
+}
+
+// creditMaterializedSubscriptionBonusTx mirrors a subscription bonus into an
+// existing ledger account. New subscriptions remain unmaterialized until first
+// use, at which point their full updated quota is bootstrapped once.
+func creditMaterializedSubscriptionBonusTx(tx *gorm.DB, sub *commerceschema.UserSubscription, bonusQuota int64) error {
+	var account billingschema.BillingAccount
+	err := tx.Where("account_type = ? AND owner_type = ? AND owner_id = ?", "subscription", "user_subscription", sub.Id).
+		First(&account).Error
+	if errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil
+	}
+	if err != nil {
+		return err
+	}
+
+	_, err = billingdomain.CreditAccountTx(tx, billingdomain.CreditAccountParams{
+		AccountID:      account.AccountID,
+		Amount:         bonusQuota,
+		IdempotencyKey: fmt.Sprintf("subscription-bonus:%d:%d:%d", sub.Id, sub.AmountTotal, bonusQuota),
+		ReasonCode:     "subscription_bonus",
+		ReferenceType:  "user_subscription",
+		ReferenceID:    fmt.Sprintf("%d", sub.Id),
+		OperatorType:   "commerce",
+		OperatorID:     "subscription_bonus",
+	})
+	return err
 }
 
 // ApplySubscriptionPurchaseBonusTx applies starter-upgrade and renewal bonuses to a purchased subscription.
