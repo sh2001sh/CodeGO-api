@@ -122,20 +122,20 @@ func shouldRetry(c *gin.Context, openaiErr *types.NewAPIError, retryTimes int) b
 	if gatewayruntime.ShouldSkipRetryAfterChannelAffinityFailure(c) {
 		return false
 	}
+	if retryTimes <= 0 {
+		return false
+	}
+	if _, ok := c.Get("specific_channel_id"); ok {
+		return false
+	}
 	if types.IsChannelError(openaiErr) {
 		return true
 	}
 	if types.IsSkipRetryError(openaiErr) {
 		return false
 	}
-	if gatewayexecutionapp.IsModelUnavailableError(openaiErr) {
+	if gatewayexecutionapp.IsModelScopedUpstreamFailure(openaiErr) {
 		return c.GetBool("model_unavailable_with_alternative")
-	}
-	if retryTimes <= 0 {
-		return false
-	}
-	if _, ok := c.Get("specific_channel_id"); ok {
-		return false
 	}
 	code := openaiErr.StatusCode
 	if code >= 200 && code < 300 {
@@ -159,7 +159,10 @@ func finalizeRelayError(c *gin.Context, relayFormat types.RelayFormat, ws *webso
 		return
 	}
 	rawMessageWithRequestID := platformtext.MessageWithRequestID(apiErr.Error(), requestID)
-	apiErr.SetMessage(platformtext.SanitizeUpstreamQuotaErrorMessage(rawMessageWithRequestID))
+	if types.IsUpstreamError(apiErr) {
+		rawMessageWithRequestID = platformtext.SanitizeUpstreamQuotaErrorMessage(rawMessageWithRequestID)
+	}
+	apiErr.SetMessage(rawMessageWithRequestID)
 	switch relayFormat {
 	case types.RelayFormatOpenAIRealtime:
 		relaycommon.WssError(c, ws, apiErr.ToOpenAIError())

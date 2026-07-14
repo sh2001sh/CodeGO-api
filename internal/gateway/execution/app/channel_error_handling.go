@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	httpctx "github.com/sh2001sh/new-api/internal/platform/transport/http/httpctx"
+	"net/http"
 	"strings"
 	"time"
 
@@ -23,13 +24,13 @@ func ProcessChannelError(c *gin.Context, channelError types.ChannelError, err *t
 	logger.LogError(c, fmt.Sprintf("channel error (channel #%d, status code: %d): %s", channelError.ChannelId, err.StatusCode, platformtext.LocalLogPreview(err.Error())))
 
 	modelName := c.GetString("original_model")
-	if IsModelUnavailableError(err) && modelName != "" {
+	if IsModelScopedUpstreamFailure(err) && modelName != "" {
 		group := selectedChannelGroup(c)
 		alternative, lookupErr := gatewaystore.HasAlternativeEnabledAbility(channelError.ChannelId, group, modelName)
 		if lookupErr != nil {
 			platformobservability.SysError(fmt.Sprintf("检查通道「%s」（#%d）的模型 %s 备用路由失败：%v", channelError.ChannelName, channelError.ChannelId, modelName, lookupErr))
 		} else if alternative {
-			cooling := gatewayruntime.RecordChannelModelUnavailable(channelError.ChannelId, modelName, c.GetString(constant.RequestIdKey))
+			cooling := coolModelScopedUpstreamFailure(channelError.ChannelId, modelName, c.GetString(constant.RequestIdKey), err)
 			c.Set("model_unavailable_with_alternative", true)
 			if probeChannelID := SelectCoolingAlternativeProbe(channelError.ChannelId, group, modelName); probeChannelID > 0 {
 				c.Set("model_probe_channel_id", probeChannelID)
@@ -37,7 +38,7 @@ func ProcessChannelError(c *gin.Context, channelError types.ChannelError, err *t
 				platformobservability.SysLog(fmt.Sprintf("通道「%s」（#%d）的模型 %s 出错，当前用户请求将优先复测冷却备用渠道 #%d", channelError.ChannelName, channelError.ChannelId, modelName, probeChannelID))
 			}
 			if cooling {
-				platformobservability.SysLog(fmt.Sprintf("通道「%s」（#%d）的模型 %s 连续五次真实请求失败，已临时熔断并切换备用渠道", channelError.ChannelName, channelError.ChannelId, modelName))
+				platformobservability.SysLog(fmt.Sprintf("通道「%s」（#%d）的模型 %s 上游不可用，已临时冷却该模型路由并切换备用渠道", channelError.ChannelName, channelError.ChannelId, modelName))
 			} else {
 				platformobservability.SysLog(fmt.Sprintf("通道「%s」（#%d）的模型 %s 第 %d 次连续失败，保留试错空间", channelError.ChannelName, channelError.ChannelId, modelName, channelHealthFailureCount(channelError.ChannelId, modelName)))
 			}
@@ -49,7 +50,7 @@ func ProcessChannelError(c *gin.Context, channelError types.ChannelError, err *t
 			DisableChannel(channelError, err.ErrorWithStatusCode())
 		})
 	}
-	if isRetryableChannelFailure(err) && !IsModelUnavailableError(err) {
+	if isRetryableChannelFailure(err) && !IsModelScopedUpstreamFailure(err) {
 		gatewayruntime.RecordChannelRetryableFailure(channelError.ChannelId, c.GetString("original_model"))
 		gatewayruntime.InvalidateChannelAffinityForCurrentRequest(c)
 	}
@@ -105,6 +106,13 @@ func ProcessChannelError(c *gin.Context, channelError types.ChannelError, err *t
 	}
 }
 
+func coolModelScopedUpstreamFailure(channelID int, modelName string, requestID string, err *types.NewAPIError) bool {
+	if IsModelUnavailableError(err) {
+		return gatewayruntime.RecordChannelModelUnavailable(channelID, modelName, requestID)
+	}
+	return gatewayruntime.CoolChannelModelForUpstreamFailure(channelID, modelName)
+}
+
 func channelHealthFailureCount(channelID int, modelName string) int {
 	state, found := gatewayruntime.GetChannelHealth(channelID, modelName)
 	if !found {
@@ -125,6 +133,23 @@ func IsModelUnavailableError(err *types.NewAPIError) bool {
 	message := strings.ToLower(err.Error())
 	return strings.Contains(message, "model") &&
 		(strings.Contains(message, "not found") || strings.Contains(message, "not exist") || strings.Contains(message, "not support") || strings.Contains(message, "unavailable"))
+}
+
+// IsModelScopedUpstreamFailure identifies provider failures that can be
+// isolated to one model route without disabling the full channel.
+func IsModelScopedUpstreamFailure(err *types.NewAPIError) bool {
+	if IsModelUnavailableError(err) {
+		return true
+	}
+	if err == nil {
+		return false
+	}
+	message := strings.ToLower(err.Error())
+	return strings.Contains(message, "insufficient") ||
+		strings.Contains(message, "quota") ||
+		strings.Contains(message, "balance") ||
+		strings.Contains(message, "unavailable") ||
+		err.StatusCode == http.StatusServiceUnavailable
 }
 
 func selectedChannelGroup(c *gin.Context) string {

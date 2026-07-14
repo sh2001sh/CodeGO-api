@@ -15,10 +15,11 @@ const (
 	ChannelHealthDegraded = "degraded"
 	ChannelHealthCooling  = "cooling"
 
-	channelHealthFailureThreshold = 5
-	channelHealthCooldownDuration = 2 * time.Minute
-	channelHealthTTL              = 20 * time.Minute
-	channelModelUnavailableTTL    = 5 * time.Minute
+	channelHealthFailureThreshold  = 5
+	channelHealthCooldownDuration  = 2 * time.Minute
+	channelHealthTTL               = 20 * time.Minute
+	channelModelUnavailableTTL     = 5 * time.Minute
+	channelModelUpstreamFailureTTL = 2 * time.Minute
 )
 
 // ChannelHealth captures the shared routing health for one channel/model pair.
@@ -130,6 +131,30 @@ func RecordChannelModelUnavailable(channelID int, model string, requestID string
 		return state, nil
 	})
 	return err == nil && cooling
+}
+
+// CoolChannelModelForUpstreamFailure immediately isolates one failing model
+// route while leaving the channel available for every other model.
+func CoolChannelModelForUpstreamFailure(channelID int, model string) bool {
+	if channelID <= 0 || model == "" {
+		return false
+	}
+	lock := channelHealthLock(channelID)
+	lock.Lock()
+	defer lock.Unlock()
+
+	now := time.Now().UTC()
+	err := getChannelHealthCache().UpdateWithTTL(channelHealthKey(channelID, model), channelHealthTTL, func(state ChannelHealth, _ bool) (ChannelHealth, error) {
+		state.ChannelID = channelID
+		state.Model = model
+		state.State = ChannelHealthCooling
+		state.ConsecutiveRetryableFailures = 0
+		state.CoolingUntil = now.Add(channelModelUpstreamFailureTTL)
+		state.LastFailureAt = now
+		recordChannelHealthWindow(&state, now, false)
+		return state, nil
+	})
+	return err == nil
 }
 
 // RecordChannelRetryableFailure advances the shared circuit for a retryable upstream error.

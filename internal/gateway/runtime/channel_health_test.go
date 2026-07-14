@@ -55,3 +55,17 @@ func TestModelUnavailableRetriesWithinOneRequestCountOnce(t *testing.T) {
 	require.True(t, found)
 	require.Equal(t, 1, state.ConsecutiveRetryableFailures)
 }
+
+func TestCoolChannelModelForUpstreamFailureLeavesOtherModelsHealthy(t *testing.T) {
+	require.NoError(t, resetChannelHealthForTest())
+	t.Cleanup(func() { require.NoError(t, resetChannelHealthForTest()) })
+
+	require.True(t, CoolChannelModelForUpstreamFailure(42, "gpt-unavailable"))
+	require.True(t, IsChannelCooling(42, "gpt-unavailable"))
+	require.False(t, IsChannelCooling(42, "gpt-available"))
+
+	state, found := GetChannelHealth(42, "gpt-unavailable")
+	require.True(t, found)
+	require.Equal(t, ChannelHealthCooling, state.State)
+	require.WithinDuration(t, time.Now().Add(channelModelUpstreamFailureTTL), state.CoolingUntil, time.Second)
+}

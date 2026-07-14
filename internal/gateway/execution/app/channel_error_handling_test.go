@@ -23,3 +23,24 @@ func TestIsModelUnavailableError(t *testing.T) {
 		errors.New("resource not found"), types.ErrorCodeBadResponseStatusCode, http.StatusNotFound,
 	)))
 }
+
+func TestIsModelScopedUpstreamFailure(t *testing.T) {
+	require.True(t, IsModelScopedUpstreamFailure(types.NewOpenAIError(
+		errors.New("insufficient_user_quota"), types.ErrorCodeBadResponseStatusCode, http.StatusServiceUnavailable,
+	)))
+	require.True(t, IsModelScopedUpstreamFailure(types.NewOpenAIError(
+		errors.New("upstream balance exhausted"), types.ErrorCodeBadResponseStatusCode, http.StatusServiceUnavailable,
+	)))
+	require.True(t, IsModelScopedUpstreamFailure(types.NewOpenAIError(
+		errors.New("model unavailable"), types.ErrorCodeModelNotFound, http.StatusNotFound,
+	)))
+	require.True(t, IsModelScopedUpstreamFailure(types.NewOpenAIError(
+		errors.New("upstream timeout"), types.ErrorCodeBadResponseStatusCode, http.StatusServiceUnavailable,
+	)))
+	require.True(t, IsModelScopedUpstreamFailure(types.NewOpenAIError(
+		errors.New("insufficient_user_quota"), types.ErrorCodeBadResponseStatusCode, http.StatusForbidden,
+	)))
+	require.False(t, IsModelScopedUpstreamFailure(types.NewOpenAIError(
+		errors.New("access denied"), types.ErrorCodeBadResponseStatusCode, http.StatusForbidden,
+	)))
+}
