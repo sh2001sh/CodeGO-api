@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import type { TFunction } from 'i18next'
 import { ArrowRight, ChevronDown, Sparkles } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
@@ -7,11 +8,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import {
   formatDuration,
   formatSubscriptionPlanPrice,
-  formatSubscriptionPlanTitle,
   formatSubscriptionQuotaAmount,
-  getSubscriptionDisabledReasonText,
-  getSubscriptionPlanActionLabel,
-  getSubscriptionPlanSubtitle,
   parseSubscriptionQuotaUSDToUnits,
 } from '@/features/subscriptions/lib'
 import type {
@@ -19,6 +16,13 @@ import type {
   SubscriptionPurchaseType,
   UserSubscriptionRecord,
 } from '@/features/subscriptions/types'
+import {
+  translateDisabledReason,
+  translateGroupLabel,
+  translatePlanAction,
+  translatePlanSubtitle,
+  translatePlanTitle,
+} from './lib/display'
 
 export function PackagePlanCard(props: {
   record: PlanRecord
@@ -34,18 +38,18 @@ export function PackagePlanCard(props: {
   const { t } = useTranslation()
   const [showDetails, setShowDetails] = useState(false)
   const plan = props.record.plan
-  const title = formatSubscriptionPlanTitle(plan.title) || '套餐'
+  const title = translatePlanTitle(plan.title, t)
   const isRecommended = title.includes('Standard')
   const groupBuyEnabled = plan.group_buy_enabled === true
   const limit = Number(plan.max_purchase_per_user || 0)
   const limitReached = limit > 0 && props.purchaseCount >= limit
-  const actionLabel = getSubscriptionPlanActionLabel(props.record.action, t)
+  const actionLabel = translatePlanAction(props.record.action, t)
   const effectiveAmount = props.record.amount_due ?? plan.price_amount
   const baseQuota = Number(plan.total_amount || 0)
   const blockedReason =
-    getSubscriptionDisabledReasonText(props.record.disabled_reason) ||
-    '当前还有更高档且未用完的生效套餐，暂不支持直接降级。'
-  const tierRows = buildPackageQuotaTiers(plan)
+    translateDisabledReason(props.record.disabled_reason, t) ||
+    t('A higher active plan with remaining quota prevents downgrading.')
+  const tierRows = buildPackageQuotaTiers(plan, t)
   const isCurrentPlan =
     props.currentSubscription?.subscription.plan_id === plan.id
   const canFuel =
@@ -67,21 +71,24 @@ export function PackagePlanCard(props: {
           {isRecommended && (
             <span className='text-primary mb-2 inline-flex items-center gap-1 text-xs font-semibold'>
               <Sparkles className='h-3.5 w-3.5' />
-              最受欢迎
+              {t('Most popular')}
             </span>
           )}
           <div className='text-muted-foreground text-xs font-medium'>
-            {getSubscriptionPlanSubtitle(plan)}
+            {translatePlanSubtitle(plan, t)}
           </div>
           <h4 className='text-foreground mt-1 text-lg font-bold'>{title}</h4>
           {isCurrentPlan && (
             <span className='border-primary/25 bg-primary/10 text-primary mt-2 inline-flex rounded-md border px-2 py-1 text-xs font-semibold'>
-              当前使用中
+              {t('Currently active')}
             </span>
           )}
         </div>
 
         <div className='text-center'>
+          <div className='text-muted-foreground text-xs font-medium'>
+            {t('Payment price')}
+          </div>
           <div className='text-primary flex items-baseline justify-center gap-1 text-3xl font-bold'>
             {formatSubscriptionPlanPrice(effectiveAmount, plan.currency)}
           </div>
@@ -94,21 +101,28 @@ export function PackagePlanCard(props: {
 
         <div className='space-y-2'>
           <div className='flex items-center justify-between text-sm'>
-            <span className='text-muted-foreground'>基础额度</span>
+            <span className='text-muted-foreground'>
+              {t('Base quota (USD)')}
+            </span>
             <span className='text-foreground font-semibold'>
               {formatSubscriptionQuotaAmount(baseQuota)}
             </span>
           </div>
           <div className='flex items-center justify-between text-sm'>
-            <span className='text-muted-foreground'>有效期</span>
+            <span className='text-muted-foreground'>{t('Validity')}</span>
             <span className='text-foreground font-semibold'>
               {formatDuration(plan, t)}
             </span>
           </div>
           {groupBuyEnabled && (
             <div className='bg-muted/40 -mx-4 mt-2 space-y-1.5 px-4 py-2'>
+              <div className='text-muted-foreground text-xs font-medium'>
+                {t('Group quota (USD)')}
+              </div>
               <div className='flex items-center justify-between text-sm'>
-                <span className='text-muted-foreground'>2人团</span>
+                <span className='text-muted-foreground'>
+                  {translateGroupLabel(2, t)}
+                </span>
                 <span className='text-primary font-semibold'>
                   {formatSubscriptionQuotaAmount(
                     baseQuota +
@@ -119,7 +133,9 @@ export function PackagePlanCard(props: {
                 </span>
               </div>
               <div className='flex items-center justify-between text-sm'>
-                <span className='text-muted-foreground'>3人团</span>
+                <span className='text-muted-foreground'>
+                  {translateGroupLabel(3, t)}
+                </span>
                 <span className='text-primary font-semibold'>
                   {formatSubscriptionQuotaAmount(
                     baseQuota +
@@ -130,7 +146,9 @@ export function PackagePlanCard(props: {
                 </span>
               </div>
               <div className='flex items-center justify-between text-sm'>
-                <span className='text-muted-foreground'>5人团</span>
+                <span className='text-muted-foreground'>
+                  {translateGroupLabel(5, t)}
+                </span>
                 <span className='text-primary font-semibold'>
                   {formatSubscriptionQuotaAmount(
                     baseQuota +
@@ -160,8 +178,12 @@ export function PackagePlanCard(props: {
             </div>
             <div className='text-muted-foreground text-xs leading-relaxed'>
               {groupBuyEnabled
-                ? '拼团后先支付基础价，满5人或48小时后按实际成团人数补发赠额。'
-                : '该套餐不参与拼团，支付后立即完成结算。'}
+                ? t(
+                    'Pay the base price first; the group bonus is issued after five people join or 48 hours pass.'
+                  )
+                : t(
+                    'This plan does not support group purchases; settlement completes immediately.'
+                  )}
             </div>
           </div>
         )}
@@ -170,7 +192,7 @@ export function PackagePlanCard(props: {
           onClick={() => setShowDetails(!showDetails)}
           className='text-primary hover:text-primary/80 -mx-4 flex items-center justify-center gap-1 py-1 text-xs font-medium transition-colors'
         >
-          {showDetails ? '收起' : '查看'}详情
+          {t(showDetails ? 'Hide details' : 'View details')}
           <ChevronDown
             className={cn(
               'h-3.5 w-3.5 transition-transform',
@@ -190,7 +212,7 @@ export function PackagePlanCard(props: {
                 })
               }
             >
-              为当前月卡加油
+              {t('Add quota to current plan')}
             </Button>
           )}
           <Button
@@ -198,7 +220,7 @@ export function PackagePlanCard(props: {
             disabled={limitReached || props.record.action === 'disabled'}
             onClick={() => props.onPurchase('normal')}
           >
-            {limitReached ? '已达购买上限' : actionLabel}
+            {limitReached ? t('Purchase limit reached') : actionLabel}
             {!limitReached && <ArrowRight className='ml-1 h-4 w-4' />}
           </Button>
           {groupBuyEnabled && (
@@ -208,12 +230,15 @@ export function PackagePlanCard(props: {
               disabled={limitReached || props.record.action === 'disabled'}
               onClick={() => props.onPurchase('group_buy')}
             >
-              进入拼团
+              {t('Join group purchase')}
             </Button>
           )}
           {limitReached && (
             <div className='text-muted-foreground text-center text-xs'>
-              已达上限 ({props.purchaseCount}/{limit})
+              {t('Limit reached ({{current}}/{{limit}})', {
+                current: props.purchaseCount,
+                limit,
+              })}
             </div>
           )}
           {props.record.action === 'disabled' && (
@@ -228,13 +253,14 @@ export function PackagePlanCard(props: {
 }
 
 function buildPackageQuotaTiers(
-  plan: PlanRecord['plan']
+  plan: PlanRecord['plan'],
+  t: TFunction
 ): Array<{ label: string; detail: string; value: string }> {
   const baseQuota = Number(plan.total_amount || 0)
   const tiers = [
     {
-      label: '单独购买',
-      detail: '无需等待，支付后立即生效',
+      label: t('Individual purchase'),
+      detail: t('No waiting; active immediately after payment'),
       value: formatSubscriptionQuotaAmount(baseQuota),
     },
   ]
@@ -242,24 +268,30 @@ function buildPackageQuotaTiers(
   if (plan.group_buy_enabled) {
     tiers.push(
       {
-        label: '2 人成团',
-        detail: `额外 +$${Number(plan.group_buy_bonus_2 || 0)}`,
+        label: translateGroupLabel(2, t),
+        detail: t('Bonus: +{{amount}} USD', {
+          amount: Number(plan.group_buy_bonus_2 || 0),
+        }),
         value: formatSubscriptionQuotaAmount(
           baseQuota +
             parseSubscriptionQuotaUSDToUnits(plan.group_buy_bonus_2 || 0)
         ),
       },
       {
-        label: '3 人成团',
-        detail: `额外 +$${Number(plan.group_buy_bonus_3 || 0)}`,
+        label: translateGroupLabel(3, t),
+        detail: t('Bonus: +{{amount}} USD', {
+          amount: Number(plan.group_buy_bonus_3 || 0),
+        }),
         value: formatSubscriptionQuotaAmount(
           baseQuota +
             parseSubscriptionQuotaUSDToUnits(plan.group_buy_bonus_3 || 0)
         ),
       },
       {
-        label: '5 人成团',
-        detail: `额外 +$${Number(plan.group_buy_bonus_5 || 0)}`,
+        label: translateGroupLabel(5, t),
+        detail: t('Bonus: +{{amount}} USD', {
+          amount: Number(plan.group_buy_bonus_5 || 0),
+        }),
         value: formatSubscriptionQuotaAmount(
           baseQuota +
             parseSubscriptionQuotaUSDToUnits(plan.group_buy_bonus_5 || 0)

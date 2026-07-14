@@ -18,6 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useMemo, useState } from 'react'
 import { Crown, RefreshCw } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { TitledCard } from '@/components/ui/titled-card'
@@ -83,6 +84,7 @@ function useGroupedPlans(plans: PlanRecord[]) {
 }
 
 export function PackagesPage() {
+  const { t } = useTranslation()
   const workspace = useWalletWorkspace()
   const [selectedPlan, setSelectedPlan] = useState<PlanRecord | null>(null)
   const [selectedPurchaseType, setSelectedPurchaseType] =
@@ -121,25 +123,33 @@ export function PackagesPage() {
     ? [
         {
           id: 'monthly',
-          title: '月卡专区',
-          description: '适合持续开发与团队日常调用。连续续费可按阶梯获得额外额度。',
+          title: t('Monthly plans'),
+          description: t(
+            'Suitable for ongoing development and team usage. Consecutive renewals can unlock tiered bonus quota.'
+          ),
         },
         {
           id: 'starter',
-          title: '新人专区',
-          description: '低门槛体验，限购 1 次。购买后 72 小时内升级月卡可获得额外额度奖励。',
+          title: t('Starter plans'),
+          description: t(
+            'Low-barrier trial, limited to one purchase. Upgrade to a monthly plan within 72 hours for bonus quota.'
+          ),
         },
       ]
     : [
         {
           id: 'starter',
-          title: '新人专区',
-          description: '低门槛体验，限购 1 次。购买后 72 小时内升级月卡可获得额外额度奖励。',
+          title: t('Starter plans'),
+          description: t(
+            'Low-barrier trial, limited to one purchase. Upgrade to a monthly plan within 72 hours for bonus quota.'
+          ),
         },
         {
           id: 'monthly',
-          title: '月卡专区',
-          description: '适合持续开发与团队日常调用。连续续费可按阶梯获得额外额度。',
+          title: t('Monthly plans'),
+          description: t(
+            'Suitable for ongoing development and team usage. Consecutive renewals can unlock tiered bonus quota.'
+          ),
         },
       ]
 
@@ -177,8 +187,10 @@ export function PackagesPage() {
   return (
     <>
       <WalletWorkspaceShell
-        title='套餐'
-        description='按使用节奏选择新人体验卡、月卡或短期补量卡。支持拼团的套餐会直接展示 2/3/5 人成团后的最终额度。'
+        title={t('Plans')}
+        description={t(
+          'Choose a starter card, monthly plan, or short-term quota pack. Group-enabled plans show the final quota for groups of 2, 3, or 5.'
+        )}
         canonicalPath='/packages'
         framedMain={false}
         main={
@@ -194,8 +206,10 @@ export function PackagesPage() {
 
             <CardStaggerItem>
               <TitledCard
-                title='套餐购买'
-                description='先看基础额度和有效期，再看单买、2 人团、3 人团、5 人团各自能拿到的最终额度。'
+                title={t('Plan purchase')}
+                description={t(
+                  'Review the base quota and validity first, then compare the final quota for individual, 2-person, 3-person, and 5-person purchases.'
+                )}
                 icon={<Crown className='h-4 w-4' />}
                 action={
                   <Button
@@ -210,13 +224,16 @@ export function PackagesPage() {
                         refreshing && 'animate-spin'
                       )}
                     />
-                    刷新
+                    {t('Refresh')}
                   </Button>
                 }
                 contentClassName='space-y-5'
               >
                 {primaryPlanZones.map((zone) => {
-                  if (zone.id === 'monthly' && groupedPlans.monthly.length === 0) {
+                  if (
+                    zone.id === 'monthly' &&
+                    groupedPlans.monthly.length === 0
+                  ) {
                     return null
                   }
                   return (
@@ -235,8 +252,10 @@ export function PackagesPage() {
                 })}
                 {groupedPlans.shortterm.length > 0 && (
                   <PlanZone
-                    title='短期补量专区'
-                    description='适合当天或本周高峰任务；支持拼团的套餐会在满员或 48 小时后统一补发赠额。'
+                    title={t('Short-term quota packs')}
+                    description={t(
+                      'Useful for daily or weekly peaks. Group bonuses are issued when the group fills or after 48 hours.'
+                    )}
                     plans={groupedPlans.shortterm}
                     loading={workspace.publicPlansLoading}
                     onPurchase={openPurchase}
@@ -247,7 +266,6 @@ export function PackagesPage() {
                 )}
               </TitledCard>
             </CardStaggerItem>
-
           </CardStaggerContainer>
         }
         sidebar={

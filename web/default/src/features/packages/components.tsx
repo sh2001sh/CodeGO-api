@@ -19,18 +19,17 @@ For commercial licensing, please contact support@quantumnous.com
 import { useMemo } from 'react'
 import { Link } from '@tanstack/react-router'
 import { Crown, Fuel } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Skeleton } from '@/components/ui/skeleton'
-import {
-  formatSubscriptionPlanTitle,
-  subscriptionQuotaUnitsToUSD,
-} from '@/features/subscriptions/lib'
+import { subscriptionQuotaUnitsToUSD } from '@/features/subscriptions/lib'
 import type {
   PlanRecord,
   SubscriptionPurchaseType,
   UserSubscriptionRecord,
 } from '@/features/subscriptions/types'
+import { translatePlanTitle } from './lib/display'
 import { PackagePlanCard } from './package-plan-card'
 
 type FuelConfig = { minimumQuota: number; quotaStep: number }
@@ -52,6 +51,8 @@ export function PlanZone(props: {
     config: FuelConfig
   ) => void
 }) {
+  const { t } = useTranslation()
+
   return (
     <section className='space-y-3'>
       <div>
@@ -85,7 +86,7 @@ export function PlanZone(props: {
         </div>
       ) : (
         <p className='text-muted-foreground border-border border-t pt-3 text-sm'>
-          当前分区暂无可购买套餐。
+          {t('No plans are currently available in this section.')}
         </p>
       )}
     </section>
@@ -102,6 +103,7 @@ export function CurrentPackagePanel(props: {
     config: FuelConfig
   ) => void
 }) {
+  const { t } = useTranslation()
   const planMap = useMemo(() => {
     const map = new Map<number, PlanRecord['plan']>()
     for (const item of props.plans) map.set(item.plan.id, item.plan)
@@ -112,8 +114,8 @@ export function CurrentPackagePanel(props: {
     ? planMap.get(current.subscription.plan_id)
     : undefined
   const currentTitle =
-    formatSubscriptionPlanTitle(currentPlan?.title) ||
-    (current ? `套餐 #${current.subscription.plan_id}` : '')
+    translatePlanTitle(currentPlan?.title, t) ||
+    (current ? t('Plan #{{id}}', { id: current.subscription.plan_id }) : '')
   const canFuel =
     Boolean(current) &&
     current?.subscription.status === 'active' &&
@@ -133,25 +135,31 @@ export function CurrentPackagePanel(props: {
           <div className='flex min-w-0 items-center gap-2'>
             <Crown className='text-primary size-4 shrink-0' />
             <span className='text-foreground truncate text-sm font-semibold'>
-              当前：{currentTitle}
+              {t('Current')}: {currentTitle}
             </span>
           </div>
           <div className='text-muted-foreground text-sm tabular-nums'>
-            剩余 $
+            {t('Remaining')} $
             {Math.max(
               0,
               subscriptionQuotaUnitsToUSD(
-                current.subscription.amount_total - current.subscription.amount_used
+                current.subscription.amount_total -
+                  current.subscription.amount_used
               )
             ).toFixed(2)}
-            /${subscriptionQuotaUnitsToUSD(current.subscription.amount_total).toFixed(2)}
+            /$
+            {subscriptionQuotaUnitsToUSD(
+              current.subscription.amount_total
+            ).toFixed(2)}
           </div>
           <Progress
             className='order-last w-full sm:order-none sm:min-w-32 sm:flex-1'
             value={
               current.subscription.amount_total > 0
                 ? Math.round(
-                    (current.subscription.amount_used / current.subscription.amount_total) * 100
+                    (current.subscription.amount_used /
+                      current.subscription.amount_total) *
+                      100
                   )
                 : 0
             }
@@ -168,11 +176,15 @@ export function CurrentPackagePanel(props: {
                 }
               >
                 <Fuel className='mr-1 size-4' />
-                加油
+                {t('Add quota')}
               </Button>
             ) : null}
-            <Button size='sm' variant='outline' render={<Link to='/packages' />}>
-              续费
+            <Button
+              size='sm'
+              variant='outline'
+              render={<Link to='/packages' />}
+            >
+              {t('Renew')}
             </Button>
           </div>
         </>

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Skeleton } from '@/components/ui/skeleton'
 import {
@@ -26,10 +27,7 @@ import {
 } from './wallet-panel-utils'
 import { WalletResetOpportunityPanel } from './wallet-reset-opportunity-panel'
 
-const ALL_FUNDING_SOURCES: FundingSource[] = [
-  'subscription',
-  'wallet',
-]
+const ALL_FUNDING_SOURCES: FundingSource[] = ['subscription', 'wallet']
 
 interface WalletPagePanelsProps {
   user: UserWalletData | null
@@ -48,6 +46,7 @@ interface WalletPagePanelsProps {
 }
 
 export function WalletPagePanels(props: WalletPagePanelsProps) {
+  const { t } = useTranslation()
   const [draftFundingSourceOrder, setDraftFundingSourceOrder] = useState<
     FundingSource[]
   >(['subscription', 'wallet'])
@@ -142,7 +141,7 @@ export function WalletPagePanels(props: WalletPagePanelsProps) {
           (item) => item === 'subscription' || item === 'wallet'
         )
         if (!hasPrimarySource) {
-          toast.error('至少保留一种主要扣费来源')
+          toast.error(t('Keep at least one primary billing source enabled.'))
           return current
         }
         return next
@@ -185,13 +184,13 @@ export function WalletPagePanels(props: WalletPagePanelsProps) {
         subscriptionOrderIds: hasActiveSubscriptions ? draftOrderIds : [],
       })
       if (!response.success) {
-        toast.error(response.message || '保存扣费顺序失败')
+        toast.error(response.message || t('Failed to save billing priority.'))
         return
       }
-      toast.success('扣费顺序已更新')
+      toast.success(t('Billing priority updated.'))
       await props.onSubscriptionRefresh?.()
     } catch {
-      toast.error('保存扣费顺序失败')
+      toast.error(t('Failed to save billing priority.'))
     } finally {
       setSaving(false)
     }
@@ -203,18 +202,22 @@ export function WalletPagePanels(props: WalletPagePanelsProps) {
     try {
       const response = await consumeSubscriptionResetOpportunity()
       if (!response.success || !response.data) {
-        toast.error(response.message || '使用额度重置机会失败')
+        toast.error(
+          response.message || t('Failed to use the quota reset opportunity.')
+        )
         return
       }
       toast.success(
-        `已清空${currentSubscriptionPlanMeta?.title || '当前订阅'}已用额度`
+        t('Cleared used quota for {{plan}}.', {
+          plan: currentSubscriptionPlanMeta?.title || t('Current subscription'),
+        })
       )
       await props.onSubscriptionRefresh?.()
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new Event('subscription:changed'))
       }
     } catch {
-      toast.error('使用额度重置机会失败')
+      toast.error(t('Failed to use the quota reset opportunity.'))
     } finally {
       setUsingResetOpportunity(false)
     }
@@ -248,8 +251,10 @@ export function WalletPagePanels(props: WalletPagePanelsProps) {
       ) : null}
 
       <RedemptionCodePanel
-        title='兑换码'
-        description='兑换码可补充普通余额、Claude 额度、套餐或活动权益。这里位于额度重置区域上方，适合先核销再调整订阅额度。'
+        title={t('Redemption code')}
+        description={t(
+          'Redeem codes can add standard balance, Claude quota, plans, or promotional benefits. Redeem one here before adjusting subscription quota.'
+        )}
         topupLink={props.topupLink}
         redemptionCode={props.redemptionCode}
         onRedemptionCodeChange={props.onRedemptionCodeChange}
@@ -265,8 +270,8 @@ export function WalletPagePanels(props: WalletPagePanelsProps) {
             Array.from(planMetaMap.entries()).map(([id, value]) => [
               id,
               {
-                title: value.title || `套餐 #${id}`,
-                subtitle: value.subtitle || '订阅',
+                title: value.title || t('Plan #{{id}}', { id }),
+                subtitle: value.subtitle || t('Subscription'),
               },
             ])
           )}

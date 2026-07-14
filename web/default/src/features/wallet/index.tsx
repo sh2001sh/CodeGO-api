@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { useTranslation } from 'react-i18next'
 import {
   CardStaggerContainer,
   CardStaggerItem,
@@ -19,6 +20,7 @@ interface WalletProps {
 }
 
 export function Wallet(props: WalletProps) {
+  const { t } = useTranslation()
   const workspace = useWalletWorkspace({
     initialWalletType: props.initialWalletType,
   })
@@ -35,8 +37,11 @@ export function Wallet(props: WalletProps) {
   return (
     <>
       <WalletWorkspaceShell
-        title='钱包'
-        description='账户充值、Claude 额度转换、兑换码核销与扣费顺序管理都在这里完成。'
+        title={t('Wallet')}
+        description={t(
+          'Manage top-ups, Claude quota conversion, redemption codes, and billing priority in one place.'
+        )}
+        canonicalPath='/wallet'
         sidebar={
           <WalletSummarySidebar
             user={workspace.user}
