@@ -158,6 +158,7 @@ func finalizeRelayError(c *gin.Context, relayFormat types.RelayFormat, ws *webso
 	if httpctx.GetContextKeyBool(c, constant.ContextKeyResponseBodyDelivered) {
 		return
 	}
+	apiErr.SanitizeDownstreamResponse()
 	rawMessageWithRequestID := platformtext.MessageWithRequestID(apiErr.Error(), requestID)
 	if types.IsRemoteProviderError(apiErr) {
 		rawMessageWithRequestID = platformtext.SanitizeUpstreamQuotaErrorMessage(rawMessageWithRequestID)

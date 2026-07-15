@@ -57,6 +57,25 @@ func TestFinalizeRelayErrorKeepsLocalQuotaMessage(t *testing.T) {
 	require.NotEqual(t, platformtext.UpstreamQuotaGenericMessage, response.Error.Message)
 }
 
+func TestFinalizeRelayErrorHidesLocalChannelSelectionDetails(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	recorder := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(recorder)
+	ctx.Request = httptest.NewRequest(http.MethodPost, "/v1/chat/completions", nil)
+	apiErr := types.NewError(
+		errors.New("分组 plus高不稳定分组 下模型 gpt-5.6-luna 的可用渠道不存在（retry）"),
+		types.ErrorCodeGetChannelFailed,
+	)
+
+	finalizeRelayError(ctx, types.RelayFormatOpenAI, nil, apiErr, "downstream")
+
+	require.Equal(t, http.StatusServiceUnavailable, recorder.Code)
+	var response relayErrorEnvelope
+	require.NoError(t, platformencoding.Unmarshal(recorder.Body.Bytes(), &response))
+	require.Contains(t, response.Error.Message, types.ModelUnavailableMessage)
+	require.NotContains(t, response.Error.Message, "plus高不稳定分组")
+}
+
 func TestRelayNotImplementedReturnsOpenAIStyleError(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	recorder := httptest.NewRecorder()

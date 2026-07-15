@@ -311,6 +311,7 @@ func respondRelayError(c *gin.Context, newAPIError *types.NewAPIError) {
 	if newAPIError == nil {
 		return
 	}
+	newAPIError.SanitizeDownstreamResponse()
 	c.JSON(newAPIError.StatusCode, gin.H{
 		"error": newAPIError.ToOpenAIError(),
 	})

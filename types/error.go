@@ -88,6 +88,8 @@ const (
 	ErrorCodePreConsumeTokenQuotaFailed ErrorCode = "pre_consume_token_quota_failed"
 )
 
+const ModelUnavailableMessage = "当前模型服务暂不可用，请稍后重试"
+
 type NewAPIError struct {
 	Err            error
 	RelayError     any
@@ -179,6 +181,15 @@ func (e *NewAPIError) MaskSensitiveErrorWithStatusCode() string {
 
 func (e *NewAPIError) SetMessage(message string) {
 	e.Err = errors.New(message)
+}
+
+// SanitizeDownstreamResponse hides local routing details from API consumers.
+func (e *NewAPIError) SanitizeDownstreamResponse() {
+	if e == nil || e.errorCode != ErrorCodeGetChannelFailed {
+		return
+	}
+	e.StatusCode = http.StatusServiceUnavailable
+	e.SetMessage(ModelUnavailableMessage)
 }
 
 func (e *NewAPIError) sanitizeUpstreamQuotaErrorMessage(message string) string {
