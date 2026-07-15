@@ -78,7 +78,9 @@ export function buildDownloadPageViewModel({
   error,
 }: BuildDownloadPageViewModelArgs): DownloadPageViewModel {
   const downloadCards = buildDownloadCards(release, copy)
-  const recommendedCard = getRecommendedDownloadCard(downloadCards, device)
+  const recommendedCard = release
+    ? getRecommendedDownloadCard(downloadCards, device)
+    : null
   const installationTracks = buildInstallationTracks()
   const recommendedTrack =
     installationTracks.find((track) => track.key === device.platform) ??
