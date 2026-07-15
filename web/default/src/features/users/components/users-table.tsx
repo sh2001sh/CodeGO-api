@@ -150,8 +150,9 @@ export function UsersTable() {
     onSortingChange: setSorting,
     onColumnVisibilityChange: setColumnVisibility,
     globalFilterFn: (row, _columnId, filterValue) => {
-      const searchValue = String(filterValue).toLowerCase()
+      const searchValue = String(filterValue).trim().toLowerCase()
       const fields = [
+        row.original.id,
         row.getValue('username'),
         row.original.display_name,
         row.original.email,

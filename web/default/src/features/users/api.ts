@@ -194,7 +194,7 @@ export async function grantUserBlindBoxes(
   userId: number,
   payload: {
     quantity: number
-    reason: string
+    reason?: string
     idempotency_key: string
   }
 ): Promise<ApiResponse> {

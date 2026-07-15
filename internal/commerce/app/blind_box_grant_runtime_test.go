@@ -31,7 +31,7 @@ func TestGrantBlindBoxesIsIdempotentAndOpenable(t *testing.T) {
 	require.NoError(t, db.Create(user).Error)
 	require.NoError(t, db.Create(admin).Error)
 
-	request := AdminBlindBoxGrantRequest{Quantity: 2, Reason: "campaign reward", IdempotencyKey: "grant-key-1"}
+	request := AdminBlindBoxGrantRequest{Quantity: 2, IdempotencyKey: "grant-key-1"}
 	first, err := GrantBlindBoxes(user.Id, admin.Id, request)
 	require.NoError(t, err)
 	require.NotNil(t, first)

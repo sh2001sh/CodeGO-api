@@ -41,9 +41,6 @@ func GrantBlindBoxes(userID int, adminUserID int, req AdminBlindBoxGrantRequest)
 		return nil, fmt.Errorf("blind box grant quantity must be between 1 and %d", maxAdminBlindBoxGrantQuantity)
 	}
 	reason := strings.TrimSpace(req.Reason)
-	if reason == "" {
-		return nil, errors.New("blind box grant reason is required")
-	}
 	if len(reason) > 255 {
 		return nil, errors.New("blind box grant reason is too long")
 	}
@@ -131,7 +128,12 @@ func createBlindBoxGrantTx(tx *gorm.DB, userID int, adminUserID int, quantity in
 	if err := tx.Save(grant).Error; err != nil {
 		return err
 	}
-	if err := auditapp.RecordLogTx(tx, userID, auditschema.LogTypeTopup, fmt.Sprintf("管理员发放盲盒，管理员ID：%d，数量：%d，原因：%s，发放记录ID：%d", adminUserID, quantity, reason, grant.Id)); err != nil {
+	auditMessage := fmt.Sprintf("管理员发放盲盒，管理员ID：%d，数量：%d", adminUserID, quantity)
+	if reason != "" {
+		auditMessage += fmt.Sprintf("，原因：%s", reason)
+	}
+	auditMessage += fmt.Sprintf("，发放记录ID：%d", grant.Id)
+	if err := auditapp.RecordLogTx(tx, userID, auditschema.LogTypeTopup, auditMessage); err != nil {
 		return err
 	}
 	result.Grant = grant

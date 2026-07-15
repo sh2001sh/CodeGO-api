@@ -141,6 +141,18 @@ func ApplyV2Migrations(ctx context.Context, dryRun bool) error {
 		var applied schemaMigration
 		err := db.Where("id = ?", step.ID).First(&applied).Error
 		if err == nil {
+			if step.ID == "20260715_blind_box_admin_grants" &&
+				(!db.Migrator().HasTable(&commerceschema.BlindBoxOrder{}) ||
+					!db.Migrator().HasTable(&commerceschema.BlindBoxGrant{})) {
+				if dryRun {
+					continue
+				}
+				if err := db.Transaction(func(tx *gorm.DB) error {
+					return step.Run(tx)
+				}); err != nil {
+					return fmt.Errorf("repair migration %s: %w", step.ID, err)
+				}
+			}
 			continue
 		}
 		if err != gorm.ErrRecordNotFound {

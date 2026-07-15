@@ -65,9 +65,15 @@ func TestApplyV2MigrationsIsIdempotent(t *testing.T) {
 		"gateway_route_plans",
 		"gateway_execution_attempts",
 		"gateway_usage_evidence",
+		"blind_box_orders",
+		"blind_box_grants",
 	} {
 		require.True(t, db.Migrator().HasTable(table), table)
 	}
+	require.NoError(t, db.Migrator().DropTable(&commerceschema.BlindBoxGrant{}))
+	require.False(t, db.Migrator().HasTable(&commerceschema.BlindBoxGrant{}))
+	require.NoError(t, ApplyV2Migrations(context.Background(), false))
+	require.True(t, db.Migrator().HasTable(&commerceschema.BlindBoxGrant{}))
 	for _, tableName := range []string{
 		"user_companion_pets",
 		"daily_mission_rewards",

@@ -75,13 +75,8 @@ export function UserBlindBoxDialog(props: Props) {
   const validateGrant = () => {
     if (!props.user?.id) return
     const quantity = Number(grantQuantity)
-    const reason = grantReason.trim()
     if (!Number.isInteger(quantity) || quantity < 1 || quantity > 1000) {
       toast.error(t('Quantity must be between 1 and 1000'))
-      return false
-    }
-    if (!reason) {
-      toast.error(t('Grant reason is required'))
       return false
     }
     setGrantIdempotencyKey(createIdempotencyKey())
@@ -379,7 +374,7 @@ export function UserBlindBoxDialog(props: Props) {
         desc={t('Grant {{count}} blind boxes to {{user}}? Reason: {{reason}}', {
           count: grantQuantity,
           user: props.user?.username || props.user?.id || '-',
-          reason: grantReason.trim(),
+          reason: grantReason.trim() || t('None'),
         })}
         confirmText={granting ? t('Granting...') : t('Confirm grant')}
         isLoading={granting}
