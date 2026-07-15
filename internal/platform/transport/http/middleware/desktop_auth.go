@@ -96,6 +96,9 @@ func DesktopAuth() func(c *gin.Context) {
 		c.Set("desktop_device_scopes", identityapp.ParseDesktopScopes(device.Scopes))
 		c.Set("desktop_device", device)
 		c.Set("use_access_token", true)
+		if !enforceGlobalAuthenticatedAPIRateLimit(c) {
+			return
+		}
 		c.Next()
 	}
 }

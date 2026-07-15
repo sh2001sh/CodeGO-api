@@ -216,6 +216,9 @@ func authHelper(c *gin.Context, minRole int) {
 	c.Set("group", currentGroup)
 	c.Set("user_group", currentGroup)
 	c.Set("use_access_token", useAccessToken)
+	if !enforceGlobalAuthenticatedAPIRateLimit(c) {
+		return
+	}
 
 	c.Next()
 }
