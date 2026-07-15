@@ -96,6 +96,10 @@ export function DateTimePicker({
     if (!minDateTime || !date || !isSameDay(date, minDateTime)) return undefined
     return formatTime(minDateTime)
   }, [date, minDateTime])
+  const minimumDate = React.useMemo(
+    () => (minDateTime ? startOfDay(minDateTime) : undefined),
+    [minDateTime]
+  )
 
   const handleDateSelect = (selectedDate: Date | undefined) => {
     if (selectedDate) {
@@ -169,11 +173,12 @@ export function DateTimePicker({
             selected={date}
             month={month}
             onMonthChange={setMonth}
+            startMonth={minimumDate ? startOfMonth(minimumDate) : undefined}
             captionLayout='dropdown'
             onSelect={handleDateSelect}
             locale={calendarLocale}
             disabled={(candidate) =>
-              minDateTime ? candidate < startOfDay(minDateTime) : false
+              minimumDate ? startOfDay(candidate) < minimumDate : false
             }
           />
         </PopoverContent>
@@ -209,6 +214,12 @@ function formatTime(date: Date) {
 function startOfDay(date: Date) {
   const value = new Date(date)
   value.setHours(0, 0, 0, 0)
+  return value
+}
+
+function startOfMonth(date: Date) {
+  const value = startOfDay(date)
+  value.setDate(1)
   return value
 }
 

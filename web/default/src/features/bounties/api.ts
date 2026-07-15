@@ -26,25 +26,32 @@ export function unwrap<T>(response: { data?: BountyApiEnvelope<T> }) {
 }
 
 export async function getBounties(search: BountySearch) {
-  const response = await api.get('/api/bounties', {
-    params: {
-      scope: search.scope === 'all' ? undefined : search.scope,
-      keyword: search.keyword || undefined,
-      wallet_type:
-        search.wallet_type === 'all' ? undefined : search.wallet_type,
-      status: search.status === 'all' ? undefined : search.status,
-      sort: search.sort === 'latest' ? undefined : search.sort,
-      tag: search.tag || undefined,
-      min_reward: search.min_reward
-        ? bountyUsdToQuota(search.min_reward)
-        : undefined,
-      max_reward: search.max_reward
-        ? bountyUsdToQuota(search.max_reward)
-        : undefined,
-      page: search.page || 1,
-      page_size: 20,
-    },
-  })
+  const isMineScope =
+    search.scope === 'mine_published' ||
+    search.scope === 'mine_assigned' ||
+    search.scope === 'mine_disputes'
+  const response = await api.get(
+    isMineScope ? '/api/bounties/mine' : '/api/bounties',
+    {
+      params: {
+        scope: search.scope === 'all' ? undefined : search.scope,
+        keyword: search.keyword || undefined,
+        wallet_type:
+          search.wallet_type === 'all' ? undefined : search.wallet_type,
+        status: search.status === 'all' ? undefined : search.status,
+        sort: search.sort === 'latest' ? undefined : search.sort,
+        tag: search.tag || undefined,
+        min_reward: search.min_reward
+          ? bountyUsdToQuota(search.min_reward)
+          : undefined,
+        max_reward: search.max_reward
+          ? bountyUsdToQuota(search.max_reward)
+          : undefined,
+        page: search.page || 1,
+        page_size: 20,
+      },
+    }
+  )
   return unwrap<BountyListResponse>(response)
 }
 
