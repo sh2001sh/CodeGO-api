@@ -26,6 +26,39 @@ func TestChannelHealthCoolingAndRecovery(t *testing.T) {
 	require.Greater(t, state.TTFTEWMAMilliseconds, float64(0))
 }
 
+func TestChannelHealthCoolsForLowShortTermSuccessRate(t *testing.T) {
+	require.NoError(t, resetChannelHealthForTest())
+	t.Cleanup(func() { require.NoError(t, resetChannelHealthForTest()) })
+
+	RecordChannelRetryableFailure(42, "gpt-test")
+	RecordChannelSuccess(42, "gpt-test", 0)
+	RecordChannelRetryableFailure(42, "gpt-test")
+	RecordChannelRetryableFailure(42, "gpt-test")
+	RecordChannelRetryableFailure(42, "gpt-test")
+
+	require.True(t, IsChannelCooling(42, "gpt-test"))
+	state, found := GetChannelHealth(42, "gpt-test")
+	require.True(t, found)
+	require.Equal(t, ChannelHealthCooling, state.State)
+	require.Equal(t, 20.0, state.SuccessRate2m)
+	require.WithinDuration(t, time.Now().Add(channelHealthCooldownDuration), state.CoolingUntil, time.Second)
+}
+
+func TestChannelHealthDoesNotCoolForHealthyShortTermSuccessRate(t *testing.T) {
+	require.NoError(t, resetChannelHealthForTest())
+	t.Cleanup(func() { require.NoError(t, resetChannelHealthForTest()) })
+
+	RecordChannelRetryableFailure(42, "gpt-test")
+	for range 4 {
+		RecordChannelSuccess(42, "gpt-test", 0)
+	}
+
+	require.False(t, IsChannelCooling(42, "gpt-test"))
+	state, found := GetChannelHealth(42, "gpt-test")
+	require.True(t, found)
+	require.Equal(t, 80.0, state.SuccessRate2m)
+}
+
 func TestModelUnavailableCoolsAfterFiveDistinctRequests(t *testing.T) {
 	require.NoError(t, resetChannelHealthForTest())
 	t.Cleanup(func() { require.NoError(t, resetChannelHealthForTest()) })

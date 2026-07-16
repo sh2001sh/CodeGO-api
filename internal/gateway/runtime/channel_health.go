@@ -20,6 +20,9 @@ const (
 	channelHealthTTL               = 20 * time.Minute
 	channelModelUnavailableTTL     = 5 * time.Minute
 	channelModelUpstreamFailureTTL = 2 * time.Minute
+	channelHealthShortWindow       = 2 * time.Minute
+	channelHealthShortMinRequests  = 5
+	channelHealthShortMaxSuccess   = 40.0
 )
 
 // ChannelHealth captures the shared routing health for one channel/model pair.
@@ -30,6 +33,7 @@ type ChannelHealth struct {
 	State                        string    `json:"state"`
 	ConsecutiveRetryableFailures int       `json:"consecutive_retryable_failures"`
 	CoolingUntil                 time.Time `json:"cooling_until"`
+	SuccessRate2m                float64   `json:"success_rate_2m"`
 	SuccessRate5m                float64   `json:"success_rate_5m"`
 	SuccessRate15m               float64   `json:"success_rate_15m"`
 	TTFTEWMAMilliseconds         float64   `json:"ttft_ewma_ms"`
@@ -37,6 +41,9 @@ type ChannelHealth struct {
 	LastFailureAt                time.Time `json:"last_failure_at"`
 	LastFailureRequestID         string    `json:"last_failure_request_id"`
 
+	Window2StartedAt  time.Time `json:"window_2_started_at"`
+	Window2Requests   int       `json:"window_2_requests"`
+	Window2Successes  int       `json:"window_2_successes"`
 	Window5StartedAt  time.Time `json:"window_5_started_at"`
 	Window5Requests   int       `json:"window_5_requests"`
 	Window5Successes  int       `json:"window_5_successes"`
@@ -176,7 +183,7 @@ func RecordChannelRetryableFailure(channelID int, model string) {
 			return state, nil
 		}
 		state.ConsecutiveRetryableFailures++
-		if state.ConsecutiveRetryableFailures >= channelHealthFailureThreshold {
+		if shouldCoolForShortTermFailureRate(state) || state.ConsecutiveRetryableFailures >= channelHealthFailureThreshold {
 			state.ConsecutiveRetryableFailures = 0
 			state.CoolingUntil = now.Add(channelHealthCooldownDuration)
 			state.State = ChannelHealthCooling
@@ -187,6 +194,14 @@ func RecordChannelRetryableFailure(channelID int, model string) {
 		}
 		return state, nil
 	})
+}
+
+func shouldCoolForShortTermFailureRate(state ChannelHealth) bool {
+	if state.Window2Requests < channelHealthShortMinRequests {
+		return false
+	}
+	failures := state.Window2Requests - state.Window2Successes
+	return failures >= 3 && state.SuccessRate2m <= channelHealthShortMaxSuccess
 }
 
 // RecordChannelSuccess closes the circuit immediately after the upstream has accepted a request.
@@ -220,6 +235,11 @@ func RecordChannelSuccess(channelID int, model string, ttft time.Duration) {
 }
 
 func recordChannelHealthWindow(state *ChannelHealth, now time.Time, success bool) {
+	if state.Window2StartedAt.IsZero() || now.Sub(state.Window2StartedAt) >= channelHealthShortWindow {
+		state.Window2StartedAt = now
+		state.Window2Requests = 0
+		state.Window2Successes = 0
+	}
 	if state.Window5StartedAt.IsZero() || now.Sub(state.Window5StartedAt) >= 5*time.Minute {
 		state.Window5StartedAt = now
 		state.Window5Requests = 0
@@ -230,12 +250,15 @@ func recordChannelHealthWindow(state *ChannelHealth, now time.Time, success bool
 		state.Window15Requests = 0
 		state.Window15Successes = 0
 	}
+	state.Window2Requests++
 	state.Window5Requests++
 	state.Window15Requests++
 	if success {
+		state.Window2Successes++
 		state.Window5Successes++
 		state.Window15Successes++
 	}
+	state.SuccessRate2m = float64(state.Window2Successes) / float64(state.Window2Requests) * 100
 	state.SuccessRate5m = float64(state.Window5Successes) / float64(state.Window5Requests) * 100
 	state.SuccessRate15m = float64(state.Window15Successes) / float64(state.Window15Requests) * 100
 }
