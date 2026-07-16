@@ -547,6 +547,9 @@ func TestGetDesktopTokenConfigReturnsPerToolPayloads(t *testing.T) {
 	if !response.Success {
 		t.Fatalf("expected success response, got message: %s", response.Message)
 	}
+	if !strings.Contains(string(response.Data), `"icon":"codego"`) {
+		t.Fatalf("expected CodeGo icon in token config response, got: %s", response.Data)
+	}
 }
 
 func TestGetDesktopTokenConfigUsesTokenGroupModels(t *testing.T) {
