@@ -35,7 +35,7 @@ func TestFinalizeRelayErrorMasksChineseUpstreamQuotaLeak(t *testing.T) {
 
 	var response relayErrorEnvelope
 	require.NoError(t, platformencoding.Unmarshal(recorder.Body.Bytes(), &response))
-	require.Equal(t, platformtext.UpstreamQuotaGenericMessage, response.Error.Message)
+	require.Equal(t, platformtext.UpstreamQuotaGenericMessage+" (request id: downstream)", response.Error.Message)
 }
 
 func TestFinalizeRelayErrorKeepsLocalQuotaMessage(t *testing.T) {
@@ -74,6 +74,47 @@ func TestFinalizeRelayErrorHidesLocalChannelSelectionDetails(t *testing.T) {
 	require.NoError(t, platformencoding.Unmarshal(recorder.Body.Bytes(), &response))
 	require.Contains(t, response.Error.Message, types.ModelUnavailableMessage)
 	require.NotContains(t, response.Error.Message, "plus高不稳定分组")
+}
+
+func TestFinalizeRelayErrorHidesUpstreamChannelAvailabilityDetails(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	recorder := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(recorder)
+	ctx.Request = httptest.NewRequest(http.MethodPost, "/v1/chat/completions", nil)
+	apiErr := types.NewOpenAIError(
+		errors.New("No available channel for model gpt-5.6-luna under group plus高不稳定分组 (distributor) (request id: upstream)"),
+		types.ErrorCodeBadResponseStatusCode,
+		http.StatusBadGateway,
+	)
+
+	finalizeRelayError(ctx, types.RelayFormatOpenAI, nil, apiErr, "downstream")
+
+	require.Equal(t, http.StatusServiceUnavailable, recorder.Code)
+	var response relayErrorEnvelope
+	require.NoError(t, platformencoding.Unmarshal(recorder.Body.Bytes(), &response))
+	require.Equal(t, types.ModelUnavailableMessage+" (request id: downstream)", response.Error.Message)
+	require.Equal(t, string(types.ErrorCodeGetChannelFailed), response.Error.Code)
+	require.NotContains(t, recorder.Body.String(), "plus高不稳定分组")
+	require.NotContains(t, recorder.Body.String(), "upstream")
+}
+
+func TestFinalizeRelayErrorHidesAnyUpstreamServiceUnavailableMessage(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	recorder := httptest.NewRecorder()
+	ctx, _ := gin.CreateTestContext(recorder)
+	ctx.Request = httptest.NewRequest(http.MethodPost, "/v1/chat/completions", nil)
+	apiErr := types.NewOpenAIError(
+		errors.New("provider capacity temporarily exhausted (trace: upstream)"),
+		types.ErrorCodeBadResponseStatusCode,
+		http.StatusServiceUnavailable,
+	)
+
+	finalizeRelayError(ctx, types.RelayFormatOpenAI, nil, apiErr, "downstream")
+
+	var response relayErrorEnvelope
+	require.NoError(t, platformencoding.Unmarshal(recorder.Body.Bytes(), &response))
+	require.Equal(t, types.ModelUnavailableMessage+" (request id: downstream)", response.Error.Message)
+	require.NotContains(t, recorder.Body.String(), "upstream")
 }
 
 func TestRelayNotImplementedReturnsOpenAIStyleError(t *testing.T) {

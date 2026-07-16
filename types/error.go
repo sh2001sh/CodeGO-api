@@ -140,12 +140,12 @@ func (e *NewAPIError) ErrorWithStatusCode() string {
 	}
 	msg := e.Error()
 	if e.StatusCode == 0 {
-		return e.sanitizeUpstreamQuotaErrorMessage(msg)
+		return e.sanitizeUpstreamProviderErrorMessage(msg)
 	}
 	if msg == "" {
 		return fmt.Sprintf("status_code=%d", e.StatusCode)
 	}
-	return e.sanitizeUpstreamQuotaErrorMessage(fmt.Sprintf("status_code=%d, %s", e.StatusCode, msg))
+	return e.sanitizeUpstreamProviderErrorMessage(fmt.Sprintf("status_code=%d, %s", e.StatusCode, msg))
 }
 
 func (e *NewAPIError) MaskSensitiveError() string {
@@ -159,7 +159,10 @@ func (e *NewAPIError) MaskSensitiveError() string {
 	if e.errorCode == ErrorCodeCountTokenFailed {
 		return errStr
 	}
-	return e.sanitizeUpstreamQuotaErrorMessage(platformtext.MaskSensitiveInfo(errStr))
+	if e.shouldSanitizeUpstreamProviderError() {
+		return ModelUnavailableMessage
+	}
+	return e.sanitizeUpstreamProviderErrorMessage(platformtext.MaskSensitiveInfo(errStr))
 }
 
 func (e *NewAPIError) MaskSensitiveErrorWithStatusCode() string {
@@ -176,27 +179,42 @@ func (e *NewAPIError) MaskSensitiveErrorWithStatusCode() string {
 	if msg == platformtext.UpstreamQuotaGenericMessage {
 		return msg
 	}
-	return e.sanitizeUpstreamQuotaErrorMessage(fmt.Sprintf("status_code=%d, %s", e.StatusCode, msg))
+	return e.sanitizeUpstreamProviderErrorMessage(fmt.Sprintf("status_code=%d, %s", e.StatusCode, msg))
 }
 
 func (e *NewAPIError) SetMessage(message string) {
 	e.Err = errors.New(message)
+	switch relayError := e.RelayError.(type) {
+	case OpenAIError:
+		relayError.Message = message
+		e.RelayError = relayError
+	case ClaudeError:
+		relayError.Message = message
+		e.RelayError = relayError
+	}
 }
 
 // SanitizeDownstreamResponse hides local routing details from API consumers.
 func (e *NewAPIError) SanitizeDownstreamResponse() {
-	if e == nil || e.errorCode != ErrorCodeGetChannelFailed {
+	if e == nil || (e.errorCode != ErrorCodeGetChannelFailed && !e.shouldSanitizeUpstreamProviderError()) {
 		return
 	}
 	e.StatusCode = http.StatusServiceUnavailable
+	e.errorCode = ErrorCodeGetChannelFailed
+	e.errorType = ErrorTypeNewAPIError
+	e.RelayError = nil
 	e.SetMessage(ModelUnavailableMessage)
 }
 
-func (e *NewAPIError) sanitizeUpstreamQuotaErrorMessage(message string) string {
+func (e *NewAPIError) shouldSanitizeUpstreamProviderError() bool {
+	return IsRemoteProviderError(e) && (e.StatusCode == http.StatusServiceUnavailable || platformtext.IsUpstreamProviderUnavailableMessage(e.Error()))
+}
+
+func (e *NewAPIError) sanitizeUpstreamProviderErrorMessage(message string) string {
 	if !IsRemoteProviderError(e) {
 		return message
 	}
-	return platformtext.SanitizeUpstreamQuotaErrorMessage(message)
+	return platformtext.SanitizeUpstreamProviderErrorMessage(message)
 }
 
 func (e *NewAPIError) ToOpenAIError() OpenAIError {
@@ -226,7 +244,7 @@ func (e *NewAPIError) ToOpenAIError() OpenAIError {
 	if e.errorCode != ErrorCodeCountTokenFailed {
 		result.Message = platformtext.MaskSensitiveInfo(result.Message)
 	}
-	result.Message = e.sanitizeUpstreamQuotaErrorMessage(result.Message)
+	result.Message = e.sanitizeUpstreamProviderErrorMessage(result.Message)
 	if result.Message == "" {
 		result.Message = string(e.errorType)
 	}
@@ -256,7 +274,7 @@ func (e *NewAPIError) ToClaudeError() ClaudeError {
 	if e.errorCode != ErrorCodeCountTokenFailed {
 		result.Message = platformtext.MaskSensitiveInfo(result.Message)
 	}
-	result.Message = e.sanitizeUpstreamQuotaErrorMessage(result.Message)
+	result.Message = e.sanitizeUpstreamProviderErrorMessage(result.Message)
 	if result.Message == "" {
 		result.Message = string(e.errorType)
 	}

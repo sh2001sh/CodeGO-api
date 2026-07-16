@@ -31,6 +31,16 @@ func TestSanitizeUpstreamQuotaErrorMessage(t *testing.T) {
 			expected: UpstreamQuotaGenericMessage,
 		},
 		{
+			name:     "sanitize upstream no available channel",
+			input:    "No available channel for model gpt-5.6-luna under group plus (distributor) (request id: abc)",
+			expected: UpstreamQuotaGenericMessage,
+		},
+		{
+			name:     "sanitize upstream model unavailable",
+			input:    "model gpt-5.6-luna is temporarily unavailable",
+			expected: UpstreamQuotaGenericMessage,
+		},
+		{
 			name:     "keep local site balance message",
 			input:    "站内余额不足, 当前余额: 0.000750, 本次所需: 0.002364 (request id: abc)",
 			expected: "站内余额不足, 当前余额: 0.000750, 本次所需: 0.002364 (request id: abc)",
@@ -76,6 +86,20 @@ func TestIsUpstreamQuotaLeakMessage(t *testing.T) {
 	}
 	if IsUpstreamQuotaLeakMessage("站内余额不足, 当前余额: 0.000750, 本次所需: 0.002364 (request id: abc)") {
 		t.Fatal("expected local site balance message not to be treated as upstream leak")
+	}
+}
+
+func TestIsUpstreamProviderUnavailableMessage(t *testing.T) {
+	t.Parallel()
+
+	if !IsUpstreamProviderUnavailableMessage("No available channel for model gpt-5.6-luna under group plus") {
+		t.Fatal("expected no available channel to be detected")
+	}
+	if !IsUpstreamProviderUnavailableMessage("model gpt-5.6-luna is not supported") {
+		t.Fatal("expected unavailable model to be detected")
+	}
+	if IsUpstreamProviderUnavailableMessage("站内余额不足, 当前余额: 0.000750") {
+		t.Fatal("expected local site balance message not to be detected")
 	}
 }
 

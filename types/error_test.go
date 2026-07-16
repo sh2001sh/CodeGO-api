@@ -35,6 +35,18 @@ func TestNewAPIErrorStatusStringsSanitizeChineseUpstreamQuotaLeak(t *testing.T) 
 	require.Equal(t, platformtext.UpstreamQuotaGenericMessage, apiErr.MaskSensitiveErrorWithStatusCode())
 }
 
+func TestNewAPIErrorMaskSensitiveErrorHidesUpstreamAvailabilityDetails(t *testing.T) {
+	t.Parallel()
+
+	apiErr := NewOpenAIError(
+		fmt.Errorf("No available channel for model gpt-5.6-luna under group plus高不稳定分组 (request id: upstream)"),
+		ErrorCodeBadResponseStatusCode,
+		http.StatusServiceUnavailable,
+	)
+
+	require.Equal(t, ModelUnavailableMessage, apiErr.MaskSensitiveErrorWithStatusCode())
+}
+
 func TestNewAPIErrorStatusStringsKeepLocalQuotaMessage(t *testing.T) {
 	t.Parallel()
 
