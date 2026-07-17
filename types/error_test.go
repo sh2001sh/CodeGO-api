@@ -47,6 +47,21 @@ func TestNewAPIErrorMaskSensitiveErrorHidesUpstreamAvailabilityDetails(t *testin
 	require.Equal(t, ModelUnavailableMessage, apiErr.MaskSensitiveErrorWithStatusCode())
 }
 
+func TestRemoteForbiddenResponseIsSanitizedForDownstream(t *testing.T) {
+	t.Parallel()
+
+	apiErr := NewOpenAIError(
+		fmt.Errorf("Your request was blocked."),
+		ErrorCodeBadResponseStatusCode,
+		http.StatusForbidden,
+	)
+	apiErr.SanitizeDownstreamResponse()
+
+	require.Equal(t, http.StatusServiceUnavailable, apiErr.StatusCode)
+	require.Equal(t, ErrorCodeGetChannelFailed, apiErr.GetErrorCode())
+	require.Equal(t, ModelUnavailableMessage, apiErr.ToOpenAIError().Message)
+}
+
 func TestNewAPIErrorStatusStringsKeepLocalQuotaMessage(t *testing.T) {
 	t.Parallel()
 

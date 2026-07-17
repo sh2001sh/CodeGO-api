@@ -207,7 +207,13 @@ func (e *NewAPIError) SanitizeDownstreamResponse() {
 }
 
 func (e *NewAPIError) shouldSanitizeUpstreamProviderError() bool {
-	return IsRemoteProviderError(e) && (e.StatusCode == http.StatusServiceUnavailable || platformtext.IsUpstreamProviderUnavailableMessage(e.Error()))
+	if !IsRemoteProviderError(e) {
+		return false
+	}
+	return e.StatusCode == http.StatusUnauthorized ||
+		e.StatusCode == http.StatusForbidden ||
+		e.StatusCode == http.StatusServiceUnavailable ||
+		platformtext.IsUpstreamProviderUnavailableMessage(e.Error())
 }
 
 func (e *NewAPIError) sanitizeUpstreamProviderErrorMessage(message string) string {
