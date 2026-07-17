@@ -284,12 +284,6 @@ func relayRequest(c *gin.Context, relayFormat types.RelayFormat) {
 		}
 		relaycommon.RecordRouteDecisionRetry(c)
 		gatewayroutingapp.RecordAutoGroupFailure(c, relayInfo.OriginModelName)
-		if relayInfo.Billing != nil {
-			if refundErr := billingapp.RefundRelayBillingSync(c, relayInfo); refundErr != nil {
-				logger.LogError(c, fmt.Sprintf("refund pre-consume before retry failed: %s", refundErr.Error()))
-				break
-			}
-		}
 	}
 
 	useChannel := c.GetStringSlice("use_channel")

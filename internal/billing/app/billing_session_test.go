@@ -229,6 +229,39 @@ func TestBillingSessionRequestReplayDoesNotProjectWalletTwice(t *testing.T) {
 	require.Equal(t, 7000, userQuota)
 }
 
+func TestPreConsumeRelayBillingReusesSessionAcrossChannelRetry(t *testing.T) {
+	truncate(t)
+	seedUser(t, 1016, 10_000)
+	seedToken(t, 2016, 1016, "sk-retry-billing", 10_000)
+
+	ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
+	info := &relaycommon.RelayInfo{
+		UserId:          1016,
+		TokenId:         2016,
+		TokenKey:        "sk-retry-billing",
+		OriginModelName: "gpt-5",
+		RequestId:       "req-retry-billing",
+		IsPlayground:    true,
+		ForcePreConsume: true,
+		UserSetting:     dto.UserSetting{BillingPreference: "wallet_only"},
+	}
+
+	require.Nil(t, PreConsumeRelayBilling(ctx, 3_000, info))
+	firstSession := info.Billing
+	require.NotNil(t, firstSession)
+	require.Nil(t, PreConsumeRelayBilling(ctx, 2_000, info))
+	require.Same(t, firstSession, info.Billing)
+
+	quota, err := identitystore.LoadUserQuota(1016, false)
+	require.NoError(t, err)
+	require.Equal(t, 7_000, quota)
+	require.NoError(t, RefundRelayBillingSync(ctx, info))
+
+	quota, err = identitystore.LoadUserQuota(1016, false)
+	require.NoError(t, err)
+	require.Equal(t, 10_000, quota)
+}
+
 func TestBridgeSeparatesWalletAndClaudeLedgerAccounts(t *testing.T) {
 	truncate(t)
 	require.NoError(t, platformdb.DB.Create(&identityschema.User{

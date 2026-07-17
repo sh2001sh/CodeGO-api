@@ -14,6 +14,16 @@ import (
 )
 
 func PreConsumeRelayBilling(c *gin.Context, preConsumedQuota int, relayInfo *relaycommon.RelayInfo) *types.NewAPIError {
+	if relayInfo != nil && relayInfo.Billing != nil {
+		if err := relayInfo.Billing.Reserve(preConsumedQuota); err != nil {
+			if apiErr, ok := err.(*types.NewAPIError); ok {
+				return apiErr
+			}
+			return types.NewError(err, types.ErrorCodeUpdateDataError, types.ErrOptionWithSkipRetry())
+		}
+		return nil
+	}
+
 	session, apiErr := NewBillingSession(c, relayInfo, preConsumedQuota)
 	if apiErr != nil {
 		return apiErr
