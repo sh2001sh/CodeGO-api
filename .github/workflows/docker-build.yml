@@ -20,6 +20,7 @@ on:
 
 env:
   PRIMARY_DOCKER_IMAGE: s2644752646/new-api
+  GHCR_DOCKER_IMAGE: ghcr.io/sh2001sh/codego-api
 
 jobs:
   build_single_arch:
@@ -78,6 +79,13 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Verify authenticated base image access
         run: |
           pull_with_retry() {
@@ -123,6 +131,8 @@ jobs:
               --label "org.opencontainers.image.version=${TAG}" \
               --tag "${{ env.PRIMARY_DOCKER_IMAGE }}:${TAG}-${service}-${{ matrix.arch }}" \
               --tag "${{ env.PRIMARY_DOCKER_IMAGE }}:latest-${service}-${{ matrix.arch }}" \
+              --tag "${{ env.GHCR_DOCKER_IMAGE }}:${TAG}-${service}-${{ matrix.arch }}" \
+              --tag "${{ env.GHCR_DOCKER_IMAGE }}:latest-${service}-${{ matrix.arch }}" \
               .; do
               if [ "$attempt" -ge 4 ]; then
                 echo "::error::Build failed for ${service} after ${attempt} attempts"
@@ -151,6 +161,7 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      packages: write
 
     steps:
       - name: Resolve version
@@ -170,6 +181,13 @@ jobs:
           registry: docker.io
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create and push service manifests
         run: |
@@ -200,9 +218,19 @@ jobs:
               "${{ env.PRIMARY_DOCKER_IMAGE }}:latest-${service}" \
               "${{ env.PRIMARY_DOCKER_IMAGE }}:latest-${service}-amd64" \
               "${{ env.PRIMARY_DOCKER_IMAGE }}:latest-${service}-arm64"
+            create_manifest \
+              "${{ env.GHCR_DOCKER_IMAGE }}:${TAG}-${service}" \
+              "${{ env.GHCR_DOCKER_IMAGE }}:${TAG}-${service}-amd64" \
+              "${{ env.GHCR_DOCKER_IMAGE }}:${TAG}-${service}-arm64"
+            create_manifest \
+              "${{ env.GHCR_DOCKER_IMAGE }}:latest-${service}" \
+              "${{ env.GHCR_DOCKER_IMAGE }}:latest-${service}-amd64" \
+              "${{ env.GHCR_DOCKER_IMAGE }}:latest-${service}-arm64"
           done
           create_manifest "${{ env.PRIMARY_DOCKER_IMAGE }}:${TAG}" "${{ env.PRIMARY_DOCKER_IMAGE }}:${TAG}-control-api"
           create_manifest "${{ env.PRIMARY_DOCKER_IMAGE }}:latest" "${{ env.PRIMARY_DOCKER_IMAGE }}:latest-control-api"
+          create_manifest "${{ env.GHCR_DOCKER_IMAGE }}:${TAG}" "${{ env.GHCR_DOCKER_IMAGE }}:${TAG}-control-api"
+          create_manifest "${{ env.GHCR_DOCKER_IMAGE }}:latest" "${{ env.GHCR_DOCKER_IMAGE }}:latest-control-api"
 
       - name: Set up Go for cosign
         uses: actions/setup-go@v5
