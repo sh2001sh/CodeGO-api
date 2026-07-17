@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"sort"
 	"strconv"
 	"sync"
 	"time"
@@ -16,6 +17,8 @@ const (
 	ChannelHealthCooling  = "cooling"
 
 	channelHealthFailureThreshold  = 5
+	channelHealthShortCooldown     = 15 * time.Second
+	channelHealthRateLimitCooldown = 30 * time.Second
 	channelHealthCooldownDuration  = 2 * time.Minute
 	channelHealthTTL               = 20 * time.Minute
 	channelModelUnavailableTTL     = 5 * time.Minute
@@ -23,6 +26,10 @@ const (
 	channelHealthShortWindow       = 2 * time.Minute
 	channelHealthShortMinRequests  = 5
 	channelHealthShortMaxSuccess   = 40.0
+	channelHealthSlowTTFTSamples   = 3
+	channelHealthSlowTTFTThreshold = 12 * time.Second
+	channelHealthTTFTWindow        = 20
+	channelHealthSlowTTFTP95       = 15 * time.Second
 )
 
 // ChannelHealth captures the shared routing health for one channel/model pair.
@@ -37,6 +44,10 @@ type ChannelHealth struct {
 	SuccessRate5m                float64   `json:"success_rate_5m"`
 	SuccessRate15m               float64   `json:"success_rate_15m"`
 	TTFTEWMAMilliseconds         float64   `json:"ttft_ewma_ms"`
+	TTFTSamples                  int       `json:"ttft_samples"`
+	TTFTP50Milliseconds          float64   `json:"ttft_p50_ms"`
+	TTFTP95Milliseconds          float64   `json:"ttft_p95_ms"`
+	TTFTRecentMilliseconds       []int64   `json:"ttft_recent_ms"`
 	LastSuccessAt                time.Time `json:"last_success_at"`
 	LastFailureAt                time.Time `json:"last_failure_at"`
 	LastFailureRequestID         string    `json:"last_failure_request_id"`
@@ -166,8 +177,18 @@ func CoolChannelModelForUpstreamFailure(channelID int, model string) bool {
 
 // RecordChannelRetryableFailure advances the shared circuit for a retryable upstream error.
 func RecordChannelRetryableFailure(channelID int, model string) {
+	RecordChannelRetryableFailureWithCooldown(channelID, model, channelHealthShortCooldown)
+}
+
+// RecordChannelRetryableFailureWithCooldown applies a short model-level
+// cooldown for a transient failure. Repeated failures in the rolling window
+// still escalate to the longer circuit cooldown.
+func RecordChannelRetryableFailureWithCooldown(channelID int, model string, shortCooldown time.Duration) {
 	if channelID <= 0 || model == "" {
 		return
+	}
+	if shortCooldown <= 0 {
+		shortCooldown = channelHealthShortCooldown
 	}
 	lock := channelHealthLock(channelID)
 	lock.Lock()
@@ -179,21 +200,32 @@ func RecordChannelRetryableFailure(channelID int, model string) {
 		state.Model = model
 		state.LastFailureAt = now
 		recordChannelHealthWindow(&state, now, false)
-		if state.CoolingUntil.After(now) {
-			return state, nil
-		}
 		state.ConsecutiveRetryableFailures++
 		if shouldCoolForShortTermFailureRate(state) || state.ConsecutiveRetryableFailures >= channelHealthFailureThreshold {
 			state.ConsecutiveRetryableFailures = 0
 			state.CoolingUntil = now.Add(channelHealthCooldownDuration)
 			state.State = ChannelHealthCooling
-		} else if state.SuccessRate5m > 0 && state.SuccessRate5m < 85 {
-			state.State = ChannelHealthDegraded
-		} else {
-			state.State = ChannelHealthHealthy
+			return state, nil
 		}
+		if state.CoolingUntil.After(now) {
+			return state, nil
+		}
+		state.CoolingUntil = now.Add(shortCooldown)
+		state.State = ChannelHealthCooling
 		return state, nil
 	})
+}
+
+// RetryableFailureCooldown selects a short circuit duration without exposing
+// channel-specific rules. Rate limits and gateway timeouts recover more slowly
+// than connection and transient 5xx errors.
+func RetryableFailureCooldown(statusCode int) time.Duration {
+	switch statusCode {
+	case 429, 504, 524:
+		return channelHealthRateLimitCooldown
+	default:
+		return channelHealthShortCooldown
+	}
 }
 
 func shouldCoolForShortTermFailureRate(state ChannelHealth) bool {
@@ -217,21 +249,59 @@ func RecordChannelSuccess(channelID int, model string, ttft time.Duration) {
 	_ = getChannelHealthCache().UpdateWithTTL(channelHealthKey(channelID, model), channelHealthTTL, func(state ChannelHealth, _ bool) (ChannelHealth, error) {
 		state.ChannelID = channelID
 		state.Model = model
-		state.State = ChannelHealthHealthy
 		state.ConsecutiveRetryableFailures = 0
-		state.CoolingUntil = time.Time{}
 		state.LastSuccessAt = now
 		recordChannelHealthWindow(&state, now, true)
 		if ttft > 0 {
-			value := float64(ttft.Milliseconds())
-			if state.TTFTEWMAMilliseconds == 0 {
-				state.TTFTEWMAMilliseconds = value
-			} else {
-				state.TTFTEWMAMilliseconds = state.TTFTEWMAMilliseconds*0.8 + value*0.2
-			}
+			recordChannelTTFT(&state, float64(ttft.Milliseconds()))
 		}
+		if isSlowChannelTTFT(state) {
+			state.State = ChannelHealthCooling
+			state.CoolingUntil = now.Add(channelHealthShortCooldown)
+			return state, nil
+		}
+		state.State = ChannelHealthHealthy
+		state.CoolingUntil = time.Time{}
 		return state, nil
 	})
+}
+
+func recordChannelTTFT(state *ChannelHealth, value float64) {
+	if state == nil || value <= 0 {
+		return
+	}
+	state.TTFTSamples++
+	if state.TTFTEWMAMilliseconds == 0 {
+		state.TTFTEWMAMilliseconds = value
+	} else {
+		state.TTFTEWMAMilliseconds = state.TTFTEWMAMilliseconds*0.8 + value*0.2
+	}
+	state.TTFTRecentMilliseconds = append(state.TTFTRecentMilliseconds, int64(value))
+	if len(state.TTFTRecentMilliseconds) > channelHealthTTFTWindow {
+		state.TTFTRecentMilliseconds = state.TTFTRecentMilliseconds[len(state.TTFTRecentMilliseconds)-channelHealthTTFTWindow:]
+	}
+	samples := append([]int64(nil), state.TTFTRecentMilliseconds...)
+	sort.Slice(samples, func(i int, j int) bool { return samples[i] < samples[j] })
+	state.TTFTP50Milliseconds = percentile(samples, 50)
+	state.TTFTP95Milliseconds = percentile(samples, 95)
+}
+
+func isSlowChannelTTFT(state ChannelHealth) bool {
+	if state.TTFTSamples >= channelHealthSlowTTFTSamples && state.TTFTEWMAMilliseconds >= float64(channelHealthSlowTTFTThreshold.Milliseconds()) {
+		return true
+	}
+	return len(state.TTFTRecentMilliseconds) >= 5 && state.TTFTP95Milliseconds >= float64(channelHealthSlowTTFTP95.Milliseconds())
+}
+
+func percentile(samples []int64, percentage int) float64 {
+	if len(samples) == 0 {
+		return 0
+	}
+	index := (len(samples)*percentage + 99) / 100
+	if index > 0 {
+		index--
+	}
+	return float64(samples[index])
 }
 
 func recordChannelHealthWindow(state *ChannelHealth, now time.Time, success bool) {

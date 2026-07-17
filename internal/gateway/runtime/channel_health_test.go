@@ -59,6 +59,57 @@ func TestChannelHealthDoesNotCoolForHealthyShortTermSuccessRate(t *testing.T) {
 	require.Equal(t, 80.0, state.SuccessRate2m)
 }
 
+func TestChannelHealthUsesShortCooldownBeforeLongCircuit(t *testing.T) {
+	require.NoError(t, resetChannelHealthForTest())
+	t.Cleanup(func() { require.NoError(t, resetChannelHealthForTest()) })
+
+	RecordChannelRetryableFailureWithCooldown(42, "gpt-short-cooldown", 15*time.Second)
+	state, found := GetChannelHealth(42, "gpt-short-cooldown")
+	require.True(t, found)
+	require.Equal(t, ChannelHealthCooling, state.State)
+	require.WithinDuration(t, time.Now().Add(15*time.Second), state.CoolingUntil, time.Second)
+}
+
+func TestChannelHealthShortCooldownEscalatesAfterRepeatedFailures(t *testing.T) {
+	require.NoError(t, resetChannelHealthForTest())
+	t.Cleanup(func() { require.NoError(t, resetChannelHealthForTest()) })
+
+	for range channelHealthFailureThreshold {
+		RecordChannelRetryableFailure(42, "gpt-escalation")
+	}
+	state, found := GetChannelHealth(42, "gpt-escalation")
+	require.True(t, found)
+	require.WithinDuration(t, time.Now().Add(channelHealthCooldownDuration), state.CoolingUntil, time.Second)
+}
+
+func TestChannelHealthCoolsSlowFirstTokenRouteBriefly(t *testing.T) {
+	require.NoError(t, resetChannelHealthForTest())
+	t.Cleanup(func() { require.NoError(t, resetChannelHealthForTest()) })
+
+	for range channelHealthSlowTTFTSamples {
+		RecordChannelSuccess(42, "gpt-slow-ttft", channelHealthSlowTTFTThreshold+time.Second)
+	}
+	state, found := GetChannelHealth(42, "gpt-slow-ttft")
+	require.True(t, found)
+	require.Equal(t, channelHealthSlowTTFTSamples, state.TTFTSamples)
+	require.Equal(t, ChannelHealthCooling, state.State)
+	require.WithinDuration(t, time.Now().Add(channelHealthShortCooldown), state.CoolingUntil, time.Second)
+}
+
+func TestChannelHealthTracksRecentTTFTPercentiles(t *testing.T) {
+	require.NoError(t, resetChannelHealthForTest())
+	t.Cleanup(func() { require.NoError(t, resetChannelHealthForTest()) })
+
+	for _, ttft := range []time.Duration{time.Second, time.Second, time.Second, time.Second, 20 * time.Second} {
+		RecordChannelSuccess(42, "gpt-ttft-percentiles", ttft)
+	}
+	state, found := GetChannelHealth(42, "gpt-ttft-percentiles")
+	require.True(t, found)
+	require.EqualValues(t, 1_000, state.TTFTP50Milliseconds)
+	require.EqualValues(t, 20_000, state.TTFTP95Milliseconds)
+	require.Equal(t, ChannelHealthCooling, state.State)
+}
+
 func TestModelUnavailableCoolsAfterFiveDistinctRequests(t *testing.T) {
 	require.NoError(t, resetChannelHealthForTest())
 	t.Cleanup(func() { require.NoError(t, resetChannelHealthForTest()) })

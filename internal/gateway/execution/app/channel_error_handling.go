@@ -51,7 +51,7 @@ func ProcessChannelError(c *gin.Context, channelError types.ChannelError, err *t
 		})
 	}
 	if isRetryableChannelFailure(err) && !IsModelScopedUpstreamFailure(err) {
-		gatewayruntime.RecordChannelRetryableFailure(channelError.ChannelId, c.GetString("original_model"))
+		gatewayruntime.RecordChannelRetryableFailureWithCooldown(channelError.ChannelId, c.GetString("original_model"), gatewayruntime.RetryableFailureCooldown(err.StatusCode))
 		gatewayruntime.InvalidateChannelAffinityForCurrentRequest(c)
 	}
 

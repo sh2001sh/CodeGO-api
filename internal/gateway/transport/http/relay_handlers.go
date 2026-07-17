@@ -263,7 +263,11 @@ func relayRequest(c *gin.Context, relayFormat types.RelayFormat) {
 
 		if newAPIError == nil {
 			gatewayroutingapp.RecordAutoGroupSuccess(c, relayInfo.OriginModelName)
-			relaycommon.RecordChannelSuccess(channel.Id, relayInfo.OriginModelName, 0)
+			ttft := relayInfo.FirstResponseTime.Sub(relayInfo.StartTime)
+			if !relayInfo.HasSendResponse() {
+				ttft = 0
+			}
+			relaycommon.RecordChannelSuccess(channel.Id, relayInfo.OriginModelName, ttft)
 			relayInfo.LastError = nil
 			return
 		}
