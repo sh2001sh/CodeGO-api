@@ -3,8 +3,10 @@ package http
 import (
 	"errors"
 	"github.com/gin-gonic/gin"
+	"github.com/sh2001sh/new-api/constant"
 	platformencoding "github.com/sh2001sh/new-api/internal/platform/encodingx"
 	platformtext "github.com/sh2001sh/new-api/internal/platform/textx"
+	httpctx "github.com/sh2001sh/new-api/internal/platform/transport/http/httpctx"
 	"github.com/sh2001sh/new-api/types"
 	"github.com/stretchr/testify/require"
 	"net/http"
@@ -18,6 +20,17 @@ type relayErrorEnvelope struct {
 		Type    string `json:"type"`
 		Code    string `json:"code"`
 	} `json:"error"`
+}
+
+func TestShouldRetryGatewayTimeoutBeforeResponseDelivery(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	ctx, _ := gin.CreateTestContext(httptest.NewRecorder())
+	ctx.Request = httptest.NewRequest(http.MethodPost, "/v1/chat/completions", nil)
+	err := types.NewOpenAIError(errors.New("upstream timeout"), types.ErrorCodeBadResponseStatusCode, 524)
+
+	require.True(t, shouldRetry(ctx, err, 1))
+	httpctx.SetContextKey(ctx, constant.ContextKeyResponseBodyDelivered, true)
+	require.False(t, shouldRetry(ctx, err, 1))
 }
 
 func TestFinalizeRelayErrorMasksChineseUpstreamQuotaLeak(t *testing.T) {

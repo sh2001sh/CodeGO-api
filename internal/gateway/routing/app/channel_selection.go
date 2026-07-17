@@ -24,6 +24,8 @@ type RetryParam struct {
 	resetNextTry bool
 }
 
+var selectRandomSatisfiedChannel = gatewaystore.GetRandomSatisfiedChannel
+
 func (p *RetryParam) GetRetry() int {
 	if p.Retry == nil {
 		return 0
@@ -143,27 +145,52 @@ func takeCoolingModelProbe(param *RetryParam, selectedGroup string) (*gatewaysch
 }
 
 func getHealthySatisfiedChannel(group string, modelName string, retry int) (*gatewayschema.Channel, error) {
-	const maxSelectionAttempts = 16
 	var degradedCandidate *gatewayschema.Channel
-	for attempt := 0; attempt < maxSelectionAttempts; attempt++ {
-		channel, err := gatewaystore.GetRandomSatisfiedChannel(group, modelName, retry)
-		if err != nil || channel == nil {
-			if degradedCandidate != nil && err == nil {
-				return degradedCandidate, nil
-			}
-			return channel, err
+	seenPriorities := make(map[int64]struct{})
+	for priorityRetry := retry; priorityRetry < retry+16; priorityRetry++ {
+		healthy, degraded, priority, found, err := getHealthySatisfiedChannelAtPriority(group, modelName, priorityRetry)
+		if err != nil {
+			return nil, err
 		}
-		health, found := gatewayruntime.GetChannelHealth(channel.Id, modelName)
-		if found && health.State == gatewayruntime.ChannelHealthCooling && health.CoolingUntil.After(time.Now()) {
-			continue
+		if !found {
+			break
 		}
-		if found && health.State == gatewayruntime.ChannelHealthDegraded {
-			if degradedCandidate == nil {
-				degradedCandidate = channel
-			}
-			continue
+		if _, seen := seenPriorities[priority]; seen {
+			break
 		}
-		return channel, nil
+		seenPriorities[priority] = struct{}{}
+		if healthy != nil {
+			return healthy, nil
+		}
+		if degradedCandidate == nil && degraded != nil {
+			degradedCandidate = degraded
+		}
 	}
 	return degradedCandidate, nil
+}
+
+func getHealthySatisfiedChannelAtPriority(group string, modelName string, retry int) (healthy *gatewayschema.Channel, degraded *gatewayschema.Channel, priority int64, found bool, err error) {
+	const maxSelectionAttempts = 16
+	for attempt := 0; attempt < maxSelectionAttempts; attempt++ {
+		channel, err := selectRandomSatisfiedChannel(group, modelName, retry)
+		if err != nil || channel == nil {
+			return nil, degraded, priority, found, err
+		}
+		if !found {
+			priority = channel.GetPriority()
+			found = true
+		}
+		health, healthFound := gatewayruntime.GetChannelHealth(channel.Id, modelName)
+		if healthFound && health.State == gatewayruntime.ChannelHealthCooling && health.CoolingUntil.After(time.Now()) {
+			continue
+		}
+		if healthFound && health.State == gatewayruntime.ChannelHealthDegraded {
+			if degraded == nil {
+				degraded = channel
+			}
+			continue
+		}
+		return channel, degraded, priority, true, nil
+	}
+	return nil, degraded, priority, found, nil
 }

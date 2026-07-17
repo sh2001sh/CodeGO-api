@@ -128,6 +128,9 @@ func shouldRetry(c *gin.Context, openaiErr *types.NewAPIError, retryTimes int) b
 	if _, ok := c.Get("specific_channel_id"); ok {
 		return false
 	}
+	if httpctx.GetContextKeyBool(c, constant.ContextKeyResponseBodyDelivered) {
+		return false
+	}
 	if types.IsChannelError(openaiErr) {
 		return true
 	}

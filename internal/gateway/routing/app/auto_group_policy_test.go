@@ -5,6 +5,8 @@ import (
 	"time"
 
 	gatewaygroups "github.com/sh2001sh/new-api/internal/gateway/groupsettings"
+	gatewayruntime "github.com/sh2001sh/new-api/internal/gateway/runtime"
+	gatewayschema "github.com/sh2001sh/new-api/internal/gateway/schema"
 	gatewaystore "github.com/sh2001sh/new-api/internal/gateway/store"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -14,6 +16,33 @@ func TestNormalizeTokenGroupDefaultsToAuto(t *testing.T) {
 	assert.Equal(t, AutoGroupName, NormalizeTokenGroup(""))
 	assert.Equal(t, AutoGroupName, NormalizeTokenGroup("  "))
 	assert.Equal(t, "premium", NormalizeTokenGroup(" premium "))
+}
+
+func TestGetHealthySatisfiedChannelFallsBackAfterPrimaryCooldown(t *testing.T) {
+	const modelName = "gpt-route-fallback-test"
+	primaryPriority := int64(3)
+	fallbackPriority := int64(2)
+	originalSelector := selectRandomSatisfiedChannel
+	t.Cleanup(func() {
+		selectRandomSatisfiedChannel = originalSelector
+		gatewayruntime.RecordChannelSuccess(42, modelName, 0)
+	})
+
+	var retries []int
+	selectRandomSatisfiedChannel = func(_ string, _ string, retry int) (*gatewayschema.Channel, error) {
+		retries = append(retries, retry)
+		if retry == 0 {
+			return &gatewayschema.Channel{Id: 42, Priority: &primaryPriority}, nil
+		}
+		return &gatewayschema.Channel{Id: 39, Priority: &fallbackPriority}, nil
+	}
+	gatewayruntime.CoolChannelModelForUpstreamFailure(42, modelName)
+
+	channel, err := getHealthySatisfiedChannel("default", modelName, 0)
+	require.NoError(t, err)
+	require.NotNil(t, channel)
+	require.Equal(t, 39, channel.Id)
+	require.Contains(t, retries, 1)
 }
 
 func TestOrderAutoGroupsPrefersLowerRateUntilCooldown(t *testing.T) {
