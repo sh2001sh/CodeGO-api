@@ -78,7 +78,7 @@ const REDUCED_ITEM: Variants = {
 
 const RARITY_RING: Record<RewardRarity, string> = {
   legendary:
-    'border-amber-400/50 bg-gradient-to-br from-amber-500/12 via-orange-500/8 to-transparent shadow-[0_0_22px_-6px_rgba(245,158,11,0.55)]',
+    'border-primary/40 bg-primary/8 shadow-[0_0_16px_-4px_color-mix(in_oklch,var(--primary)_50%,transparent)]',
   epic: 'border-violet-400/40 bg-gradient-to-br from-violet-500/10 to-transparent',
   common: 'border-border/70 bg-background/72',
 }
@@ -87,7 +87,7 @@ const RARITY_BADGE: Record<RewardRarity, { label: string; cls: string } | null> 
   {
     legendary: {
       label: '稀有',
-      cls: 'border-amber-500/40 bg-amber-500/15 text-amber-700 dark:text-amber-300',
+      cls: 'border-primary/40 bg-primary/15 text-primary',
     },
     epic: {
       label: '精品',
@@ -126,14 +126,14 @@ export function PrizeRevealHeader(props: {
       className={cn(
         'relative overflow-hidden rounded-xl border p-4',
         celebratory
-          ? 'border-amber-400/50 bg-gradient-to-br from-amber-500/12 via-orange-500/8 to-transparent'
+          ? 'border-primary/40 bg-primary/8'
           : 'app-subtle-panel'
       )}
     >
       {celebratory && !reduced ? (
         <motion.div
           aria-hidden
-          className='pointer-events-none absolute -right-6 -top-6 text-amber-400/30'
+          className='pointer-events-none absolute -right-6 -top-6 text-primary/30'
           initial={{ opacity: 0, rotate: -20, scale: 0.6 }}
           animate={{ opacity: 1, rotate: 0, scale: 1 }}
           transition={{ duration: 0.6, ease: EASE_OUT_QUINT, delay: 0.1 }}
@@ -144,7 +144,7 @@ export function PrizeRevealHeader(props: {
       <div className='relative'>
         <div className='flex items-center gap-2'>
           {celebratory ? (
-            <Star className='size-5 shrink-0 fill-amber-400 text-amber-400' />
+            <Star className='size-5 shrink-0 fill-primary text-primary' />
           ) : null}
           <div className='text-foreground text-lg font-semibold'>
             {celebratory ? `恭喜！${props.summary}` : props.summary}
@@ -228,7 +228,7 @@ function PrizeRevealCard(props: {
               </div>
             ) : null}
             {record.is_pity ? (
-              <div className='border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-400 rounded-full border px-2.5 py-0.5 text-xs font-medium'>
+              <div className='border-primary/30 bg-primary/10 text-primary rounded-full border px-2.5 py-0.5 text-xs font-medium'>
                 保底
               </div>
             ) : null}

@@ -216,7 +216,7 @@ export function RechargeFormCard({
           </Button>
         ) : null
       }
-      className={compact ? 'rounded-[20px]' : undefined}
+      className={compact ? 'rounded-xl' : undefined}
       contentClassName={
         compact ? 'space-y-3 sm:space-y-4' : 'space-y-4 sm:space-y-6'
       }

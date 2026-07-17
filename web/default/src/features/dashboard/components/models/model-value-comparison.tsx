@@ -13,6 +13,18 @@ type Scene = 'coding' | 'chat' | 'long' | 'reasoning' | 'image' | 'video'
 type ViewMode = 'map' | 'table'
 const MIN_SAMPLES = 20
 
+function getSceneLabel(scene: Scene, t: (key: string) => string): string {
+  const labels: Record<Scene, string> = {
+    coding: t('Coding assistant'),
+    chat: t('General chat'),
+    long: t('Long context'),
+    reasoning: t('Reasoning'),
+    image: t('Image'),
+    video: t('Video'),
+  }
+  return labels[scene]
+}
+
 function sceneMatches(model: PricingModel, scene: Scene): boolean {
   const text = `${model.model_name} ${model.tags ?? ''}`.toLowerCase()
   if (scene === 'image') return text.includes('image') || text.includes('dall')
@@ -229,7 +241,7 @@ export function ModelValueComparison() {
               '{{model}} currently offers the strongest cost-performance balance for {{scene}} based on {{samples}} samples.',
               {
                 model: rows[0].model.model_name,
-                scene: t(scene),
+                scene: getSceneLabel(scene, t),
                 samples: rows[0].samples,
               }
             )

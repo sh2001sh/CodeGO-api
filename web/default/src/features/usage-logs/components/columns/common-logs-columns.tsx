@@ -335,7 +335,7 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
                     {affinity && (
                       <button
                         type='button'
-                        className='absolute -top-1 -right-1 leading-none text-amber-500'
+                        className='absolute -top-1 -right-1 leading-none text-warning'
                         onClick={(e) => {
                           e.stopPropagation()
                           setAffinityTarget({
@@ -441,9 +441,7 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
                     {sensitiveVisible ? log.username : '••••'}
                   </TooltipTrigger>
                   {sensitiveVisible && log.username.length > 12 && (
-                    <TooltipContent side='top'>
-                      {log.username}
-                    </TooltipContent>
+                    <TooltipContent side='top'>{log.username}</TooltipContent>
                   )}
                 </Tooltip>
               </TooltipProvider>
@@ -484,11 +482,7 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
         <div className='flex max-w-[200px] flex-col gap-0.5'>
           <TooltipProvider delay={300}>
             <Tooltip>
-              <TooltipTrigger
-                render={
-                  <div className='max-w-full' />
-                }
-              >
+              <TooltipTrigger render={<div className='max-w-full' />}>
                 <StatusBadge
                   label={displayName}
                   icon={KeyRound}
@@ -561,22 +555,19 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
         const frtVariant = frt ? getFirstResponseTimeColor(frt / 1000) : null
 
         const pillBg: Record<string, string> = {
-          success:
-            'border border-emerald-200/40 bg-emerald-50/35 dark:border-emerald-900/40 dark:bg-emerald-950/15',
-          warning:
-            'border border-amber-200/45 bg-amber-50/35 dark:border-amber-900/40 dark:bg-amber-950/15',
-          danger:
-            'border border-rose-200/50 bg-rose-50/35 dark:border-rose-900/40 dark:bg-rose-950/15',
+          success: 'border border-success/20 bg-success/8',
+          warning: 'border border-warning/25 bg-warning/8',
+          danger: 'border border-destructive/25 bg-destructive/8',
         }
         const pillText: Record<string, string> = {
-          success: 'text-emerald-700/85 dark:text-emerald-400/85',
-          warning: 'text-amber-700/85 dark:text-amber-400/85',
-          danger: 'text-rose-700/85 dark:text-rose-400/85',
+          success: 'text-success/85',
+          warning: 'text-warning/85',
+          danger: 'text-destructive/85',
         }
         const pillDot: Record<string, string> = {
-          success: 'bg-emerald-500/80',
-          warning: 'bg-amber-500/80',
-          danger: 'bg-rose-500/80',
+          success: 'bg-success/80',
+          warning: 'bg-warning/80',
+          danger: 'bg-destructive/80',
         }
 
         return (
@@ -634,7 +625,7 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
                   <TooltipProvider>
                     <Tooltip>
                       <TooltipTrigger
-                        render={<CircleAlert className='size-3 text-red-500' />}
+                        render={<CircleAlert className='size-3 text-destructive' />}
                       ></TooltipTrigger>
                       <TooltipContent>
                         <div className='space-y-0.5 text-xs'>
@@ -663,7 +654,7 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
     {
       accessorKey: 'prompt_tokens',
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title='Tokens' />
+        <DataTableColumnHeader column={column} title={t('Tokens')} />
       ),
       cell: ({ row }) => {
         const log = row.original
@@ -708,7 +699,7 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
           </div>
         )
       },
-      meta: { label: 'Tokens', mobileHidden: true },
+      meta: { label: t('Tokens'), mobileHidden: true },
     },
 
     {
@@ -730,11 +721,11 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
               <Tooltip>
                 <TooltipTrigger
                   render={
-                    <span className='inline-flex items-center gap-1 rounded-md border border-emerald-200 bg-emerald-50 px-1.5 py-0.5 text-xs font-medium text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300' />
+                    <span className='inline-flex items-center gap-1 rounded-md border border-success/30 bg-success/10 px-1.5 py-0.5 text-xs font-medium text-success' />
                   }
                 >
                   <span
-                    className='size-1.5 rounded-full bg-emerald-500'
+                    className='size-1.5 rounded-full bg-success'
                     aria-hidden='true'
                   />
                   {t('Subscription')}
@@ -789,7 +780,7 @@ export function useCommonLogsColumns(isAdmin: boolean): ColumnDef<UsageLog>[] {
                     primary.muted
                       ? 'text-muted-foreground/60'
                       : primary.danger
-                        ? 'text-red-600 dark:text-red-400'
+                        ? 'text-destructive'
                         : 'text-foreground'
                   )}
                 >

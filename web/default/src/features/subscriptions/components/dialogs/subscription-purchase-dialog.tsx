@@ -142,7 +142,7 @@ function submitExternalPaymentForm(
 
 function SummaryItem(props: { label: string; value: ReactNode }) {
   return (
-    <div className='rounded-2xl border bg-white/80 px-3 py-3 dark:border-slate-800 dark:bg-slate-900/75'>
+    <div className='app-subtle-panel px-3 py-3'>
       <div className='text-muted-foreground text-[11px] font-medium tracking-wide'>
         {props.label}
       </div>
@@ -155,7 +155,7 @@ function SummaryItem(props: { label: string; value: ReactNode }) {
 
 function StatusItem(props: { label: string; value: ReactNode }) {
   return (
-    <div className='rounded-xl border bg-white/90 px-3 py-2.5 dark:border-slate-800 dark:bg-slate-900/80'>
+    <div className='app-subtle-panel px-3 py-2.5'>
       <div className='text-muted-foreground text-[11px] font-medium tracking-wide'>
         {props.label}
       </div>
@@ -484,24 +484,22 @@ export function SubscriptionPurchaseDialog(props: Props) {
       pending: {
         icon: <Loader2 className='h-5 w-5 animate-spin' />,
         title: '等待支付结果',
-        tone: 'border-sky-200 bg-sky-50/70 dark:border-sky-500/30 dark:bg-sky-500/10',
+        tone: 'border-warning/20 bg-warning/5',
       },
       success: {
-        icon: <CheckCircle2 className='h-5 w-5 text-emerald-600' />,
+        icon: <CheckCircle2 className='text-success h-5 w-5' />,
         title: '支付成功',
-        tone: 'border-emerald-200 bg-emerald-50/70 dark:border-emerald-500/30 dark:bg-emerald-500/10',
+        tone: 'border-success/20 bg-success/5',
       },
       failed: {
-        icon: <XCircle className='h-5 w-5 text-rose-600' />,
+        icon: <XCircle className='text-destructive h-5 w-5' />,
         title: '支付失败',
-        tone: 'border-rose-200 bg-rose-50/70 dark:border-rose-500/30 dark:bg-rose-500/10',
+        tone: 'border-destructive/20 bg-destructive/5',
       },
       cancelled: {
-        icon: (
-          <CircleSlash className='h-5 w-5 text-slate-500 dark:text-slate-300' />
-        ),
+        icon: <CircleSlash className='text-muted-foreground h-5 w-5' />,
         title: '已取消等待',
-        tone: 'border-slate-200 bg-slate-50/70 dark:border-slate-700 dark:bg-slate-900/70',
+        tone: 'border-border/70 bg-muted/40',
       },
       idle: {
         icon: null,
@@ -542,8 +540,8 @@ export function SubscriptionPurchaseDialog(props: Props) {
         </div>
 
         {paymentTracker.qrCodeUrl && paymentTracker.stage === 'pending' ? (
-          <div className='space-y-3 rounded-2xl border bg-white/90 p-3 dark:border-slate-800 dark:bg-slate-900/75'>
-            <div className='mx-auto w-full max-w-[180px] rounded-2xl border bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-950'>
+          <div className='app-subtle-panel space-y-3 p-3'>
+            <div className='border-border bg-card mx-auto w-full max-w-[180px] rounded-2xl border p-3 shadow-sm'>
               <img
                 src={paymentTracker.qrCodeUrl}
                 alt='wechat-pay-qrcode'
@@ -594,7 +592,7 @@ export function SubscriptionPurchaseDialog(props: Props) {
   return (
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogContent className='flex max-h-[calc(100vh-1rem)] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl'>
-        <DialogHeader className='border-b border-slate-200 px-4 py-4 sm:px-5 dark:border-slate-800'>
+        <DialogHeader className='border-border/70 border-b px-4 py-4 sm:px-5'>
           <DialogTitle className='flex items-center gap-2 text-lg'>
             <Crown className='h-5 w-5' />
             {purchaseModeLabel}
@@ -603,16 +601,16 @@ export function SubscriptionPurchaseDialog(props: Props) {
 
         <div className='flex-1 overflow-y-auto px-4 pt-4 pb-4 sm:px-5 sm:pb-5'>
           <div className='space-y-4'>
-            <div className='overflow-hidden rounded-[24px] border border-sky-100 bg-[linear-gradient(180deg,rgba(248,251,255,0.98),rgba(255,255,255,0.94))] shadow-[0_20px_50px_rgba(15,23,42,0.06)] dark:border-slate-800 dark:bg-[linear-gradient(180deg,rgba(15,23,42,0.92),rgba(2,6,23,0.82))] dark:shadow-[0_20px_50px_rgba(2,6,23,0.45)]'>
-              <div className='border-b border-sky-100 px-4 py-4 sm:px-5 dark:border-slate-800'>
+            <div className='app-page-shell overflow-hidden'>
+              <div className='border-border/70 border-b px-4 py-4 sm:px-5'>
                 <div className='flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between'>
                   <div className='min-w-0'>
                     <div className='mb-2 flex flex-wrap items-center gap-2'>
-                      <span className='rounded-full bg-slate-900 px-2.5 py-1 text-[11px] font-semibold tracking-[0.18em] text-white dark:bg-slate-100 dark:text-slate-900'>
+                      <span className='bg-foreground text-background rounded-full px-2.5 py-1 text-[11px] font-semibold tracking-[0.18em]'>
                         套餐
                       </span>
                       {discountText ? (
-                        <span className='rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[12px] font-semibold text-amber-700 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200'>
+                        <span className='border-warning/20 bg-warning/10 text-warning rounded-full border px-3 py-1 text-[12px] font-semibold'>
                           {discountText}
                         </span>
                       ) : null}
@@ -670,9 +668,9 @@ export function SubscriptionPurchaseDialog(props: Props) {
 
             {paymentTracker.stage === 'idle' ? (
               hasStripe || hasCreem || hasEpay ? (
-                <div className='rounded-2xl border bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-950/70'>
+                <div className='app-page-shell p-4'>
                   <div className='text-foreground mb-3 flex items-center gap-2 text-sm font-medium'>
-                    <QrCode className='h-4 w-4 text-sky-600' />
+                    <QrCode className='text-primary h-4 w-4' />
                     选择支付方式
                   </div>
 

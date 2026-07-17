@@ -96,8 +96,8 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
       animate='visible'
     >
       {props.availableBoxes > 0 ? (
-        <div className='flex items-start gap-3 rounded-xl border border-amber-500/25 bg-amber-500/5 p-4'>
-          <div className='flex size-9 shrink-0 items-center justify-center rounded-lg bg-amber-500/12 text-amber-600 dark:text-amber-500'>
+        <div className='flex items-start gap-3 rounded-xl border border-primary/20 bg-primary/6 p-4'>
+          <div className='flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary'>
             <AlertCircle className='size-5' />
           </div>
           <div className='min-w-0 flex-1'>
@@ -245,7 +245,7 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
             </Button>
           </div>
           <div className='space-y-4 text-sm'>
-            <div className='rounded-xl border border-amber-500/20 bg-amber-500/5 p-3'>
+            <div className='rounded-xl border border-primary/20 bg-primary/6 p-3'>
               <div className='text-foreground text-sm font-semibold'>
                 大奖包含
               </div>

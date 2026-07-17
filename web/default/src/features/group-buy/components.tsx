@@ -1,9 +1,10 @@
-import { Clock3 } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { Clock3 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
+import { formatSubscriptionPlanTitle } from '@/features/subscriptions/lib'
 import type { GroupBuyItem } from './types'
 
 function formatRemaining(expiresAt: number, nowMs: number) {
@@ -69,10 +70,11 @@ export function GroupBuyCard(props: {
         <div className='flex items-start justify-between gap-3'>
           <div>
             <h3 className='text-foreground text-lg font-semibold'>
-              {props.item.plan_name}
+              {formatSubscriptionPlanTitle(props.item.plan_name)}
             </h3>
             <p className='text-muted-foreground mt-1 text-sm'>
-              现价 ¥{props.item.plan_price}，基础额度 ${props.item.base_quota_usd}
+              现价 ¥{props.item.plan_price}，基础额度 $
+              {props.item.base_quota_usd}
               ，最高可得 ${props.item.base_quota_usd + props.item.bonus_at_5}
             </p>
           </div>
@@ -92,7 +94,9 @@ export function GroupBuyCard(props: {
           />
           <MetricItem
             label='下一档赠额'
-            value={nextTier ? `+$${nextTier.bonus}` : `+$${props.item.bonus_at_5}`}
+            value={
+              nextTier ? `+$${nextTier.bonus}` : `+$${props.item.bonus_at_5}`
+            }
           />
           <MetricItem
             label='自动结算'

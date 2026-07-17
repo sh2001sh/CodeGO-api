@@ -98,7 +98,7 @@ describe('download page view model', () => {
       error: new Error('Desktop release channel unavailable'),
     })
 
-    assert.equal(viewModel.currentBuildLabel, 'Loading...')
+    assert.equal(viewModel.currentBuildLabel, null)
     assert.equal(viewModel.publishedAtLabel, '-')
     assert.equal(viewModel.downloadCards[0]?.href, RELEASE_PAGE_URL)
     assert.equal(viewModel.downloadCards[1]?.href, RELEASE_PAGE_URL)

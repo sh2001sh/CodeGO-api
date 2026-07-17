@@ -102,7 +102,7 @@ function Tile(props: { label: string; value: string; highlight?: boolean }) {
       className={cn(
         'rounded-xl border px-3 py-2.5',
         props.highlight
-          ? 'border-amber-500/30 bg-amber-500/5'
+          ? 'border-primary/25 bg-primary/6'
           : 'border-border/70 bg-background/60'
       )}
     >

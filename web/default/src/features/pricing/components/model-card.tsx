@@ -93,15 +93,15 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
   return (
     <div
       className={cn(
-        'group bg-card/70 relative flex min-h-[230px] flex-col overflow-hidden rounded-2xl border p-3 backdrop-blur-sm transition-all duration-200 sm:p-5',
+        'group bg-card relative flex min-h-[230px] flex-col overflow-hidden rounded-2xl border p-3 transition-all duration-200 sm:p-5',
         isFreeModel
-          ? 'border-emerald-500/25 shadow-[0_0_18px_rgb(16_185_129_/_0.06)] hover:border-emerald-400/45 hover:shadow-[0_0_22px_rgb(16_185_129_/_0.14)]'
+          ? 'border-success/25 shadow-[0_0_18px_color-mix(in_oklch,var(--success)_6%,transparent)] hover:border-success/45 hover:shadow-[0_0_22px_color-mix(in_oklch,var(--success)_14%,transparent)]'
           : 'hover:border-foreground/18 hover:bg-card'
       )}
     >
       {isFreeModel && (
         <div className='pointer-events-none absolute right-4 bottom-4 z-0'>
-          <Badge className='rounded-full border border-emerald-500/15 bg-emerald-500/8 px-3 py-1 text-[11px] tracking-[0.16em] text-emerald-700/55 uppercase shadow-none dark:text-emerald-300/55'>
+          <Badge className='rounded-full border border-success/15 bg-success/8 px-3 py-1 text-[11px] tracking-[0.16em] text-success/55 uppercase shadow-none'>
             <Sparkles className='size-3' />
             {t('Free')}
           </Badge>
@@ -127,7 +127,7 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
               {dynamicSummary ? (
                 dynamicSummary.isSpecialExpression ? (
                   <span className='min-w-0'>
-                    <span className='text-amber-700 dark:text-amber-300'>
+                    <span className='text-warning'>
                       {t('Special billing expression')}
                     </span>
                     <code className='text-muted-foreground/70 mt-0.5 line-clamp-1 block font-mono text-[11px] break-all'>
@@ -283,7 +283,7 @@ export const ModelCard = memo(function ModelCard(props: ModelCardProps) {
               </span>
             )}
             {isFreeModel && (
-              <span className='text-xs font-medium whitespace-nowrap text-emerald-700 dark:text-emerald-300'>
+              <span className='text-xs font-medium whitespace-nowrap text-success'>
                 {freeGroups[0] ? `${freeGroups[0]} · ` : ''}
                 {t('Available at zero group ratio')}
               </span>

@@ -1,7 +1,6 @@
 package app
 
 import (
-	"fmt"
 	commercestore "github.com/sh2001sh/new-api/internal/commerce/paymentsettings"
 	gatewaystore "github.com/sh2001sh/new-api/internal/gateway/store"
 	platformconfig "github.com/sh2001sh/new-api/internal/platform/config"
@@ -11,7 +10,6 @@ import (
 	requestsettings "github.com/sh2001sh/new-api/internal/platform/requestsettings"
 	platformschema "github.com/sh2001sh/new-api/internal/platform/schema"
 	platformstore "github.com/sh2001sh/new-api/internal/platform/store"
-	"strconv"
 	"strings"
 	// UpdateOption validates and persists a runtime option update.
 )
@@ -43,21 +41,6 @@ func validateOptionGuards(key string, value string) error {
 
 func validateOptionValue(key string, value string) error {
 	switch key {
-	case "payment_setting.subscription_booster_rate":
-		parsed, err := strconv.ParseFloat(value, 64)
-		if err != nil || parsed <= 0 || parsed > 10 {
-			return fmt.Errorf("subscription booster rate must be greater than 0 and at most 10")
-		}
-	case "payment_setting.subscription_booster_min_quota", "payment_setting.subscription_booster_max_quota", "payment_setting.subscription_booster_quota_step":
-		parsed, err := strconv.ParseInt(value, 10, 64)
-		if err != nil || parsed <= 0 {
-			return fmt.Errorf("subscription booster quota setting must be a positive integer")
-		}
-	case "payment_setting.subscription_booster_daily_limit":
-		parsed, err := strconv.Atoi(value)
-		if err != nil || parsed < 0 || parsed > 1000 {
-			return fmt.Errorf("subscription booster daily limit must be between 0 and 1000")
-		}
 	case "GitHubOAuthEnabled":
 		if value == "true" && platformconfig.GitHubClientId == "" {
 			return ErrOptionGitHubOAuthMissingConfig

@@ -436,7 +436,7 @@ function PlanSection(props: {
       {props.loading ? (
         <div className='grid grid-cols-1 gap-3 md:grid-cols-2 2xl:grid-cols-3'>
           {Array.from({ length: 4 }).map((_, index) => (
-            <Skeleton key={index} className='h-[280px] w-full rounded-[20px]' />
+            <Skeleton key={index} className='h-[280px] w-full rounded-2xl' />
           ))}
         </div>
       ) : childArray.length > 0 ? (

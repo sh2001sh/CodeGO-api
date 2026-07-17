@@ -32,7 +32,7 @@ import type {
 } from './types.ts'
 
 export type DownloadPageViewModel = {
-  currentBuildLabel: string
+  currentBuildLabel: string | null
   publishedAtLabel: string
   downloadCards: DownloadCard[]
   recommendedCard: DownloadCard | null
@@ -88,7 +88,7 @@ export function buildDownloadPageViewModel({
     null
 
   return {
-    currentBuildLabel: release?.tag_name || 'Loading...',
+    currentBuildLabel: release?.tag_name || null,
     publishedAtLabel: formatPublishedAt(release?.published_at),
     downloadCards,
     recommendedCard,

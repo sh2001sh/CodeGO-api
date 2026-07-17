@@ -1,12 +1,13 @@
 import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Link } from '@tanstack/react-router'
-import { ArrowRight } from 'lucide-react'
+import { ArrowRight, KeyRound, LayoutGrid, Zap } from 'lucide-react'
 import { motion, useReducedMotion, type Variants } from 'motion/react'
 import { getLobeIcon } from '@/lib/lobe-icon'
 import { MOTION_TRANSITION } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
+import { Footer } from '@/components/layout/components/footer'
 import { PublicLayout } from '@/components/layout'
 import { SiteSeo } from '@/components/seo'
 import { getPricing } from '@/features/pricing/api'
@@ -32,8 +33,8 @@ function getModelTag(modelName: string, tags?: string) {
   const source = `${modelName} ${tags ?? ''}`.toLowerCase()
   if (source.includes('claude')) return 'Claude'
   if (source.includes('codex')) return 'Codex'
-  if (source.includes('deepseek') || source.includes('code')) return 'Code'
-  if (source.includes('gemini')) return 'Long ctx'
+  if (source.includes('deepseek') || source.includes('code')) return '代码'
+  if (source.includes('gemini')) return '长上下文'
   if (source.includes('gpt')) return 'GPT'
   return 'API'
 }
@@ -71,7 +72,7 @@ function ModelMarquee({
                 {model.model_name}
               </span>
               <span className='home-model-tag'>
-                {isFree ? 'FREE' : getModelTag(model.model_name, model.tags)}
+                {isFree ? '免费' : getModelTag(model.model_name, model.tags)}
               </span>
             </div>
           )
@@ -104,6 +105,24 @@ const MARQUEE_REVEAL: Variants = {
     transition: MOTION_TRANSITION.slow,
   },
 }
+
+const featureHighlights = [
+  {
+    icon: KeyRound,
+    title: '一个密钥，全部模型',
+    desc: '接入 Codex API、Claude Code API 等主流模型，无需为每家服务商单独申请密钥。',
+  },
+  {
+    icon: Zap,
+    title: '按量计费，无隐藏成本',
+    desc: '统一计费口径与实时用量看板，配额、日志和账单随时可查。',
+  },
+  {
+    icon: LayoutGrid,
+    title: '模型广场，随时比价',
+    desc: '在同一个界面比较模型能力与价格，按场景切换而不锁定单一供应商。',
+  },
+] as const
 
 export function BrandHome() {
   const shouldReduceMotion = Boolean(useReducedMotion())
@@ -165,90 +184,84 @@ export function BrandHome() {
         ]}
       />
 
-      <main className='bg-background relative overflow-hidden px-3 py-3'>
-        <section className='home-immersive-hero'>
-          <div className='home-hero-grain' />
-
-          <div className='relative z-10 mx-auto flex min-h-[calc(100svh-1.5rem)] max-w-7xl flex-col px-5 py-10 md:px-10 md:py-12'>
-            <div className='flex flex-1 items-center justify-center pt-16 pb-28 text-center md:pt-[4.5rem] md:pb-32'>
+      <main className='bg-background relative overflow-hidden'>
+        <section className='relative px-5 py-10 md:px-10 md:py-12'>
+          <div className='mx-auto flex max-w-7xl flex-col px-0 py-10 md:py-16'>
+            <div className='flex flex-1 items-center justify-center pb-20 text-center md:pb-24'>
               <motion.div
-                className='max-w-5xl'
+                className='max-w-4xl'
                 variants={HERO_STAGGER}
                 initial={shouldReduceMotion ? false : 'hidden'}
                 animate='visible'
               >
                 <motion.h1
                   variants={HERO_ITEM}
-                  className='text-foreground text-[clamp(3.3rem,7.4vw,7.1rem)] leading-[1.1] font-semibold tracking-[-0.04em] text-balance'
+                  className='text-foreground text-[clamp(2.6rem,5.6vw,4.6rem)] leading-[1.12] font-semibold tracking-[-0.03em] text-balance'
                 >
-                  让 AI Coding
+                  让 AI 编程
                   <br />
                   的每一步，都算数
                 </motion.h1>
                 <motion.p
                   variants={HERO_ITEM}
-                  className='text-muted-foreground mx-auto mt-6 max-w-3xl text-base leading-8 md:text-lg dark:text-slate-200/88'
+                  className='text-muted-foreground mx-auto mt-6 max-w-2xl text-base leading-8 md:text-lg'
                 >
                   面向 Codex API、Claude Code API、Codex中转、Claude中转，
                   把接入、调用、免费模型试用和持续使用接成同一条主线。
                 </motion.p>
                 <motion.div
                   variants={HERO_ITEM}
-                  className='mt-8 flex flex-wrap justify-center gap-3'
+                  className='mt-8 flex flex-wrap items-center justify-center gap-3'
                 >
                   <motion.div
-                    whileHover={shouldReduceMotion ? undefined : { scale: 1.04 }}
-                    whileTap={shouldReduceMotion ? undefined : { scale: 0.97 }}
+                    whileHover={
+                      shouldReduceMotion ? undefined : { scale: 1.02 }
+                    }
+                    whileTap={shouldReduceMotion ? undefined : { scale: 0.98 }}
                     transition={MOTION_TRANSITION.fast}
                     className='inline-flex'
                   >
                     <Button
                       size='lg'
-                      className='h-12 rounded-full bg-orange-600 px-6 text-sm font-semibold text-white shadow-[0_12px_26px_rgba(217,106,57,0.24)] hover:bg-orange-700'
+                      className='h-11 rounded-full px-6 text-sm font-semibold'
                       render={
                         <Link to='/sign-in' search={{ redirect: '/keys' }} />
                       }
                     >
-                      配置 Key
+                      配置密钥
                       <ArrowRight className='ml-2 size-4' />
                     </Button>
                   </motion.div>
                   <motion.div
-                    whileHover={shouldReduceMotion ? undefined : { scale: 1.04 }}
-                    whileTap={shouldReduceMotion ? undefined : { scale: 0.97 }}
+                    whileHover={
+                      shouldReduceMotion ? undefined : { scale: 1.02 }
+                    }
+                    whileTap={shouldReduceMotion ? undefined : { scale: 0.98 }}
                     transition={MOTION_TRANSITION.fast}
                     className='inline-flex'
                   >
                     <Button
                       size='lg'
                       variant='outline'
-                      className='h-12 rounded-full border-white/70 bg-white/50 px-6 text-sm font-semibold text-slate-900 backdrop-blur hover:bg-white/70 dark:border-white/10 dark:bg-white/[0.08] dark:text-slate-50 dark:hover:bg-white/[0.14]'
+                      className='h-11 rounded-full px-6 text-sm font-semibold'
                       render={<Link to='/pricing' />}
                     >
                       查看模型
                     </Button>
                   </motion.div>
-                  <motion.div
-                    whileHover={shouldReduceMotion ? undefined : { scale: 1.04 }}
-                    whileTap={shouldReduceMotion ? undefined : { scale: 0.97 }}
-                    transition={MOTION_TRANSITION.fast}
-                    className='inline-flex'
+                  <Button
+                    size='lg'
+                    variant='ghost'
+                    className='h-11 rounded-full px-4 text-sm font-medium'
+                    render={<Link to='/download' />}
                   >
-                    <Button
-                      size='lg'
-                      variant='outline'
-                      className='h-12 rounded-full border-slate-900/12 bg-slate-950 px-6 text-sm font-semibold text-white hover:bg-slate-800'
-                      render={<Link to='/download' />}
-                    >
-                      下载桌面端
-                    </Button>
-                  </motion.div>
+                    下载桌面端
+                  </Button>
                 </motion.div>
               </motion.div>
             </div>
 
             <motion.div
-              className='relative z-10 pb-2'
               variants={MARQUEE_REVEAL}
               initial={shouldReduceMotion ? false : 'hidden'}
               whileInView='visible'
@@ -256,25 +269,25 @@ export function BrandHome() {
             >
               <div className='mb-4 flex items-center justify-between gap-4'>
                 <div className='flex items-center gap-2'>
-                  <div className='h-1.5 w-1.5 rounded-full bg-emerald-500 shadow-[0_0_6px_rgba(16,185,129,0.6)]' />
-                  <div className='text-foreground text-sm font-semibold dark:text-slate-100'>
+                  <div className='bg-success h-1.5 w-1.5 rounded-full' />
+                  <div className='text-foreground text-sm font-semibold'>
                     当前模型储备
                   </div>
                 </div>
                 <div className='flex items-center gap-2'>
                   {models.length > 0 ? (
-                    <div className='rounded-full border border-slate-900/10 bg-white/40 px-2.5 py-1 text-xs font-medium text-slate-600 backdrop-blur dark:border-white/10 dark:bg-white/8 dark:text-slate-300'>
+                    <div className='border-border/60 bg-muted text-muted-foreground rounded-full border px-2.5 py-1 text-xs font-medium'>
                       {models.length}+ 个模型
                     </div>
                   ) : null}
                   {freeCount > 0 ? (
-                    <div className='rounded-full border border-emerald-600/18 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-700 dark:border-emerald-400/20 dark:bg-emerald-500/12 dark:text-emerald-200'>
+                    <div className='border-success/20 bg-success/10 text-success rounded-full border px-2.5 py-1 text-xs font-medium'>
                       {freeCount} 个免费
                     </div>
                   ) : null}
                 </div>
               </div>
-              <div className='home-marquee-shell is-immersive'>
+              <div className='home-marquee-shell'>
                 <ModelMarquee
                   models={tracks[0] ?? fallbackModels}
                   groupRatios={groupRatios}
@@ -289,13 +302,34 @@ export function BrandHome() {
                   reverse
                 />
               </div>
-              <div className='text-muted-foreground mx-auto mt-6 max-w-4xl text-center text-sm leading-7 dark:text-slate-200/82'>
-                面向 Codex、Claude Code 等 AI Coding 工作流，覆盖接入、调用与持续使用的完整链路。
+              <div className='text-muted-foreground mx-auto mt-6 max-w-4xl text-center text-sm leading-7'>
+                面向 Codex、Claude Code 等 AI
+                编程工作流，覆盖接入、调用与持续使用的完整链路。
               </div>
             </motion.div>
           </div>
         </section>
+
+        <section className='mx-auto max-w-7xl px-5 pb-16 md:px-10 md:pb-24'>
+          <div className='grid gap-4 md:grid-cols-3'>
+            {featureHighlights.map((feature) => (
+              <div key={feature.title} className='home-feature-panel'>
+                <div className='home-feature-icon'>
+                  <feature.icon className='size-5' />
+                </div>
+                <div className='text-foreground mt-4 text-base font-semibold'>
+                  {feature.title}
+                </div>
+                <div className='text-muted-foreground mt-2 text-sm leading-6'>
+                  {feature.desc}
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
       </main>
+
+      <Footer />
     </PublicLayout>
   )
 }
