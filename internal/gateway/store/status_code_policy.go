@@ -26,7 +26,11 @@ var AutomaticRetryStatusCodeRanges = []StatusCodeRange{
 	{Start: 500, End: 599},
 }
 
-var alwaysSkipRetryStatusCodes = map[int]struct{}{}
+// A payload rejection is deterministic for the same request body. Retrying it
+// wastes an upstream attempt and delays a user-facing validation error.
+var alwaysSkipRetryStatusCodes = map[int]struct{}{
+	413: {},
+}
 
 var alwaysSkipRetryCodes = map[types.ErrorCode]struct{}{
 	types.ErrorCodeBadResponseBody: {},

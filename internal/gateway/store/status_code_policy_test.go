@@ -81,6 +81,7 @@ func TestShouldRetryByStatusCode_DefaultIncludesTransientGatewayFailures(t *test
 }
 
 func TestIsAlwaysSkipRetryStatusCode(t *testing.T) {
+	require.True(t, IsAlwaysSkipRetryStatusCode(413))
 	require.False(t, IsAlwaysSkipRetryStatusCode(504))
 	require.False(t, IsAlwaysSkipRetryStatusCode(524))
 	require.False(t, IsAlwaysSkipRetryStatusCode(500))
