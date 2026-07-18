@@ -2,7 +2,8 @@
 为 `shu26.cfd` 增加后台可配置的首购充值活动，以及支持 GitHub 投稿、审核和额度奖励的社区资源中心。
 
 # 当前状态
-- 用户已授权通过版本标签触发 GitHub Actions 自动构建镜像；目标标签为 `v2.0.0-rc.33.9-alpha.31`。
+- 标签 `v2.0.0-rc.33.9-alpha.31` 已发布，GitHub Actions run `29654383929` 已成功完成镜像构建。
+- amd64、arm64 的 7 个服务镜像均已推送；Docker Hub 与 GHCR 的多架构 manifest、`latest` 标签和 Cosign 签名均已完成。
 - 功能提交 `103e838cf` 已推送到 `origin/v2-refactor-20260711`。
 - 首购活动已完成：管理员可配置启用状态、折扣比例、开始时间和结束时间。
 - “首购”定义为用户首次成功的钱包充值；所有充值渠道统一应用折扣，并在事务内占用资格，避免并发创建多个优惠订单。
@@ -24,7 +25,7 @@
 - `git diff --check` 通过。
 
 # 下一步
-- 推送 `v2.0.0-rc.33.9-alpha.31` 标签并监控 `Publish Docker image (Multi-arch)`，确认 amd64、arm64、manifest 与签名完成；生产部署仍不在本次授权范围内。
+- 镜像构建链路已完成；生产部署不在本次授权范围内。
 
 # 阻塞项
 - 全量 `go test ./...` 在整套运行时仍会触发既有 `TestGetSubscriptionOrderStatusReturnsOrderPayload` 失败；该测试单独运行通过，本次相关包测试全部通过。
