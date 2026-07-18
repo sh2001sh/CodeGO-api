@@ -61,6 +61,7 @@ import { Route as AuthenticatedImagesIndexRouteImport } from './routes/_authenti
 import { Route as AuthenticatedGroupStatusIndexRouteImport } from './routes/_authenticated/group-status/index'
 import { Route as AuthenticatedGroupBuyIndexRouteImport } from './routes/_authenticated/group-buy/index'
 import { Route as AuthenticatedDashboardIndexRouteImport } from './routes/_authenticated/dashboard/index'
+import { Route as AuthenticatedCommunityResourcesIndexRouteImport } from './routes/_authenticated/community-resources/index'
 import { Route as AuthenticatedChannelsIndexRouteImport } from './routes/_authenticated/channels/index'
 import { Route as AuthenticatedBlindBoxIndexRouteImport } from './routes/_authenticated/blind-box/index'
 import { Route as AuthenticatedUsageLogsSectionRouteImport } from './routes/_authenticated/usage-logs/$section'
@@ -359,6 +360,12 @@ const AuthenticatedDashboardIndexRoute =
     path: '/dashboard/',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedCommunityResourcesIndexRoute =
+  AuthenticatedCommunityResourcesIndexRouteImport.update({
+    id: '/community-resources/',
+    path: '/community-resources/',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedChannelsIndexRoute =
   AuthenticatedChannelsIndexRouteImport.update({
     id: '/channels/',
@@ -538,6 +545,7 @@ export interface FileRoutesByFullPath {
   '/usage-logs/$section': typeof AuthenticatedUsageLogsSectionRoute
   '/blind-box/': typeof AuthenticatedBlindBoxIndexRoute
   '/channels/': typeof AuthenticatedChannelsIndexRoute
+  '/community-resources/': typeof AuthenticatedCommunityResourcesIndexRoute
   '/dashboard/': typeof AuthenticatedDashboardIndexRoute
   '/group-buy/': typeof AuthenticatedGroupBuyIndexRoute
   '/group-status/': typeof AuthenticatedGroupStatusIndexRoute
@@ -612,6 +620,7 @@ export interface FileRoutesByTo {
   '/usage-logs/$section': typeof AuthenticatedUsageLogsSectionRoute
   '/blind-box': typeof AuthenticatedBlindBoxIndexRoute
   '/channels': typeof AuthenticatedChannelsIndexRoute
+  '/community-resources': typeof AuthenticatedCommunityResourcesIndexRoute
   '/dashboard': typeof AuthenticatedDashboardIndexRoute
   '/group-buy': typeof AuthenticatedGroupBuyIndexRoute
   '/group-status': typeof AuthenticatedGroupStatusIndexRoute
@@ -690,6 +699,7 @@ export interface FileRoutesById {
   '/_authenticated/usage-logs/$section': typeof AuthenticatedUsageLogsSectionRoute
   '/_authenticated/blind-box/': typeof AuthenticatedBlindBoxIndexRoute
   '/_authenticated/channels/': typeof AuthenticatedChannelsIndexRoute
+  '/_authenticated/community-resources/': typeof AuthenticatedCommunityResourcesIndexRoute
   '/_authenticated/dashboard/': typeof AuthenticatedDashboardIndexRoute
   '/_authenticated/group-buy/': typeof AuthenticatedGroupBuyIndexRoute
   '/_authenticated/group-status/': typeof AuthenticatedGroupStatusIndexRoute
@@ -767,6 +777,7 @@ export interface FileRouteTypes {
     | '/usage-logs/$section'
     | '/blind-box/'
     | '/channels/'
+    | '/community-resources/'
     | '/dashboard/'
     | '/group-buy/'
     | '/group-status/'
@@ -841,6 +852,7 @@ export interface FileRouteTypes {
     | '/usage-logs/$section'
     | '/blind-box'
     | '/channels'
+    | '/community-resources'
     | '/dashboard'
     | '/group-buy'
     | '/group-status'
@@ -918,6 +930,7 @@ export interface FileRouteTypes {
     | '/_authenticated/usage-logs/$section'
     | '/_authenticated/blind-box/'
     | '/_authenticated/channels/'
+    | '/_authenticated/community-resources/'
     | '/_authenticated/dashboard/'
     | '/_authenticated/group-buy/'
     | '/_authenticated/group-status/'
@@ -1348,6 +1361,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedDashboardIndexRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/community-resources/': {
+      id: '/_authenticated/community-resources/'
+      path: '/community-resources'
+      fullPath: '/community-resources/'
+      preLoaderRoute: typeof AuthenticatedCommunityResourcesIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/channels/': {
       id: '/_authenticated/channels/'
       path: '/channels'
@@ -1604,6 +1624,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedUsageLogsSectionRoute: typeof AuthenticatedUsageLogsSectionRoute
   AuthenticatedBlindBoxIndexRoute: typeof AuthenticatedBlindBoxIndexRoute
   AuthenticatedChannelsIndexRoute: typeof AuthenticatedChannelsIndexRoute
+  AuthenticatedCommunityResourcesIndexRoute: typeof AuthenticatedCommunityResourcesIndexRoute
   AuthenticatedDashboardIndexRoute: typeof AuthenticatedDashboardIndexRoute
   AuthenticatedGroupBuyIndexRoute: typeof AuthenticatedGroupBuyIndexRoute
   AuthenticatedGroupStatusIndexRoute: typeof AuthenticatedGroupStatusIndexRoute
@@ -1634,6 +1655,8 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedUsageLogsSectionRoute: AuthenticatedUsageLogsSectionRoute,
   AuthenticatedBlindBoxIndexRoute: AuthenticatedBlindBoxIndexRoute,
   AuthenticatedChannelsIndexRoute: AuthenticatedChannelsIndexRoute,
+  AuthenticatedCommunityResourcesIndexRoute:
+    AuthenticatedCommunityResourcesIndexRoute,
   AuthenticatedDashboardIndexRoute: AuthenticatedDashboardIndexRoute,
   AuthenticatedGroupBuyIndexRoute: AuthenticatedGroupBuyIndexRoute,
   AuthenticatedGroupStatusIndexRoute: AuthenticatedGroupStatusIndexRoute,

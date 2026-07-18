@@ -1,6 +1,7 @@
 package app
 
 import (
+	"fmt"
 	commercestore "github.com/sh2001sh/new-api/internal/commerce/paymentsettings"
 	gatewaystore "github.com/sh2001sh/new-api/internal/gateway/store"
 	platformconfig "github.com/sh2001sh/new-api/internal/platform/config"
@@ -10,6 +11,7 @@ import (
 	requestsettings "github.com/sh2001sh/new-api/internal/platform/requestsettings"
 	platformschema "github.com/sh2001sh/new-api/internal/platform/schema"
 	platformstore "github.com/sh2001sh/new-api/internal/platform/store"
+	"strconv"
 	"strings"
 	// UpdateOption validates and persists a runtime option update.
 )
@@ -95,6 +97,21 @@ func validateOptionValue(key string, value string) error {
 	case "AutomaticRetryStatusCodes":
 		_, err := gatewaystore.ParseHTTPStatusCodeRanges(value)
 		return err
+	case "community_resource_setting.reward_usd":
+		reward, err := strconv.ParseFloat(strings.TrimSpace(value), 64)
+		if err != nil || reward < 0 || reward > 1000 {
+			return fmt.Errorf("community resource reward must be between 0 and 1000 USD")
+		}
+	case "payment_setting.first_purchase_discount_multiplier":
+		multiplier, err := strconv.ParseFloat(strings.TrimSpace(value), 64)
+		if err != nil || multiplier <= 0 || multiplier >= 1 {
+			return fmt.Errorf("first purchase discount multiplier must be greater than 0 and less than 1")
+		}
+	case "payment_setting.first_purchase_discount_start_at", "payment_setting.first_purchase_discount_end_at":
+		timestamp, err := strconv.ParseInt(strings.TrimSpace(value), 10, 64)
+		if err != nil || timestamp < 0 {
+			return fmt.Errorf("first purchase discount time must be a valid Unix timestamp")
+		}
 	case "console_setting.api_info":
 		return platformstore.ValidateConsoleSettings(value, "ApiInfo")
 	case "console_setting.announcements":

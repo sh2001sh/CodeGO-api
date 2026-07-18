@@ -53,6 +53,7 @@ const DEFAULT_SIDEBAR_MODULES: SidebarModulesAdminConfig = {
     enabled: true,
     topup: true,
     rewards: true,
+    community: true,
     personal: true,
   },
   admin: {
@@ -110,6 +111,7 @@ const URL_TO_CONFIG_MAP: Record<string, { section: string; module: string }> = {
   '/packages': { section: 'personal', module: 'topup' },
   '/bounties': { section: 'personal', module: 'topup' },
   '/bounties/admin': { section: 'admin', module: 'subscription' },
+  '/community-resources': { section: 'personal', module: 'community' },
   '/group-buy': { section: 'personal', module: 'topup' },
   '/blind-box': { section: 'personal', module: 'topup' },
   '/invite-rewards': { section: 'personal', module: 'rewards' },

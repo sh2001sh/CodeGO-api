@@ -8,6 +8,7 @@ import (
 	billingschema "github.com/sh2001sh/new-api/internal/billing/schema"
 	bountyschema "github.com/sh2001sh/new-api/internal/bounty/schema"
 	commerceschema "github.com/sh2001sh/new-api/internal/commerce/schema"
+	communityschema "github.com/sh2001sh/new-api/internal/community/schema"
 	gatewayschema "github.com/sh2001sh/new-api/internal/gateway/schema"
 	identityschema "github.com/sh2001sh/new-api/internal/identity/schema"
 	platformdb "github.com/sh2001sh/new-api/internal/platform/db"
@@ -49,6 +50,8 @@ func V2MigrationIDs() []string {
 		"20260713_bounty_submission_version_index",
 		"20260714_user_external_id",
 		"20260715_blind_box_admin_grants",
+		"20260718_first_purchase_discount",
+		"20260718_community_resources",
 	}
 }
 
@@ -136,6 +139,12 @@ func ApplyV2Migrations(ctx context.Context, dryRun bool) error {
 		{ID: "20260715_blind_box_admin_grants", Run: func(tx *gorm.DB) error {
 			return tx.AutoMigrate(&commerceschema.BlindBoxOrder{}, &commerceschema.BlindBoxGrant{})
 		}},
+		{ID: "20260718_first_purchase_discount", Run: func(tx *gorm.DB) error {
+			return migrateFirstPurchaseDiscount(tx)
+		}},
+		{ID: "20260718_community_resources", Run: func(tx *gorm.DB) error {
+			return tx.AutoMigrate(&communityschema.Resource{})
+		}},
 	}
 	for _, step := range steps {
 		var applied schemaMigration
@@ -168,6 +177,21 @@ func ApplyV2Migrations(ctx context.Context, dryRun bool) error {
 			return tx.Create(&schemaMigration{ID: step.ID}).Error
 		}); err != nil {
 			return fmt.Errorf("apply migration %s: %w", step.ID, err)
+		}
+	}
+	return nil
+}
+
+func migrateFirstPurchaseDiscount(tx *gorm.DB) error {
+	if !tx.Migrator().HasTable(&commerceschema.TopUp{}) {
+		return tx.AutoMigrate(&commerceschema.TopUp{})
+	}
+	for _, field := range []string{"FirstPurchaseDiscountApplied", "FirstPurchaseDiscountMultiplier"} {
+		if tx.Migrator().HasColumn(&commerceschema.TopUp{}, field) {
+			continue
+		}
+		if err := tx.Migrator().AddColumn(&commerceschema.TopUp{}, field); err != nil {
+			return err
 		}
 	}
 	return nil

@@ -97,6 +97,7 @@ func BuildTopUpInfo(userID int) map[string]any {
 		"waffo_pancake_min_topup": commercestore.WaffoPancakeMinTopUp,
 		"amount_options":          commercestore.GetPaymentSetting().AmountOptions,
 		"discount":                commercestore.GetPaymentSetting().AmountDiscount,
+		"first_purchase_discount": BuildFirstPurchaseDiscountOffer(userID, time.Now()),
 		"topup_link":              platformconfig.TopUpLink,
 	}
 }
@@ -115,6 +116,7 @@ func QuoteTopUpAmount(userID int, req AmountRequest) (string, error) {
 
 	payMoney := GetTopupPayMoney(req.Amount, group, walletType)
 	payMoney = ApplyTopupBlindBoxDiscount(userID, payMoney)
+	payMoney = PreviewFirstPurchaseDiscount(userID, payMoney)
 	if payMoney <= 0.01 {
 		return "", errors.New("充值金额过低")
 	}

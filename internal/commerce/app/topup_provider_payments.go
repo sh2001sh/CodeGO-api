@@ -1,7 +1,6 @@
 package app
 
 import (
-	identityschema "github.com/sh2001sh/new-api/internal/identity/schema"
 	"bytes"
 	"context"
 	"crypto/hmac"
@@ -14,6 +13,7 @@ import (
 	auditapp "github.com/sh2001sh/new-api/internal/audit/app"
 	commercestore "github.com/sh2001sh/new-api/internal/commerce/paymentsettings"
 	commerceschema "github.com/sh2001sh/new-api/internal/commerce/schema"
+	identityschema "github.com/sh2001sh/new-api/internal/identity/schema"
 	platformgeneral "github.com/sh2001sh/new-api/internal/platform/general"
 	"github.com/sh2001sh/new-api/internal/platform/logger"
 	platformruntime "github.com/sh2001sh/new-api/internal/platform/runtime"
@@ -178,6 +178,7 @@ func QuoteStripeTopUpAmount(userID int, req StripePayRequest) (string, error) {
 		payMoney = float64(req.Amount)
 	}
 	payMoney = ApplyTopupBlindBoxDiscount(userID, payMoney)
+	payMoney = PreviewFirstPurchaseDiscount(userID, payMoney)
 	if payMoney <= 0.01 {
 		return "", errors.New("充值金额过低")
 	}
@@ -487,6 +488,7 @@ func QuoteWaffoTopUpAmount(userID int, req WaffoPayRequest) (string, error) {
 		payMoney = float64(req.Amount)
 	}
 	payMoney = ApplyTopupBlindBoxDiscount(userID, payMoney)
+	payMoney = PreviewFirstPurchaseDiscount(userID, payMoney)
 	if payMoney <= 0.01 {
 		return "", errors.New("充值金额过低")
 	}
@@ -680,6 +682,7 @@ func QuoteWaffoPancakeTopUpAmount(userID int, req WaffoPancakePayRequest) (strin
 		payMoney = float64(req.Amount)
 	}
 	payMoney = ApplyTopupBlindBoxDiscount(userID, payMoney)
+	payMoney = PreviewFirstPurchaseDiscount(userID, payMoney)
 	if payMoney <= 0.01 {
 		return "", errors.New("充值金额过低")
 	}

@@ -19,6 +19,7 @@ import {
   User,
   Users,
   HandCoins,
+  LibraryBig,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { WORKSPACE_IDS } from '@/components/layout/lib/workspace-registry'
@@ -102,6 +103,11 @@ export function useSidebarData(): SidebarData {
             title: t('Bounties'),
             url: '/bounties',
             icon: HandCoins,
+          },
+          {
+            title: t('Community resources'),
+            url: '/community-resources',
+            icon: LibraryBig,
           },
           {
             title: t('Group buying'),

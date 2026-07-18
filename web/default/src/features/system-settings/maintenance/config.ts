@@ -70,6 +70,7 @@ export const SIDEBAR_MODULES_DEFAULT: SidebarModulesAdminConfig = {
     enabled: true,
     topup: true,
     rewards: true,
+    community: true,
     personal: true,
   },
   admin: {

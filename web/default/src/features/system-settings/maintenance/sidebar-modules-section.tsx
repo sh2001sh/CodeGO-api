@@ -112,7 +112,15 @@ export function SidebarModulesSection({
       },
       rewards: {
         title: t('Invite Rewards'),
-        description: t('Referral links, pending rewards, and reward transfers.'),
+        description: t(
+          'Referral links, pending rewards, and reward transfers.'
+        ),
+      },
+      community: {
+        title: t('Community resources'),
+        description: t(
+          'Browse, submit, and download community GitHub resources.'
+        ),
       },
       personal: {
         title: t('Profile'),
