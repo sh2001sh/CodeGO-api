@@ -7,8 +7,8 @@ import { getLobeIcon } from '@/lib/lobe-icon'
 import { MOTION_TRANSITION } from '@/lib/motion'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
-import { Footer } from '@/components/layout/components/footer'
 import { PublicLayout } from '@/components/layout'
+import { Footer } from '@/components/layout/components/footer'
 import { SiteSeo } from '@/components/seo'
 import { getPricing } from '@/features/pricing/api'
 import {
@@ -184,9 +184,10 @@ export function BrandHome() {
         ]}
       />
 
-      <main className='bg-background relative overflow-hidden'>
-        <section className='relative px-5 py-10 md:px-10 md:py-12'>
-          <div className='mx-auto flex max-w-7xl flex-col px-0 py-10 md:py-16'>
+      <main className='bg-background relative overflow-hidden p-2 md:p-3'>
+        <section className='home-immersive-hero px-5 py-10 md:px-10 md:py-12'>
+          <div aria-hidden className='home-hero-atmosphere' />
+          <div className='relative z-10 mx-auto flex max-w-7xl flex-col px-0 py-10 md:py-16'>
             <div className='flex flex-1 items-center justify-center pb-20 text-center md:pb-24'>
               <motion.div
                 className='max-w-4xl'

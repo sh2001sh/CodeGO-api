@@ -178,7 +178,85 @@ For commercial licensing, please contact support@quantumnous.com
   }
 
   .home-immersive-hero {
-    @apply bg-background relative overflow-hidden rounded-2xl;
+    @apply relative min-h-[calc(100svh-1.5rem)] overflow-hidden rounded-2xl;
+    background:
+      radial-gradient(
+        ellipse 54% 66% at 8% 42%,
+        rgb(184 86 46 / 0.24) 0%,
+        rgb(184 86 46 / 0.1) 40%,
+        transparent 70%
+      ),
+      radial-gradient(
+        ellipse 46% 54% at 92% 34%,
+        rgb(91 124 160 / 0.22) 0%,
+        rgb(91 124 160 / 0.08) 42%,
+        transparent 72%
+      ),
+      radial-gradient(
+        ellipse 58% 42% at 50% 86%,
+        rgb(216 152 90 / 0.18) 0%,
+        transparent 68%
+      ),
+      linear-gradient(145deg, #f8f5f1 0%, #f2f3f5 46%, #f8f2ed 100%);
+    background-size: 112% 112%;
+    animation: home-hero-lightfield 16s ease-in-out infinite alternate;
+  }
+
+  .dark .home-immersive-hero {
+    background:
+      radial-gradient(
+        ellipse 54% 66% at 8% 42%,
+        rgb(224 138 82 / 0.18) 0%,
+        transparent 68%
+      ),
+      radial-gradient(
+        ellipse 46% 54% at 92% 34%,
+        rgb(90 126 170 / 0.2) 0%,
+        transparent 70%
+      ),
+      radial-gradient(
+        ellipse 58% 42% at 50% 86%,
+        rgb(224 138 82 / 0.08) 0%,
+        transparent 68%
+      ),
+      linear-gradient(145deg, #191715 0%, #191c21 48%, #211a17 100%);
+  }
+
+  .home-hero-atmosphere {
+    @apply pointer-events-none absolute inset-0;
+    background:
+      radial-gradient(
+        circle at 50% 22%,
+        rgb(255 255 255 / 0.72),
+        transparent 26%
+      ),
+      linear-gradient(
+        105deg,
+        transparent 18%,
+        rgb(255 255 255 / 0.18) 50%,
+        transparent 82%
+      );
+    mask-image: linear-gradient(
+      to bottom,
+      black 0%,
+      black 68%,
+      transparent 100%
+    );
+  }
+
+  .dark .home-hero-atmosphere {
+    background:
+      radial-gradient(
+        circle at 50% 20%,
+        rgb(255 255 255 / 0.06),
+        transparent 28%
+      ),
+      linear-gradient(
+        105deg,
+        transparent 18%,
+        rgb(255 255 255 / 0.03) 50%,
+        transparent 82%
+      );
   }
 
   .home-feature-panel {
@@ -573,6 +651,15 @@ For commercial licensing, please contact support@quantumnous.com
     transform: translateY(0);
   }
 }
+
+@keyframes home-hero-lightfield {
+  from {
+    background-position: 0% 0%;
+  }
+  to {
+    background-position: 100% 70%;
+  }
+}
 @keyframes landing-fade-in {
   from {
     opacity: 0;
@@ -640,7 +727,6 @@ For commercial licensing, please contact support@quantumnous.com
     transform: translateX(0);
   }
 }
-
 
 .landing-animate-fade-up {
   animation: landing-fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both;
