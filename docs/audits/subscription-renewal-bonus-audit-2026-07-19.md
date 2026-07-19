@@ -77,3 +77,18 @@ fix is deployed:
 Do not apply the adjustment while the pre-fix image is serving purchases. The
 renewal calculation fix and server-side preview must be released first so a
 new second or third renewal cannot recreate the excess.
+
+## Execution Result
+
+- Executed at: 2026-07-19 14:30 CST, after production was upgraded to
+  `v2.0.0-rc.33.9-alpha.32` and health checks passed.
+- Idempotency key:
+  `subscription-bonus-correction:subscription-order:83`.
+- Debit ledger entry: `15,500,000` quota units with reason
+  `subscription_bonus_correction` and reference `subscription_order:83`.
+- Subscription `63` amount total: `334,800,000` to `319,300,000` quota units.
+- `period_amount` was unchanged at `0`.
+- Ledger available balance after the transaction: `314,859,061` quota units.
+  This is below the audit-time projection because normal subscription usage
+  consumed `2,140,188` additional units before the transaction; the debit and
+  the subscription total both match the intended correction.
