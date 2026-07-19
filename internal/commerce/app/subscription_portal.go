@@ -24,10 +24,22 @@ var starterUpgradeBonuses = map[string]int{
 
 // SubscriptionPlanDTO is the public subscription plan payload returned to commerce clients.
 type SubscriptionPlanDTO struct {
-	Plan           commerceschema.SubscriptionPlan `json:"plan"`
-	Action         string                          `json:"action,omitempty"`
-	AmountDue      float64                         `json:"amount_due,omitempty"`
-	DisabledReason string                          `json:"disabled_reason,omitempty"`
+	Plan                commerceschema.SubscriptionPlan  `json:"plan"`
+	Action              string                           `json:"action,omitempty"`
+	AmountDue           float64                          `json:"amount_due,omitempty"`
+	DisabledReason      string                           `json:"disabled_reason,omitempty"`
+	RenewalBonusPreview *SubscriptionRenewalBonusPreview `json:"renewal_bonus_preview,omitempty"`
+}
+
+// SubscriptionRenewalBonusPreview describes the reward for a user's next
+// successful purchase of a monthly plan.
+type SubscriptionRenewalBonusPreview struct {
+	CompletedPurchaseCount int     `json:"completed_purchase_count"`
+	NextPurchaseNumber     int     `json:"next_purchase_number"`
+	BonusRate              float64 `json:"bonus_rate"`
+	BonusQuota             int64   `json:"bonus_quota"`
+	BonusUSD               float64 `json:"bonus_usd"`
+	Eligible               bool    `json:"eligible"`
 }
 
 // UpdateSubscriptionPreferenceRequest captures user billing and subscription ordering preferences.
@@ -67,6 +79,11 @@ func ListSubscriptionPlans(userID int) ([]SubscriptionPlanDTO, error) {
 				record.AmountDue = preview.AmountDue
 				record.DisabledReason = preview.DisabledReason
 			}
+			renewalPreview, renewalErr := BuildSubscriptionRenewalBonusPreview(userID, &plan, record.Action)
+			if renewalErr != nil {
+				return nil, renewalErr
+			}
+			record.RenewalBonusPreview = renewalPreview
 		}
 		result = append(result, record)
 	}

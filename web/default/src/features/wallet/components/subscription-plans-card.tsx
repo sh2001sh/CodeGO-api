@@ -12,6 +12,7 @@ import {
 } from '@/components/page-transition'
 import { PackagePlanCard } from '@/features/packages/package-plan-card'
 import { SubscriptionPurchaseDialog } from '@/features/subscriptions/components/dialogs/subscription-purchase-dialog'
+import { RenewalBonusSummary } from '@/features/subscriptions/components/renewal-bonus-summary'
 import {
   formatSubscriptionQuotaAmount,
   isDayPassPlan,
@@ -139,11 +140,11 @@ export function SubscriptionPlansCard({
     return map
   }, [plans])
 
-  const planMap = useMemo(() => {
-    const map = new Map<number, PlanRecord['plan']>()
+  const planRecordMap = useMemo(() => {
+    const map = new Map<number, PlanRecord>()
     for (const item of plans) {
       if (!item?.plan?.id) continue
-      map.set(item.plan.id, item.plan)
+      map.set(item.plan.id, item)
     }
     return map
   }, [plans])
@@ -234,7 +235,10 @@ export function SubscriptionPlansCard({
                   const title =
                     planTitleMap.get(subscription.plan_id) ||
                     `订阅 #${subscription.id}`
-                  const relatedPlan = planMap.get(subscription.plan_id)
+                  const relatedPlanRecord = planRecordMap.get(
+                    subscription.plan_id
+                  )
+                  const relatedPlan = relatedPlanRecord?.plan
                   const totalAmount = Number(subscription.amount_total || 0)
                   const usedAmount = Number(subscription.amount_used || 0)
                   const totalRemain =
@@ -350,6 +354,12 @@ export function SubscriptionPlansCard({
                               }
                             />
                           </div>
+                          {relatedPlan ? (
+                            <RenewalBonusSummary
+                              plan={relatedPlan}
+                              preview={relatedPlanRecord?.renewal_bonus_preview}
+                            />
+                          ) : null}
                           {active && isMonthlyPlan ? (
                             <div className='flex flex-wrap gap-2 border-t pt-3'>
                               <Button

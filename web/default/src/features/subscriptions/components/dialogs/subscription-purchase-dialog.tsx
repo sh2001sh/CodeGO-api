@@ -28,6 +28,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { RenewalBonusSummary } from '@/features/subscriptions/components/renewal-bonus-summary'
 import {
   getSubscriptionOrderStatus,
   paySubscriptionCreem,
@@ -646,6 +647,11 @@ export function SubscriptionPurchaseDialog(props: Props) {
                     />
                   ))}
                 </div>
+                <RenewalBonusSummary
+                  className='mt-3'
+                  plan={plan}
+                  preview={planRecord.renewal_bonus_preview}
+                />
               </div>
             </div>
 

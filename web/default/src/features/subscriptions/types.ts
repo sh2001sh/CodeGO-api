@@ -67,6 +67,16 @@ export interface PlanRecord {
   action?: 'subscribe' | 'renew' | 'upgrade' | 'disabled'
   amount_due?: number
   disabled_reason?: string
+  renewal_bonus_preview?: RenewalBonusPreview
+}
+
+export interface RenewalBonusPreview {
+  completed_purchase_count: number
+  next_purchase_number: number
+  bonus_rate: number
+  bonus_quota: number
+  bonus_usd: number
+  eligible: boolean
 }
 
 // ============================================================================

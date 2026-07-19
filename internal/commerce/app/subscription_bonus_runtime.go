@@ -166,7 +166,9 @@ func ApplySubscriptionPurchaseBonusTx(tx *gorm.DB, userID int, sub *commercesche
 			if err != nil {
 				return err
 			}
-			renewalIndex := completedCount + 1
+			// The current order is already marked successful before fulfillment.
+			// Its position is therefore the completed-order count itself.
+			renewalIndex := completedCount
 			rate := renewalBonusRate(plan, renewalIndex)
 			if rate > 0 && plan.TotalAmount > 0 {
 				totalBonusUSD += math.Round(quotaUnitsToUSD(plan.TotalAmount)*rate*100) / 100
@@ -182,4 +184,32 @@ func ApplySubscriptionPurchaseBonusTx(tx *gorm.DB, userID int, sub *commercesche
 		return err
 	}
 	return auditapp.RecordLogTx(tx, userID, auditschema.LogTypeTopup, fmt.Sprintf("套餐奖励到账，套餐: %s，奖励额度: $%.2f", plan.Title, totalBonusUSD))
+}
+
+// BuildSubscriptionRenewalBonusPreview returns the next purchase's exact
+// renewal reward, calculated from successful orders for the same plan.
+func BuildSubscriptionRenewalBonusPreview(userID int, plan *commerceschema.SubscriptionPlan, action string) (*SubscriptionRenewalBonusPreview, error) {
+	if userID <= 0 || plan == nil || commercedomain.NormalizeSubscriptionPlanType(plan.PlanType) != commerceschema.SubscriptionPlanTypeMonthly {
+		return nil, nil
+	}
+
+	completedCount, err := countCompletedSubscriptionOrdersTx(platformdb.DB, userID, plan.Id)
+	if err != nil {
+		return nil, err
+	}
+	nextPurchaseNumber := completedCount + 1
+	rate := renewalBonusRate(plan, nextPurchaseNumber)
+	bonusUSD := 0.0
+	if rate > 0 && plan.TotalAmount > 0 {
+		bonusUSD = math.Round(quotaUnitsToUSD(plan.TotalAmount)*rate*100) / 100
+	}
+
+	return &SubscriptionRenewalBonusPreview{
+		CompletedPurchaseCount: completedCount,
+		NextPurchaseNumber:     nextPurchaseNumber,
+		BonusRate:              rate,
+		BonusQuota:             quotaUnitsFromUSD(bonusUSD),
+		BonusUSD:               bonusUSD,
+		Eligible:               action == commerceschema.SubscriptionPurchaseActionRenew && bonusUSD > 0,
+	}, nil
 }

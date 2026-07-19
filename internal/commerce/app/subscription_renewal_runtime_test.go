@@ -1,13 +1,16 @@
 package app
 
 import (
+	"fmt"
 	"testing"
 	"time"
 
 	"github.com/sh2001sh/new-api/constant"
 	billingschema "github.com/sh2001sh/new-api/internal/billing/schema"
+	commercedomain "github.com/sh2001sh/new-api/internal/commerce/domain"
 	commerceschema "github.com/sh2001sh/new-api/internal/commerce/schema"
 	identityschema "github.com/sh2001sh/new-api/internal/identity/schema"
+	platformruntime "github.com/sh2001sh/new-api/internal/platform/runtime"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"gorm.io/gorm"
@@ -113,4 +116,49 @@ func TestRenewUserSubscriptionWithPlanTx_RestartsTermAndRefreshesQuota(t *testin
 	var snapshot billingschema.BillingBalanceSnapshot
 	require.NoError(t, db.Where("account_id = ?", account.AccountID).First(&snapshot).Error)
 	assert.Equal(t, plan.TotalAmount, snapshot.AvailableBalance)
+}
+
+func TestApplySubscriptionPurchaseBonusTx_UsesCurrentSuccessfulOrderPosition(t *testing.T) {
+	db := setupRedemptionTestDB(t)
+	baseQuota := int64(620 * platformruntime.QuotaPerUnit)
+	plan := &commerceschema.SubscriptionPlan{
+		Id: 9530, Title: "Renewal bonus plan", PlanType: commerceschema.SubscriptionPlanTypeMonthly,
+		DurationUnit: commerceschema.SubscriptionDurationMonth, DurationValue: 1,
+		TotalAmount: baseQuota, RenewalBonus2: 0.03, RenewalBonus3: 0.05, RenewalBonus4: 0.08,
+	}
+	user := &identityschema.User{Id: 9531, Username: "renewal_bonus", AffCode: "renewal-bonus", Status: constant.UserStatusEnabled}
+	subscription := &commerceschema.UserSubscription{
+		Id: 9532, UserId: user.Id, PlanId: plan.Id, AmountTotal: baseQuota,
+		Status: "active", EndTime: time.Now().Add(time.Hour).Unix(),
+	}
+	require.NoError(t, db.Create(plan).Error)
+	require.NoError(t, db.Create(user).Error)
+	require.NoError(t, db.Create(subscription).Error)
+
+	for index := 1; index <= 3; index++ {
+		order := &commerceschema.SubscriptionOrder{
+			UserId: user.Id, PlanId: plan.Id, TradeNo: fmt.Sprintf("renewal-bonus-%d", index),
+			PurchaseType: commerceschema.SubscriptionPurchaseTypeNormal,
+			Status:       constant.TopUpStatusSuccess,
+		}
+		require.NoError(t, db.Create(order).Error)
+	}
+
+	preview := &commercedomain.SubscriptionPurchasePreview{Action: commerceschema.SubscriptionPurchaseActionRenew}
+	require.NoError(t, db.Transaction(func(tx *gorm.DB) error {
+		return ApplySubscriptionPurchaseBonusTx(tx, user.Id, subscription, plan, preview)
+	}))
+
+	var reloaded commerceschema.UserSubscription
+	require.NoError(t, db.First(&reloaded, subscription.Id).Error)
+	expectedBonus := quotaUnitsFromUSD(31)
+	assert.Equal(t, baseQuota+expectedBonus, reloaded.AmountTotal)
+
+	bonusPreview, err := BuildSubscriptionRenewalBonusPreview(user.Id, plan, commerceschema.SubscriptionPurchaseActionRenew)
+	require.NoError(t, err)
+	require.NotNil(t, bonusPreview)
+	assert.Equal(t, 3, bonusPreview.CompletedPurchaseCount)
+	assert.Equal(t, 4, bonusPreview.NextPurchaseNumber)
+	assert.Equal(t, 0.08, bonusPreview.BonusRate)
+	assert.True(t, bonusPreview.Eligible)
 }

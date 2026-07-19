@@ -5,6 +5,7 @@ import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
+import { RenewalBonusSummary } from '@/features/subscriptions/components/renewal-bonus-summary'
 import {
   formatDuration,
   formatSubscriptionPlanPrice,
@@ -162,6 +163,12 @@ export function PackagePlanCard(props: {
           )}
         </div>
 
+        <RenewalBonusSummary
+          plan={plan}
+          preview={props.record.renewal_bonus_preview}
+          variant='compact'
+        />
+
         {showDetails && (
           <div className='border-border space-y-2 rounded-lg border p-3'>
             <div className='space-y-1.5 text-xs'>
@@ -185,6 +192,10 @@ export function PackagePlanCard(props: {
                     'This plan does not support group purchases; settlement completes immediately.'
                   )}
             </div>
+            <RenewalBonusSummary
+              plan={plan}
+              preview={props.record.renewal_bonus_preview}
+            />
           </div>
         )}
 
