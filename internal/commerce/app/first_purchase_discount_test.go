@@ -17,7 +17,13 @@ import (
 func TestApplyFirstPurchaseDiscountTxReservesEligibilityOnce(t *testing.T) {
 	db, err := gorm.Open(sqlite.Open("file:first-purchase-discount?mode=memory&cache=shared"), &gorm.Config{})
 	require.NoError(t, err)
-	require.NoError(t, db.AutoMigrate(&identityschema.User{}, &commerceschema.TopUp{}, &commerceschema.SubscriptionOrder{}))
+	require.NoError(t, db.AutoMigrate(
+		&identityschema.User{},
+		&commerceschema.TopUp{},
+		&commerceschema.SubscriptionOrder{},
+		&commerceschema.SubscriptionPlan{},
+		&commerceschema.UserSubscription{},
+	))
 
 	originalDB := platformdb.DB
 	platformdb.DB = db
@@ -49,6 +55,18 @@ func TestApplyFirstPurchaseDiscountTxReservesEligibilityOnce(t *testing.T) {
 		TradeNo: "wallet-topup-does-not-consume-plan-discount",
 		Status:  "success",
 	}).Error)
+
+	plan := &commerceschema.SubscriptionPlan{
+		Id:            1,
+		Title:         "Lite月卡",
+		DurationUnit:  commerceschema.SubscriptionDurationMonth,
+		DurationValue: 1,
+		PriceAmount:   100,
+	}
+	firstPurchasePreview, err := ResolveSubscriptionPurchasePreview(user.Id, plan)
+	require.NoError(t, err)
+	require.True(t, firstPurchasePreview.FirstPurchaseDiscountApplied)
+	require.InDelta(t, 80, firstPurchasePreview.AmountDue, 0.001)
 
 	preview := &commercedomain.SubscriptionPurchasePreview{BaseAmountDue: 100, AmountDue: 100}
 	require.NoError(t, applyFirstPurchaseDiscountPreview(db, user.Id, preview, now))

@@ -57,25 +57,26 @@ func resolveSubscriptionPurchasePreviewTx(tx *gorm.DB, userID int, targetPlan *c
 		BaseAmountDue: targetPlan.PriceAmount,
 		AmountDue:     targetPlan.PriceAmount,
 	}
-	if !isManagedSubscriptionPlan(targetPlan) {
-		return preview, nil
+	if isManagedSubscriptionPlan(targetPlan) {
+		if err := applyManagedSubscriptionPreview(tx, userID, targetPlan, preview); err != nil {
+			return nil, err
+		}
 	}
-
-	now := commercestore.GetDBTimestamp()
-	currentSub, currentPlan, err := pickPrimaryActivePackageTx(tx, userID, now)
-	if err != nil {
+	if err := applySubscriptionPreviewDiscounts(tx, userID, preview); err != nil {
 		return nil, err
 	}
-	if currentSub == nil || currentPlan == nil {
-		return preview, nil
+	return preview, nil
+}
+
+func applyManagedSubscriptionPreview(tx *gorm.DB, userID int, targetPlan *commerceschema.SubscriptionPlan, preview *commercedomain.SubscriptionPurchasePreview) error {
+	currentSub, currentPlan, err := pickPrimaryActivePackageTx(tx, userID, commercestore.GetDBTimestamp())
+	if err != nil || currentSub == nil || currentPlan == nil {
+		return err
 	}
 
 	preview.CurrentSubscription = currentSub
 	preview.CurrentPlan = currentPlan
-	remainingQuota := currentSub.AmountTotal - currentSub.AmountUsed
-	if remainingQuota < 0 {
-		remainingQuota = 0
-	}
+	remainingQuota := max(currentSub.AmountTotal-currentSub.AmountUsed, 0)
 	hasRemainingQuota := currentSub.AmountTotal <= 0 || hasMeaningfulSubscriptionQuotaRemaining(currentSub)
 
 	switch compareSubscriptionPlanTier(targetPlan, currentPlan) {
@@ -96,30 +97,32 @@ func resolveSubscriptionPurchasePreviewTx(tx *gorm.DB, userID int, targetPlan *c
 		if currentPlan.PriceAmount > 0 && currentSub.AmountTotal > 0 && remainingQuota > 0 {
 			discount = currentPlan.PriceAmount * float64(remainingQuota) / float64(currentSub.AmountTotal)
 		}
-		preview.BaseAmountDue = targetPlan.PriceAmount - discount
+		preview.BaseAmountDue = math.Max(targetPlan.PriceAmount-discount, 0.01)
 		preview.AmountDue = preview.BaseAmountDue
-		if preview.AmountDue < 0.01 {
-			preview.BaseAmountDue = 0.01
-			preview.AmountDue = 0.01
-		}
 	}
-	if preview.Action != commerceschema.SubscriptionPurchaseActionDisabled && preview.AmountDue > 0 {
-		query := platformdb.DB
-		if tx != nil {
-			query = tx
-		}
-		if err := applyFirstPurchaseDiscountPreview(query, userID, preview, time.Now()); err != nil {
-			return nil, err
-		}
-		if !preview.FirstPurchaseDiscountApplied {
-			discountRate := GetUserBlindBoxSubscriptionDiscountRate(userID)
-			if discountRate > 0 {
-				preview.AppliedBlindBoxDiscountRate = discountRate
-				preview.AmountDue = commercedomain.ApplyDiscountRateToMoney(preview.AmountDue, discountRate)
-			}
-		}
+	return nil
+}
+
+func applySubscriptionPreviewDiscounts(tx *gorm.DB, userID int, preview *commercedomain.SubscriptionPurchasePreview) error {
+	if preview.Action == commerceschema.SubscriptionPurchaseActionDisabled || preview.AmountDue <= 0 {
+		return nil
 	}
-	return preview, nil
+	query := platformdb.DB
+	if tx != nil {
+		query = tx
+	}
+	if err := applyFirstPurchaseDiscountPreview(query, userID, preview, time.Now()); err != nil {
+		return err
+	}
+	if preview.FirstPurchaseDiscountApplied {
+		return nil
+	}
+	discountRate := GetUserBlindBoxSubscriptionDiscountRate(userID)
+	if discountRate > 0 {
+		preview.AppliedBlindBoxDiscountRate = discountRate
+		preview.AmountDue = commercedomain.ApplyDiscountRateToMoney(preview.AmountDue, discountRate)
+	}
+	return nil
 }
 
 func calculateRenewalPrice(plan *commerceschema.SubscriptionPlan, sub *commerceschema.UserSubscription) float64 {

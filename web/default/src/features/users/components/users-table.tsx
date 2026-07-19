@@ -153,6 +153,7 @@ export function UsersTable() {
       const searchValue = String(filterValue).trim().toLowerCase()
       const fields = [
         row.original.id,
+        row.original.external_id,
         row.getValue('username'),
         row.original.display_name,
         row.original.email,
@@ -172,11 +173,19 @@ export function UsersTable() {
     onPaginationChange,
     onGlobalFilterChange,
     onColumnFiltersChange,
-    manualPagination: !globalFilter,
+    manualFiltering: true,
+    manualPagination: true,
     pageCount: Math.ceil((data?.total || 0) / pagination.pageSize),
   })
 
   const pageCount = table.getPageCount()
+  useEffect(() => {
+    if (!globalFilter?.trim()) return
+    onPaginationChange((current) =>
+      current.pageIndex === 0 ? current : { ...current, pageIndex: 0 }
+    )
+  }, [globalFilter, onPaginationChange])
+
   useEffect(() => {
     ensurePageInRange(pageCount)
   }, [pageCount, ensurePageInRange])
@@ -205,7 +214,7 @@ export function UsersTable() {
         )}
         skeletonKeyPrefix='users-skeleton'
         toolbarProps={{
-          searchPlaceholder: t('Filter by username, name or email...'),
+          searchPlaceholder: t('Filter by ID, username, name or email...'),
           filters: [
             {
               columnId: 'status',
