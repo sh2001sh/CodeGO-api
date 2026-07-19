@@ -376,6 +376,15 @@ export interface BlindBoxRecord {
   prop_expires_at?: number
 }
 
+export interface BlindBoxHistoryPage {
+  page: number
+  page_size: number
+  total: number
+  retention_days: number
+  cutoff_time: number
+  records: BlindBoxRecord[]
+}
+
 export interface BlindBoxGrant {
   id: number
   user_id: number
@@ -442,6 +451,7 @@ export type BlindBoxOpenResponse = ApiResponse<{
   open_count: number
 }>
 export type BlindBoxOrderStatusResponse = ApiResponse<BlindBoxOrderStatus>
+export type BlindBoxHistoryResponse = ApiResponse<BlindBoxHistoryPage>
 
 export interface BlindBoxAmountRequest {
   quantity: number

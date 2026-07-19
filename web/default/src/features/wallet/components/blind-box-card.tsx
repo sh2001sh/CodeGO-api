@@ -26,6 +26,7 @@ import {
   type BlindBoxPaymentState,
   type PrizeDialogState,
 } from './blind-box-dialogs'
+import { BlindBoxHistorySheet } from './blind-box-history-sheet'
 import { BlindBoxPaymentDialog } from './blind-box-payment-dialog'
 import { BlindBoxSidebar } from './blind-box-sidebar'
 import { BlindBoxCardView } from './blind-box-view'
@@ -51,6 +52,7 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
   const [paying, setPaying] = useState(false)
   const [openingCount, setOpeningCount] = useState<number | null>(null)
   const [showPrizeNotice, setShowPrizeNotice] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
   const [paymentState, setPaymentState] =
     useState<BlindBoxPaymentState>(EMPTY_PAYMENT_STATE)
   const [prizeState, setPrizeState] =
@@ -483,6 +485,7 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
           availableBoxes={availableBoxes}
           pendingBoxes={pendingBoxes}
           records={data?.overview?.recent_records || []}
+          onOpenHistory={() => setShowHistory(true)}
         />
       </div>
 
@@ -510,6 +513,8 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
         }
         onUseReward={handleUseReward}
       />
+
+      <BlindBoxHistorySheet open={showHistory} onOpenChange={setShowHistory} />
     </>
   )
 }

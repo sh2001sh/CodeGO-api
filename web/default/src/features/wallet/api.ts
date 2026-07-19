@@ -44,6 +44,7 @@ import type {
   BlindBoxOpenResponse,
   BlindBoxOrderStatusResponse,
   BlindBoxProp,
+  BlindBoxHistoryResponse,
 } from './types'
 
 // ============================================================================
@@ -237,6 +238,18 @@ export async function completeOrder(
 
 export async function getBlindBoxSelf(): Promise<BlindBoxSelfResponse> {
   const res = await api.get('/api/blind-box/self')
+  return res.data
+}
+
+export async function getBlindBoxHistory(
+  page: number,
+  pageSize: number
+): Promise<BlindBoxHistoryResponse> {
+  const params = new URLSearchParams({
+    p: String(page),
+    page_size: String(pageSize),
+  })
+  const res = await api.get(`/api/blind-box/history?${params.toString()}`)
   return res.data
 }
 

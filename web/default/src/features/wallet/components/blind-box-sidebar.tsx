@@ -1,10 +1,11 @@
+import { ArrowRight, History, Info, Wallet } from 'lucide-react'
 import { motion, useReducedMotion } from 'motion/react'
 import type { Variants } from 'motion/react'
-import { Info, Sparkles, Wallet } from 'lucide-react'
 import { formatQuota } from '@/lib/format'
 import { cn } from '@/lib/utils'
+import { Button } from '@/components/ui/button'
 import type { BlindBoxRecord } from '../types'
-import { DropRecordList } from './blind-box-view-parts'
+import { formatBlindBoxTimestamp } from './blind-box-dialogs'
 
 const EASE_OUT_QUINT = [0.22, 1, 0.36, 1] as const
 
@@ -34,6 +35,7 @@ export function BlindBoxSidebar(props: {
   availableBoxes: number
   pendingBoxes: number
   records: BlindBoxRecord[]
+  onOpenHistory: () => void
 }) {
   const reduced = useReducedMotion()
 
@@ -59,11 +61,38 @@ export function BlindBoxSidebar(props: {
 
       <motion.div variants={reduced ? REDUCED_ITEM : STACK_ITEM}>
         <div className='app-subtle-panel p-4'>
-          <div className='mb-3 flex items-center gap-2'>
-            <Sparkles className='text-muted-foreground size-4' />
-            <div className='text-foreground text-sm font-semibold'>最近抽取</div>
+          <div className='flex items-start gap-3'>
+            <div className='bg-muted text-muted-foreground flex size-9 shrink-0 items-center justify-center rounded-lg'>
+              <History className='size-4' />
+            </div>
+            <div className='min-w-0 flex-1'>
+              <div className='text-foreground text-sm font-semibold'>
+                开奖历史
+              </div>
+              {props.records[0] ? (
+                <div className='text-muted-foreground mt-1 text-xs leading-5'>
+                  最近获得
+                  <span className='text-foreground mx-1 font-medium'>
+                    {props.records[0].reward_title}
+                  </span>
+                  · {formatBlindBoxTimestamp(props.records[0].create_time)}
+                </div>
+              ) : (
+                <div className='text-muted-foreground mt-1 text-xs leading-5'>
+                  最近 30 天还没有抽取记录
+                </div>
+              )}
+            </div>
           </div>
-          <DropRecordList records={props.records} />
+          <Button
+            type='button'
+            variant='outline'
+            className='mt-4 w-full justify-between'
+            onClick={props.onOpenHistory}
+          >
+            查看最近 30 天记录
+            <ArrowRight className='size-4' />
+          </Button>
         </div>
       </motion.div>
     </motion.aside>
