@@ -1,12 +1,13 @@
 package http
 
 import (
-	identityschema "github.com/sh2001sh/new-api/internal/identity/schema"
+	"bytes"
 	"github.com/gin-contrib/sessions"
 	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
 	"github.com/sh2001sh/new-api/constant"
 	identitydomain "github.com/sh2001sh/new-api/internal/identity/domain"
+	identityschema "github.com/sh2001sh/new-api/internal/identity/schema"
 	identitystore "github.com/sh2001sh/new-api/internal/identity/store"
 	platformencoding "github.com/sh2001sh/new-api/internal/platform/encodingx"
 	"net/http"
@@ -150,15 +151,36 @@ func TestRegisterCreatesPasswordUser(t *testing.T) {
 		constant.GenerateDefaultToken = originalGenerateDefaultToken
 	})
 
-	ctx, recorder := newAuthenticatedContext(t, http.MethodPost, "/api/user/register", map[string]any{
+	body, err := platformencoding.Marshal(map[string]any{
 		"username": "auth-register-user",
 		"password": "password123",
-	}, 0)
-	Register(ctx)
+	})
+	if err != nil {
+		t.Fatalf("failed to encode register request: %v", err)
+	}
+	engine := gin.New()
+	engine.Use(sessions.Sessions("session", cookie.NewStore([]byte("auth-test-secret"))))
+	engine.POST("/api/user/register", Register)
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPost, "/api/user/register", bytes.NewReader(body))
+	request.Header.Set("Content-Type", "application/json")
+	engine.ServeHTTP(recorder, request)
 
 	response := decodeAPIResponse(t, recorder)
 	if !response.Success {
 		t.Fatalf("expected register success, got %#v", response)
+	}
+	var sessionUser struct {
+		ID int `json:"id"`
+	}
+	if err := platformencoding.Unmarshal(response.Data, &sessionUser); err != nil {
+		t.Fatalf("failed to decode registered session payload: %v", err)
+	}
+	if sessionUser.ID != 1 {
+		t.Fatalf("expected registered session user id 1, got %#v", sessionUser)
+	}
+	if recorder.Header().Get("Set-Cookie") == "" {
+		t.Fatal("expected registration to establish an authenticated session")
 	}
 
 	user, err := loadUserByIDForTest(1, true)

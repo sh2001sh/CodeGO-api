@@ -104,10 +104,19 @@ func resolveSubscriptionPurchasePreviewTx(tx *gorm.DB, userID int, targetPlan *c
 		}
 	}
 	if preview.Action != commerceschema.SubscriptionPurchaseActionDisabled && preview.AmountDue > 0 {
-		discountRate := GetUserBlindBoxSubscriptionDiscountRate(userID)
-		if discountRate > 0 {
-			preview.AppliedBlindBoxDiscountRate = discountRate
-			preview.AmountDue = commercedomain.ApplyDiscountRateToMoney(preview.AmountDue, discountRate)
+		query := platformdb.DB
+		if tx != nil {
+			query = tx
+		}
+		if err := applyFirstPurchaseDiscountPreview(query, userID, preview, time.Now()); err != nil {
+			return nil, err
+		}
+		if !preview.FirstPurchaseDiscountApplied {
+			discountRate := GetUserBlindBoxSubscriptionDiscountRate(userID)
+			if discountRate > 0 {
+				preview.AppliedBlindBoxDiscountRate = discountRate
+				preview.AmountDue = commercedomain.ApplyDiscountRateToMoney(preview.AmountDue, discountRate)
+			}
 		}
 	}
 	return preview, nil

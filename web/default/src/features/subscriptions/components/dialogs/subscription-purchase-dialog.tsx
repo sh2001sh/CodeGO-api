@@ -5,7 +5,9 @@ import {
   CircleSlash,
   Crown,
   ExternalLink,
+  Layers3,
   Loader2,
+  Percent,
   QrCode,
   XCircle,
 } from 'lucide-react'
@@ -28,7 +30,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { RenewalBonusSummary } from '@/features/subscriptions/components/renewal-bonus-summary'
 import {
   getSubscriptionOrderStatus,
   paySubscriptionCreem,
@@ -266,6 +267,14 @@ export function SubscriptionPurchaseDialog(props: Props) {
   const effectiveAmount = Number(
     planRecord.amount_due ?? plan.price_amount ?? 0
   )
+  const baseAmount = Number(
+    planRecord.base_amount_due ?? plan.price_amount ?? effectiveAmount
+  )
+  const firstPurchaseDiscountApplied =
+    planRecord.first_purchase_discount_applied === true
+  const firstPurchaseDiscount = Number(
+    (planRecord.first_purchase_discount_multiplier || 0) * 10
+  )
   const displayPrice = formatSubscriptionPlanPrice(
     effectiveAmount,
     plan.currency
@@ -273,11 +282,13 @@ export function SubscriptionPurchaseDialog(props: Props) {
   const actionLabel = getSubscriptionPlanActionLabel(planRecord.action, t)
   const purchaseType = props.purchaseType || 'normal'
   const groupBuyId = props.groupBuyId || 0
+  const isCollectivePurchase =
+    purchaseType === 'group_buy' || purchaseType === 'join_group'
   const purchaseModeLabel =
     purchaseType === 'group_buy'
-      ? '进入拼团'
+      ? '开启集享计划'
       : purchaseType === 'join_group'
-        ? '参与拼团'
+        ? '参与集享计划'
         : actionLabel
   const discountText = getSubscriptionPlanDiscountText(plan)
   const detailText = getSubscriptionPlanDetailText(
@@ -300,7 +311,10 @@ export function SubscriptionPurchaseDialog(props: Props) {
     blockedByRule ||
     paymentTracker.stage === 'pending'
   const summaryItems = [
-    { label: '购买方式', value: purchaseModeLabel },
+    {
+      label: isCollectivePurchase ? '参与方式' : '购买方式',
+      value: purchaseModeLabel,
+    },
     {
       label: '有效期',
       value: (
@@ -627,6 +641,12 @@ export function SubscriptionPurchaseDialog(props: Props) {
                     </p>
                   </div>
                   <div className='shrink-0 text-left sm:text-right'>
+                    {firstPurchaseDiscountApplied &&
+                    baseAmount > effectiveAmount ? (
+                      <div className='text-muted-foreground text-sm line-through'>
+                        {formatSubscriptionPlanPrice(baseAmount, plan.currency)}
+                      </div>
+                    ) : null}
                     <div className='text-primary text-2xl font-semibold tracking-tight sm:text-3xl'>
                       {displayPrice}
                     </div>
@@ -638,6 +658,39 @@ export function SubscriptionPurchaseDialog(props: Props) {
               </div>
 
               <div className='px-4 py-4 sm:px-5'>
+                {firstPurchaseDiscountApplied ? (
+                  <div className='border-primary/25 bg-primary/5 mb-4 flex items-start gap-3 rounded-lg border px-4 py-3'>
+                    <Percent
+                      className='text-primary mt-0.5 size-4 shrink-0'
+                      aria-hidden='true'
+                    />
+                    <div>
+                      <p className='text-foreground text-sm font-semibold'>
+                        套餐首购 {Number(firstPurchaseDiscount.toFixed(1))} 折
+                      </p>
+                      <p className='text-muted-foreground mt-0.5 text-xs leading-5'>
+                        优惠已自动应用于你的首次套餐购买，本订单不会同时消耗盲盒套餐折扣卡。
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
+                {isCollectivePurchase ? (
+                  <div className='border-primary/20 bg-primary/5 mb-4 flex items-start gap-3 rounded-lg border px-4 py-3'>
+                    <Layers3
+                      className='text-primary mt-0.5 size-4 shrink-0'
+                      aria-hidden='true'
+                    />
+                    <div>
+                      <p className='text-foreground text-sm font-semibold'>
+                        本订单将参与集享计划
+                      </p>
+                      <p className='text-muted-foreground mt-0.5 text-xs leading-5'>
+                        支付后基础额度立即生效。本期达到满额档或持续 48
+                        小时后，系统会按照最终参与档位自动补发额度差额。
+                      </p>
+                    </div>
+                  </div>
+                ) : null}
                 <div className='grid gap-3 sm:grid-cols-2 xl:grid-cols-3'>
                   {summaryItems.map((item) => (
                     <SummaryItem
@@ -647,11 +700,6 @@ export function SubscriptionPurchaseDialog(props: Props) {
                     />
                   ))}
                 </div>
-                <RenewalBonusSummary
-                  className='mt-3'
-                  plan={plan}
-                  preview={planRecord.renewal_bonus_preview}
-                />
               </div>
             </div>
 

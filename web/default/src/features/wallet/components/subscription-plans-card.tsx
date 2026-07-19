@@ -12,7 +12,6 @@ import {
 } from '@/components/page-transition'
 import { PackagePlanCard } from '@/features/packages/package-plan-card'
 import { SubscriptionPurchaseDialog } from '@/features/subscriptions/components/dialogs/subscription-purchase-dialog'
-import { RenewalBonusSummary } from '@/features/subscriptions/components/renewal-bonus-summary'
 import {
   formatSubscriptionQuotaAmount,
   isDayPassPlan,
@@ -354,12 +353,6 @@ export function SubscriptionPlansCard({
                               }
                             />
                           </div>
-                          {relatedPlan ? (
-                            <RenewalBonusSummary
-                              plan={relatedPlan}
-                              preview={relatedPlanRecord?.renewal_bonus_preview}
-                            />
-                          ) : null}
                           {active && isMonthlyPlan ? (
                             <div className='flex flex-wrap gap-2 border-t pt-3'>
                               <Button

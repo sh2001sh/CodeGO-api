@@ -110,7 +110,7 @@ export function useSidebarData(): SidebarData {
             icon: LibraryBig,
           },
           {
-            title: t('Group buying'),
+            title: t('Collective benefit plan'),
             url: '/group-buy',
             icon: Users,
           },

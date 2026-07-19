@@ -83,9 +83,6 @@ type SubscriptionPlan struct {
 	GroupBuyBonus2  float64 `json:"group_buy_bonus_2" gorm:"column:group_buy_bonus2;type:decimal(10,2);default:0"`
 	GroupBuyBonus3  float64 `json:"group_buy_bonus_3" gorm:"column:group_buy_bonus3;type:decimal(10,2);default:0"`
 	GroupBuyBonus5  float64 `json:"group_buy_bonus_5" gorm:"column:group_buy_bonus5;type:decimal(10,2);default:0"`
-	RenewalBonus2   float64 `json:"renewal_bonus_2" gorm:"column:renewal_bonus2;type:decimal(8,4);default:0"`
-	RenewalBonus3   float64 `json:"renewal_bonus_3" gorm:"column:renewal_bonus3;type:decimal(8,4);default:0"`
-	RenewalBonus4   float64 `json:"renewal_bonus_4" gorm:"column:renewal_bonus4;type:decimal(8,4);default:0"`
 	FuelEnabled     bool    `json:"fuel_enabled" gorm:"default:false"`
 	FuelUnitPrice   float64 `json:"fuel_unit_price" gorm:"type:decimal(10,4);default:0"`
 	FuelMinQuota    int64   `json:"fuel_min_quota" gorm:"type:bigint;default:0"`
@@ -154,10 +151,16 @@ func normalizeSubscriptionPlanType(planType string) string {
 
 // SubscriptionOrder records the payment transaction for a subscription purchase.
 type SubscriptionOrder struct {
-	Id     int     `json:"id"`
-	UserId int     `json:"user_id" gorm:"index"`
-	PlanId int     `json:"plan_id" gorm:"index"`
-	Money  float64 `json:"money"`
+	Id            int     `json:"id"`
+	UserId        int     `json:"user_id" gorm:"index"`
+	PlanId        int     `json:"plan_id" gorm:"index"`
+	Money         float64 `json:"money"`
+	OriginalMoney float64 `json:"original_money" gorm:"type:decimal(10,2);not null;default:0"`
+
+	FirstPurchaseDiscountApplied    bool    `json:"first_purchase_discount_applied" gorm:"not null;default:false;index"`
+	FirstPurchaseDiscountMultiplier float64 `json:"first_purchase_discount_multiplier" gorm:"type:decimal(8,4);not null;default:0"`
+	FirstPurchaseDiscountStartAt    int64   `json:"first_purchase_discount_start_at" gorm:"type:bigint;not null;default:0"`
+	FirstPurchaseDiscountEndAt      int64   `json:"first_purchase_discount_end_at" gorm:"type:bigint;not null;default:0"`
 
 	TradeNo              string  `json:"trade_no" gorm:"unique;type:varchar(255);index"`
 	PaymentMethod        string  `json:"payment_method" gorm:"type:varchar(50)"`

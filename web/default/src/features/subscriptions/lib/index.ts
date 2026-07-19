@@ -45,8 +45,3 @@ export {
   EMPTY_SUBSCRIPTIONS,
   getOrderedSubscriptions,
 } from './self-subscription'
-export {
-  formatRenewalBonusRate,
-  getRenewalBonusTiers,
-  type RenewalBonusTier,
-} from './renewal-bonus'

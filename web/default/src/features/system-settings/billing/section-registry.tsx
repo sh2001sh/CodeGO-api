@@ -138,7 +138,7 @@ const BILLING_SECTIONS = [
     id: 'first-purchase',
     titleKey: 'First purchase campaign',
     descriptionKey:
-      'Configure the first wallet top-up discount and activity window',
+      'Configure the first plan purchase discount and activity window',
     build: (settings: BillingSettings) => (
       <FirstPurchaseDiscountSection
         defaultValues={{

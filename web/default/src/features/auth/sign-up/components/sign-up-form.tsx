@@ -76,7 +76,7 @@ export function SignUpForm({
     setTurnstileToken,
     validateTurnstile,
   } = useTurnstile()
-  const { redirectToLogin, handleLoginSuccess } = useAuthRedirect()
+  const { handleLoginSuccess } = useAuthRedirect()
   const {
     isSending: isSendingCode,
     secondsLeft,
@@ -159,8 +159,8 @@ export function SignUpForm({
       })
 
       if (res?.success) {
-        toast.success(t('Account created! Please sign in'))
-        redirectToLogin()
+        await handleLoginSuccess(res.data as { id?: number } | null)
+        toast.success(t('Account created!'))
       }
     } catch (_error) {
       // Errors are handled by global interceptor

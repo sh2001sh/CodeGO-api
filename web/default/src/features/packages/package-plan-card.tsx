@@ -1,11 +1,9 @@
 import { useState } from 'react'
-import type { TFunction } from 'i18next'
-import { ArrowRight, ChevronDown, Sparkles } from 'lucide-react'
+import { ArrowRight, ChevronDown, Layers3, Sparkles } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { RenewalBonusSummary } from '@/features/subscriptions/components/renewal-bonus-summary'
 import {
   formatDuration,
   formatSubscriptionPlanPrice,
@@ -19,11 +17,12 @@ import type {
 } from '@/features/subscriptions/types'
 import {
   translateDisabledReason,
-  translateGroupLabel,
+  translateCollectiveTierLabel,
   translatePlanAction,
   translatePlanSubtitle,
   translatePlanTitle,
 } from './lib/display'
+import { buildPackageQuotaTiers } from './lib/collective-benefit'
 
 export function PackagePlanCard(props: {
   record: PlanRecord
@@ -41,11 +40,17 @@ export function PackagePlanCard(props: {
   const plan = props.record.plan
   const title = translatePlanTitle(plan.title, t)
   const isRecommended = title.includes('Standard')
-  const groupBuyEnabled = plan.group_buy_enabled === true
+  const groupBuyEnabled =
+    plan.group_buy_enabled === true && plan.plan_type !== 'daily'
   const limit = Number(plan.max_purchase_per_user || 0)
   const limitReached = limit > 0 && props.purchaseCount >= limit
   const actionLabel = translatePlanAction(props.record.action, t)
   const effectiveAmount = props.record.amount_due ?? plan.price_amount
+  const firstPurchaseDiscountApplied =
+    props.record.first_purchase_discount_applied === true
+  const firstPurchaseDiscount = Number(
+    (props.record.first_purchase_discount_multiplier || 0) * 10
+  )
   const baseQuota = Number(plan.total_amount || 0)
   const blockedReason =
     translateDisabledReason(props.record.disabled_reason, t) ||
@@ -84,6 +89,11 @@ export function PackagePlanCard(props: {
               {t('Currently active')}
             </span>
           )}
+          {firstPurchaseDiscountApplied ? (
+            <span className='border-warning/25 bg-warning/10 text-warning mt-2 ml-1 inline-flex rounded-md border px-2 py-1 text-xs font-semibold'>
+              套餐首购 {Number(firstPurchaseDiscount.toFixed(1))} 折
+            </span>
+          ) : null}
         </div>
 
         <div className='text-center'>
@@ -117,12 +127,18 @@ export function PackagePlanCard(props: {
           </div>
           {groupBuyEnabled && (
             <div className='bg-muted/40 -mx-4 mt-2 space-y-1.5 px-4 py-2'>
-              <div className='text-muted-foreground text-xs font-medium'>
-                {t('Group quota (USD)')}
+              <div className='flex items-center justify-between gap-2'>
+                <span className='text-foreground flex items-center gap-1.5 text-xs font-semibold'>
+                  <Layers3 className='text-primary h-3.5 w-3.5' />
+                  {t('Collective benefit plan')}
+                </span>
+                <span className='text-muted-foreground text-[11px]'>
+                  {t('Final quota by tier')}
+                </span>
               </div>
               <div className='flex items-center justify-between text-sm'>
                 <span className='text-muted-foreground'>
-                  {translateGroupLabel(2, t)}
+                  {translateCollectiveTierLabel(2, t)}
                 </span>
                 <span className='text-primary font-semibold'>
                   {formatSubscriptionQuotaAmount(
@@ -135,7 +151,7 @@ export function PackagePlanCard(props: {
               </div>
               <div className='flex items-center justify-between text-sm'>
                 <span className='text-muted-foreground'>
-                  {translateGroupLabel(3, t)}
+                  {translateCollectiveTierLabel(3, t)}
                 </span>
                 <span className='text-primary font-semibold'>
                   {formatSubscriptionQuotaAmount(
@@ -148,7 +164,7 @@ export function PackagePlanCard(props: {
               </div>
               <div className='flex items-center justify-between text-sm'>
                 <span className='text-muted-foreground'>
-                  {translateGroupLabel(5, t)}
+                  {translateCollectiveTierLabel(5, t)}
                 </span>
                 <span className='text-primary font-semibold'>
                   {formatSubscriptionQuotaAmount(
@@ -162,12 +178,6 @@ export function PackagePlanCard(props: {
             </div>
           )}
         </div>
-
-        <RenewalBonusSummary
-          plan={plan}
-          preview={props.record.renewal_bonus_preview}
-          variant='compact'
-        />
 
         {showDetails && (
           <div className='border-border space-y-2 rounded-lg border p-3'>
@@ -186,16 +196,12 @@ export function PackagePlanCard(props: {
             <div className='text-muted-foreground text-xs leading-relaxed'>
               {groupBuyEnabled
                 ? t(
-                    'Pay the base price first; the group bonus is issued after five people join or 48 hours pass.'
+                    'The base quota is available immediately. The collective bonus is settled by the final participation tier after five participants join or 48 hours pass.'
                   )
                 : t(
-                    'This plan does not support group purchases; settlement completes immediately.'
+                    'This plan is not included in the Collective Benefit Program and is settled immediately after payment.'
                   )}
             </div>
-            <RenewalBonusSummary
-              plan={plan}
-              preview={props.record.renewal_bonus_preview}
-            />
           </div>
         )}
 
@@ -241,7 +247,8 @@ export function PackagePlanCard(props: {
               disabled={limitReached || props.record.action === 'disabled'}
               onClick={() => props.onPurchase('group_buy')}
             >
-              {t('Join group purchase')}
+              <Layers3 className='mr-1 h-4 w-4' />
+              {t('Participate in collective benefit')}
             </Button>
           )}
           {limitReached && (
@@ -261,55 +268,4 @@ export function PackagePlanCard(props: {
       </CardContent>
     </Card>
   )
-}
-
-function buildPackageQuotaTiers(
-  plan: PlanRecord['plan'],
-  t: TFunction
-): Array<{ label: string; detail: string; value: string }> {
-  const baseQuota = Number(plan.total_amount || 0)
-  const tiers = [
-    {
-      label: t('Individual purchase'),
-      detail: t('No waiting; active immediately after payment'),
-      value: formatSubscriptionQuotaAmount(baseQuota),
-    },
-  ]
-
-  if (plan.group_buy_enabled) {
-    tiers.push(
-      {
-        label: translateGroupLabel(2, t),
-        detail: t('Bonus: +{{amount}} USD', {
-          amount: Number(plan.group_buy_bonus_2 || 0),
-        }),
-        value: formatSubscriptionQuotaAmount(
-          baseQuota +
-            parseSubscriptionQuotaUSDToUnits(plan.group_buy_bonus_2 || 0)
-        ),
-      },
-      {
-        label: translateGroupLabel(3, t),
-        detail: t('Bonus: +{{amount}} USD', {
-          amount: Number(plan.group_buy_bonus_3 || 0),
-        }),
-        value: formatSubscriptionQuotaAmount(
-          baseQuota +
-            parseSubscriptionQuotaUSDToUnits(plan.group_buy_bonus_3 || 0)
-        ),
-      },
-      {
-        label: translateGroupLabel(5, t),
-        detail: t('Bonus: +{{amount}} USD', {
-          amount: Number(plan.group_buy_bonus_5 || 0),
-        }),
-        value: formatSubscriptionQuotaAmount(
-          baseQuota +
-            parseSubscriptionQuotaUSDToUnits(plan.group_buy_bonus_5 || 0)
-        ),
-      }
-    )
-  }
-
-  return tiers
 }

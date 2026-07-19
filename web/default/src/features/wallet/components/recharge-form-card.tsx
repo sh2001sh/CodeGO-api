@@ -17,14 +17,7 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 For commercial licensing, please contact support@quantumnous.com
 */
 import { useState, useEffect } from 'react'
-import {
-  Gift,
-  ExternalLink,
-  Loader2,
-  Receipt,
-  Sparkles,
-  WalletCards,
-} from 'lucide-react'
+import { Gift, ExternalLink, Loader2, Receipt, WalletCards } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { formatUsdAmount } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -128,12 +121,6 @@ export function RechargeFormCard({
   const { t } = useTranslation()
   const [localAmount, setLocalAmount] = useState(topupAmount.toString())
   const sectionLabelClassName = 'text-muted-foreground text-xs font-medium'
-  const firstPurchaseOffer = topupInfo?.first_purchase_discount
-  const firstPurchaseMultiplier =
-    firstPurchaseOffer?.active && firstPurchaseOffer.eligible
-      ? firstPurchaseOffer.multiplier
-      : 1
-
   useEffect(() => {
     setLocalAmount(topupAmount.toString())
   }, [topupAmount])
@@ -233,36 +220,6 @@ export function RechargeFormCard({
         compact ? 'space-y-3 sm:space-y-4' : 'space-y-4 sm:space-y-6'
       }
     >
-      {firstPurchaseOffer?.active && firstPurchaseOffer.eligible ? (
-        <div className='border-primary/25 bg-primary/5 flex flex-col gap-2 rounded-lg border px-4 py-3 sm:flex-row sm:items-center sm:justify-between'>
-          <div className='flex min-w-0 items-start gap-3'>
-            <Sparkles
-              className='text-primary mt-0.5 size-4 shrink-0'
-              aria-hidden='true'
-            />
-            <div>
-              <p className='text-sm font-semibold'>
-                {t('First top-up: {{discount}}折', {
-                  discount: Number(
-                    (firstPurchaseOffer.multiplier * 10).toFixed(1)
-                  ),
-                })}
-              </p>
-              <p className='text-muted-foreground mt-0.5 text-xs'>
-                {t(
-                  'Applied automatically to your first successful wallet top-up.'
-                )}
-              </p>
-            </div>
-          </div>
-          <span className='text-muted-foreground shrink-0 text-xs tabular-nums'>
-            {t('Ends {{time}}', {
-              time: new Date(firstPurchaseOffer.end_at * 1000).toLocaleString(),
-            })}
-          </span>
-        </div>
-      ) : null}
-
       {/* Online Topup Section */}
       {hasAnyTopup ? (
         <div
@@ -343,7 +300,7 @@ export function RechargeFormCard({
                           : preset.discount ||
                             topupInfo?.discount?.[preset.value] ||
                             1.0
-                      const discount = amountDiscount * firstPurchaseMultiplier
+                      const discount = amountDiscount
                       const effectivePriceRatio =
                         selectedWalletType === 'claude' ? 1 : priceRatio
                       const {

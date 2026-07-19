@@ -9,71 +9,53 @@ import (
 	commercestore "github.com/sh2001sh/new-api/internal/commerce/paymentsettings"
 	commerceschema "github.com/sh2001sh/new-api/internal/commerce/schema"
 	identityschema "github.com/sh2001sh/new-api/internal/identity/schema"
-	platformdb "github.com/sh2001sh/new-api/internal/platform/db"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )
 
-// FirstPurchaseDiscountOffer describes the current user's campaign state.
-type FirstPurchaseDiscountOffer struct {
-	Enabled    bool    `json:"enabled"`
-	Active     bool    `json:"active"`
-	Eligible   bool    `json:"eligible"`
-	Multiplier float64 `json:"multiplier"`
-	StartAt    int64   `json:"start_at"`
-	EndAt      int64   `json:"end_at"`
-}
-
-func BuildFirstPurchaseDiscountOffer(userID int, now time.Time) FirstPurchaseDiscountOffer {
-	setting := commercestore.GetPaymentSetting()
-	offer := FirstPurchaseDiscountOffer{
-		Enabled:    setting.FirstPurchaseDiscountEnabled,
-		Active:     isFirstPurchaseCampaignActive(setting, now.Unix()),
-		Multiplier: setting.FirstPurchaseDiscountMultiplier,
-		StartAt:    setting.FirstPurchaseDiscountStartAt,
-		EndAt:      setting.FirstPurchaseDiscountEndAt,
+func applyFirstPurchaseDiscountPreview(db *gorm.DB, userID int, preview *commercedomain.SubscriptionPurchasePreview, now time.Time) error {
+	if db == nil || preview == nil || preview.AmountDue <= 0 {
+		return nil
 	}
-	if !offer.Active || userID <= 0 || platformdb.DB == nil {
-		return offer
-	}
-
-	eligible, err := isFirstPurchaseDiscountEligible(platformdb.DB, userID)
-	if err == nil {
-		offer.Eligible = eligible
-	}
-	return offer
-}
-
-func PreviewFirstPurchaseDiscount(userID int, money float64) float64 {
-	offer := BuildFirstPurchaseDiscountOffer(userID, time.Now())
-	if !offer.Active || !offer.Eligible {
-		return money
-	}
-	return applyFirstPurchaseMultiplier(money, offer.Multiplier)
-}
-
-func applyFirstPurchaseDiscountTx(tx *gorm.DB, topUp *commerceschema.TopUp, now time.Time) error {
 	setting := commercestore.GetPaymentSetting()
 	if !isFirstPurchaseCampaignActive(setting, now.Unix()) {
 		return nil
 	}
-
-	var user identityschema.User
-	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Select("id").First(&user, topUp.UserId).Error; err != nil {
+	eligible, err := isFirstPurchaseDiscountEligible(db, userID)
+	if err != nil || !eligible {
 		return err
 	}
+	preview.FirstPurchaseDiscountApplied = true
+	preview.FirstPurchaseDiscountMultiplier = setting.FirstPurchaseDiscountMultiplier
+	preview.AmountDue = applyFirstPurchaseMultiplier(preview.AmountDue, setting.FirstPurchaseDiscountMultiplier)
+	return nil
+}
 
-	eligible, err := isFirstPurchaseDiscountEligible(tx, topUp.UserId)
-	if err != nil {
-		return err
+func applyFirstPurchaseDiscountTx(tx *gorm.DB, order *commerceschema.SubscriptionOrder, baseMoney float64, now time.Time) error {
+	if tx == nil || order == nil {
+		return errors.New("invalid first purchase discount order")
 	}
-	if !eligible {
+	order.OriginalMoney = baseMoney
+	order.Money = baseMoney
+	setting := commercestore.GetPaymentSetting()
+	if !isFirstPurchaseCampaignActive(setting, now.Unix()) || order.PurchaseType == commerceschema.SubscriptionPurchaseTypeFuel {
 		return nil
 	}
 
-	topUp.Money = applyFirstPurchaseMultiplier(topUp.Money, setting.FirstPurchaseDiscountMultiplier)
-	topUp.FirstPurchaseDiscountApplied = true
-	topUp.FirstPurchaseDiscountMultiplier = setting.FirstPurchaseDiscountMultiplier
+	var user identityschema.User
+	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Select("id").First(&user, order.UserId).Error; err != nil {
+		return err
+	}
+	eligible, err := isFirstPurchaseDiscountEligible(tx, order.UserId)
+	if err != nil || !eligible {
+		return err
+	}
+
+	order.Money = applyFirstPurchaseMultiplier(baseMoney, setting.FirstPurchaseDiscountMultiplier)
+	order.FirstPurchaseDiscountApplied = true
+	order.FirstPurchaseDiscountMultiplier = setting.FirstPurchaseDiscountMultiplier
+	order.FirstPurchaseDiscountStartAt = setting.FirstPurchaseDiscountStartAt
+	order.FirstPurchaseDiscountEndAt = setting.FirstPurchaseDiscountEndAt
 	return nil
 }
 
@@ -82,8 +64,9 @@ func isFirstPurchaseDiscountEligible(db *gorm.DB, userID int) (bool, error) {
 		return false, errors.New("invalid first purchase eligibility query")
 	}
 	var count int64
-	err := db.Model(&commerceschema.TopUp{}).
+	err := db.Model(&commerceschema.SubscriptionOrder{}).
 		Where("user_id = ?", userID).
+		Where("COALESCE(purchase_type, '') <> ?", commerceschema.SubscriptionPurchaseTypeFuel).
 		Where("status = ? OR (status = ? AND first_purchase_discount_applied = ?)",
 			constant.TopUpStatusSuccess,
 			constant.TopUpStatusPending,

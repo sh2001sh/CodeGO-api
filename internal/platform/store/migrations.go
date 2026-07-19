@@ -52,6 +52,7 @@ func V2MigrationIDs() []string {
 		"20260715_blind_box_admin_grants",
 		"20260718_first_purchase_discount",
 		"20260718_community_resources",
+		"20260719_subscription_first_purchase_discount",
 	}
 }
 
@@ -145,6 +146,9 @@ func ApplyV2Migrations(ctx context.Context, dryRun bool) error {
 		{ID: "20260718_community_resources", Run: func(tx *gorm.DB) error {
 			return tx.AutoMigrate(&communityschema.Resource{})
 		}},
+		{ID: "20260719_subscription_first_purchase_discount", Run: func(tx *gorm.DB) error {
+			return migrateSubscriptionFirstPurchaseDiscount(tx)
+		}},
 	}
 	for _, step := range steps {
 		var applied schemaMigration
@@ -191,6 +195,27 @@ func migrateFirstPurchaseDiscount(tx *gorm.DB) error {
 			continue
 		}
 		if err := tx.Migrator().AddColumn(&commerceschema.TopUp{}, field); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func migrateSubscriptionFirstPurchaseDiscount(tx *gorm.DB) error {
+	if !tx.Migrator().HasTable(&commerceschema.SubscriptionOrder{}) {
+		return tx.AutoMigrate(&commerceschema.SubscriptionOrder{})
+	}
+	for _, field := range []string{
+		"OriginalMoney",
+		"FirstPurchaseDiscountApplied",
+		"FirstPurchaseDiscountMultiplier",
+		"FirstPurchaseDiscountStartAt",
+		"FirstPurchaseDiscountEndAt",
+	} {
+		if tx.Migrator().HasColumn(&commerceschema.SubscriptionOrder{}, field) {
+			continue
+		}
+		if err := tx.Migrator().AddColumn(&commerceschema.SubscriptionOrder{}, field); err != nil {
 			return err
 		}
 	}

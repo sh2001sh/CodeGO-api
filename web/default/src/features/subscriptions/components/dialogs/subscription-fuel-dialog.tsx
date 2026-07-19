@@ -298,7 +298,7 @@ export function SubscriptionFuelDialog(props: SubscriptionFuelDialogProps) {
               <Alert>
                 <AlertCircle className='size-4' />
                 <AlertDescription>
-                  加油不延长有效期、不升级模型权限，也不计入续费奖励。
+                  加油不延长有效期，也不升级模型权限。
                 </AlertDescription>
               </Alert>
             </>

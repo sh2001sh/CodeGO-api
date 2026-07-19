@@ -30,7 +30,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
   const { systemName, logo, loading } = useSystemConfig()
 
   return (
-    <div className='relative min-h-svh bg-background text-foreground'>
+    <div className='bg-background text-foreground relative min-h-svh'>
       <Link
         to='/'
         className='app-subtle-panel absolute top-4 left-4 z-10 flex items-center gap-3 px-3 py-2 text-sm transition-opacity hover:opacity-80 sm:top-8 sm:left-8'
@@ -52,7 +52,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
           <h1 className='text-xl font-medium'>{systemName}</h1>
         )}
       </Link>
-      <div className='container relative flex min-h-svh items-center justify-center px-4 py-20 sm:px-6 lg:px-8'>
+      <div className='relative container flex min-h-svh items-center justify-center px-4 py-20 sm:px-6 lg:px-8'>
         <div className='w-full max-w-[1040px]'>
           <div className='app-page-shell grid overflow-hidden lg:grid-cols-[minmax(0,1.05fr)_minmax(420px,0.95fr)]'>
             <div className='border-border bg-muted/40 hidden flex-col justify-between border-r p-10 lg:flex'>
@@ -80,16 +80,6 @@ export function AuthLayout({ children }: AuthLayoutProps) {
                   <p className='text-muted-foreground mt-2 text-sm leading-6'>
                     {t(
                       'Keep quota, subscription status, and workspace controls within immediate reach during active development.'
-                    )}
-                  </p>
-                </div>
-                <div className='app-subtle-panel p-5'>
-                  <div className='text-foreground text-sm font-semibold'>
-                    {t('Dark mode first')}
-                  </div>
-                  <p className='text-muted-foreground mt-2 text-sm leading-6'>
-                    {t(
-                      'Authentication surfaces now inherit the same contrast and theme rules as the main product UI.'
                     )}
                   </p>
                 </div>

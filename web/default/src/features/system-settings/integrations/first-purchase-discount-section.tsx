@@ -142,7 +142,7 @@ export function FirstPurchaseDiscountSection(props: {
     <SettingsSection
       title={t('First purchase campaign')}
       description={t(
-        'Offer a time-limited discount on each user’s first successful wallet top-up.'
+        'Offer a time-limited discount on each user’s first successful plan purchase.'
       )}
     >
       <Form {...form}>
@@ -170,7 +170,7 @@ export function FirstPurchaseDiscountSection(props: {
                 </div>
                 <p className='text-muted-foreground max-w-2xl text-sm'>
                   {t(
-                    'Eligibility is reserved when an order is created and consumed only after a successful payment.'
+                    'Plan-purchase eligibility is reserved when an order is created and consumed only after a successful payment.'
                   )}
                 </p>
               </div>

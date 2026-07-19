@@ -13,6 +13,7 @@ import (
 	platformdb "github.com/sh2001sh/new-api/internal/platform/db"
 	"math"
 	"strings"
+	"time"
 
 	// ResolveSubscriptionPurchasePreview computes the current purchase action and payable amount.
 	platformobservability "github.com/sh2001sh/new-api/internal/platform/observability"
@@ -25,8 +26,9 @@ func ResolveSubscriptionPurchasePreview(userID int, targetPlan *commerceschema.S
 	return resolveSubscriptionPurchasePreviewTx(nil, userID, targetPlan)
 }
 
-// CreatePendingSubscriptionOrderWithBlindBoxDiscount creates a pending order and reserves any discount prop.
-func CreatePendingSubscriptionOrderWithBlindBoxDiscount(order *commerceschema.SubscriptionOrder, baseMoney float64) (float64, error) {
+// CreatePendingSubscriptionOrderWithDiscounts creates a pending order and atomically reserves its discount.
+// The first-plan campaign takes precedence so a blind-box prop is not consumed by the same order.
+func CreatePendingSubscriptionOrderWithDiscounts(order *commerceschema.SubscriptionOrder, baseMoney float64) (float64, error) {
 	if order == nil {
 		return 0, errors.New("order is nil")
 	}
@@ -40,7 +42,13 @@ func CreatePendingSubscriptionOrderWithBlindBoxDiscount(order *commerceschema.Su
 	appliedRate := 0.0
 	err := platformdb.DB.Transaction(func(tx *gorm.DB) error {
 		order.FulfillmentStatus = commerceschema.SubscriptionOrderFulfillmentPending
-		order.Money = math.Round(baseMoney*100) / 100
+		baseMoney = math.Round(baseMoney*100) / 100
+		if err := applyFirstPurchaseDiscountTx(tx, order, baseMoney, time.Now()); err != nil {
+			return err
+		}
+		if order.FirstPurchaseDiscountApplied {
+			return tx.Create(order).Error
+		}
 		prop, err := ReserveBlindBoxSubscriptionDiscountPropTx(tx, order.UserId, order.TradeNo)
 		if err != nil {
 			return err

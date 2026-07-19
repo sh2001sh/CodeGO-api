@@ -125,7 +125,7 @@ export function PackagesPage() {
           id: 'monthly',
           title: t('Monthly plans'),
           description: t(
-            'Suitable for ongoing development and team usage. Consecutive renewals can unlock tiered bonus quota.'
+            'Suitable for ongoing development and team usage, with clear quota and validity.'
           ),
         },
         {
@@ -148,7 +148,7 @@ export function PackagesPage() {
           id: 'monthly',
           title: t('Monthly plans'),
           description: t(
-            'Suitable for ongoing development and team usage. Consecutive renewals can unlock tiered bonus quota.'
+            'Suitable for ongoing development and team usage, with clear quota and validity.'
           ),
         },
       ]
@@ -189,7 +189,7 @@ export function PackagesPage() {
       <WalletWorkspaceShell
         title={t('Plans')}
         description={t(
-          'Choose a starter card, monthly plan, or short-term quota pack. Group-enabled plans show the final quota for groups of 2, 3, or 5.'
+          'Choose a plan based on your usage rhythm. Eligible plans can join the Collective Benefit Program and unlock additional quota by participation tier.'
         )}
         canonicalPath='/packages'
         framedMain={false}
@@ -208,7 +208,7 @@ export function PackagesPage() {
               <TitledCard
                 title={t('Plan purchase')}
                 description={t(
-                  'Review the base quota and validity first, then compare the final quota for individual, 2-person, 3-person, and 5-person purchases.'
+                  'Compare the price, base quota, and validity first. Plans marked for collective benefit also show the final quota available at each participation tier.'
                 )}
                 icon={<Crown className='h-4 w-4' />}
                 action={
@@ -254,7 +254,7 @@ export function PackagesPage() {
                   <PlanZone
                     title={t('Short-term quota packs')}
                     description={t(
-                      'Useful for daily or weekly peaks. Group bonuses are issued when the group fills or after 48 hours.'
+                      'Useful for daily or weekly peaks. Weekly plans may join collective benefit, while day passes activate immediately and do not participate.'
                     )}
                     plans={groupedPlans.shortterm}
                     loading={workspace.publicPlansLoading}

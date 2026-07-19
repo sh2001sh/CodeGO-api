@@ -45,9 +45,6 @@ export const subscriptionPlanSchema = z.object({
   group_buy_bonus_2: z.number().default(0).optional(),
   group_buy_bonus_3: z.number().default(0).optional(),
   group_buy_bonus_5: z.number().default(0).optional(),
-  renewal_bonus_2: z.number().default(0).optional(),
-  renewal_bonus_3: z.number().default(0).optional(),
-  renewal_bonus_4: z.number().default(0).optional(),
   fuel_enabled: z.boolean().default(false).optional(),
   fuel_unit_price: z.number().default(0).optional(),
   fuel_min_quota: z.number().default(0).optional(),
@@ -65,18 +62,11 @@ export type SubscriptionPlan = z.infer<typeof subscriptionPlanSchema>
 export interface PlanRecord {
   plan: SubscriptionPlan
   action?: 'subscribe' | 'renew' | 'upgrade' | 'disabled'
+  base_amount_due?: number
   amount_due?: number
   disabled_reason?: string
-  renewal_bonus_preview?: RenewalBonusPreview
-}
-
-export interface RenewalBonusPreview {
-  completed_purchase_count: number
-  next_purchase_number: number
-  bonus_rate: number
-  bonus_quota: number
-  bonus_usd: number
-  eligible: boolean
+  first_purchase_discount_applied?: boolean
+  first_purchase_discount_multiplier?: number
 }
 
 // ============================================================================
@@ -222,6 +212,9 @@ export interface SubscriptionOrderStatus {
   plan_id: number
   plan_title?: string
   money: number
+  original_money?: number
+  first_purchase_discount_applied?: boolean
+  first_purchase_discount_multiplier?: number
   payment_method?: string
   payment_provider?: string
   create_time?: number

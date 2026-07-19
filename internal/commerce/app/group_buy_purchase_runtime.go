@@ -24,7 +24,7 @@ func ValidateGroupBuyPurchase(userID int, planID int, purchaseType string, group
 	if err != nil {
 		return err
 	}
-	if !plan.GroupBuyEnabled {
+	if !supportsGroupBuyPlan(plan) {
 		return ErrGroupBuyPlanNotEnabled
 	}
 
@@ -62,7 +62,7 @@ func ApplyGroupBuyPurchaseAfterPaymentTx(tx *gorm.DB, order *commerceschema.Subs
 	if purchaseType == commerceschema.SubscriptionPurchaseTypeNormal {
 		return nil
 	}
-	if !plan.GroupBuyEnabled {
+	if !supportsGroupBuyPlan(plan) {
 		return ErrGroupBuyPlanNotEnabled
 	}
 
@@ -181,7 +181,7 @@ func settleGroupBuyOrder(groupBuyID int64) error {
 					}).Error; err != nil {
 					return err
 				}
-				if err := auditapp.RecordLogTx(tx, member.UserId, auditschema.LogTypeTopup, fmt.Sprintf("拼团奖励到账，已加入套餐额度，套餐: %s，奖励额度: $%.2f", plan.Title, bonusUSD)); err != nil {
+				if err := auditapp.RecordLogTx(tx, member.UserId, auditschema.LogTypeTopup, fmt.Sprintf("集享计划加成到账，已加入套餐额度，套餐: %s，加成额度: $%.2f", plan.Title, bonusUSD)); err != nil {
 					return err
 				}
 			}

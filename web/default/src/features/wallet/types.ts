@@ -167,15 +167,6 @@ export interface TopupInfo {
   payment_compliance_confirmed?: boolean
   /** Current compliance terms version */
   payment_compliance_terms_version?: string
-  /** Active first-purchase campaign and current-user eligibility */
-  first_purchase_discount?: {
-    enabled: boolean
-    active: boolean
-    eligible: boolean
-    multiplier: number
-    start_at: number
-    end_at: number
-  }
 }
 
 /**

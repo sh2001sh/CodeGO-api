@@ -67,9 +67,6 @@ func defaultSubscriptionPlans() []commerceschema.SubscriptionPlan {
 			GroupBuyBonus2:     20,
 			GroupBuyBonus3:     35,
 			GroupBuyBonus5:     60,
-			RenewalBonus2:      0.03,
-			RenewalBonus3:      0.05,
-			RenewalBonus4:      0.08,
 			FuelEnabled:        true,
 			FuelUnitPrice:      0.175,
 			FuelMinQuota:       quotaUnitsFromUSD(10),
@@ -93,9 +90,6 @@ func defaultSubscriptionPlans() []commerceschema.SubscriptionPlan {
 			GroupBuyBonus2:   40,
 			GroupBuyBonus3:   70,
 			GroupBuyBonus5:   110,
-			RenewalBonus2:    0.03,
-			RenewalBonus3:    0.05,
-			RenewalBonus4:    0.08,
 			FuelEnabled:      true,
 			FuelUnitPrice:    0.170,
 			FuelMinQuota:     quotaUnitsFromUSD(10),
@@ -119,9 +113,6 @@ func defaultSubscriptionPlans() []commerceschema.SubscriptionPlan {
 			GroupBuyBonus2:   70,
 			GroupBuyBonus3:   130,
 			GroupBuyBonus5:   220,
-			RenewalBonus2:    0.03,
-			RenewalBonus3:    0.05,
-			RenewalBonus4:    0.08,
 			FuelEnabled:      true,
 			FuelUnitPrice:    0.160,
 			FuelMinQuota:     quotaUnitsFromUSD(10),
@@ -145,9 +136,6 @@ func defaultSubscriptionPlans() []commerceschema.SubscriptionPlan {
 			GroupBuyBonus2:   120,
 			GroupBuyBonus3:   220,
 			GroupBuyBonus5:   380,
-			RenewalBonus2:    0.03,
-			RenewalBonus3:    0.05,
-			RenewalBonus4:    0.08,
 			FuelEnabled:      true,
 			FuelUnitPrice:    0.150,
 			FuelMinQuota:     quotaUnitsFromUSD(10),
@@ -200,10 +188,7 @@ func defaultSubscriptionPlans() []commerceschema.SubscriptionPlan {
 			TotalAmount:      quotaUnitsFromUSD(50),
 			QuotaResetPeriod: commerceschema.SubscriptionResetNever,
 			PlanType:         commerceschema.SubscriptionPlanTypeDaily,
-			GroupBuyEnabled:  true,
-			GroupBuyBonus2:   5,
-			GroupBuyBonus3:   8,
-			GroupBuyBonus5:   12,
+			GroupBuyEnabled:  false,
 		},
 		{
 			Title:            "100刀日卡",
@@ -218,10 +203,7 @@ func defaultSubscriptionPlans() []commerceschema.SubscriptionPlan {
 			TotalAmount:      quotaUnitsFromUSD(100),
 			QuotaResetPeriod: commerceschema.SubscriptionResetNever,
 			PlanType:         commerceschema.SubscriptionPlanTypeDaily,
-			GroupBuyEnabled:  true,
-			GroupBuyBonus2:   10,
-			GroupBuyBonus3:   18,
-			GroupBuyBonus5:   28,
+			GroupBuyEnabled:  false,
 		},
 	}
 }
@@ -318,15 +300,6 @@ func syncPresetSubscriptionPlanFields(existing *commerceschema.SubscriptionPlan,
 	}
 	if existing.GroupBuyBonus5 != preset.GroupBuyBonus5 {
 		updates["group_buy_bonus5"] = preset.GroupBuyBonus5
-	}
-	if existing.RenewalBonus2 != preset.RenewalBonus2 {
-		updates["renewal_bonus2"] = preset.RenewalBonus2
-	}
-	if existing.RenewalBonus3 != preset.RenewalBonus3 {
-		updates["renewal_bonus3"] = preset.RenewalBonus3
-	}
-	if existing.RenewalBonus4 != preset.RenewalBonus4 {
-		updates["renewal_bonus4"] = preset.RenewalBonus4
 	}
 	if existing.FuelEnabled != preset.FuelEnabled {
 		updates["fuel_enabled"] = preset.FuelEnabled

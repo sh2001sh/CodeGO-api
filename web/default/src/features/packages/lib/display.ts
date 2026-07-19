@@ -62,8 +62,8 @@ export function translatePlanAction(action: string | undefined, t: TFunction) {
   }
 }
 
-export function translateGroupLabel(count: number, t: TFunction) {
-  return t('{{count}}-person group', { count })
+export function translateCollectiveTierLabel(count: number, t: TFunction) {
+  return t('{{count}}-participant tier', { count })
 }
 
 export function translateDisabledReason(

@@ -16,6 +16,25 @@ import (
 	"gorm.io/gorm"
 )
 
+func TestValidateGroupBuyPurchaseRejectsDayPass(t *testing.T) {
+	db := setupRedemptionTestDB(t)
+	plan := &commerceschema.SubscriptionPlan{
+		Id:              9799,
+		Title:           "50刀日卡",
+		PriceAmount:     8.9,
+		Currency:        "CNY",
+		DurationUnit:    commerceschema.SubscriptionDurationDay,
+		DurationValue:   1,
+		Enabled:         true,
+		GroupBuyEnabled: true,
+		TotalAmount:     int64(platformruntime.QuotaPerUnit * 50),
+	}
+	require.NoError(t, db.Create(plan).Error)
+
+	err := ValidateGroupBuyPurchase(97991, plan.Id, commerceschema.SubscriptionPurchaseTypeGroupBuy, 0)
+	assert.ErrorIs(t, err, ErrGroupBuyPlanNotEnabled)
+}
+
 func TestSettleGroupBuyOrderAddsBonusToSubscriptionInsteadOfWallet(t *testing.T) {
 	db := setupRedemptionTestDB(t)
 

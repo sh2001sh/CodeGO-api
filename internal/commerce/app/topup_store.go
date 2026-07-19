@@ -9,7 +9,6 @@ import (
 	platformobservability "github.com/sh2001sh/new-api/internal/platform/observability"
 	platformpagination "github.com/sh2001sh/new-api/internal/platform/pagination"
 	platformruntime "github.com/sh2001sh/new-api/internal/platform/runtime"
-	"time"
 
 	"gorm.io/gorm"
 	"strings"
@@ -30,9 +29,6 @@ func CreatePendingTopUpOrderWithBlindBoxDiscount(topUp *commerceschema.TopUp) (f
 
 	appliedRate := 0.0
 	err := platformdb.DB.Transaction(func(tx *gorm.DB) error {
-		if err := applyFirstPurchaseDiscountTx(tx, topUp, time.Now()); err != nil {
-			return err
-		}
 		prop, err := ReserveBlindBoxTopupDiscountPropTx(tx, topUp.UserId, topUp.TradeNo)
 		if err != nil {
 			return err
