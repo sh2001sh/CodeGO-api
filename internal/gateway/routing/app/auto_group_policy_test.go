@@ -1,9 +1,11 @@
 package app
 
 import (
+	"net/http/httptest"
 	"testing"
 	"time"
 
+	"github.com/gin-gonic/gin"
 	gatewaygroups "github.com/sh2001sh/new-api/internal/gateway/groupsettings"
 	gatewayruntime "github.com/sh2001sh/new-api/internal/gateway/runtime"
 	gatewayschema "github.com/sh2001sh/new-api/internal/gateway/schema"
@@ -43,6 +45,39 @@ func TestGetHealthySatisfiedChannelFallsBackAfterPrimaryCooldown(t *testing.T) {
 	require.NotNil(t, channel)
 	require.Equal(t, 39, channel.Id)
 	require.Contains(t, retries, 1)
+}
+
+func TestCacheSelectionSkipsCoolingChannelEvenWithLegacyProbeContext(t *testing.T) {
+	const modelName = "gpt-route-no-user-probe-test"
+	primaryPriority := int64(3)
+	fallbackPriority := int64(2)
+	originalSelector := selectRandomSatisfiedChannel
+	t.Cleanup(func() {
+		selectRandomSatisfiedChannel = originalSelector
+		gatewayruntime.RecordChannelSuccess(42, modelName, 0)
+	})
+
+	selectRandomSatisfiedChannel = func(_ string, _ string, retry int) (*gatewayschema.Channel, error) {
+		if retry == 0 {
+			return &gatewayschema.Channel{Id: 42, Priority: &primaryPriority}, nil
+		}
+		return &gatewayschema.Channel{Id: 39, Priority: &fallbackPriority}, nil
+	}
+	gatewayruntime.CoolChannelModelForUpstreamFailure(42, modelName)
+
+	context, _ := gin.CreateTestContext(httptest.NewRecorder())
+	context.Set("model_probe_channel_id", 42)
+	context.Set("model_probe_group", "default")
+	channel, group, err := CacheGetRandomSatisfiedChannel(&RetryParam{
+		Ctx:        context,
+		TokenGroup: "default",
+		ModelName:  modelName,
+	})
+
+	require.NoError(t, err)
+	require.Equal(t, "default", group)
+	require.NotNil(t, channel)
+	require.Equal(t, 39, channel.Id)
 }
 
 func TestOrderAutoGroupsPrefersLowerRateUntilCooldown(t *testing.T) {

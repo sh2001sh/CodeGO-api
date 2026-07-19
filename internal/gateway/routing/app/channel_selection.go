@@ -58,10 +58,6 @@ func CacheGetRandomSatisfiedChannel(param *RetryParam) (*gatewayschema.Channel, 
 	var err error
 	selectGroup := param.TokenGroup
 	userGroup := httpctx.GetContextKeyString(param.Ctx, constant.ContextKeyUserGroup)
-	if channel, selectGroup, ok := takeCoolingModelProbe(param, selectGroup); ok {
-		gatewayruntime.SelectRouteDecisionCandidate(param.Ctx, selectGroup, channel.Id, false)
-		return channel, selectGroup, nil
-	}
 
 	if param.TokenGroup == AutoGroupName {
 		if len(gatewaygroups.GetAutoGroups()) == 0 {
@@ -122,28 +118,6 @@ func CacheGetRandomSatisfiedChannel(param *RetryParam) (*gatewayschema.Channel, 
 	}
 	return channel, selectGroup, nil
 }
-
-func takeCoolingModelProbe(param *RetryParam, selectedGroup string) (*gatewayschema.Channel, string, bool) {
-	probeChannelID := param.Ctx.GetInt("model_probe_channel_id")
-	probeGroup := param.Ctx.GetString("model_probe_group")
-	if probeChannelID <= 0 || probeGroup == "" {
-		return nil, selectedGroup, false
-	}
-	if selectedGroup != AutoGroupName && selectedGroup != probeGroup {
-		return nil, selectedGroup, false
-	}
-	param.Ctx.Set("model_probe_channel_id", 0)
-	param.Ctx.Set("model_probe_group", "")
-	channel, err := gatewaystore.GetCachedChannel(probeChannelID)
-	if err != nil || channel == nil || channel.Status != constant.ChannelStatusEnabled {
-		return nil, selectedGroup, false
-	}
-	if !gatewaystore.IsChannelEnabledForGroupModel(probeGroup, param.ModelName, probeChannelID) {
-		return nil, selectedGroup, false
-	}
-	return channel, probeGroup, true
-}
-
 func getHealthySatisfiedChannel(group string, modelName string, retry int) (*gatewayschema.Channel, error) {
 	var degradedCandidate *gatewayschema.Channel
 	seenPriorities := make(map[int64]struct{})
