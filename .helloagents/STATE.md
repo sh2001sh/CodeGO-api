@@ -1,31 +1,21 @@
 # 主线目标
-为 `shu26.cfd` 增加后台可配置的首购充值活动，以及支持 GitHub 投稿、审核和额度奖励的社区资源中心。
+发布包含套餐首购折扣、取消续费奖励、认证体验、集享计划和日卡限制的 alpha.33 多架构镜像。
 
 # 当前状态
-- 标签 `v2.0.0-rc.33.9-alpha.31` 已发布，GitHub Actions run `29654383929` 已成功完成镜像构建。
-- amd64、arm64 的 7 个服务镜像均已推送；Docker Hub 与 GHCR 的多架构 manifest、`latest` 标签和 Cosign 签名均已完成。
-- 功能提交 `103e838cf` 已推送到 `origin/v2-refactor-20260711`。
-- 首购活动已完成：管理员可配置启用状态、折扣比例、开始时间和结束时间。
-- “首购”定义为用户首次成功的钱包充值；所有充值渠道统一应用折扣，并在事务内占用资格，避免并发创建多个优惠订单。
-- 充值订单已保存原价、折扣和活动快照字段，钱包页面会展示当前优惠及有效时间。
-- 社区资源已完成：侧边栏新增入口，用户可浏览、搜索、筛选和下载 GitHub 仓库或仓库子目录资源。
-- 普通用户可投稿 GitHub 链接并进入审核队列；管理员投稿直接发布，管理员可通过或驳回普通投稿。
-- 投稿可附带同仓库内感谢 `shu26.cfd` 的 GitHub 链接；管理员审核通过时可发放后台配置的额度奖励。
-- 奖励复用现有 BonusQuota 账本，并按仓库建立幂等键，避免重复奖励。
-- 中文界面、响应式、暗色模式、空状态、加载与错误反馈均已覆盖。
-- 工作树原有日志删除、临时文件和无关改动均保留，未进行回退。
-
-# 验证证据
-- 相关 Go 包测试通过，含首购并发资格、GitHub 链接归一化、迁移和路由测试。
-- TypeScript `tsc -b` 通过。
-- 新增社区资源前端代码定向 ESLint 通过。
-- Rsbuild 生产构建通过。
-- Playwright 桌面、390px 移动端投稿面板和暗色模式验证通过，浏览器控制台无错误。
-- 截图：`output/playwright/community-resources-desktop.png`、`community-resources-mobile-submit.png`、`community-resources-dark.png`。
-- `git diff --check` 通过。
+- 功能提交 `530c4786e` 已推送到 `origin/v2-refactor-20260711`。
+- 发布标签 `v2.0.0-rc.33.9-alpha.33` 已创建并推送，指向 `530c4786e`。
+- GitHub Actions run `29681884574` 已完成，结论为 `success`。
+- amd64、arm64 的 control-api、gateway-api、ledger-worker、workflow-worker、db-migrate、ledger-backfill、v2-verify 均构建并推送成功。
+- Docker Hub 与 GHCR 的版本化和 latest 多架构 manifest 已创建，Cosign 签名成功。
+- Docker Hub 顶层版本与 latest 均包含 amd64、arm64，digest 为 `sha256:aa0b8e7d147f6ea24afe10dc2cc461b418e95d66c12c33208cb8b5b066507c0c`。
+- 7 个 Docker Hub 服务版本标签均已通过 API 验收，每个标签包含 2 个架构。
+- 发布前 commerce、identity、store 测试与前端类型检查通过；前端生产构建通过。
+- HTTP 整包仍存在既有偶发用例失败，该用例单独运行通过。
+- GitHub 推送提示默认分支现有 38 个 Dependabot 告警：8 critical、9 high、17 moderate、4 low，未在本次功能发布中处理。
+- 本地预览日志、Playwright 历史日志、临时密码工具格式化、运行态验证文件和已删除截图未进入发布提交，也未回退。
 
 # 下一步
-- 镜像构建链路已完成；生产部署不在本次授权范围内。
+- 如需部署生产环境，使用 `v2.0.0-rc.33.9-alpha.33` 对应的各服务镜像执行迁移和滚动更新。
 
 # 阻塞项
-- 全量 `go test ./...` 在整套运行时仍会触发既有 `TestGetSubscriptionOrderStatusReturnsOrderPayload` 失败；该测试单独运行通过，本次相关包测试全部通过。
+- 无。
