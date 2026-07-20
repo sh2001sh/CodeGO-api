@@ -53,6 +53,7 @@ func V2MigrationIDs() []string {
 		"20260718_first_purchase_discount",
 		"20260718_community_resources",
 		"20260719_subscription_first_purchase_discount",
+		"20260720_wallet_quota_conversion",
 	}
 }
 
@@ -148,6 +149,9 @@ func ApplyV2Migrations(ctx context.Context, dryRun bool) error {
 		}},
 		{ID: "20260719_subscription_first_purchase_discount", Run: func(tx *gorm.DB) error {
 			return migrateSubscriptionFirstPurchaseDiscount(tx)
+		}},
+		{ID: "20260720_wallet_quota_conversion", Run: func(tx *gorm.DB) error {
+			return tx.AutoMigrate(&commerceschema.WalletQuotaConversion{})
 		}},
 	}
 	for _, step := range steps {

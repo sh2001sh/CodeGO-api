@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { Skeleton } from '@/components/ui/skeleton'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import {
   consumeSubscriptionResetOpportunity,
   updateBillingPreference,
@@ -16,21 +17,19 @@ import type {
   PlanRecord,
   SelfSubscriptionData,
 } from '@/features/subscriptions/types'
-import type { UserWalletData } from '../types'
 import { RedemptionCodePanel } from './redemption-code-panel'
 import { SubscriptionClaudeConversionCard } from './subscription-claude-conversion-card'
-import { WalletBalancePanels } from './wallet-balance-panels'
 import { WalletBillingOrderPanel } from './wallet-billing-order-panel'
 import {
   getOrderedSubscriptions,
   type WalletPlanMeta,
 } from './wallet-panel-utils'
+import { WalletQuotaConversionCard } from './wallet-quota-conversion-card'
 import { WalletResetOpportunityPanel } from './wallet-reset-opportunity-panel'
 
 const ALL_FUNDING_SOURCES: FundingSource[] = ['subscription', 'wallet']
 
 interface WalletPagePanelsProps {
-  user: UserWalletData | null
   plans: PlanRecord[]
   plansLoading?: boolean
   loading?: boolean
@@ -42,7 +41,9 @@ interface WalletPagePanelsProps {
   subscriptionData?: SelfSubscriptionData | null
   subscriptionLoading?: boolean
   onSubscriptionRefresh?: () => Promise<void>
-  showBalancePanels?: boolean
+  onUserRefresh?: () => Promise<void>
+  section: 'funding' | 'conversion' | 'billing'
+  onOpenConversionHistory?: () => void
 }
 
 export function WalletPagePanels(props: WalletPagePanelsProps) {
@@ -53,7 +54,9 @@ export function WalletPagePanels(props: WalletPagePanelsProps) {
   const [draftOrderIds, setDraftOrderIds] = useState<number[]>([])
   const [saving, setSaving] = useState(false)
   const [usingResetOpportunity, setUsingResetOpportunity] = useState(false)
-  const showBalancePanels = props.showBalancePanels !== false
+  const [conversionMode, setConversionMode] = useState<'wallet' | 'plan'>(
+    'wallet'
+  )
 
   const activeSubscriptions = useMemo(
     () => props.subscriptionData?.subscriptions ?? [],
@@ -223,7 +226,7 @@ export function WalletPagePanels(props: WalletPagePanelsProps) {
     }
   }
 
-  if (props.loading) {
+  if (props.loading && props.section !== 'funding') {
     return (
       <div className='grid gap-4 lg:grid-cols-2'>
         {Array.from({ length: 4 }).map((_, index) => (
@@ -237,23 +240,12 @@ export function WalletPagePanels(props: WalletPagePanelsProps) {
     )
   }
 
-  return (
-    <div className='space-y-4'>
-      {showBalancePanels ? (
-        <WalletBalancePanels
-          user={props.user}
-          topupLink={props.topupLink}
-          redemptionCode={props.redemptionCode}
-          onRedemptionCodeChange={props.onRedemptionCodeChange}
-          onRedeem={props.onRedeem}
-          redeeming={props.redeeming}
-        />
-      ) : null}
-
+  if (props.section === 'funding') {
+    return (
       <RedemptionCodePanel
         title={t('Redemption code')}
         description={t(
-          'Redeem codes can add standard balance, Claude quota, plans, or promotional benefits. Redeem one here before adjusting subscription quota.'
+          'Redeem codes can add standard balance, Claude quota, plans, or promotional benefits.'
         )}
         topupLink={props.topupLink}
         redemptionCode={props.redemptionCode}
@@ -261,31 +253,58 @@ export function WalletPagePanels(props: WalletPagePanelsProps) {
         onRedeem={props.onRedeem}
         redeeming={props.redeeming}
       />
+    )
+  }
 
-      <div className='grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(340px,0.92fr)]'>
-        <SubscriptionClaudeConversionCard
-          subscriptionData={props.subscriptionData}
-          loading={props.subscriptionLoading}
-          planTitles={Object.fromEntries(
-            Array.from(planMetaMap.entries()).map(([id, value]) => [
-              id,
-              {
-                title: value.title || t('Plan #{{id}}', { id }),
-                subtitle: value.subtitle || t('Subscription'),
-              },
-            ])
-          )}
-          onRefresh={props.onSubscriptionRefresh}
-        />
+  if (props.section === 'conversion') {
+    return (
+      <div className='space-y-4'>
+        <Tabs
+          value={conversionMode}
+          onValueChange={(value) =>
+            setConversionMode(value as 'wallet' | 'plan')
+          }
+        >
+          <TabsList className='grid w-full max-w-xl grid-cols-2'>
+            <TabsTrigger value='wallet'>{t('Wallet balances')}</TabsTrigger>
+            <TabsTrigger value='plan'>{t('Plan quota')}</TabsTrigger>
+          </TabsList>
+        </Tabs>
 
-        <WalletResetOpportunityPanel
-          resetOpportunity={resetOpportunity}
-          currentSubscriptionTitle={currentSubscriptionPlanMeta?.title}
-          canUseResetOpportunity={canUseResetOpportunity}
-          usingResetOpportunity={usingResetOpportunity}
-          onUseResetOpportunity={() => void handleUseResetOpportunity()}
-        />
+        {conversionMode === 'wallet' ? (
+          <WalletQuotaConversionCard
+            onUserRefresh={props.onUserRefresh}
+            onOpenHistory={props.onOpenConversionHistory}
+          />
+        ) : (
+          <SubscriptionClaudeConversionCard
+            subscriptionData={props.subscriptionData}
+            loading={props.subscriptionLoading}
+            planTitles={Object.fromEntries(
+              Array.from(planMetaMap.entries()).map(([id, value]) => [
+                id,
+                {
+                  title: value.title || t('Plan #{{id}}', { id }),
+                  subtitle: value.subtitle || t('Subscription'),
+                },
+              ])
+            )}
+            onRefresh={props.onSubscriptionRefresh}
+          />
+        )}
       </div>
+    )
+  }
+
+  return (
+    <div className='space-y-4'>
+      <WalletResetOpportunityPanel
+        resetOpportunity={resetOpportunity}
+        currentSubscriptionTitle={currentSubscriptionPlanMeta?.title}
+        canUseResetOpportunity={canUseResetOpportunity}
+        usingResetOpportunity={usingResetOpportunity}
+        onUseResetOpportunity={() => void handleUseResetOpportunity()}
+      />
 
       <WalletBillingOrderPanel
         draftFundingSourceOrder={draftFundingSourceOrder}

@@ -6,6 +6,13 @@ import (
 )
 
 func RegisterCommerceRoutes(apiRouter *gin.RouterGroup, anonymousRequestBodyLimit gin.HandlerFunc) {
+	walletRoute := apiRouter.Group("/wallet")
+	walletRoute.Use(middleware.UserAuth())
+	{
+		walletRoute.GET("/quota-conversions", getWalletQuotaConversions)
+		walletRoute.POST("/quota-conversions", middleware.CriticalRateLimit(), createWalletQuotaConversion)
+	}
+
 	subscriptionRoute := apiRouter.Group("/subscription")
 	subscriptionRoute.Use(middleware.UserAuth())
 	{

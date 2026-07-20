@@ -53,6 +53,7 @@ func setupRedemptionTestDB(t *testing.T) *gorm.DB {
 		&commerceschema.GroupBuyOrder{},
 		&commerceschema.GroupBuyMember{},
 		&commerceschema.SubscriptionClaudeConversion{},
+		&commerceschema.WalletQuotaConversion{},
 		&commerceschema.BlindBoxOrder{},
 		&commerceschema.BlindBoxCredit{},
 		&commerceschema.BlindBoxOpenRecord{},

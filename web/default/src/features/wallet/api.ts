@@ -45,6 +45,9 @@ import type {
   BlindBoxOrderStatusResponse,
   BlindBoxProp,
   BlindBoxHistoryResponse,
+  WalletQuotaConversionOverviewResponse,
+  WalletQuotaConversionRequest,
+  WalletQuotaConversionResponse,
 } from './types'
 
 // ============================================================================
@@ -63,6 +66,18 @@ export function isApiSuccess(response: ApiResponse): boolean {
  */
 export async function getTopupInfo(): Promise<TopupInfoResponse> {
   const res = await api.get('/api/user/topup/info')
+  return res.data
+}
+
+export async function getWalletQuotaConversions(): Promise<WalletQuotaConversionOverviewResponse> {
+  const res = await api.get('/api/wallet/quota-conversions')
+  return res.data
+}
+
+export async function createWalletQuotaConversion(
+  request: WalletQuotaConversionRequest
+): Promise<WalletQuotaConversionResponse> {
+  const res = await api.post('/api/wallet/quota-conversions', request)
   return res.data
 }
 

@@ -97,6 +97,43 @@ export interface CreemPaymentRequest {
 
 export type WalletType = 'default' | 'claude'
 
+export type WalletQuotaConversionDirection =
+  | 'standard_to_claude'
+  | 'claude_to_standard'
+
+export interface WalletQuotaConversion {
+  id: number
+  user_id: number
+  request_id: string
+  direction: WalletQuotaConversionDirection
+  status: string
+  source_quota: number
+  target_quota: number
+  standard_quota_before: number
+  standard_quota_after: number
+  claude_quota_before: number
+  claude_quota_after: number
+  created_at: number
+}
+
+export interface WalletQuotaConversionOverview {
+  standard_per_claude: number
+  quota_per_usd: number
+  standard_quota: number
+  claude_quota: number
+  recent_conversions: WalletQuotaConversion[]
+}
+
+export interface WalletQuotaConversionRequest {
+  direction: WalletQuotaConversionDirection
+  source_quota: number
+  request_id: string
+}
+
+export type WalletQuotaConversionOverviewResponse =
+  ApiResponse<WalletQuotaConversionOverview>
+export type WalletQuotaConversionResponse = ApiResponse<WalletQuotaConversion>
+
 /**
  * Payment method configuration
  */

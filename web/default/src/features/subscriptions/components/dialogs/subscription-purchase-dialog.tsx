@@ -56,6 +56,7 @@ import type {
   SubscriptionPayResponse,
   SubscriptionPurchaseType,
 } from '../../types'
+import { PackageModelScopeNotice } from '../package-model-scope-notice'
 
 interface PaymentMethod {
   type: string
@@ -658,6 +659,7 @@ export function SubscriptionPurchaseDialog(props: Props) {
               </div>
 
               <div className='px-4 py-4 sm:px-5'>
+                <PackageModelScopeNotice className='mb-4' />
                 {firstPurchaseDiscountApplied ? (
                   <div className='border-primary/25 bg-primary/5 mb-4 flex items-start gap-3 rounded-lg border px-4 py-3'>
                     <Percent

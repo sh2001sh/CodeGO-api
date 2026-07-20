@@ -28,6 +28,7 @@ import {
 } from '@/components/page-transition'
 import { SubscriptionFuelDialog } from '@/features/subscriptions/components/dialogs/subscription-fuel-dialog'
 import { SubscriptionPurchaseDialog } from '@/features/subscriptions/components/dialogs/subscription-purchase-dialog'
+import { PackageModelScopeNotice } from '@/features/subscriptions/components/package-model-scope-notice'
 import type {
   PlanRecord,
   SubscriptionPurchaseType,
@@ -229,6 +230,7 @@ export function PackagesPage() {
                 }
                 contentClassName='space-y-5'
               >
+                <PackageModelScopeNotice />
                 {primaryPlanZones.map((zone) => {
                   if (
                     zone.id === 'monthly' &&
