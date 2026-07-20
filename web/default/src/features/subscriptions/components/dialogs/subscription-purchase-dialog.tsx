@@ -671,7 +671,7 @@ export function SubscriptionPurchaseDialog(props: Props) {
                         套餐首购 {Number(firstPurchaseDiscount.toFixed(1))} 折
                       </p>
                       <p className='text-muted-foreground mt-0.5 text-xs leading-5'>
-                        优惠已自动应用于你的首次套餐购买，本订单不会同时消耗盲盒套餐折扣卡。
+                        优惠已自动应用于你的首次月卡购买，本订单不会同时消耗盲盒套餐折扣卡。
                       </p>
                     </div>
                   </div>

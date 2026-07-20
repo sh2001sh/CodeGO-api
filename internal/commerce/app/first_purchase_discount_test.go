@@ -59,9 +59,27 @@ func TestApplyFirstPurchaseDiscountTxReservesEligibilityOnce(t *testing.T) {
 	plan := &commerceschema.SubscriptionPlan{
 		Id:            1,
 		Title:         "Lite月卡",
+		PlanType:      commerceschema.SubscriptionPlanTypeMonthly,
 		DurationUnit:  commerceschema.SubscriptionDurationMonth,
 		DurationValue: 1,
 		PriceAmount:   100,
+	}
+	require.NoError(t, db.Create(plan).Error)
+	excludedPlans := []*commerceschema.SubscriptionPlan{
+		{Id: 2, Title: "新人体验卡", PlanType: commerceschema.SubscriptionPlanTypeStarter, DurationUnit: commerceschema.SubscriptionDurationDay, DurationValue: 1, PriceAmount: 1.9},
+		{Id: 3, Title: "50刀日卡", PlanType: commerceschema.SubscriptionPlanTypeDaily, DurationUnit: commerceschema.SubscriptionDurationDay, DurationValue: 1, PriceAmount: 8.9},
+		{Id: 4, Title: "标准周卡", PlanType: commerceschema.SubscriptionPlanTypeWeekly, DurationUnit: commerceschema.SubscriptionDurationDay, DurationValue: 7, PriceAmount: 34.9},
+	}
+	for _, excludedPlan := range excludedPlans {
+		require.NoError(t, db.Create(excludedPlan).Error)
+		excludedPreview, err := ResolveSubscriptionPurchasePreview(user.Id, excludedPlan)
+		require.NoError(t, err)
+		require.False(t, excludedPreview.FirstPurchaseDiscountApplied)
+		require.InDelta(t, excludedPlan.PriceAmount, excludedPreview.AmountDue, 0.001)
+		require.NoError(t, db.Create(&commerceschema.SubscriptionOrder{
+			UserId: user.Id, PlanId: excludedPlan.Id, Money: excludedPlan.PriceAmount,
+			TradeNo: "excluded-first-purchase-" + excludedPlan.Title, Status: "success",
+		}).Error)
 	}
 	firstPurchasePreview, err := ResolveSubscriptionPurchasePreview(user.Id, plan)
 	require.NoError(t, err)
@@ -69,7 +87,7 @@ func TestApplyFirstPurchaseDiscountTxReservesEligibilityOnce(t *testing.T) {
 	require.InDelta(t, 80, firstPurchasePreview.AmountDue, 0.001)
 
 	preview := &commercedomain.SubscriptionPurchasePreview{BaseAmountDue: 100, AmountDue: 100}
-	require.NoError(t, applyFirstPurchaseDiscountPreview(db, user.Id, preview, now))
+	require.NoError(t, applyFirstPurchaseDiscountPreview(db, user.Id, plan, preview, now))
 	require.True(t, preview.FirstPurchaseDiscountApplied)
 	require.InDelta(t, 80, preview.AmountDue, 0.001)
 
@@ -92,7 +110,7 @@ func TestApplyFirstPurchaseDiscountTxReservesEligibilityOnce(t *testing.T) {
 
 	second := commerceschema.SubscriptionOrder{
 		UserId:       user.Id,
-		PlanId:       2,
+		PlanId:       plan.Id,
 		Money:        100,
 		TradeNo:      "first-discount-2",
 		PurchaseType: commerceschema.SubscriptionPurchaseTypeNormal,
@@ -108,7 +126,7 @@ func TestApplyFirstPurchaseDiscountTxReservesEligibilityOnce(t *testing.T) {
 	require.InDelta(t, 100, second.Money, 0.001)
 
 	reservedPreview := &commercedomain.SubscriptionPurchasePreview{BaseAmountDue: 100, AmountDue: 100}
-	require.NoError(t, applyFirstPurchaseDiscountPreview(db, user.Id, reservedPreview, now))
+	require.NoError(t, applyFirstPurchaseDiscountPreview(db, user.Id, plan, reservedPreview, now))
 	require.False(t, reservedPreview.FirstPurchaseDiscountApplied)
 	require.InDelta(t, 100, reservedPreview.AmountDue, 0.001)
 }

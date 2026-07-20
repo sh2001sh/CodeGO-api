@@ -23,7 +23,10 @@ import { useTranslation } from 'react-i18next'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Skeleton } from '@/components/ui/skeleton'
-import { subscriptionQuotaUnitsToUSD } from '@/features/subscriptions/lib'
+import {
+  getSubscriptionDisabledReasonText,
+  subscriptionQuotaUnitsToUSD,
+} from '@/features/subscriptions/lib'
 import type {
   PlanRecord,
   SubscriptionPurchaseType,
@@ -105,14 +108,15 @@ export function CurrentPackagePanel(props: {
 }) {
   const { t } = useTranslation()
   const planMap = useMemo(() => {
-    const map = new Map<number, PlanRecord['plan']>()
-    for (const item of props.plans) map.set(item.plan.id, item.plan)
+    const map = new Map<number, PlanRecord>()
+    for (const item of props.plans) map.set(item.plan.id, item)
     return map
   }, [props.plans])
   const current = props.subscriptions[0]
-  const currentPlan = current
+  const currentPlanRecord = current
     ? planMap.get(current.subscription.plan_id)
     : undefined
+  const currentPlan = currentPlanRecord?.plan
   const currentTitle =
     translatePlanTitle(currentPlan?.title, t) ||
     (current ? t('Plan #{{id}}', { id: current.subscription.plan_id }) : '')
@@ -122,6 +126,10 @@ export function CurrentPackagePanel(props: {
     currentPlan?.fuel_enabled === true &&
     (currentPlan?.fuel_min_quota || 0) > 0 &&
     (currentPlan?.fuel_quota_step || 0) > 0
+  const renewalBlocked = currentPlanRecord?.action === 'disabled'
+  const renewalBlockedReason = getSubscriptionDisabledReasonText(
+    currentPlanRecord?.disabled_reason
+  )
   if (!props.loading && !current) {
     return null
   }
@@ -179,13 +187,24 @@ export function CurrentPackagePanel(props: {
                 {t('Add quota')}
               </Button>
             ) : null}
-            <Button
-              size='sm'
-              variant='outline'
-              render={<Link to='/packages' />}
-            >
-              {t('Renew')}
-            </Button>
+            {renewalBlocked ? (
+              <div className='flex max-w-64 flex-col items-end gap-1'>
+                <Button size='sm' variant='outline' disabled>
+                  {t('Renewal unavailable')}
+                </Button>
+                <span className='text-muted-foreground text-right text-xs leading-4'>
+                  {renewalBlockedReason}
+                </span>
+              </div>
+            ) : (
+              <Button
+                size='sm'
+                variant='outline'
+                render={<Link to='/packages' />}
+              >
+                {t('Renew')}
+              </Button>
+            )}
           </div>
         </>
       ) : null}

@@ -15,6 +15,7 @@ import type {
   SubscriptionPurchaseType,
   UserSubscriptionRecord,
 } from '@/features/subscriptions/types'
+import { buildPackageQuotaTiers } from './lib/collective-benefit'
 import {
   translateDisabledReason,
   translateCollectiveTierLabel,
@@ -22,7 +23,6 @@ import {
   translatePlanSubtitle,
   translatePlanTitle,
 } from './lib/display'
-import { buildPackageQuotaTiers } from './lib/collective-benefit'
 
 export function PackagePlanCard(props: {
   record: PlanRecord
@@ -45,7 +45,10 @@ export function PackagePlanCard(props: {
   const limit = Number(plan.max_purchase_per_user || 0)
   const limitReached = limit > 0 && props.purchaseCount >= limit
   const actionLabel = translatePlanAction(props.record.action, t)
-  const effectiveAmount = props.record.amount_due ?? plan.price_amount
+  const effectiveAmount =
+    props.record.action === 'disabled'
+      ? plan.price_amount
+      : (props.record.amount_due ?? plan.price_amount)
   const firstPurchaseDiscountApplied =
     props.record.first_purchase_discount_applied === true
   const firstPurchaseDiscount = Number(

@@ -13,8 +13,8 @@ import (
 	"gorm.io/gorm/clause"
 )
 
-func applyFirstPurchaseDiscountPreview(db *gorm.DB, userID int, preview *commercedomain.SubscriptionPurchasePreview, now time.Time) error {
-	if db == nil || preview == nil || preview.AmountDue <= 0 {
+func applyFirstPurchaseDiscountPreview(db *gorm.DB, userID int, plan *commerceschema.SubscriptionPlan, preview *commercedomain.SubscriptionPurchasePreview, now time.Time) error {
+	if db == nil || preview == nil || preview.AmountDue <= 0 || !isFirstPurchaseDiscountPlan(plan) {
 		return nil
 	}
 	setting := commercestore.GetPaymentSetting()
@@ -41,6 +41,13 @@ func applyFirstPurchaseDiscountTx(tx *gorm.DB, order *commerceschema.Subscriptio
 	if !isFirstPurchaseCampaignActive(setting, now.Unix()) || order.PurchaseType == commerceschema.SubscriptionPurchaseTypeFuel {
 		return nil
 	}
+	plan, err := getSubscriptionPlanRecordTx(tx, order.PlanId)
+	if err != nil {
+		return err
+	}
+	if !isFirstPurchaseDiscountPlan(plan) {
+		return nil
+	}
 
 	var user identityschema.User
 	if err := tx.Clauses(clause.Locking{Strength: "UPDATE"}).Select("id").First(&user, order.UserId).Error; err != nil {
@@ -64,8 +71,13 @@ func isFirstPurchaseDiscountEligible(db *gorm.DB, userID int) (bool, error) {
 		return false, errors.New("invalid first purchase eligibility query")
 	}
 	var count int64
+	eligiblePlanIDs := db.Model(&commerceschema.SubscriptionPlan{}).
+		Select("id").
+		Where("plan_type = ?", commerceschema.SubscriptionPlanTypeMonthly).
+		Where("duration_unit = ?", commerceschema.SubscriptionDurationMonth)
 	err := db.Model(&commerceschema.SubscriptionOrder{}).
 		Where("user_id = ?", userID).
+		Where("plan_id IN (?)", eligiblePlanIDs).
 		Where("COALESCE(purchase_type, '') <> ?", commerceschema.SubscriptionPurchaseTypeFuel).
 		Where("status = ? OR (status = ? AND first_purchase_discount_applied = ?)",
 			constant.TopUpStatusSuccess,
@@ -74,6 +86,12 @@ func isFirstPurchaseDiscountEligible(db *gorm.DB, userID int) (bool, error) {
 		).
 		Count(&count).Error
 	return count == 0, err
+}
+
+func isFirstPurchaseDiscountPlan(plan *commerceschema.SubscriptionPlan) bool {
+	return plan != nil &&
+		plan.PlanType == commerceschema.SubscriptionPlanTypeMonthly &&
+		plan.DurationUnit == commerceschema.SubscriptionDurationMonth
 }
 
 func isFirstPurchaseCampaignActive(setting *commercestore.PaymentSetting, now int64) bool {

@@ -15,7 +15,7 @@ import (
 	"gorm.io/gorm"
 )
 
-func TestResolveSubscriptionPurchasePreview_RenewalPriceUsesUsageWithFloor(t *testing.T) {
+func TestResolveSubscriptionPurchasePreview_RenewalRequiresThirtyPercentUsage(t *testing.T) {
 	db := setupRedemptionTestDB(t)
 	plan := &commerceschema.SubscriptionPlan{
 		Id:            9510,
@@ -28,10 +28,12 @@ func TestResolveSubscriptionPurchasePreview_RenewalPriceUsesUsageWithFloor(t *te
 	users := []*identityschema.User{
 		{Id: 9511, Username: "renewal_price_usage", AffCode: "renewal-price-usage", Status: constant.UserStatusEnabled},
 		{Id: 9512, Username: "renewal_price_floor", AffCode: "renewal-price-floor", Status: constant.UserStatusEnabled},
+		{Id: 9515, Username: "renewal_too_early", AffCode: "renewal-too-early", Status: constant.UserStatusEnabled},
 	}
 	records := []*commerceschema.UserSubscription{
 		{Id: 9513, UserId: 9511, PlanId: plan.Id, AmountTotal: 1000, AmountUsed: 600, EndTime: time.Now().Add(time.Hour).Unix(), Status: "active"},
-		{Id: 9514, UserId: 9512, PlanId: plan.Id, AmountTotal: 1000, AmountUsed: 100, EndTime: time.Now().Add(time.Hour).Unix(), Status: "active"},
+		{Id: 9514, UserId: 9512, PlanId: plan.Id, AmountTotal: 1000, AmountUsed: 300, EndTime: time.Now().Add(time.Hour).Unix(), Status: "active"},
+		{Id: 9516, UserId: 9515, PlanId: plan.Id, AmountTotal: 1000, AmountUsed: 299, EndTime: time.Now().Add(time.Hour).Unix(), Status: "active"},
 	}
 	require.NoError(t, db.Create(plan).Error)
 	for _, user := range users {
@@ -50,6 +52,12 @@ func TestResolveSubscriptionPurchasePreview_RenewalPriceUsesUsageWithFloor(t *te
 	require.NoError(t, err)
 	assert.Equal(t, commerceschema.SubscriptionPurchaseActionRenew, floorPreview.Action)
 	assert.Equal(t, 30.0, floorPreview.AmountDue)
+
+	blockedPreview, err := ResolveSubscriptionPurchasePreview(9515, plan)
+	require.NoError(t, err)
+	assert.Equal(t, commerceschema.SubscriptionPurchaseActionDisabled, blockedPreview.Action)
+	assert.Equal(t, subscriptionRenewalQuotaThresholdReason, blockedPreview.DisabledReason)
+	assert.Zero(t, blockedPreview.AmountDue)
 
 	assert.Equal(t, 100.0, calculateRenewalPrice(plan, &commerceschema.UserSubscription{}))
 }

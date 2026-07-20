@@ -78,5 +78,14 @@ export function translateDisabledReason(
   ) {
     return t('A higher active plan with remaining quota prevents downgrading.')
   }
+  if (
+    normalized.includes(
+      'renewal requires at least 30% of the current package quota to be used'
+    )
+  ) {
+    return t(
+      'Renewal is available after at least 30% of the current package quota is used.'
+    )
+  }
   return normalized
 }

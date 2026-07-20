@@ -142,7 +142,7 @@ export function FirstPurchaseDiscountSection(props: {
     <SettingsSection
       title={t('First purchase campaign')}
       description={t(
-        'Offer a time-limited discount on each user’s first successful plan purchase.'
+        'Offer a time-limited discount on each user’s first successful monthly plan purchase. Starter, daily, and weekly plans are excluded.'
       )}
     >
       <Form {...form}>

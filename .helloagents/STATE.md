@@ -1,26 +1,26 @@
 # Main Goal
-Improve the wallet information architecture, keep bidirectional quota conversion usable, and clearly state that subscription packages only apply to non-Claude models.
+Publish the current wallet/package release with safe monthly-plan first-purchase and renewal rules.
 
 # Current Status
-- Refactored `/wallet` around a compact account overview with standard quota, Claude quota, usage, request count, active subscriptions, and quick actions.
-- Split wallet tasks into `充值与兑换`, `额度转换`, and `扣费设置` tabs instead of showing all modules at once.
-- Split conversion into wallet-quota and package-quota views, and moved conversion records into an on-demand side sheet.
-- Added bidirectional wallet conversion at the fixed rate `4 standard = 1 Claude`, including authenticated APIs, migration, transactional balance updates, locking, idempotency, ledger synchronization, and conversion records.
-- Added a shared package scope notice stating `套餐仅可用于非 Claude 模型` on `/packages` and in the final purchase confirmation dialog.
-- Added supporting Chinese translations for the updated wallet and package purchase UI.
-- The user authorized committing and pushing all current changes and publishing the next multi-architecture image as `v2.0.0-rc.33.9-alpha.37`.
+- Added bidirectional wallet conversion at `4 standard = 1 Claude`, including transactional ledger updates, locking, idempotency, APIs, migration, history, and wallet UI.
+- Refactored `/wallet` into compact account overview plus funding, conversion, and billing-setting tabs.
+- Package quota is explicitly limited to non-Claude models on `/packages` and in the purchase dialog.
+- First-purchase campaign discounts now apply only to the user's first monthly plan purchase.
+- Starter, daily, and weekly plans neither receive nor consume first-purchase campaign eligibility.
+- Renewal is blocked until at least 30% of the current package quota has been used (remaining quota at or below 70%).
+- Renewal price follows the used percentage with a 30% minimum; renewal restarts the term, restores full quota, and does not carry unused quota forward.
+- The package overview and plan card disable renewal/purchase before the threshold and show the reason; disabled plans retain their original displayed price instead of showing zero.
+- Preserved concurrent upstream timeout/failure-classification changes, including a configurable response-header timeout and focused tests.
+- Feature commit `c5f7ab349` exists locally; the branch has not yet been pushed and release tag `v2.0.0-rc.33.9-alpha.37` has not yet been created.
 
 # Verification
-- Desktop 1440x1000 and mobile 390x844 browser checks passed for `/wallet`, wallet/package conversion tabs, conversion history, `/packages`, and the purchase dialog.
-- Browser console checks reported zero errors and zero warnings; no horizontal overflow or incoherent overlap was found.
-- Saved refreshed wallet screenshots to `output/playwright/wallet-redesign-desktop.png` and `output/playwright/wallet-redesign-mobile.png` using mocked local account/API data for visual review only.
-- Wallet conversion application and HTTP tests passed for both directions, idempotency, insufficient-balance rollback, and exact 4:1 validation.
-- Billing, commerce app, migration, and focused commerce HTTP tests passed.
-- The complete commerce HTTP package retains a pre-existing order-title cache isolation issue unrelated to this work; its failing test passes in isolation.
-- Prettier checks, `npm run typecheck`, `npm run build`, and `git diff --check` passed.
+- Commerce app, billing app, migration/store, focused commerce HTTP, gateway execution, sync HTTP provider, and HTTP client tests passed.
+- The full commerce HTTP package retains the known order-title cache isolation failure; the affected test passes in isolation.
+- Frontend typecheck, production build, targeted Prettier checks, and `git diff --check` passed.
+- Desktop and 390px mobile browser checks passed for package rules, disabled renewal state, correct price display, and responsive layout.
 
 # Next Step
-- Commit and push the feature changes, create and push tag `v2.0.0-rc.33.9-alpha.37`, then monitor the Docker publishing workflow to completion.
+- Commit the monthly first-purchase/renewal changes and concurrent timeout changes separately, push the branch, create and push `v2.0.0-rc.33.9-alpha.37`, then monitor Docker publishing to completion.
 
 # Blockers
 - None.
