@@ -21,6 +21,34 @@ var (
 	proxyClients    = make(map[string]*http.Client)
 )
 
+func relayResponseHeaderTimeout() time.Duration {
+	if platformconfig.RelayResponseHeaderTimeout <= 0 {
+		return 0
+	}
+	return time.Duration(platformconfig.RelayResponseHeaderTimeout) * time.Second
+}
+
+func newOutboundTransport(proxyFunc func(*http.Request) (*url.URL, error), dialContext func(context.Context, string, string) (net.Conn, error)) *http.Transport {
+	transport := &http.Transport{
+		MaxIdleConns:        platformconfig.RelayMaxIdleConns,
+		MaxIdleConnsPerHost: platformconfig.RelayMaxIdleConnsPerHost,
+		ForceAttemptHTTP2:   true,
+		Proxy:               proxyFunc,
+		DialContext:         dialContext,
+	}
+	if timeout := relayResponseHeaderTimeout(); timeout > 0 {
+		transport.ResponseHeaderTimeout = timeout
+		transport.TLSHandshakeTimeout = timeout
+		if transport.DialContext == nil {
+			transport.DialContext = (&net.Dialer{Timeout: timeout}).DialContext
+		}
+	}
+	if platformconfig.TLSInsecureSkipVerify {
+		transport.TLSClientConfig = platformconfig.InsecureTLSConfig
+	}
+	return transport
+}
+
 func checkRedirect(req *http.Request, via []*http.Request) error {
 	fetchSetting := platformstore.GetFetchSetting()
 	urlStr := req.URL.String()
@@ -35,15 +63,7 @@ func checkRedirect(req *http.Request, via []*http.Request) error {
 
 // InitHTTPClient initializes the shared outbound HTTP client.
 func InitHTTPClient() {
-	transport := &http.Transport{
-		MaxIdleConns:        platformconfig.RelayMaxIdleConns,
-		MaxIdleConnsPerHost: platformconfig.RelayMaxIdleConnsPerHost,
-		ForceAttemptHTTP2:   true,
-		Proxy:               http.ProxyFromEnvironment,
-	}
-	if platformconfig.TLSInsecureSkipVerify {
-		transport.TLSClientConfig = platformconfig.InsecureTLSConfig
-	}
+	transport := newOutboundTransport(http.ProxyFromEnvironment, nil)
 
 	if platformconfig.RelayTimeout == 0 {
 		httpClient = &http.Client{
@@ -108,15 +128,7 @@ func NewProxyHTTPClient(proxyURL string) (*http.Client, error) {
 
 	switch parsedURL.Scheme {
 	case "http", "https":
-		transport := &http.Transport{
-			MaxIdleConns:        platformconfig.RelayMaxIdleConns,
-			MaxIdleConnsPerHost: platformconfig.RelayMaxIdleConnsPerHost,
-			ForceAttemptHTTP2:   true,
-			Proxy:               http.ProxyURL(parsedURL),
-		}
-		if platformconfig.TLSInsecureSkipVerify {
-			transport.TLSClientConfig = platformconfig.InsecureTLSConfig
-		}
+		transport := newOutboundTransport(http.ProxyURL(parsedURL), nil)
 		client := &http.Client{
 			Transport:     transport,
 			CheckRedirect: checkRedirect,
@@ -144,17 +156,9 @@ func NewProxyHTTPClient(proxyURL string) (*http.Client, error) {
 			return nil, err
 		}
 
-		transport := &http.Transport{
-			MaxIdleConns:        platformconfig.RelayMaxIdleConns,
-			MaxIdleConnsPerHost: platformconfig.RelayMaxIdleConnsPerHost,
-			ForceAttemptHTTP2:   true,
-			DialContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
-				return dialer.Dial(network, addr)
-			},
-		}
-		if platformconfig.TLSInsecureSkipVerify {
-			transport.TLSClientConfig = platformconfig.InsecureTLSConfig
-		}
+		transport := newOutboundTransport(nil, func(ctx context.Context, network, addr string) (net.Conn, error) {
+			return dialer.Dial(network, addr)
+		})
 
 		client := &http.Client{Transport: transport, CheckRedirect: checkRedirect}
 		client.Timeout = time.Duration(platformconfig.RelayTimeout) * time.Second

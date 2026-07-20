@@ -44,3 +44,33 @@ func TestIsModelScopedUpstreamFailure(t *testing.T) {
 		errors.New("access denied"), types.ErrorCodeBadResponseStatusCode, http.StatusForbidden,
 	)))
 }
+
+func TestClassifyUpstreamFailure(t *testing.T) {
+	testCases := []struct {
+		name     string
+		err      *types.NewAPIError
+		expected upstreamFailureClass
+	}{
+		{
+			name:     "upstream account exhaustion",
+			err:      types.NewOpenAIError(errors.New("upstream balance exhausted"), types.ErrorCodeBadResponseStatusCode, http.StatusForbidden),
+			expected: upstreamFailureAccountExhausted,
+		},
+		{
+			name:     "response header timeout",
+			err:      types.NewErrorWithStatusCode(errors.New("timeout awaiting response headers"), types.ErrorCodeChannelResponseTimeExceeded, http.StatusGatewayTimeout),
+			expected: upstreamFailureTransient,
+		},
+		{
+			name:     "closed upstream stream",
+			err:      types.NewOpenAIError(errors.New("responses stream closed before response.completed"), types.ErrorCodeBadResponseStatusCode, http.StatusInternalServerError),
+			expected: upstreamFailureTransient,
+		},
+	}
+
+	for _, testCase := range testCases {
+		t.Run(testCase.name, func(t *testing.T) {
+			require.Equal(t, testCase.expected, classifyUpstreamFailure(testCase.err))
+		})
+	}
+}

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -143,6 +144,14 @@ func DoRequest(c *gin.Context, req *http.Request, info *relaycommon.RelayInfo) (
 	resp, err := client.Do(req)
 	if err != nil {
 		logger.LogError(c, "do request failed: "+err.Error())
+		if isUpstreamResponseTimeout(err) {
+			return nil, types.NewError(
+				err,
+				types.ErrorCodeChannelResponseTimeExceeded,
+				types.ErrOptionWithStatusCode(http.StatusGatewayTimeout),
+				types.ErrOptionWithHideErrMsg("upstream response timed out"),
+			)
+		}
 		return nil, types.NewError(err, types.ErrorCodeDoRequestFailed, types.ErrOptionWithHideErrMsg("upstream error: do request failed"))
 	}
 	if resp == nil {
@@ -156,6 +165,18 @@ func DoRequest(c *gin.Context, req *http.Request, info *relaycommon.RelayInfo) (
 	_ = req.Body.Close()
 	_ = c.Request.Body.Close()
 	return resp, nil
+}
+
+func isUpstreamResponseTimeout(err error) bool {
+	if err == nil {
+		return false
+	}
+	var timeoutErr interface{ Timeout() bool }
+	if errors.As(err, &timeoutErr) && timeoutErr.Timeout() {
+		return true
+	}
+	message := strings.ToLower(err.Error())
+	return strings.Contains(message, "timeout awaiting response headers") || strings.Contains(message, "response header timeout")
 }
 
 func DoAPIRequest(a RequestAdaptor, c *gin.Context, info *relaycommon.RelayInfo, requestBody io.Reader) (*http.Response, error) {

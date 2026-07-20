@@ -3,8 +3,6 @@ package app
 import (
 	"fmt"
 	httpctx "github.com/sh2001sh/new-api/internal/platform/transport/http/httpctx"
-	"net/http"
-	"strings"
 	"time"
 
 	"github.com/bytedance/gopkg/util/gopool"
@@ -24,7 +22,9 @@ func ProcessChannelError(c *gin.Context, channelError types.ChannelError, err *t
 	logger.LogError(c, fmt.Sprintf("channel error (channel #%d, status code: %d): %s", channelError.ChannelId, err.StatusCode, platformtext.LocalLogPreview(err.Error())))
 
 	modelName := c.GetString("original_model")
-	if IsModelScopedUpstreamFailure(err) && modelName != "" {
+	failureClass := classifyUpstreamFailure(err)
+	modelScopedFailure := failureClass == upstreamFailureModelUnavailable || failureClass == upstreamFailureAccountExhausted
+	if modelScopedFailure && modelName != "" {
 		group := selectedChannelGroup(c)
 		alternative, lookupErr := gatewaystore.HasAlternativeEnabledAbility(channelError.ChannelId, group, modelName)
 		if lookupErr != nil {
@@ -45,7 +45,7 @@ func ProcessChannelError(c *gin.Context, channelError types.ChannelError, err *t
 			DisableChannel(channelError, err.ErrorWithStatusCode())
 		})
 	}
-	if isRetryableChannelFailure(err) && !IsModelScopedUpstreamFailure(err) {
+	if isRetryableChannelFailure(err) && !modelScopedFailure {
 		gatewayruntime.RecordChannelRetryableFailureWithCooldown(channelError.ChannelId, c.GetString("original_model"), gatewayruntime.RetryableFailureCooldown(err.StatusCode))
 		gatewayruntime.InvalidateChannelAffinityForCurrentRequest(c)
 	}
@@ -64,6 +64,7 @@ func ProcessChannelError(c *gin.Context, channelError types.ChannelError, err *t
 		other["error_type"] = err.GetErrorType()
 		other["error_code"] = err.GetErrorCode()
 		other["status_code"] = err.StatusCode
+		other["upstream_failure_class"] = failureClass
 		other["channel_id"] = channelID
 		other["channel_name"] = c.GetString("channel_name")
 		other["channel_type"] = c.GetInt("channel_type")
@@ -116,48 +117,10 @@ func channelHealthFailureCount(channelID int, modelName string) int {
 	return state.ConsecutiveRetryableFailures
 }
 
-// IsModelUnavailableError identifies an upstream rejection that applies to
-// the requested model rather than to the entire channel credential.
-func IsModelUnavailableError(err *types.NewAPIError) bool {
-	if err == nil {
-		return false
-	}
-	if err.GetErrorCode() == types.ErrorCodeModelNotFound {
-		return true
-	}
-	message := strings.ToLower(err.Error())
-	return strings.Contains(message, "model") &&
-		(strings.Contains(message, "not found") || strings.Contains(message, "not exist") || strings.Contains(message, "not support") || strings.Contains(message, "unavailable"))
-}
-
-// IsModelScopedUpstreamFailure identifies provider failures that can be
-// isolated to one model route without disabling the full channel.
-func IsModelScopedUpstreamFailure(err *types.NewAPIError) bool {
-	if IsModelUnavailableError(err) {
-		return true
-	}
-	if err == nil {
-		return false
-	}
-	message := strings.ToLower(err.Error())
-	return strings.Contains(message, "insufficient") ||
-		strings.Contains(message, "quota") ||
-		strings.Contains(message, "balance") ||
-		strings.Contains(message, "unavailable") ||
-		err.StatusCode == http.StatusServiceUnavailable
-}
-
 func selectedChannelGroup(c *gin.Context) string {
 	group := httpctx.GetContextKeyString(c, constant.ContextKeyAutoGroup)
 	if group != "" {
 		return group
 	}
 	return httpctx.GetContextKeyString(c, constant.ContextKeyUsingGroup)
-}
-
-func isRetryableChannelFailure(err *types.NewAPIError) bool {
-	if err == nil || types.IsSkipRetryError(err) {
-		return false
-	}
-	return types.IsChannelError(err) || err.StatusCode == 429 || err.StatusCode >= 500
 }
