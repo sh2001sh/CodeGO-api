@@ -371,7 +371,7 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
               <div className='text-muted-foreground mt-2 space-y-1.5 text-xs leading-5'>
                 <div>
                   连续 {props.data?.pity_threshold || 0}{' '}
-                  次未获得高价值奖励后，下次将触发保底。
+                  次未获得高价值奖励时，当次触发保底。
                 </div>
                 <div>
                   保底奖励按 ${(props.data?.pity_guarantee_usd || 0).toFixed(0)}{' '}

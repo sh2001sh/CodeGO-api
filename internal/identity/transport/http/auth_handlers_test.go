@@ -192,6 +192,59 @@ func TestRegisterCreatesPasswordUser(t *testing.T) {
 	}
 }
 
+func TestRegisterCreatesPasswordUserWithAffiliateCode(t *testing.T) {
+	db := setupDesktopHTTPTestDB(t)
+	originalGenerateDefaultToken := constant.GenerateDefaultToken
+	constant.GenerateDefaultToken = false
+	t.Cleanup(func() {
+		constant.GenerateDefaultToken = originalGenerateDefaultToken
+	})
+
+	inviter := &identityschema.User{
+		Id:          1,
+		ExternalId:  "INV001",
+		Username:    "affiliate-inviter",
+		Password:    "password123",
+		DisplayName: "Affiliate Inviter",
+		Role:        constant.RoleCommonUser,
+		Status:      constant.UserStatusEnabled,
+		Group:       "default",
+		AffCode:     "AFF1",
+	}
+	if err := db.Create(inviter).Error; err != nil {
+		t.Fatalf("failed to seed inviter: %v", err)
+	}
+
+	body, err := platformencoding.Marshal(map[string]any{
+		"username": "aff-register-user",
+		"password": "password123",
+		"aff_code": "AFF1",
+	})
+	if err != nil {
+		t.Fatalf("failed to encode register request: %v", err)
+	}
+	engine := gin.New()
+	engine.Use(sessions.Sessions("session", cookie.NewStore([]byte("auth-test-secret"))))
+	engine.POST("/api/user/register", Register)
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPost, "/api/user/register", bytes.NewReader(body))
+	request.Header.Set("Content-Type", "application/json")
+	engine.ServeHTTP(recorder, request)
+
+	response := decodeAPIResponse(t, recorder)
+	if !response.Success {
+		t.Fatalf("expected register success, got %#v", response)
+	}
+
+	var invitee identityschema.User
+	if err := db.Where("username = ?", "aff-register-user").First(&invitee).Error; err != nil {
+		t.Fatalf("failed to reload registered invitee: %v", err)
+	}
+	if invitee.InviterId != inviter.Id {
+		t.Fatalf("expected inviter ID %d, got %d", inviter.Id, invitee.InviterId)
+	}
+}
+
 func TestLogoutClearsSession(t *testing.T) {
 	engine := gin.New()
 	engine.Use(sessions.Sessions("session", cookie.NewStore([]byte("auth-test-secret"))))

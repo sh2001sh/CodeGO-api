@@ -218,6 +218,9 @@ func ResetSubscriptionPeriodProjection(subscriptionID int) (*commerceschema.User
 		}
 		if usesLegacySubscriptionPeriodicQuota(plan, sub) {
 			sub.AmountUsed = 0
+			if err := restoreSubscriptionLedgerBalanceAfterResetTx(tx, sub, fmt.Sprintf("period-projection:%d:%d", sub.Id, now)); err != nil {
+				return err
+			}
 		} else {
 			sub.PeriodUsed = 0
 		}

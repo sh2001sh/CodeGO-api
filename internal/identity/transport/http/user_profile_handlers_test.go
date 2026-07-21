@@ -222,9 +222,9 @@ func TestGetUserAffiliateCodeCreatesAndPersistsCode(t *testing.T) {
 func TestGetUserAffiliateRewardsOverviewReturnsInviteeStatuses(t *testing.T) {
 	db := setupDesktopHTTPTestDB(t)
 
-	inviter := &identityschema.User{Id: 1, Username: "inviter-user", Password: "password123", DisplayName: "Inviter User", Role: constant.RoleCommonUser, Status: constant.UserStatusEnabled, Group: "default"}
-	inviteeOne := &identityschema.User{Id: 2, Username: "invitee-1", Password: "password123", DisplayName: "Invitee One", Role: constant.RoleCommonUser, Status: constant.UserStatusEnabled, Group: "default", AffCode: "INV1", InviterId: inviter.Id}
-	inviteeTwo := &identityschema.User{Id: 3, Username: "invitee-2", Password: "password123", DisplayName: "Invitee Two", Role: constant.RoleCommonUser, Status: constant.UserStatusEnabled, Group: "default", AffCode: "INV2", InviterId: inviter.Id}
+	inviter := &identityschema.User{Id: 1, ExternalId: "INV001", Username: "inviter-user", Password: "password123", DisplayName: "Inviter User", Role: constant.RoleCommonUser, Status: constant.UserStatusEnabled, Group: "default"}
+	inviteeOne := &identityschema.User{Id: 2, ExternalId: "ITE001", Username: "invitee-1", Password: "password123", DisplayName: "Invitee One", Role: constant.RoleCommonUser, Status: constant.UserStatusEnabled, Group: "default", AffCode: "INV1", InviterId: inviter.Id}
+	inviteeTwo := &identityschema.User{Id: 3, ExternalId: "ITE002", Username: "invitee-2", Password: "password123", DisplayName: "Invitee Two", Role: constant.RoleCommonUser, Status: constant.UserStatusEnabled, Group: "default", AffCode: "INV2", InviterId: inviter.Id}
 	for _, user := range []*identityschema.User{inviter, inviteeOne, inviteeTwo} {
 		if err := db.Create(user).Error; err != nil {
 			t.Fatalf("failed to seed user: %v", err)
@@ -279,6 +279,9 @@ func TestGetUserAffiliateRewardsOverviewReturnsInviteeStatuses(t *testing.T) {
 	}
 	if inviteeStatus, ok := statusByInvitee[inviteeOne.Id]; !ok || !inviteeStatus.MonthCardPurchased || !inviteeStatus.ResetOpportunityEarned {
 		t.Fatalf("expected first invitee to be marked as rewarded, got %#v", inviteeStatus)
+	}
+	if inviteeStatus, ok := statusByInvitee[inviteeOne.Id]; !ok || inviteeStatus.InviteeExternalId != inviteeOne.ExternalId {
+		t.Fatalf("expected invitee public ID, got %#v", inviteeStatus)
 	}
 	if inviteeStatus, ok := statusByInvitee[inviteeTwo.Id]; !ok || inviteeStatus.MonthCardPurchased || inviteeStatus.ResetOpportunityEarned {
 		t.Fatalf("expected second invitee to be unrewarded, got %#v", inviteeStatus)

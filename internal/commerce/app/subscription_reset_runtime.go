@@ -215,6 +215,9 @@ func UseUserSubscriptionResetOpportunity(userID int) (*commerceschema.Subscripti
 		sub.AmountUsed = 0
 		sub.PeriodUsed = 0
 		sub.ModelUsage = ""
+		if err := restoreSubscriptionLedgerBalanceAfterResetTx(tx, &sub, fmt.Sprintf("opportunity:%d:%s", userID, currentMonth)); err != nil {
+			return err
+		}
 		if err := tx.Save(&sub).Error; err != nil {
 			return err
 		}

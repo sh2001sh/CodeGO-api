@@ -120,6 +120,7 @@ function getInviteeName(invitee: AffiliateInviteeRewardStatus) {
   return (
     invitee.invitee_display_name ||
     invitee.invitee_username ||
+    invitee.invitee_external_id ||
     `用户 #${invitee.invitee_id}`
   )
 }
@@ -127,8 +128,15 @@ function getInviteeName(invitee: AffiliateInviteeRewardStatus) {
 export function AffiliateRewardsPage() {
   const shouldReduceMotion = Boolean(useReducedMotion())
   const [usingResetOpportunity, setUsingResetOpportunity] = useState(false)
-  const { overview, affiliateLink, loading, copyAffiliateLink, refetch } =
-    useAffiliate()
+  const {
+    overview,
+    affiliateCode,
+    affiliateLink,
+    loading,
+    copyAffiliateCode,
+    copyAffiliateLink,
+    refetch,
+  } = useAffiliate()
   const subscriptionsQuery = useQuery({
     queryKey: ['subscription', 'self', 'affiliate-rewards'],
     queryFn: getSelfSubscriptionFull,
@@ -284,6 +292,27 @@ export function AffiliateRewardsPage() {
                       复制邀请链接
                     </Button>
                   </div>
+                  <div className='mt-2 grid gap-2 sm:grid-cols-[minmax(0,1fr)_auto]'>
+                    {loading ? (
+                      <Skeleton className='h-10 rounded-xl' />
+                    ) : (
+                      <Input
+                        value={affiliateCode}
+                        readOnly
+                        aria-label='邀请码'
+                        className='h-10 font-mono text-sm'
+                      />
+                    )}
+                    <Button
+                      variant='outline'
+                      onClick={() => void copyAffiliateCode()}
+                      disabled={!affiliateCode}
+                      className='h-10'
+                    >
+                      <Copy data-icon='inline-start' />
+                      复制邀请码
+                    </Button>
+                  </div>
                 </div>
 
                 <div className='app-page-shell p-4'>
@@ -391,7 +420,9 @@ export function AffiliateRewardsPage() {
                                   {invitee.name}
                                 </span>
                                 <span className='text-muted-foreground text-xs'>
-                                  @{invitee.invitee_username}
+                                  ID:{' '}
+                                  {invitee.invitee_external_id ||
+                                    invitee.invitee_id}
                                 </span>
                               </div>
                             </TableCell>

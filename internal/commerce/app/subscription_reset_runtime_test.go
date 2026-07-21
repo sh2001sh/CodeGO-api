@@ -3,6 +3,8 @@ package app
 import (
 	"fmt"
 	"github.com/sh2001sh/new-api/constant"
+	billingdomain "github.com/sh2001sh/new-api/internal/billing/domain"
+	billingschema "github.com/sh2001sh/new-api/internal/billing/schema"
 	commercedomain "github.com/sh2001sh/new-api/internal/commerce/domain"
 	commerceschema "github.com/sh2001sh/new-api/internal/commerce/schema"
 	identityschema "github.com/sh2001sh/new-api/internal/identity/schema"
@@ -119,6 +121,20 @@ func TestUseUserSubscriptionResetOpportunity_ClearsCurrentSubscriptionAndLimitsM
 		EarnedTotal:    2,
 		AvailableTotal: 2,
 	}).Error)
+	account, err := billingdomain.EnsureBillingAccount(billingdomain.EnsureAccountParams{
+		AccountType: "subscription",
+		OwnerType:   "user_subscription",
+		OwnerID:     7302,
+		QuotaUnit:   "quota",
+	})
+	require.NoError(t, err)
+	_, err = billingdomain.CreditAccount(billingdomain.CreditAccountParams{
+		AccountID:      account.AccountID,
+		Amount:         1820,
+		IdempotencyKey: "subscription-reset-test-initial-balance",
+		ReasonCode:     "test",
+	})
+	require.NoError(t, err)
 
 	result, err := UseUserSubscriptionResetOpportunity(7201)
 	require.NoError(t, err)
@@ -132,6 +148,9 @@ func TestUseUserSubscriptionResetOpportunity_ClearsCurrentSubscriptionAndLimitsM
 	var current commerceschema.UserSubscription
 	require.NoError(t, db.Where("id = ?", 7302).First(&current).Error)
 	assert.Zero(t, current.AmountUsed)
+	var snapshot billingschema.BillingBalanceSnapshot
+	require.NoError(t, db.Where("account_id = ?", account.AccountID).First(&snapshot).Error)
+	assert.EqualValues(t, 2000, snapshot.AvailableBalance)
 
 	var untouched commerceschema.UserSubscription
 	require.NoError(t, db.Where("id = ?", 7301).First(&untouched).Error)

@@ -279,6 +279,7 @@ export interface SubscriptionResetOpportunitySummary {
 
 export interface AffiliateInviteeRewardStatus {
   invitee_id: number
+  invitee_external_id: string
   invitee_username: string
   invitee_display_name?: string
   created_at: number

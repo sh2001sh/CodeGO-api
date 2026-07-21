@@ -157,7 +157,7 @@ func openBlindBoxesTx(tx *gorm.DB, userID int, count int, orderID *int) ([]comme
 			record.RewardUSD = 0
 			pityState.ConsecutiveLowRewards = 0
 		} else {
-			pityTriggered := pityState.ConsecutiveLowRewards >= effectivePityThreshold
+			pityTriggered := pityState.ConsecutiveLowRewards+1 >= effectivePityThreshold
 			rewardUSD := 0.0
 			tierName := "pity"
 			var tier blindboxsettings.TierSetting
@@ -281,6 +281,7 @@ func openBlindBoxesTx(tx *gorm.DB, userID int, count int, orderID *int) ([]comme
 				record.PropType = prop.PropType
 				record.PropStatus = prop.Status
 				record.PropExpiresAt = prop.ExpiresAt
+				pityState.ConsecutiveLowRewards++
 			}
 			records = append(records, record)
 			continue
