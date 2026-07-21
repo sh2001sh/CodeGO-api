@@ -1,4 +1,4 @@
-import { AlertCircle, ChevronDown, Gift, Loader2, Sparkles } from 'lucide-react'
+import { AlertCircle, ChevronDown, Gift, Loader2, PackageOpen, Sparkles } from 'lucide-react'
 import { motion, useReducedMotion, type Variants } from 'motion/react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -9,11 +9,7 @@ import type {
   BlindBoxTier,
   PaymentMethod,
 } from '../types'
-import {
-  BlindBoxPropsList,
-  PaymentMethodSelector,
-  PityStatusCard,
-} from './blind-box-view-parts'
+import { PaymentMethodSelector, PityStatusCard } from './blind-box-view-parts'
 
 const STACK: Variants = {
   hidden: {},
@@ -38,6 +34,7 @@ interface BlindBoxCardViewProps {
   onPay: () => void
   onManualOpen: (count: number) => void
   onUseProp: (prop: BlindBoxProp) => void
+  onOpenProps: () => void
   onTogglePrizeNotice: () => void
   onClosePrizeNotice: () => void
 }
@@ -122,14 +119,6 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
         </div>
       ) : null}
 
-      {props.data?.props?.length ? (
-        <BlindBoxPropsList
-          props={props.data.props}
-          disabled={props.openingCount !== null || props.paying}
-          onUse={props.onUseProp}
-        />
-      ) : null}
-
       <PityStatusCard
         firstPurchaseEligible={firstPurchaseEligible}
         firstPurchaseUsd={firstPurchaseStartUSD}
@@ -195,6 +184,10 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
             </div>
           </div>
           <div className='flex flex-wrap gap-2'>
+            <Button type='button' variant='outline' onClick={props.onOpenProps}>
+              <PackageOpen className='size-4' data-icon='inline-start' />
+              我的道具{props.data?.props?.length ? ` (${props.data.props.length})` : ''}
+            </Button>
             <Button
               type='button'
               variant='outline'
@@ -246,12 +239,21 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
           </div>
           <div className='space-y-4 text-sm'>
             <div className='rounded-xl border border-primary/20 bg-primary/6 p-3'>
+              <div className='text-foreground text-sm font-semibold'>奖池怎么抽</div>
+              <div className='text-muted-foreground mt-1 text-xs leading-5'>
+                每次开盒都会从普通额度、Claude 额度、道具和隐藏款中抽取。首购奖励与连续未中高价值奖励的保底优先结算。
+              </div>
+            </div>
+
+            <div className='rounded-xl border border-amber-500/25 bg-amber-500/8 p-3'>
               <div className='text-foreground text-sm font-semibold'>
-                大奖包含
+                特殊隐藏款：1 小时 0 倍率卡
               </div>
               <div className='text-muted-foreground mt-1 text-xs leading-5'>
-                80-120 美元普通额度、40-80 Claude 额度、隐藏款
-                {` ${props.data?.subscription_plan_title || 'Lite 月卡'}`}
+                当前概率 {((props.data?.zero_hour?.current_probability || 0) * 100).toFixed(3)}%，进度 {props.data?.zero_hour?.points || 0}/{props.data?.zero_hour?.point_cap || 0}，最高 {((props.data?.zero_hour?.max_probability || 0) * 100).toFixed(3)}%。
+              </div>
+              <div className='text-muted-foreground mt-1 text-xs leading-5'>
+                每成功结算 $1 增加 1 点，每个实际支付盲盒增加 5 点；抽中后进度归零。在“我的道具”启用后，zero-hour 分组持续 1 小时；default 分组内非生图模型按 0 倍率计费，仅限本人且并发最多 5 个请求。
               </div>
             </div>
 
@@ -361,6 +363,7 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
                 <div>套餐九折卡：下次购买套餐自动抵扣一次，仅生效 1 次。</div>
                 <div>0.95 倍率卡：在盲盒页点击使用后生效，持续 24 小时。</div>
                 <div>0.9 倍率卡：在盲盒页点击使用后生效，持续 24 小时。</div>
+                <div>1 小时 0 倍率卡：在“我的道具”启用，使用 zero-hour 分组；到期后该分组自动隐藏。</div>
               </div>
             </div>
 

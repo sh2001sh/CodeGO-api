@@ -449,6 +449,15 @@ export interface BlindBoxOverview {
   recent_records: BlindBoxRecord[]
 }
 
+export interface BlindBoxZeroHourOverview {
+  current_probability: number
+  max_probability: number
+  points: number
+  point_cap: number
+  active: boolean
+  active_until?: number
+}
+
 export interface BlindBoxSelfData {
   enabled: boolean
   unit_price: number
@@ -467,6 +476,7 @@ export interface BlindBoxSelfData {
   pay_methods: PaymentMethod[]
   overview: BlindBoxOverview
   props: BlindBoxProp[]
+  zero_hour?: BlindBoxZeroHourOverview
   grants?: BlindBoxGrant[]
 }
 

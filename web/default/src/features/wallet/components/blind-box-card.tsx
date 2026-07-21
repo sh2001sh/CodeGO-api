@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
 import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import {
@@ -30,6 +31,13 @@ import { BlindBoxHistorySheet } from './blind-box-history-sheet'
 import { BlindBoxPaymentDialog } from './blind-box-payment-dialog'
 import { BlindBoxSidebar } from './blind-box-sidebar'
 import { BlindBoxCardView } from './blind-box-view'
+import { BlindBoxPropsList } from './blind-box-view-parts'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 
 interface BlindBoxCardProps {
   onSubscriptionRefresh: () => Promise<void>
@@ -43,6 +51,7 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 
 export function BlindBoxCard(props: BlindBoxCardProps) {
   const { t } = useTranslation()
+  const queryClient = useQueryClient()
   const [data, setData] = useState<BlindBoxSelfData | null>(null)
   const [loading, setLoading] = useState(true)
   const [selectedQuantity, setSelectedQuantity] = useState(1)
@@ -53,6 +62,7 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
   const [openingCount, setOpeningCount] = useState<number | null>(null)
   const [showPrizeNotice, setShowPrizeNotice] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
+  const [showProps, setShowProps] = useState(false)
   const [paymentState, setPaymentState] =
     useState<BlindBoxPaymentState>(EMPTY_PAYMENT_STATE)
   const [prizeState, setPrizeState] =
@@ -378,7 +388,11 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
       if (
         record.reward_type !== 'prop' ||
         !record.prop_id ||
-        !['consume_discount_95', 'consume_discount_90'].includes(
+        ![
+          'consume_discount_95',
+          'consume_discount_90',
+          'zero_hour_multiplier',
+        ].includes(
           record.prop_type || ''
         )
       ) {
@@ -390,14 +404,19 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
           if (!isApiSuccess(response)) {
             throw new Error(response.message || '启用失败')
           }
-          toast.success(`${record.reward_title} 已启用，24 小时后自动失效。`)
+          toast.success(
+            record.prop_type === 'zero_hour_multiplier'
+              ? `${record.reward_title} 已启用，zero-hour 分组将持续 1 小时。`
+              : `${record.reward_title} 已启用，24 小时后自动失效。`
+          )
           await refreshAll()
+          await queryClient.invalidateQueries({ queryKey: ['user-groups'] })
         } catch (error) {
           toast.error(error instanceof Error ? error.message : '启用失败')
         }
       })()
     },
-    [refreshAll]
+    [queryClient, refreshAll]
   )
 
   const handleUseProp = useCallback(
@@ -410,13 +429,14 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
         }
         toast.success(t('{{title}} is now active.', { title: prop.title }))
         await refreshAll()
+        await queryClient.invalidateQueries({ queryKey: ['user-groups'] })
       } catch (error) {
         toast.error(
           error instanceof Error ? error.message : t('Failed to use prop')
         )
       }
     },
-    [refreshAll, t]
+    [queryClient, refreshAll, t]
   )
 
   const handleOpenExternal = useCallback(() => {
@@ -472,6 +492,7 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
             onPay={() => void handlePay()}
             onManualOpen={(count) => void handleManualOpen(count)}
             onUseProp={(prop) => void handleUseProp(prop)}
+            onOpenProps={() => setShowProps(true)}
             onTogglePrizeNotice={() =>
               setShowPrizeNotice((current) => !current)
             }
@@ -515,6 +536,19 @@ export function BlindBoxCard(props: BlindBoxCardProps) {
       />
 
       <BlindBoxHistorySheet open={showHistory} onOpenChange={setShowHistory} />
+
+      <Dialog open={showProps} onOpenChange={setShowProps}>
+        <DialogContent className='sm:max-w-lg'>
+          <DialogHeader>
+            <DialogTitle>我的道具</DialogTitle>
+          </DialogHeader>
+          <BlindBoxPropsList
+            props={data?.props || []}
+            disabled={openingCount !== null || paying}
+            onUse={(prop) => void handleUseProp(prop)}
+          />
+        </DialogContent>
+      </Dialog>
     </>
   )
 }

@@ -143,7 +143,11 @@ export function BlindBoxPropsList(props: {
 }
 
 function isManualUseProp(prop: BlindBoxProp) {
-  return ['consume_discount_95', 'consume_discount_90'].includes(prop.prop_type)
+  return [
+    'consume_discount_95',
+    'consume_discount_90',
+    'zero_hour_multiplier',
+  ].includes(prop.prop_type)
 }
 
 function getPropDescription(
@@ -156,6 +160,11 @@ function getPropDescription(
     })
   }
   if (isManualUseProp(prop)) {
+    if (prop.prop_type === 'zero_hour_multiplier') {
+      return prop.status === 'available'
+        ? '启用后 1 小时内可使用 zero-hour 分组，默认分组非生图模型按 0 倍率计费。'
+        : 'zero-hour 分组已激活，仅限当前用户，单用户并发最多 5 个请求。'
+    }
     return prop.status === 'available'
       ? t('Click Use to activate this card for {{hours}} hours.', {
           hours: Math.max(1, Math.round(prop.duration_seconds / 3600)),

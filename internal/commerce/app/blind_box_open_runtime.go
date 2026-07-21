@@ -98,6 +98,10 @@ func openBlindBoxesTx(tx *gorm.DB, userID int, count int, orderID *int) ([]comme
 	if err != nil {
 		return nil, err
 	}
+	zeroHourState, err := getOrCreateZeroHourStateTx(tx, userID)
+	if err != nil {
+		return nil, err
+	}
 	effectivePityThreshold := setting.PityThreshold
 	firstPurchaseStartUSD := setting.FirstPurchaseGuaranteeUSD
 
@@ -139,6 +143,41 @@ func openBlindBoxesTx(tx *gorm.DB, userID int, count int, orderID *int) ([]comme
 			OrderId:    currentOrder.Id,
 			CreateTime: platformruntime.GetTimestamp(),
 		}
+		pityTriggered := pityState.ConsecutiveLowRewards+1 >= effectivePityThreshold
+		zeroHourHit := false
+		if !isFirstPurchaseOpen && !pityTriggered {
+			zeroHourHit, err = tryZeroHourRewardTx(tx, userID, zeroHourState)
+			if err != nil {
+				return nil, err
+			}
+		}
+		if zeroHourHit {
+			record.RewardType = commerceschema.BlindBoxRewardTypeProp
+			record.RewardTitle = "1 小时 0 倍率卡"
+			record.RewardTier = "zero_hour_hidden"
+			record.RewardWalletType = ""
+			if err := tx.Create(&record).Error; err != nil {
+				return nil, err
+			}
+			prop, err := createBlindBoxPropTx(tx, userID, record.Id, record.RewardTitle)
+			if err != nil {
+				return nil, err
+			}
+			record.PropId = prop.Id
+			record.PropType = prop.PropType
+			record.PropStatus = prop.Status
+			if err := resetZeroHourProgressTx(tx, zeroHourState); err != nil {
+				return nil, err
+			}
+			pityState.ConsecutiveLowRewards = 0
+			records = append(records, record)
+			continue
+		}
+		if isPaidBlindBoxOrder(currentOrder) {
+			if err := addZeroHourProgressTx(tx, zeroHourState, zeroHourProgressPerPaidOpen); err != nil {
+				return nil, err
+			}
+		}
 
 		subscriptionHit := rand.Float64() < setting.SubscriptionPrizeProbability
 		if subscriptionHit {
@@ -157,7 +196,6 @@ func openBlindBoxesTx(tx *gorm.DB, userID int, count int, orderID *int) ([]comme
 			record.RewardUSD = 0
 			pityState.ConsecutiveLowRewards = 0
 		} else {
-			pityTriggered := pityState.ConsecutiveLowRewards+1 >= effectivePityThreshold
 			rewardUSD := 0.0
 			tierName := "pity"
 			var tier blindboxsettings.TierSetting

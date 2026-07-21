@@ -7,6 +7,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/sh2001sh/new-api/constant"
 	"github.com/sh2001sh/new-api/i18n"
+	commerceapp "github.com/sh2001sh/new-api/internal/commerce/app"
 	gatewayroutingapp "github.com/sh2001sh/new-api/internal/gateway/routing/app"
 	gatewaystore "github.com/sh2001sh/new-api/internal/gateway/store"
 	identityapp "github.com/sh2001sh/new-api/internal/identity/app"
@@ -431,7 +432,14 @@ func TokenAuth() func(c *gin.Context) {
 
 		userGroup := userCache.Group
 		tokenGroup := token.Group
-		if tokenGroup != "" {
+		zeroHourActive := tokenGroup == commerceapp.ZeroHourGroup
+		if zeroHourActive {
+			if !commerceapp.IsZeroHourGroupActive(token.UserId) {
+				abortWithOpenAiMessage(c, http.StatusForbidden, "0 倍率卡已结束，请切回 default 分组")
+				return
+			}
+			userGroup = "default"
+		} else if tokenGroup != "" {
 			// check common.UserUsableGroups[userGroup]
 			if _, ok := gatewayroutingapp.GetUserUsableGroups(userGroup)[tokenGroup]; !ok {
 				abortWithOpenAiMessage(c, http.StatusForbidden, fmt.Sprintf("无权访问 %s 分组", tokenGroup))
@@ -451,6 +459,11 @@ func TokenAuth() func(c *gin.Context) {
 		err = SetupContextForToken(c, token, parts...)
 		if err != nil {
 			return
+		}
+		if zeroHourActive {
+			httpctx.SetContextKey(c, constant.ContextKeyTokenGroup, "default")
+			httpctx.SetContextKey(c, constant.ContextKeyUsingGroup, "default")
+			httpctx.SetContextKey(c, constant.ContextKeyZeroHourActive, true)
 		}
 		c.Next()
 	}

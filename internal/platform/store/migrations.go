@@ -54,6 +54,7 @@ func V2MigrationIDs() []string {
 		"20260718_community_resources",
 		"20260719_subscription_first_purchase_discount",
 		"20260720_wallet_quota_conversion",
+		"20260721_blind_box_zero_hour",
 	}
 }
 
@@ -152,6 +153,9 @@ func ApplyV2Migrations(ctx context.Context, dryRun bool) error {
 		}},
 		{ID: "20260720_wallet_quota_conversion", Run: func(tx *gorm.DB) error {
 			return tx.AutoMigrate(&commerceschema.WalletQuotaConversion{})
+		}},
+		{ID: "20260721_blind_box_zero_hour", Run: func(tx *gorm.DB) error {
+			return tx.AutoMigrate(&commerceschema.BlindBoxZeroHourState{})
 		}},
 	}
 	for _, step := range steps {

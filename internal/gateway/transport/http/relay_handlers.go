@@ -13,6 +13,7 @@ import (
 	"github.com/gorilla/websocket"
 	"github.com/sh2001sh/new-api/constant"
 	billingapp "github.com/sh2001sh/new-api/internal/billing/app"
+	gatewaycontract "github.com/sh2001sh/new-api/internal/gateway/contract"
 	gatewayexecutionapp "github.com/sh2001sh/new-api/internal/gateway/execution/app"
 	gatewayroutingapp "github.com/sh2001sh/new-api/internal/gateway/routing/app"
 	relaycommon "github.com/sh2001sh/new-api/internal/gateway/runtime"
@@ -175,6 +176,18 @@ func relayRequest(c *gin.Context, relayFormat types.RelayFormat) {
 	if err != nil {
 		newAPIError = types.NewError(err, types.ErrorCodeGenRelayInfoFailed)
 		return
+	}
+	if httpctx.GetContextKeyBool(c, constant.ContextKeyZeroHourActive) {
+		if relayFormat == types.RelayFormatOpenAIImage || gatewaycontract.IsImageGenerationModel(relayInfo.OriginModelName) {
+			newAPIError = types.NewErrorWithStatusCode(errors.New("0 倍率分组不支持生图模型"), types.ErrorCodeAccessDenied, http.StatusForbidden, types.ErrOptionWithSkipRetry())
+			return
+		}
+		releaseSlot, slotErr := acquireZeroHourSlot(c)
+		if slotErr != nil {
+			newAPIError = types.NewErrorWithStatusCode(slotErr, types.ErrorCodeAccessDenied, http.StatusTooManyRequests, types.ErrOptionWithSkipRetry())
+			return
+		}
+		defer releaseSlot()
 	}
 
 	needSensitiveCheck := requestsettings.ShouldCheckPromptSensitive()
