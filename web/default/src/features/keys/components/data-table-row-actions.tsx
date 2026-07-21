@@ -267,7 +267,18 @@ export function DataTableRowActions<TData>({
               setOpen('cc-switch')
             }}
           >
-            {t('Code Go Desktop')}
+            {t('Configure CC Switch')}
+            <DropdownMenuShortcut>
+              <ArrowRightLeft size={16} />
+            </DropdownMenuShortcut>
+          </DropdownMenuItem>
+          <DropdownMenuItem
+            onClick={() => {
+              setCurrentRow(apiKey)
+              setOpen('codego-desktop')
+            }}
+          >
+            {t('Configure Code Go Desktop')}
             <DropdownMenuShortcut>
               <ArrowRightLeft size={16} />
             </DropdownMenuShortcut>

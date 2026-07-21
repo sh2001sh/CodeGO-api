@@ -44,6 +44,7 @@ interface Props {
   open: boolean
   onOpenChange: (open: boolean) => void
   tokenId: number | null
+  primaryTarget: 'codego' | 'ccswitch'
 }
 
 export function CCSwitchDialog(props: Props) {
@@ -122,7 +123,13 @@ export function CCSwitchDialog(props: Props) {
     <Dialog open={props.open} onOpenChange={props.onOpenChange}>
       <DialogContent className='sm:max-w-md'>
         <DialogHeader>
-          <DialogTitle>{t('Import to Code Go Desktop')}</DialogTitle>
+          <DialogTitle>
+            {t(
+              props.primaryTarget === 'ccswitch'
+                ? 'Configure CC Switch'
+                : 'Configure Code Go Desktop'
+            )}
+          </DialogTitle>
         </DialogHeader>
 
         <div className='space-y-4'>
@@ -192,12 +199,15 @@ export function CCSwitchDialog(props: Props) {
             {t('Cancel')}
           </Button>
           <Button
-            variant='outline'
+            variant={props.primaryTarget === 'ccswitch' ? 'default' : 'outline'}
             onClick={() => void handleSubmit('ccswitch')}
           >
             {t('Import to CC Switch')}
           </Button>
-          <Button onClick={() => void handleSubmit('codego')}>
+          <Button
+            variant={props.primaryTarget === 'codego' ? 'default' : 'outline'}
+            onClick={() => void handleSubmit('codego')}
+          >
             {t('Open Code Go Desktop')}
           </Button>
         </DialogFooter>

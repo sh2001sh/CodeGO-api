@@ -48,9 +48,10 @@ export function ApiKeysDialogs() {
       />
       <ApiKeysDeleteDialog />
       <CCSwitchDialog
-        open={open === 'cc-switch'}
+        open={open === 'cc-switch' || open === 'codego-desktop'}
         onOpenChange={(isOpen) => !isOpen && setOpen(null)}
         tokenId={currentRow?.id ?? null}
+        primaryTarget={open === 'cc-switch' ? 'ccswitch' : 'codego'}
       />
     </>
   )

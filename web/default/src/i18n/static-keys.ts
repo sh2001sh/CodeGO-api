@@ -253,6 +253,8 @@ export const STATIC_I18N_KEYS = [
 
   // Desktop import dialog
   'Code Go Desktop',
+  'Configure CC Switch',
+  'Configure Code Go Desktop',
   'Import to Code Go Desktop',
   'Open Code Go Desktop',
   'Failed to open Code Go Desktop',
