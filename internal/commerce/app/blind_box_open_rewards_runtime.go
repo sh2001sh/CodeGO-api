@@ -82,6 +82,12 @@ func applyFirstPurchaseMinimumGuarantee(isFirstPurchaseOpen bool, ordinaryMinimu
 		return
 	}
 	switch *rewardType {
+	case commerceschema.BlindBoxRewardTypeProp:
+		if ordinaryMinimumUSD > 0 {
+			*rewardUSD = ordinaryMinimumUSD
+			*rewardType = commerceschema.BlindBoxRewardTypeQuota
+			*walletType = commerceschema.BlindBoxRewardWalletTypeDefault
+		}
 	case commerceschema.BlindBoxRewardTypeQuota:
 		if ordinaryMinimumUSD > 0 && *rewardUSD < ordinaryMinimumUSD {
 			*rewardUSD = ordinaryMinimumUSD

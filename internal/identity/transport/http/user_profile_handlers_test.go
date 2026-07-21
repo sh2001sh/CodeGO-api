@@ -4,6 +4,7 @@ import (
 	"github.com/sh2001sh/new-api/constant"
 	"github.com/sh2001sh/new-api/dto"
 	commerceschema "github.com/sh2001sh/new-api/internal/commerce/schema"
+	gatewaygroups "github.com/sh2001sh/new-api/internal/gateway/groupsettings"
 	gatewayschema "github.com/sh2001sh/new-api/internal/gateway/schema"
 	identityapp "github.com/sh2001sh/new-api/internal/identity/app"
 	identitydomain "github.com/sh2001sh/new-api/internal/identity/domain"
@@ -128,6 +129,59 @@ func TestGetUserModelsReturnsSortedDeduplicatedModels(t *testing.T) {
 	for i := range expected {
 		if models[i] != expected[i] {
 			t.Fatalf("expected sorted deduplicated models %v, got %v", expected, models)
+		}
+	}
+}
+
+func TestGetUserModelsFiltersByAutoGroupChain(t *testing.T) {
+	db := setupDesktopHTTPTestDB(t)
+
+	originalAutoGroups := gatewaygroups.AutoGroups2JsonString()
+	originalUsableGroups := gatewaygroups.UserUsableGroups2JSONString()
+	t.Cleanup(func() {
+		_ = gatewaygroups.UpdateAutoGroupsByJsonString(originalAutoGroups)
+		_ = gatewaygroups.UpdateUserUsableGroupsByJSONString(originalUsableGroups)
+	})
+	if err := gatewaygroups.UpdateAutoGroupsByJsonString(`["default","claude"]`); err != nil {
+		t.Fatalf("failed to configure auto groups: %v", err)
+	}
+	if err := gatewaygroups.UpdateUserUsableGroupsByJSONString(`{"default":"默认","claude":"Claude","archive":"归档"}`); err != nil {
+		t.Fatalf("failed to configure usable groups: %v", err)
+	}
+
+	user := &identityschema.User{Id: 1, Username: "auto-models-user", Password: "password123", Role: constant.RoleCommonUser, Status: constant.UserStatusEnabled, Group: "default"}
+	if err := db.Create(user).Error; err != nil {
+		t.Fatalf("failed to seed user: %v", err)
+	}
+	for _, ability := range []gatewayschema.Ability{
+		{Group: "default", Model: "gpt-5", ChannelId: 1, Enabled: true},
+		{Group: "claude", Model: "claude-sonnet-4-5", ChannelId: 2, Enabled: true},
+		{Group: "archive", Model: "legacy-model", ChannelId: 3, Enabled: true},
+	} {
+		record := ability
+		if err := db.Create(&record).Error; err != nil {
+			t.Fatalf("failed to seed ability: %v", err)
+		}
+	}
+
+	ctx, recorder := newAuthenticatedContext(t, "GET", "/api/user/models?group=auto", nil, user.Id)
+	GetUserModels(ctx)
+	response := decodeAPIResponse(t, recorder)
+	if !response.Success {
+		t.Fatalf("expected success response, got message: %s", response.Message)
+	}
+
+	var models []string
+	if err := platformencoding.Unmarshal(response.Data, &models); err != nil {
+		t.Fatalf("failed to decode user models: %v", err)
+	}
+	expected := []string{"claude-sonnet-4-5", "gpt-5"}
+	if len(models) != len(expected) {
+		t.Fatalf("expected auto models %v, got %v", expected, models)
+	}
+	for index := range expected {
+		if models[index] != expected[index] {
+			t.Fatalf("expected auto models %v, got %v", expected, models)
 		}
 	}
 }

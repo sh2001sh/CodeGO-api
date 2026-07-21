@@ -86,13 +86,14 @@ export function CCSwitchDialog(props: Props) {
     setModels({})
   }
 
-  const handleSubmit = async () => {
+  const handleSubmit = async (target: 'codego' | 'ccswitch') => {
     const result = await submitDesktopImportRequest(
       {
         app,
         tokenId: props.tokenId,
         name,
         models,
+        target,
       },
       {
         createDesktopImportLink,
@@ -190,7 +191,15 @@ export function CCSwitchDialog(props: Props) {
           <Button variant='outline' onClick={() => props.onOpenChange(false)}>
             {t('Cancel')}
           </Button>
-          <Button onClick={handleSubmit}>{t('Open Code Go Desktop')}</Button>
+          <Button
+            variant='outline'
+            onClick={() => void handleSubmit('ccswitch')}
+          >
+            {t('Import to CC Switch')}
+          </Button>
+          <Button onClick={() => void handleSubmit('codego')}>
+            {t('Open Code Go Desktop')}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

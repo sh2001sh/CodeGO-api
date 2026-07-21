@@ -1,12 +1,12 @@
 package app
 
 import (
-	auditschema "github.com/sh2001sh/new-api/internal/audit/schema"
-	identityschema "github.com/sh2001sh/new-api/internal/identity/schema"
 	"fmt"
 	"github.com/sh2001sh/new-api/constant"
+	auditschema "github.com/sh2001sh/new-api/internal/audit/schema"
 	blindboxsettings "github.com/sh2001sh/new-api/internal/commerce/blindboxsettings"
 	commerceschema "github.com/sh2001sh/new-api/internal/commerce/schema"
+	identityschema "github.com/sh2001sh/new-api/internal/identity/schema"
 	platformruntime "github.com/sh2001sh/new-api/internal/platform/runtime"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -258,13 +258,13 @@ func TestApplyFirstPurchaseMinimumGuarantee(t *testing.T) {
 			expectedWalletType: commerceschema.BlindBoxRewardWalletTypeClaude,
 		},
 		{
-			name:               "keeps prop reward",
+			name:               "converts prop reward to ordinary guarantee",
 			isFirstPurchase:    true,
 			rewardUSD:          0,
 			rewardType:         commerceschema.BlindBoxRewardTypeProp,
 			walletType:         commerceschema.BlindBoxRewardWalletTypeDefault,
-			expectedRewardUSD:  0,
-			expectedRewardType: commerceschema.BlindBoxRewardTypeProp,
+			expectedRewardUSD:  20,
+			expectedRewardType: commerceschema.BlindBoxRewardTypeQuota,
 			expectedWalletType: commerceschema.BlindBoxRewardWalletTypeDefault,
 		},
 		{

@@ -6,7 +6,7 @@ import {
   Compass,
   Egg,
   FileText,
-  FlaskConical,
+  Images,
   Gem,
   MessageSquare,
   Package,
@@ -43,13 +43,18 @@ export function useSidebarData(): SidebarData {
         title: t('Chat'),
         items: [
           {
-            title: t('Playground'),
+            title: t('AI chat'),
             url: '/playground',
-            icon: FlaskConical,
+            icon: MessageSquare,
+          },
+          {
+            title: t('Image workspace'),
+            url: '/images',
+            icon: Images,
           },
           {
             title: t('Presets'),
-            icon: MessageSquare,
+            icon: FileText,
             type: 'chat-presets',
           },
         ],

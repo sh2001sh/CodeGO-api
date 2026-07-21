@@ -38,6 +38,7 @@ export interface DesktopImportSubmitInput {
   tokenId: number | null
   name: string
   models: Record<string, string>
+  target?: 'codego' | 'ccswitch'
 }
 
 export interface DesktopImportSubmitDependencies {
@@ -90,10 +91,12 @@ export async function submitDesktopImportRequest(
       }
     }
 
-    dependencies.openDesktopImportDeepLink(
-      dependencies.windowLike,
-      result.data.deep_link
-    )
+    const deepLink =
+      input.target === 'ccswitch'
+        ? result.data.deep_link.replace(/^codego:/i, 'ccswitch:')
+        : result.data.deep_link
+
+    dependencies.openDesktopImportDeepLink(dependencies.windowLike, deepLink)
 
     return {
       tone: 'success',

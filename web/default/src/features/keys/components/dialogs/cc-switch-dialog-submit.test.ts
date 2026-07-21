@@ -143,6 +143,43 @@ describe('submitDesktopImportRequest', () => {
     assert.deepEqual(openedLinks, ['codego://v1/import?resource=provider'])
   })
 
+  test('opens the CC Switch scheme for a CC Switch import', async () => {
+    const openedLinks: string[] = []
+    const result = await submitDesktopImportRequest(
+      {
+        app: 'codex',
+        tokenId: 9,
+        name: 'CodeGo',
+        models: { model: 'gpt-5.6-luna' },
+        target: 'ccswitch',
+      },
+      {
+        createDesktopImportLink: async () => ({
+          success: true,
+          data: {
+            code: 'import-code',
+            deep_link: 'codego://v1/import?resource=provider&app=codex',
+            config_url: 'https://shu26.cfd/api/desktop/import/config?code=1',
+            expires_in_seconds: 300,
+            tool: 'codex',
+            token_name: 'CodeGo',
+            provider_name: 'CodeGo',
+          },
+        }),
+        openDesktopImportDeepLink: (_windowLike, deepLink) => {
+          openedLinks.push(deepLink)
+        },
+        t: translate,
+        windowLike: { location: { href: '' }, open: () => null },
+      }
+    )
+
+    assert.deepEqual(result, { tone: 'success' })
+    assert.deepEqual(openedLinks, [
+      'ccswitch://v1/import?resource=provider&app=codex',
+    ])
+  })
+
   test('falls back to a generic desktop-open error when the request throws', async () => {
     const result = await submitDesktopImportRequest(
       {
