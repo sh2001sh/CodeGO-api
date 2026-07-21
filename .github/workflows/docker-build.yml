@@ -116,7 +116,9 @@ jobs:
             local attempt=1
             local delay=15
 
-            while ! docker buildx build \
+            # A registry upload can otherwise wait indefinitely.  Keep each
+            # attempt bounded so the existing retry loop can recover.
+            while ! timeout --signal=TERM --kill-after=30s 8m docker buildx build \
               --platform "linux/${{ matrix.arch }}" \
               --push \
               --provenance=false \
