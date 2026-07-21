@@ -2,7 +2,7 @@ name: Publish Docker image (Multi-arch)
 
 concurrency:
   group: docker-image-publish
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 on:
   push:
@@ -65,11 +65,13 @@ jobs:
           echo "Building tag: ${TAG} for ${{ matrix.arch }}"
 
       - name: Set up Docker Buildx
+        id: buildx
         uses: docker/setup-buildx-action@v3
         with:
-          # Every job builds only its native platform. The Docker driver reuses
-          # the authenticated daemon cache populated by the base-image preflight.
-          driver: docker
+          # A removable BuildKit container lets cancellation stop a blocked
+          # registry upload instead of leaving a daemon-side build behind.
+          driver: docker-container
+          driver-opts: network=host
 
       - name: Log in to GitHub Container Registry
         uses: docker/login-action@v3
@@ -101,49 +103,60 @@ jobs:
           pull_with_retry 'golang:1.26.1-alpine@sha256:2389ebfa5b7f43eeafbd6be0c3700cc46690ef842ad962f6c5bd6be49ed82039'
           pull_with_retry 'debian:bookworm-slim@sha256:f06537653ac770703bc45b4b113475bd402f451e85223f0f2837acbf89ab020a'
 
-      - name: Build and push all services with retry
-        run: |
-          build_service() {
-            local service="$1"
-            local attempt=1
-            local delay=15
+      - name: Build and push control-api
+        env:
+          SERVICE: control-api
+          ARCH: ${{ matrix.arch }}
+          BUILDER_NAME: ${{ steps.buildx.outputs.name }}
+        run: bash .github/scripts/build-and-push-service.sh
 
-            # A registry upload can otherwise wait indefinitely.  Keep each
-            # attempt bounded so the existing retry loop can recover.
-            while ! timeout --signal=TERM --kill-after=30s 8m docker buildx build \
-              --platform "linux/${{ matrix.arch }}" \
-              --push \
-              --progress=plain \
-              --provenance=false \
-              --build-arg "APP_PATH=./cmd/${service}" \
-              --label "org.opencontainers.image.created=$(date --utc +%Y-%m-%dT%H:%M:%SZ)" \
-              --label "org.opencontainers.image.description=A unified AI model hub for aggregation & distribution." \
-              --label "org.opencontainers.image.licenses=AGPL-3.0" \
-              --label "org.opencontainers.image.revision=${GITHUB_SHA}" \
-              --label "org.opencontainers.image.source=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" \
-              --label "org.opencontainers.image.title=CodeGO-api" \
-              --label "org.opencontainers.image.url=${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}" \
-              --label "org.opencontainers.image.version=${TAG}" \
-              --tag "${{ env.GHCR_DOCKER_IMAGE }}:${TAG}-${service}-${{ matrix.arch }}" \
-              --tag "${{ env.GHCR_DOCKER_IMAGE }}:latest-${service}-${{ matrix.arch }}" \
-              .; do
-              if [ "$attempt" -ge 4 ]; then
-                echo "::error::Build failed for ${service} after ${attempt} attempts"
-                return 1
-              fi
-              echo "Build failed for ${service} (attempt ${attempt}); retrying in ${delay}s"
-              sleep "$delay"
-              attempt=$((attempt + 1))
-              delay=$((delay * 2))
-            done
+      - name: Build and push gateway-api
+        env:
+          SERVICE: gateway-api
+          ARCH: ${{ matrix.arch }}
+          BUILDER_NAME: ${{ steps.buildx.outputs.name }}
+        run: bash .github/scripts/build-and-push-service.sh
 
-            echo "### Docker Image (${{ matrix.arch }})" >> "$GITHUB_STEP_SUMMARY"
-            echo "\`${{ env.GHCR_DOCKER_IMAGE }}:${TAG}-${service}-${{ matrix.arch }}\`" >> "$GITHUB_STEP_SUMMARY"
-          }
+      - name: Build and push ledger-worker
+        env:
+          SERVICE: ledger-worker
+          ARCH: ${{ matrix.arch }}
+          BUILDER_NAME: ${{ steps.buildx.outputs.name }}
+        run: bash .github/scripts/build-and-push-service.sh
 
-          for service in control-api gateway-api ledger-worker workflow-worker db-migrate ledger-backfill v2-verify; do
-            build_service "$service"
-          done
+      - name: Build and push workflow-worker
+        env:
+          SERVICE: workflow-worker
+          ARCH: ${{ matrix.arch }}
+          BUILDER_NAME: ${{ steps.buildx.outputs.name }}
+        run: bash .github/scripts/build-and-push-service.sh
+
+      - name: Build and push db-migrate
+        env:
+          SERVICE: db-migrate
+          ARCH: ${{ matrix.arch }}
+          BUILDER_NAME: ${{ steps.buildx.outputs.name }}
+        run: bash .github/scripts/build-and-push-service.sh
+
+      - name: Build and push ledger-backfill
+        env:
+          SERVICE: ledger-backfill
+          ARCH: ${{ matrix.arch }}
+          BUILDER_NAME: ${{ steps.buildx.outputs.name }}
+        run: bash .github/scripts/build-and-push-service.sh
+
+      - name: Build and push v2-verify
+        env:
+          SERVICE: v2-verify
+          ARCH: ${{ matrix.arch }}
+          BUILDER_NAME: ${{ steps.buildx.outputs.name }}
+        run: bash .github/scripts/build-and-push-service.sh
+
+      - name: Tear down Docker Buildx
+        if: always()
+        env:
+          BUILDER_NAME: ${{ steps.buildx.outputs.name }}
+        run: docker buildx rm --force "${BUILDER_NAME}" || true
 
   create_manifests:
     name: Create and sign multi-arch manifests
