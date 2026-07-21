@@ -75,6 +75,7 @@ func TestZeroHourPropActivatesUserScopedGroup(t *testing.T) {
 
 func TestZeroHourProbabilityCapsAtConfiguredMaximum(t *testing.T) {
 	assert.Equal(t, zeroHourBaseProbability, zeroHourProbability(0))
+	assert.InDelta(t, 0.00019, zeroHourProbability(90), 0.0000000001)
 	assert.Equal(t, zeroHourProbabilityCap, zeroHourProbability(zeroHourProgressCap))
 	assert.Equal(t, zeroHourProbabilityCap, zeroHourProbability(zeroHourProgressCap+100))
 }

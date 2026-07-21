@@ -21,11 +21,11 @@ func init() {
 const (
 	ZeroHourGroup               = "zero-hour"
 	zeroHourDurationSeconds     = int64(60 * 60)
-	zeroHourProgressPerPaidOpen = int64(5)
-	zeroHourProgressCap         = int64(90)
-	zeroHourBaseProbability     = 0.0003
-	zeroHourProbabilityStep     = 0.00003
-	zeroHourProbabilityCap      = 0.003
+	zeroHourProgressPerPaidOpen = int64(1)
+	zeroHourProgressCap         = int64(1000)
+	zeroHourBaseProbability     = 0.0001
+	zeroHourProbabilityStep     = 0.000001
+	zeroHourProbabilityCap      = 0.0011
 )
 
 type ZeroHourOverview struct {
