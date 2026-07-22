@@ -1,18 +1,19 @@
 package bootstrap
 
 import (
+	"crypto/tls"
 	"fmt"
 	"log"
 	"net/http"
 	"net/url"
 	"os"
 	"strconv"
-	"strings"
 
 	"github.com/bytedance/gopkg/util/gopool"
 	"github.com/gin-contrib/sessions"
 	sessionredis "github.com/gin-contrib/sessions/redis"
 	"github.com/gin-gonic/gin"
+	redigo "github.com/gomodule/redigo/redis"
 	auditprojection "github.com/sh2001sh/new-api/internal/audit/projection"
 	gatewaystore "github.com/sh2001sh/new-api/internal/gateway/store"
 	platformcache "github.com/sh2001sh/new-api/internal/platform/cache"
@@ -122,19 +123,7 @@ func buildSessionStore() sessions.Store {
 	if err != nil || redisURL.Host == "" || !platformcache.RedisReady() {
 		log.Fatal("Redis-backed sessions require a reachable REDIS_CONN_STRING")
 	}
-	password, _ := redisURL.User.Password()
-	database := strings.TrimPrefix(redisURL.Path, "/")
-	if database == "" {
-		database = "0"
-	}
-	store, err := sessionredis.NewStoreWithDB(
-		10,
-		"tcp",
-		redisURL.Host,
-		password,
-		database,
-		[]byte(platformconfig.SessionSecret),
-	)
+	store, err := newRedisSessionStore(redisURL)
 	if err != nil {
 		log.Fatal("failed to initialize Redis session store: " + err.Error())
 	}
@@ -149,6 +138,65 @@ func buildSessionStore() sessions.Store {
 		SameSite: http.SameSiteStrictMode,
 	})
 	return store
+}
+
+func newRedisSessionStore(redisURL *url.URL) (sessionredis.Store, error) {
+	if redisURL.Scheme != "redis" && redisURL.Scheme != "rediss" {
+		return nil, fmt.Errorf("unsupported Redis URL scheme %q", redisURL.Scheme)
+	}
+	database, err := strconv.Atoi(redisURL.Query().Get("db"))
+	if err != nil && redisURL.Query().Get("db") != "" {
+		return nil, fmt.Errorf("invalid Redis database: %w", err)
+	}
+	if redisURL.Path != "" && redisURL.Path != "/" {
+		database, err = strconv.Atoi(redisURL.Path[1:])
+		if err != nil {
+			return nil, fmt.Errorf("invalid Redis database: %w", err)
+		}
+	}
+	username := redisURL.User.Username()
+	password, _ := redisURL.User.Password()
+	pool := &redigo.Pool{
+		MaxIdle:   10,
+		MaxActive: 10,
+		Wait:      true,
+		Dial: func() (redigo.Conn, error) {
+			return dialRedisSessionConnection(redisURL, username, password, database)
+		},
+	}
+	connection := pool.Get()
+	defer connection.Close()
+	if err := connection.Err(); err != nil {
+		pool.Close()
+		return nil, fmt.Errorf("connect Redis session store: %w", err)
+	}
+	if _, err := connection.Do("PING"); err != nil {
+		pool.Close()
+		return nil, fmt.Errorf("ping Redis session store: %w", err)
+	}
+	store, err := sessionredis.NewStoreWithPool(pool, []byte(platformconfig.SessionSecret))
+	if err != nil {
+		pool.Close()
+		return nil, err
+	}
+	return store, nil
+}
+
+func dialRedisSessionConnection(redisURL *url.URL, username, password string, database int) (redigo.Conn, error) {
+	options := []redigo.DialOption{redigo.DialDatabase(database)}
+	if username != "" {
+		options = append(options, redigo.DialUsername(username))
+	}
+	if password != "" {
+		options = append(options, redigo.DialPassword(password))
+	}
+	if redisURL.Scheme == "rediss" {
+		options = append(options,
+			redigo.DialUseTLS(true),
+			redigo.DialTLSConfig(&tls.Config{MinVersion: tls.VersionTLS12, ServerName: redisURL.Hostname()}),
+		)
+	}
+	return redigo.Dial("tcp", redisURL.Host, options...)
 }
 
 func resolvePort(primaryEnv string) string {
