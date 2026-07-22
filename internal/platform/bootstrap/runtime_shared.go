@@ -183,20 +183,41 @@ func newRedisSessionStore(redisURL *url.URL) (sessionredis.Store, error) {
 }
 
 func dialRedisSessionConnection(redisURL *url.URL, username, password string, database int) (redigo.Conn, error) {
-	options := []redigo.DialOption{redigo.DialDatabase(database)}
-	if username != "" {
-		options = append(options, redigo.DialUsername(username))
-	}
-	if password != "" {
-		options = append(options, redigo.DialPassword(password))
-	}
+	options := make([]redigo.DialOption, 0, 2)
 	if redisURL.Scheme == "rediss" {
 		options = append(options,
 			redigo.DialUseTLS(true),
 			redigo.DialTLSConfig(&tls.Config{MinVersion: tls.VersionTLS12, ServerName: redisURL.Hostname()}),
 		)
 	}
-	return redigo.Dial("tcp", redisURL.Host, options...)
+	connection, err := redigo.Dial("tcp", redisURL.Host, options...)
+	if err != nil {
+		return nil, err
+	}
+	if err := authorizeRedisSessionConnection(connection, username, password, database); err != nil {
+		connection.Close()
+		return nil, err
+	}
+	return connection, nil
+}
+
+func authorizeRedisSessionConnection(connection redigo.Conn, username, password string, database int) error {
+	var err error
+	if username != "" {
+		_, err = connection.Do("AUTH", username, password)
+	} else if password != "" {
+		_, err = connection.Do("AUTH", password)
+	}
+	if err != nil {
+		return fmt.Errorf("authenticate Redis session store: %w", err)
+	}
+	if database == 0 {
+		return nil
+	}
+	if _, err := connection.Do("SELECT", database); err != nil {
+		return fmt.Errorf("select Redis database: %w", err)
+	}
+	return nil
 }
 
 func resolvePort(primaryEnv string) string {
