@@ -253,7 +253,7 @@ export function BlindBoxCardView(props: BlindBoxCardViewProps) {
                 当前概率 {((props.data?.zero_hour?.current_probability || 0) * 100).toFixed(3)}%，进度 {props.data?.zero_hour?.points || 0}/{props.data?.zero_hour?.point_cap || 0}，最高 {((props.data?.zero_hour?.max_probability || 0) * 100).toFixed(3)}%。
               </div>
               <div className='text-muted-foreground mt-1 text-xs leading-5'>
-                每成功结算 $1 增加 1 点，每个实际支付盲盒增加 1 点；抽中后进度归零。在“我的道具”启用后，zero-hour 分组持续 1 小时；default 分组内非生图模型按 0 倍率计费，仅限本人且并发最多 5 个请求。
+                每成功结算 $1 增加 1 点，每个实际支付盲盒增加 5 点；抽中后进度归零。在“我的道具”启用后，zero-hour 分组持续 1 小时；default 分组内非生图模型按 0 倍率计费，仅限本人且并发最多 5 个请求。
               </div>
             </div>
 

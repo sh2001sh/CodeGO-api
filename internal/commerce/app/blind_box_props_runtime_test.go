@@ -75,7 +75,7 @@ func TestZeroHourPropActivatesUserScopedGroup(t *testing.T) {
 
 func TestZeroHourProbabilityCapsAtConfiguredMaximum(t *testing.T) {
 	assert.Equal(t, zeroHourBaseProbability, zeroHourProbability(0))
-	assert.InDelta(t, 0.00019, zeroHourProbability(90), 0.0000000001)
+	assert.InDelta(t, 0.000541, zeroHourProbability(90), 0.0000000001)
 	assert.Equal(t, zeroHourProbabilityCap, zeroHourProbability(zeroHourProgressCap))
 	assert.Equal(t, zeroHourProbabilityCap, zeroHourProbability(zeroHourProgressCap+100))
 }
@@ -92,6 +92,24 @@ func TestZeroHourUsageProgressAccumulatesWholeDollars(t *testing.T) {
 	overview, err := BuildZeroHourOverview(user.Id)
 	require.NoError(t, err)
 	assert.Equal(t, int64(1), overview.Points)
+}
+
+func TestZeroHourPaidBlindBoxAddsFiveProgressPoints(t *testing.T) {
+	db := setupRedemptionTestDB(t)
+	user := &identityschema.User{Id: 8814, Username: "zero_hour_paid_box_user", Status: constant.UserStatusEnabled}
+	require.NoError(t, db.Create(user).Error)
+
+	require.NoError(t, db.Transaction(func(tx *gorm.DB) error {
+		state, err := getOrCreateZeroHourStateTx(tx, user.Id)
+		if err != nil {
+			return err
+		}
+		return addZeroHourProgressTx(tx, state, zeroHourProgressPerPaidOpen)
+	}))
+
+	overview, err := BuildZeroHourOverview(user.Id)
+	require.NoError(t, err)
+	assert.Equal(t, int64(5), overview.Points)
 }
 
 func TestExpiredZeroHourPropDoesNotBlockAnotherCard(t *testing.T) {
