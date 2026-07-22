@@ -159,7 +159,8 @@ describe('submitDesktopImportRequest', () => {
           success: true,
           data: {
             code: 'import-code',
-            deep_link: 'codego://v1/import?resource=provider&app=codex',
+            deep_link:
+              'codego://v1/import?resource=provider&app=codex&configUrl=https%3A%2F%2Fshu26.cfd%2Fconfig&codegoAction=applyToolConfig&tokenId=9',
             config_url: 'https://shu26.cfd/api/desktop/import/config?code=1',
 			config: 'eyJ0ZXN0Ijp0cnVlfQ==',
             expires_in_seconds: 300,

@@ -118,6 +118,8 @@ function buildCCSwitchDeepLink(deepLink: string, config: string) {
 	const url = new URL(deepLink)
 	url.protocol = 'ccswitch:'
 	url.searchParams.delete('configUrl')
+	url.searchParams.delete('codegoAction')
+	url.searchParams.delete('tokenId')
 	url.searchParams.set('config', config)
 	return url.toString()
 }
