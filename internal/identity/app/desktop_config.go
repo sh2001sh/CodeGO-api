@@ -67,6 +67,7 @@ type DesktopImportCreateResponse struct {
 	Code      string `json:"code"`
 	DeepLink  string `json:"deep_link"`
 	ConfigURL string `json:"config_url"`
+	Config    string `json:"config"`
 	ExpiresIn int64  `json:"expires_in_seconds"`
 	Tool      string `json:"tool"`
 	TokenName string `json:"token_name"`
@@ -442,6 +443,7 @@ func BuildDesktopImportConfigDeepLink(userID int, req DesktopImportCreateRequest
 		Code:      code,
 		DeepLink:  "codego://v1/import?" + params.Encode(),
 		ConfigURL: configURL,
+		Config:    payload.Config,
 		ExpiresIn: int64(desktopImportCodeTTL / time.Second),
 		Tool:      tool,
 		TokenName: token.Name,

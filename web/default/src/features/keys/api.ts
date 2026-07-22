@@ -41,6 +41,7 @@ export interface DesktopImportLinkResponse {
   code: string
   deep_link: string
   config_url: string
+	config: string
   expires_in_seconds: number
   tool: string
   token_name: string

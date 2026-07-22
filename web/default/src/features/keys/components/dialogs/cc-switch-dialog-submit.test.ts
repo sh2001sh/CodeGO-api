@@ -121,6 +121,7 @@ describe('submitDesktopImportRequest', () => {
               code: 'import-code',
               deep_link: 'codego://v1/import?resource=provider',
               config_url: 'https://shu26.cfd/api/desktop/import/config?code=1',
+				config: 'eyJ0ZXN0Ijp0cnVlfQ==',
               expires_in_seconds: 300,
               tool: 'codex',
               token_name: 'My Codex',
@@ -160,6 +161,7 @@ describe('submitDesktopImportRequest', () => {
             code: 'import-code',
             deep_link: 'codego://v1/import?resource=provider&app=codex',
             config_url: 'https://shu26.cfd/api/desktop/import/config?code=1',
+			config: 'eyJ0ZXN0Ijp0cnVlfQ==',
             expires_in_seconds: 300,
             tool: 'codex',
             token_name: 'CodeGo',
@@ -176,7 +178,7 @@ describe('submitDesktopImportRequest', () => {
 
     assert.deepEqual(result, { tone: 'success' })
     assert.deepEqual(openedLinks, [
-      'ccswitch://v1/import?resource=provider&app=codex',
+      'ccswitch://v1/import?resource=provider&app=codex&config=eyJ0ZXN0Ijp0cnVlfQ%3D%3D',
     ])
   })
 
@@ -270,8 +272,9 @@ describe('submitDesktopImportRequest', () => {
             data: {
               code: 'import-opencode',
               deep_link: 'codego://v1/import?resource=provider&app=opencode',
-              config_url:
-                'https://shu26.cfd/api/desktop/import/config?code=opencode',
+            config_url:
+              'https://shu26.cfd/api/desktop/import/config?code=opencode',
+			config: 'eyJ0ZXN0Ijp0cnVlfQ==',
               expires_in_seconds: 300,
               tool: 'opencode',
               token_name: 'My OpenCode',

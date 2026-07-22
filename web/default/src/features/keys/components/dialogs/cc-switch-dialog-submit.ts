@@ -98,7 +98,7 @@ export async function submitDesktopImportRequest(
 
     const deepLink =
       input.target === 'ccswitch'
-        ? result.data.deep_link.replace(/^codego:/i, 'ccswitch:')
+        ? buildCCSwitchDeepLink(result.data.deep_link, result.data.config)
         : result.data.deep_link
 
     dependencies.openDesktopImportDeepLink(dependencies.windowLike, deepLink)
@@ -112,4 +112,12 @@ export async function submitDesktopImportRequest(
       message: openErrorMessage,
     }
   }
+}
+
+function buildCCSwitchDeepLink(deepLink: string, config: string) {
+	const url = new URL(deepLink)
+	url.protocol = 'ccswitch:'
+	url.searchParams.delete('configUrl')
+	url.searchParams.set('config', config)
+	return url.toString()
 }
