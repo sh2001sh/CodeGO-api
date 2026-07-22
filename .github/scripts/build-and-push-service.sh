@@ -35,6 +35,7 @@ while true; do
     --progress=plain \
     --provenance=false \
     --build-arg "APP_PATH=./cmd/${SERVICE}" \
+    --build-arg "FRONTEND_REVISION=${GITHUB_SHA}" \
     --label "org.opencontainers.image.created=$(date --utc +%Y-%m-%dT%H:%M:%SZ)" \
     --label "org.opencontainers.image.description=A unified AI model hub for aggregation & distribution." \
     --label "org.opencontainers.image.licenses=AGPL-3.0" \
