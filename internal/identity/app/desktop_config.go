@@ -53,6 +53,7 @@ type DesktopImportConfigPayload struct {
 }
 
 type DesktopImportCreateRequest struct {
+	Target      string `json:"target"`
 	Tool        string `json:"tool"`
 	TokenID     int    `json:"token_id"`
 	Name        string `json:"name"`
@@ -67,7 +68,6 @@ type DesktopImportCreateResponse struct {
 	Code      string `json:"code"`
 	DeepLink  string `json:"deep_link"`
 	ConfigURL string `json:"config_url"`
-	Config    string `json:"config"`
 	ExpiresIn int64  `json:"expires_in_seconds"`
 	Tool      string `json:"tool"`
 	TokenName string `json:"token_name"`
@@ -380,6 +380,13 @@ func BuildDesktopImportConfig(tool string, token *identityschema.Token, req Desk
 
 // BuildDesktopImportConfigDeepLink creates a one-time desktop import deeplink.
 func BuildDesktopImportConfigDeepLink(userID int, req DesktopImportCreateRequest) (*DesktopImportCreateResponse, error) {
+	target := strings.ToLower(strings.TrimSpace(req.Target))
+	if target == "" {
+		target = "codego"
+	}
+	if target != "codego" && target != "ccswitch" {
+		return nil, errors.New("unsupported desktop target")
+	}
 	tool := NormalizeDesktopTool(req.Tool)
 	if tool == "" {
 		return nil, errors.New("unsupported tool")
@@ -411,6 +418,9 @@ func BuildDesktopImportConfigDeepLink(userID int, req DesktopImportCreateRequest
 
 	serverAddress := NormalizeDesktopServerAddress("")
 	configURL := serverAddress + "/api/desktop/import/config?code=" + url.QueryEscape(code)
+	if target == "ccswitch" {
+		configURL += "&format=ccswitch"
+	}
 	params := url.Values{}
 	params.Set("resource", "provider")
 	params.Set("app", tool)
@@ -419,9 +429,13 @@ func BuildDesktopImportConfigDeepLink(userID int, req DesktopImportCreateRequest
 	params.Set("homepage", payload.Homepage)
 	params.Set("enabled", strconv.FormatBool(payload.Enabled))
 	params.Set("icon", payload.Icon)
-	params.Set("tokenId", strconv.Itoa(req.TokenID))
-	params.Set("codegoAction", "applyToolConfig")
-	params.Set("configUrl", configURL)
+	if target == "codego" {
+		params.Set("codegoAction", "applyToolConfig")
+		params.Set("configUrl", configURL)
+		params.Set("tokenId", strconv.Itoa(req.TokenID))
+	} else {
+		params.Set("configUrl", configURL)
+	}
 	params.Set("configFormat", payload.ConfigFormat)
 	if payload.Model != "" {
 		params.Set("model", payload.Model)
@@ -439,11 +453,14 @@ func BuildDesktopImportConfigDeepLink(userID int, req DesktopImportCreateRequest
 		params.Set("notes", payload.Notes)
 	}
 
+	protocol := "codego"
+	if target == "ccswitch" {
+		protocol = "ccswitch"
+	}
 	return &DesktopImportCreateResponse{
 		Code:      code,
-		DeepLink:  "codego://v1/import?" + params.Encode(),
+		DeepLink:  protocol + "://v1/import?" + params.Encode(),
 		ConfigURL: configURL,
-		Config:    payload.Config,
 		ExpiresIn: int64(desktopImportCodeTTL / time.Second),
 		Tool:      tool,
 		TokenName: token.Name,

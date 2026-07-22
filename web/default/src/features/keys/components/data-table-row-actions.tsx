@@ -78,12 +78,8 @@ export function DataTableRowActions<TData>({
 }: DataTableRowActionsProps<TData>) {
   const { t } = useTranslation()
   const apiKey = apiKeySchema.parse(row.original)
-  const {
-    setOpen,
-    setCurrentRow,
-    triggerRefresh,
-    resolveRealKey,
-  } = useApiKeys()
+  const { setOpen, setCurrentRow, triggerRefresh, resolveRealKey } =
+    useApiKeys()
   const isEnabled = apiKey.status === API_KEY_STATUS.ENABLED
   const { chatPresets, serverAddress } = useChatPresets()
   const [isTogglingStatus, setIsTogglingStatus] = useState(false)
@@ -264,21 +260,10 @@ export function DataTableRowActions<TData>({
           <DropdownMenuItem
             onClick={() => {
               setCurrentRow(apiKey)
-              setOpen('cc-switch')
+              setOpen('desktop-client')
             }}
           >
-            {t('Configure CC Switch')}
-            <DropdownMenuShortcut>
-              <ArrowRightLeft size={16} />
-            </DropdownMenuShortcut>
-          </DropdownMenuItem>
-          <DropdownMenuItem
-            onClick={() => {
-              setCurrentRow(apiKey)
-              setOpen('codego-desktop')
-            }}
-          >
-            {t('Configure Code Go Desktop')}
+            {t('Configure Desktop Client')}
             <DropdownMenuShortcut>
               <ArrowRightLeft size={16} />
             </DropdownMenuShortcut>

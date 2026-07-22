@@ -38,7 +38,7 @@ export interface DesktopImportSubmitInput {
   tokenId: number | null
   name: string
   models: Record<string, string>
-  target?: 'codego' | 'ccswitch'
+  target: 'codego' | 'ccswitch'
 }
 
 export interface DesktopImportSubmitDependencies {
@@ -57,10 +57,10 @@ export async function submitDesktopImportRequest(
   input: DesktopImportSubmitInput,
   dependencies: DesktopImportSubmitDependencies
 ): Promise<DesktopImportSubmitResult> {
-	const openErrorMessage =
-		input.target === 'ccswitch'
-			? dependencies.t('Failed to open CC Switch')
-			: dependencies.t('Failed to open Code Go Desktop')
+  const openErrorMessage =
+    input.target === 'ccswitch'
+      ? dependencies.t('Failed to open CC Switch')
+      : dependencies.t('Failed to open Code Go Desktop')
 
   if (!input.models.model) {
     return {
@@ -78,6 +78,7 @@ export async function submitDesktopImportRequest(
 
   try {
     const result = await dependencies.createDesktopImportLink({
+      target: input.target,
       tool: input.app,
       token_id: input.tokenId,
       name: input.name,
@@ -91,17 +92,14 @@ export async function submitDesktopImportRequest(
     if (!result.success || !result.data?.deep_link) {
       return {
         tone: 'error',
-        message:
-          result.message || openErrorMessage,
+        message: result.message || openErrorMessage,
       }
     }
 
-    const deepLink =
-      input.target === 'ccswitch'
-        ? buildCCSwitchDeepLink(result.data.deep_link, result.data.config)
-        : result.data.deep_link
-
-    dependencies.openDesktopImportDeepLink(dependencies.windowLike, deepLink)
+    dependencies.openDesktopImportDeepLink(
+      dependencies.windowLike,
+      result.data.deep_link
+    )
 
     return {
       tone: 'success',
@@ -112,14 +110,4 @@ export async function submitDesktopImportRequest(
       message: openErrorMessage,
     }
   }
-}
-
-function buildCCSwitchDeepLink(deepLink: string, config: string) {
-	const url = new URL(deepLink)
-	url.protocol = 'ccswitch:'
-	url.searchParams.delete('configUrl')
-	url.searchParams.delete('codegoAction')
-	url.searchParams.delete('tokenId')
-	url.searchParams.set('config', config)
-	return url.toString()
 }

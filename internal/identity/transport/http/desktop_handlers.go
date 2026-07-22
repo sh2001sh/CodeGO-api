@@ -1,6 +1,7 @@
 package http
 
 import (
+	"encoding/base64"
 	"errors"
 	"github.com/gin-gonic/gin"
 	identityapp "github.com/sh2001sh/new-api/internal/identity/app"
@@ -185,7 +186,7 @@ func CreateDesktopImportConfig(c *gin.Context) {
 	}
 	payload, err := identityapp.BuildDesktopImportConfigDeepLink(c.GetInt("id"), req)
 	if err != nil {
-		if err.Error() == "unsupported tool" || err.Error() == "invalid token_id" || err.Error() == "token is not enabled" {
+		if err.Error() == "unsupported desktop target" || err.Error() == "unsupported tool" || err.Error() == "invalid token_id" || err.Error() == "token is not enabled" {
 			httpapi.ApiErrorMsg(c, err.Error())
 			return
 		}
@@ -203,6 +204,17 @@ func GetDesktopImportConfig(c *gin.Context) {
 	payload, err := identityapp.ResolveDesktopImportConfig(c.Query("code"))
 	if err != nil {
 		httpapi.ApiErrorMsg(c, err.Error())
+		return
+	}
+	if c.Query("format") == "ccswitch" {
+		config, decodeErr := base64.StdEncoding.DecodeString(payload.Config)
+		if decodeErr != nil {
+			httpapi.ApiErrorMsg(c, "invalid desktop config")
+			return
+		}
+		c.Header("Cache-Control", "no-store")
+		c.Header("Pragma", "no-cache")
+		c.Data(200, "application/json; charset=utf-8", config)
 		return
 	}
 	httpapi.ApiSuccess(c, payload)

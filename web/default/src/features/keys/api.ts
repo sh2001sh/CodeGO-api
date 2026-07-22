@@ -27,6 +27,7 @@ import type {
 } from './types'
 
 export interface DesktopImportLinkRequest {
+  target?: 'codego' | 'ccswitch'
   tool: 'claude' | 'codex' | 'gemini' | 'opencode' | 'openclaw' | 'hermes'
   token_id: number
   name: string
@@ -41,7 +42,6 @@ export interface DesktopImportLinkResponse {
   code: string
   deep_link: string
   config_url: string
-	config: string
   expires_in_seconds: number
   tool: string
   token_name: string

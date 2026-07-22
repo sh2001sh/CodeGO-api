@@ -253,12 +253,17 @@ export const STATIC_I18N_KEYS = [
 
   // Desktop import dialog
   'Code Go Desktop',
+  'Configure Desktop Client',
+  'Desktop Client',
   'Configure CC Switch',
   'Configure Code Go Desktop',
   'Import to Code Go Desktop',
   'Open Code Go Desktop',
   'Failed to open Code Go Desktop',
   'Failed to open CC Switch',
+  'Generating configuration...',
+  'Use the CodeGo protocol and apply the selected tool configuration',
+  'Use the CC Switch protocol and import a provider',
   'Desktop release channel',
   'Download Code Go Desktop',
   'Use browser-approved desktop access, import API tokens from the website, and configure Codex, Claude Code, or Gemini CLI from one local control surface.',

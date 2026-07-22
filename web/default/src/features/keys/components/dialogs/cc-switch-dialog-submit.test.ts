@@ -12,6 +12,7 @@ describe('submitDesktopImportRequest', () => {
         tokenId: 1,
         name: 'My Claude',
         models: {},
+        target: 'codego',
       },
       {
         createDesktopImportLink: async () => {
@@ -41,6 +42,7 @@ describe('submitDesktopImportRequest', () => {
         tokenId: null,
         name: 'My Codex',
         models: { model: 'gpt-5.5' },
+        target: 'codego',
       },
       {
         createDesktopImportLink: async () => {
@@ -70,6 +72,7 @@ describe('submitDesktopImportRequest', () => {
         tokenId: 8,
         name: 'My Gemini',
         models: { model: 'gemini-2.5-pro' },
+        target: 'codego',
       },
       {
         createDesktopImportLink: async () => ({
@@ -101,10 +104,12 @@ describe('submitDesktopImportRequest', () => {
         tokenId: 9,
         name: 'My Codex',
         models: { model: 'gpt-5.5' },
+        target: 'codego',
       },
       {
         createDesktopImportLink: async (payload) => {
           assert.deepEqual(payload, {
+            target: 'codego',
             tool: 'codex',
             token_id: 9,
             name: 'My Codex',
@@ -121,7 +126,6 @@ describe('submitDesktopImportRequest', () => {
               code: 'import-code',
               deep_link: 'codego://v1/import?resource=provider',
               config_url: 'https://shu26.cfd/api/desktop/import/config?code=1',
-				config: 'eyJ0ZXN0Ijp0cnVlfQ==',
               expires_in_seconds: 300,
               tool: 'codex',
               token_name: 'My Codex',
@@ -155,20 +159,22 @@ describe('submitDesktopImportRequest', () => {
         target: 'ccswitch',
       },
       {
-        createDesktopImportLink: async () => ({
-          success: true,
-          data: {
-            code: 'import-code',
-            deep_link:
-              'codego://v1/import?resource=provider&app=codex&configUrl=https%3A%2F%2Fshu26.cfd%2Fconfig&codegoAction=applyToolConfig&tokenId=9',
-            config_url: 'https://shu26.cfd/api/desktop/import/config?code=1',
-			config: 'eyJ0ZXN0Ijp0cnVlfQ==',
-            expires_in_seconds: 300,
-            tool: 'codex',
-            token_name: 'CodeGo',
-            provider_name: 'CodeGo',
-          },
-        }),
+        createDesktopImportLink: async (payload) => {
+          assert.equal(payload.target, 'ccswitch')
+          return {
+            success: true,
+            data: {
+              code: 'import-code',
+              deep_link:
+                'ccswitch://v1/import?resource=provider&app=codex&configUrl=https%3A%2F%2Fshu26.cfd%2Fconfig%3Fformat%3Dccswitch',
+              config_url: 'https://shu26.cfd/api/desktop/import/config?code=1',
+              expires_in_seconds: 300,
+              tool: 'codex',
+              token_name: 'CodeGo',
+              provider_name: 'CodeGo',
+            },
+          }
+        },
         openDesktopImportDeepLink: (_windowLike, deepLink) => {
           openedLinks.push(deepLink)
         },
@@ -179,7 +185,7 @@ describe('submitDesktopImportRequest', () => {
 
     assert.deepEqual(result, { tone: 'success' })
     assert.deepEqual(openedLinks, [
-      'ccswitch://v1/import?resource=provider&app=codex&config=eyJ0ZXN0Ijp0cnVlfQ%3D%3D',
+      'ccswitch://v1/import?resource=provider&app=codex&configUrl=https%3A%2F%2Fshu26.cfd%2Fconfig%3Fformat%3Dccswitch',
     ])
   })
 
@@ -193,6 +199,7 @@ describe('submitDesktopImportRequest', () => {
           model: 'claude-sonnet-4',
           haikuModel: 'claude-haiku-4',
         },
+        target: 'codego',
       },
       {
         createDesktopImportLink: async () => {
@@ -254,10 +261,12 @@ describe('submitDesktopImportRequest', () => {
         tokenId: 17,
         name: 'My OpenCode',
         models: { model: 'gpt-5.5' },
+        target: 'codego',
       },
       {
         createDesktopImportLink: async (payload) => {
           assert.deepEqual(payload, {
+            target: 'codego',
             tool: 'opencode',
             token_id: 17,
             name: 'My OpenCode',
@@ -273,9 +282,8 @@ describe('submitDesktopImportRequest', () => {
             data: {
               code: 'import-opencode',
               deep_link: 'codego://v1/import?resource=provider&app=opencode',
-            config_url:
-              'https://shu26.cfd/api/desktop/import/config?code=opencode',
-			config: 'eyJ0ZXN0Ijp0cnVlfQ==',
+              config_url:
+                'https://shu26.cfd/api/desktop/import/config?code=opencode',
               expires_in_seconds: 300,
               tool: 'opencode',
               token_name: 'My OpenCode',

@@ -684,6 +684,83 @@ func TestCreateDesktopImportConfigAndConsumeCodeOnce(t *testing.T) {
 	}
 }
 
+func TestCreateCCSwitchImportUsesDedicatedProtocolAndOneTimeConfig(t *testing.T) {
+	db := setupDesktopHTTPTestDB(t)
+	resetDesktopImportCacheForTest(t)
+	user := &identityschema.User{Id: 1, Username: "ccswitch-import-user", Password: "password123", DisplayName: "CC Switch Import User", Role: constant.RoleCommonUser, Status: constant.UserStatusEnabled, Group: "default"}
+	if err := db.Create(user).Error; err != nil {
+		t.Fatalf("failed to seed user: %v", err)
+	}
+	token := seedDesktopToken(t, db, 1, "ccswitch-key", "ccswitchsecret123456")
+	platformconfig.ServerAddress = "https://shu26.cfd"
+	t.Cleanup(func() {
+		platformconfig.ServerAddress = "http://localhost:3000"
+		resetDesktopImportCacheForTest(t)
+	})
+
+	body := map[string]any{"target": "ccswitch", "tool": "codex", "token_id": token.Id, "name": "CodeGo", "model": "gpt-5.6-luna"}
+	createCtx, createRecorder := newAuthenticatedContext(t, http.MethodPost, "/api/desktop/import/deeplink", body, 1)
+	CreateDesktopImportConfig(createCtx)
+	createResponse := decodeAPIResponse(t, createRecorder)
+	if !createResponse.Success {
+		t.Fatalf("expected CC Switch import success, got %s", createResponse.Message)
+	}
+	if strings.Contains(string(createResponse.Data), `"config":`) {
+		t.Fatalf("create response must not expose the encoded API key config")
+	}
+
+	var created desktopImportCreatePayload
+	if err := platformencoding.Unmarshal(createResponse.Data, &created); err != nil {
+		t.Fatalf("failed to decode create response: %v", err)
+	}
+	deepLink, err := url.Parse(created.DeepLink)
+	if err != nil {
+		t.Fatalf("failed to parse deep link: %v", err)
+	}
+	if deepLink.Scheme != "ccswitch" {
+		t.Fatalf("expected ccswitch scheme, got %q", deepLink.Scheme)
+	}
+	params := deepLink.Query()
+	for _, key := range []string{"config", "codegoAction", "tokenId"} {
+		if params.Has(key) {
+			t.Fatalf("CC Switch link must not contain %s", key)
+		}
+	}
+	configURL, err := url.Parse(params.Get("configUrl"))
+	if err != nil {
+		t.Fatalf("failed to parse config URL: %v", err)
+	}
+	if configURL.Query().Get("format") != "ccswitch" {
+		t.Fatalf("expected CC Switch config format in %q", configURL.String())
+	}
+
+	getCtx, getRecorder := newAuthenticatedContext(t, http.MethodGet, configURL.Path+"?"+configURL.RawQuery, nil, 0)
+	getCtx.Request.URL.RawQuery = configURL.RawQuery
+	GetDesktopImportConfig(getCtx)
+	if getRecorder.Code != http.StatusOK {
+		t.Fatalf("expected raw config response, got status %d", getRecorder.Code)
+	}
+	if getRecorder.Header().Get("Cache-Control") != "no-store" {
+		t.Fatalf("one-time config response must disable caching")
+	}
+	var rawConfig map[string]any
+	if err := platformencoding.Unmarshal(getRecorder.Body.Bytes(), &rawConfig); err != nil {
+		t.Fatalf("expected raw JSON config, got %q: %v", getRecorder.Body.String(), err)
+	}
+	auth, ok := rawConfig["auth"].(map[string]any)
+	if !ok || auth["OPENAI_API_KEY"] != token.GetFullKey() {
+		t.Fatalf("raw config did not preserve the token key")
+	}
+
+	secondCtx, secondRecorder := newAuthenticatedContext(t, http.MethodGet, configURL.Path+"?"+configURL.RawQuery, nil, 0)
+	secondCtx.Request.URL.RawQuery = configURL.RawQuery
+	GetDesktopImportConfig(secondCtx)
+	secondResponse := decodeAPIResponse(t, secondRecorder)
+	if secondResponse.Success {
+		t.Fatalf("one-time CC Switch config URL must not be reusable")
+	}
+}
+
 func TestCreateDesktopImportConfigSupportsAllDesktopTools(t *testing.T) {
 	db := setupDesktopHTTPTestDB(t)
 	resetDesktopImportCacheForTest(t)
@@ -787,6 +864,23 @@ func TestCreateDesktopImportConfigRejectsUnsupportedTool(t *testing.T) {
 	response := decodeAPIResponse(t, recorder)
 	if response.Success {
 		t.Fatalf("expected unsupported tool import config creation to fail")
+	}
+}
+
+func TestCreateDesktopImportConfigRejectsUnsupportedTarget(t *testing.T) {
+	db := setupDesktopHTTPTestDB(t)
+	resetDesktopImportCacheForTest(t)
+	user := &identityschema.User{Id: 1, Username: "unsupported-target-user", Password: "password123", DisplayName: "Unsupported Target User", Role: constant.RoleCommonUser, Status: constant.UserStatusEnabled, Group: "default"}
+	if err := db.Create(user).Error; err != nil {
+		t.Fatalf("failed to seed user: %v", err)
+	}
+	token := seedDesktopToken(t, db, 1, "target-token", "targettoken123456")
+	body := map[string]any{"target": "other", "tool": "codex", "token_id": token.Id, "name": "Code Go Codex"}
+	ctx, recorder := newAuthenticatedContext(t, http.MethodPost, "/api/desktop/import/deeplink", body, 1)
+	CreateDesktopImportConfig(ctx)
+	response := decodeAPIResponse(t, recorder)
+	if response.Success || response.Message != "unsupported desktop target" {
+		t.Fatalf("expected unsupported desktop target error, got %+v", response)
 	}
 }
 
