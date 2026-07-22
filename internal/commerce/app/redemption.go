@@ -141,14 +141,8 @@ func RedeemCode(userID int, key string) (*RedemptionResult, error) {
 			if err != nil {
 				return err
 			}
-			records, err := OpenBlindBoxOrderByTradeNoTx(tx, order.TradeNo)
-			if err != nil {
-				return err
-			}
 			result.BlindBoxQuantity = redemption.BlindBoxQuantity
 			result.BlindBoxOrderId = order.Id
-			result.BlindBoxOpenCount = len(records)
-			result.BlindBoxRecords = records
 		default:
 			walletType := commercedomain.NormalizeWalletType(redemption.WalletType)
 			idempotencyKey := fmt.Sprintf("redemption:%d:%s", redemption.Id, walletType)
