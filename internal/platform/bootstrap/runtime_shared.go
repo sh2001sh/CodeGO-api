@@ -4,12 +4,14 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/bytedance/gopkg/util/gopool"
 	"github.com/gin-contrib/sessions"
-	"github.com/gin-contrib/sessions/cookie"
+	sessionredis "github.com/gin-contrib/sessions/redis"
 	"github.com/gin-gonic/gin"
 	auditprojection "github.com/sh2001sh/new-api/internal/audit/projection"
 	gatewaystore "github.com/sh2001sh/new-api/internal/gateway/store"
@@ -116,7 +118,29 @@ func buildHTTPServer(registerRoutes httpRouteRegistrar) *gin.Engine {
 }
 
 func buildSessionStore() sessions.Store {
-	store := cookie.NewStore([]byte(platformconfig.SessionSecret))
+	redisURL, err := url.Parse(os.Getenv("REDIS_CONN_STRING"))
+	if err != nil || redisURL.Host == "" || !platformcache.RedisReady() {
+		log.Fatal("Redis-backed sessions require a reachable REDIS_CONN_STRING")
+	}
+	password, _ := redisURL.User.Password()
+	database := strings.TrimPrefix(redisURL.Path, "/")
+	if database == "" {
+		database = "0"
+	}
+	store, err := sessionredis.NewStoreWithDB(
+		10,
+		"tcp",
+		redisURL.Host,
+		password,
+		database,
+		[]byte(platformconfig.SessionSecret),
+	)
+	if err != nil {
+		log.Fatal("failed to initialize Redis session store: " + err.Error())
+	}
+	if err := sessionredis.SetKeyPrefix(store, "codego:session:"); err != nil {
+		log.Fatal("failed to configure Redis session store: " + err.Error())
+	}
 	store.Options(sessions.Options{
 		Path:     "/",
 		MaxAge:   2592000,
