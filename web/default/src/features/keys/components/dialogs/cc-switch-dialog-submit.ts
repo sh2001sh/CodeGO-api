@@ -57,6 +57,11 @@ export async function submitDesktopImportRequest(
   input: DesktopImportSubmitInput,
   dependencies: DesktopImportSubmitDependencies
 ): Promise<DesktopImportSubmitResult> {
+	const openErrorMessage =
+		input.target === 'ccswitch'
+			? dependencies.t('Failed to open CC Switch')
+			: dependencies.t('Failed to open Code Go Desktop')
+
   if (!input.models.model) {
     return {
       tone: 'warning',
@@ -87,7 +92,7 @@ export async function submitDesktopImportRequest(
       return {
         tone: 'error',
         message:
-          result.message || dependencies.t('Failed to open Code Go Desktop'),
+          result.message || openErrorMessage,
       }
     }
 
@@ -104,7 +109,7 @@ export async function submitDesktopImportRequest(
   } catch {
     return {
       tone: 'error',
-      message: dependencies.t('Failed to open Code Go Desktop'),
+      message: openErrorMessage,
     }
   }
 }

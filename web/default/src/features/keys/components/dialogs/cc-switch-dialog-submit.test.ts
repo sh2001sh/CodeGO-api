@@ -212,6 +212,36 @@ describe('submitDesktopImportRequest', () => {
     })
   })
 
+  test('uses the CC Switch error when a CC Switch import request throws', async () => {
+    const result = await submitDesktopImportRequest(
+      {
+        app: 'claude',
+        tokenId: 5,
+        name: 'My Claude',
+        models: { model: 'claude-sonnet-4' },
+        target: 'ccswitch',
+      },
+      {
+        createDesktopImportLink: async () => {
+          throw new Error('network down')
+        },
+        openDesktopImportDeepLink: () => {
+          throw new Error('should not be called')
+        },
+        t: translate,
+        windowLike: {
+          location: { href: '' },
+          open: () => null,
+        },
+      }
+    )
+
+    assert.deepEqual(result, {
+      tone: 'error',
+      message: 'Failed to open CC Switch',
+    })
+  })
+
   test('supports the additional desktop tools exposed by the desktop app', async () => {
     const openedLinks: string[] = []
 

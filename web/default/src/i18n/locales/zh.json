@@ -2870,6 +2870,7 @@
     "Open a source model first": "请先打开一个源模型",
     "Open authorization page": "打开授权页",
     "Open CC Switch": "打开 CC Switch",
+    "Failed to open CC Switch": "打开 CC Switch 失败",
     "Code Go Desktop": "Code Go Desktop",
     "Import to Code Go Desktop": "导入到 Code Go Desktop",
     "Open Code Go Desktop": "打开 Code Go Desktop",
