@@ -34,6 +34,7 @@ while true; do
     --push \
     --progress=plain \
     --provenance=false \
+    --no-cache-filter builder \
     --build-arg "APP_PATH=./cmd/${SERVICE}" \
     --build-arg "FRONTEND_REVISION=${GITHUB_SHA}" \
     --label "org.opencontainers.image.created=$(date --utc +%Y-%m-%dT%H:%M:%SZ)" \
