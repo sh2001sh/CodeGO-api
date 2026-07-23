@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"os"
 	"strconv"
+	"time"
 
 	"github.com/bytedance/gopkg/util/gopool"
 	"github.com/gin-contrib/sessions"
@@ -157,11 +158,16 @@ func newRedisSessionStore(redisURL *url.URL) (sessionredis.Store, error) {
 	username := redisURL.User.Username()
 	password, _ := redisURL.User.Password()
 	pool := &redigo.Pool{
-		MaxIdle:   10,
-		MaxActive: 10,
-		Wait:      true,
+		MaxIdle:     10,
+		MaxActive:   10,
+		Wait:        true,
+		IdleTimeout: time.Minute,
 		Dial: func() (redigo.Conn, error) {
 			return dialRedisSessionConnection(redisURL, username, password, database)
+		},
+		TestOnBorrow: func(connection redigo.Conn, _ time.Time) error {
+			_, err := connection.Do("PING")
+			return err
 		},
 	}
 	connection := pool.Get()
