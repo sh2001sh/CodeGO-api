@@ -271,7 +271,7 @@ const PROFILE_SPECS: Record<string, ProfileSpec> = {
   },
   large: {
     ttftRange: [600, 1_400],
-    throughputRange: [55, 95],
+    throughputRange: [30, 55],
     uptimeRange: [99.5, 99.95],
   },
   standard: {
