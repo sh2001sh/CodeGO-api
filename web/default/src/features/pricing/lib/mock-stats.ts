@@ -343,7 +343,7 @@ export function buildGroupPerformance(model: PricingModel): GroupPerformance[] {
           throughput === 0
             ? 0
             : Math.round(
-                (/gpt-/i.test(model.model_name) && throughput > 55
+                (/gpt/i.test(model.model_name) && throughput > 55
                   ? 50 + rand() * 20
                   : throughput) * 10
               ) / 10,
