@@ -269,6 +269,13 @@ export function SubscriptionPurchaseDialog(props: Props) {
 		}))
 	}
 
+	const handleOpenChange = (open: boolean) => {
+		if (!open && paymentTracker.stage === 'pending') {
+			cancelPendingPayment()
+		}
+		props.onOpenChange(open)
+	}
+
   if (!plan || !planRecord) return null
 
   const hasStripe = props.enableStripe && !!plan.stripe_price_id
@@ -600,10 +607,7 @@ export function SubscriptionPurchaseDialog(props: Props) {
               取消等待
             </Button>
           ) : (
-			<Button variant='default' onClick={() => {
-				cancelPendingPayment()
-				props.onOpenChange(false)
-			}}>
+			<Button variant='default' onClick={() => handleOpenChange(false)}>
               关闭
             </Button>
           )}
@@ -613,7 +617,7 @@ export function SubscriptionPurchaseDialog(props: Props) {
   }
 
   return (
-    <Dialog open={props.open} onOpenChange={props.onOpenChange}>
+	<Dialog open={props.open} onOpenChange={handleOpenChange}>
       <DialogContent className='flex max-h-[calc(100vh-1rem)] w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] flex-col gap-0 overflow-hidden p-0 sm:max-w-2xl'>
         <DialogHeader className='border-border/70 border-b px-4 py-4 sm:px-5'>
           <DialogTitle className='flex items-center gap-2 text-lg'>
