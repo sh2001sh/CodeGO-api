@@ -43,6 +43,7 @@ func main() {
 	apply := flag.Bool("apply", false, "persist ledger accounts and bootstrap entries")
 	limit := flag.Int("limit", 0, "optional maximum subjects per account type")
 	normalizeNegativeWalletLegacy := flag.Bool("normalize-negative-wallet-legacy", false, "normalize strict negative legacy wallet quotas to the canonical zero ledger balance")
+	groupBuyID := flag.Int64("reconcile-group-buy-id", 0, "reconcile missing group-buy tier bonus for one group")
 	flag.Parse()
 
 	platformconfig.IsMasterNode = true
@@ -55,6 +56,17 @@ func main() {
 	defer platformstore.CloseDatabases()
 	if err := platformstore.ApplyV2Migrations(context.Background(), false); err != nil {
 		log.Fatalf("apply v2 migrations: %v", err)
+	}
+	if *groupBuyID > 0 {
+		if !*apply {
+			log.Fatal("reconcile-group-buy-id requires --apply")
+		}
+		adjusted, err := commerceapp.ReconcileGroupBuyBonus(*groupBuyID)
+		if err != nil {
+			log.Fatalf("reconcile group buy bonus: %v", err)
+		}
+		fmt.Printf("group-buy members adjusted: %d\n", adjusted)
+		return
 	}
 	if *normalizeNegativeWalletLegacy {
 		plan, err := inspectNegativeWalletLegacy(*limit)
