@@ -684,7 +684,7 @@ func TestCreateDesktopImportConfigAndConsumeCodeOnce(t *testing.T) {
 	}
 }
 
-func TestCreateCCSwitchImportUsesDedicatedProtocolAndOneTimeConfig(t *testing.T) {
+func TestCreateCCSwitchImportUsesOfficialDirectParameterContract(t *testing.T) {
 	db := setupDesktopHTTPTestDB(t)
 	resetDesktopImportCacheForTest(t)
 	user := &identityschema.User{Id: 1, Username: "ccswitch-import-user", Password: "password123", DisplayName: "CC Switch Import User", Role: constant.RoleCommonUser, Status: constant.UserStatusEnabled, Group: "default"}
@@ -721,43 +721,28 @@ func TestCreateCCSwitchImportUsesDedicatedProtocolAndOneTimeConfig(t *testing.T)
 		t.Fatalf("expected ccswitch scheme, got %q", deepLink.Scheme)
 	}
 	params := deepLink.Query()
-	for _, key := range []string{"config", "codegoAction", "tokenId"} {
+	for _, key := range []string{"config", "configFormat", "configUrl", "codegoAction", "tokenId"} {
 		if params.Has(key) {
 			t.Fatalf("CC Switch link must not contain %s", key)
 		}
 	}
-	configURL, err := url.Parse(params.Get("configUrl"))
-	if err != nil {
-		t.Fatalf("failed to parse config URL: %v", err)
+	if params.Get("apiKey") != token.GetFullKey() {
+		t.Fatalf("expected direct API key parameter")
 	}
-	if configURL.Query().Get("format") != "ccswitch" {
-		t.Fatalf("expected CC Switch config format in %q", configURL.String())
+	if params.Get("endpoint") != "https://shu26.cfd/v1" {
+		t.Fatalf("unexpected endpoint %q", params.Get("endpoint"))
 	}
-
-	getCtx, getRecorder := newAuthenticatedContext(t, http.MethodGet, configURL.Path+"?"+configURL.RawQuery, nil, 0)
-	getCtx.Request.URL.RawQuery = configURL.RawQuery
-	GetDesktopImportConfig(getCtx)
-	if getRecorder.Code != http.StatusOK {
-		t.Fatalf("expected raw config response, got status %d", getRecorder.Code)
+	if params.Get("model") != "gpt-5.6-luna" {
+		t.Fatalf("unexpected model %q", params.Get("model"))
 	}
-	if getRecorder.Header().Get("Cache-Control") != "no-store" {
-		t.Fatalf("one-time config response must disable caching")
+	if params.Get("homepage") != "https://shu26.cfd" || params.Get("enabled") != "true" {
+		t.Fatalf("missing official provider metadata in %q", created.DeepLink)
 	}
-	var rawConfig map[string]any
-	if err := platformencoding.Unmarshal(getRecorder.Body.Bytes(), &rawConfig); err != nil {
-		t.Fatalf("expected raw JSON config, got %q: %v", getRecorder.Body.String(), err)
+	if params.Get("notes") != "Imported from CodeGo website" {
+		t.Fatalf("unexpected CC Switch import notes %q", params.Get("notes"))
 	}
-	auth, ok := rawConfig["auth"].(map[string]any)
-	if !ok || auth["OPENAI_API_KEY"] != token.GetFullKey() {
-		t.Fatalf("raw config did not preserve the token key")
-	}
-
-	secondCtx, secondRecorder := newAuthenticatedContext(t, http.MethodGet, configURL.Path+"?"+configURL.RawQuery, nil, 0)
-	secondCtx.Request.URL.RawQuery = configURL.RawQuery
-	GetDesktopImportConfig(secondCtx)
-	secondResponse := decodeAPIResponse(t, secondRecorder)
-	if secondResponse.Success {
-		t.Fatalf("one-time CC Switch config URL must not be reusable")
+	if created.Code != "" || created.ConfigURL != "" || created.ExpiresIn != 0 {
+		t.Fatalf("CC Switch direct import must not create a one-time config: %+v", created)
 	}
 }
 

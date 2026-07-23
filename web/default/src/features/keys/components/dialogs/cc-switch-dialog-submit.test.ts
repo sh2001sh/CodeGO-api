@@ -164,11 +164,11 @@ describe('submitDesktopImportRequest', () => {
           return {
             success: true,
             data: {
-              code: 'import-code',
+              code: '',
               deep_link:
-                'ccswitch://v1/import?resource=provider&app=codex&configUrl=https%3A%2F%2Fshu26.cfd%2Fconfig%3Fformat%3Dccswitch',
-              config_url: 'https://shu26.cfd/api/desktop/import/config?code=1',
-              expires_in_seconds: 300,
+                'ccswitch://v1/import?resource=provider&app=codex&name=CodeGo&endpoint=https%3A%2F%2Fshu26.cfd%2Fv1&apiKey=sk-test&model=gpt-5.6-luna&enabled=true',
+              config_url: '',
+              expires_in_seconds: 0,
               tool: 'codex',
               token_name: 'CodeGo',
               provider_name: 'CodeGo',
@@ -185,7 +185,7 @@ describe('submitDesktopImportRequest', () => {
 
     assert.deepEqual(result, { tone: 'success' })
     assert.deepEqual(openedLinks, [
-      'ccswitch://v1/import?resource=provider&app=codex&configUrl=https%3A%2F%2Fshu26.cfd%2Fconfig%3Fformat%3Dccswitch',
+      'ccswitch://v1/import?resource=provider&app=codex&name=CodeGo&endpoint=https%3A%2F%2Fshu26.cfd%2Fv1&apiKey=sk-test&model=gpt-5.6-luna&enabled=true',
     ])
   })
 
