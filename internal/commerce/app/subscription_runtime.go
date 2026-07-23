@@ -236,6 +236,28 @@ func ExpireSubscriptionOrder(tradeNo string, expectedPaymentProvider string) err
 	})
 }
 
+// CancelPendingSubscriptionOrder expires a user's unpaid subscription order.
+func CancelPendingSubscriptionOrder(userID int, tradeNo string) error {
+	if userID <= 0 || strings.TrimSpace(tradeNo) == "" {
+		return errors.New("invalid subscription order cancellation")
+	}
+	return platformdb.DB.Transaction(func(tx *gorm.DB) error {
+		order := &commerceschema.SubscriptionOrder{}
+		if err := tx.Set("gorm:query_option", "FOR UPDATE").Where(subscriptionTradeNoColumn()+" = ? AND user_id = ?", tradeNo, userID).First(order).Error; err != nil {
+			return commerceschema.ErrSubscriptionOrderNotFound
+		}
+		if order.Status != constant.TopUpStatusPending {
+			return nil
+		}
+		order.Status = constant.TopUpStatusExpired
+		order.CompleteTime = platformruntime.GetTimestamp()
+		if err := tx.Save(order).Error; err != nil {
+			return err
+		}
+		return ReleaseReservedBlindBoxPropByTradeNoTx(tx, tradeNo, commerceschema.BlindBoxPropOrderTypeSubscription)
+	})
+}
+
 func upsertSubscriptionTopUpTx(tx *gorm.DB, order *commerceschema.SubscriptionOrder) error {
 	if tx == nil || order == nil {
 		return errors.New("invalid subscription order")

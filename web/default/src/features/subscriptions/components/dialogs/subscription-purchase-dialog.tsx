@@ -31,7 +31,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import {
-  getSubscriptionOrderStatus,
+	cancelSubscriptionOrder,
+	getSubscriptionOrderStatus,
   paySubscriptionCreem,
   paySubscriptionEpay,
   paySubscriptionStripe,
@@ -253,10 +254,20 @@ export function SubscriptionPurchaseDialog(props: Props) {
     }
   }, [paymentTracker.orderId, paymentTracker.stage, props.open])
 
-  const selectedEpayMethodLabel = useMemo(
+	const selectedEpayMethodLabel = useMemo(
     () => getMethodLabel(selectedEpayMethod, paymentMethods, t),
     [paymentMethods, selectedEpayMethod, t]
-  )
+	)
+
+	const cancelPendingPayment = () => {
+		const orderId = paymentTracker.orderId
+		if (orderId) void cancelSubscriptionOrder(orderId)
+		setPaymentTracker((current) => ({
+			...current,
+			stage: 'cancelled',
+			message: '已取消未支付订单。',
+		}))
+	}
 
   if (!plan || !planRecord) return null
 
@@ -584,19 +595,15 @@ export function SubscriptionPurchaseDialog(props: Props) {
           {paymentTracker.stage === 'pending' ? (
             <Button
               variant='ghost'
-              onClick={() =>
-                setPaymentTracker((current) => ({
-                  ...current,
-                  stage: 'cancelled',
-                  message:
-                    '你已取消当前等待。如果支付页中继续完成付款，结果回传后套餐仍会自动生效。',
-                }))
-              }
+			  onClick={cancelPendingPayment}
             >
               取消等待
             </Button>
           ) : (
-            <Button variant='default' onClick={() => props.onOpenChange(false)}>
+			<Button variant='default' onClick={() => {
+				cancelPendingPayment()
+				props.onOpenChange(false)
+			}}>
               关闭
             </Button>
           )}

@@ -20,6 +20,7 @@ func RegisterCommerceRoutes(apiRouter *gin.RouterGroup, anonymousRequestBodyLimi
 		subscriptionRoute.GET("/self", getSubscriptionSelf)
 		subscriptionRoute.GET("/self/claude-conversions", listSubscriptionClaudeConversions)
 		subscriptionRoute.GET("/orders/:trade_no", getSubscriptionOrderStatus)
+		subscriptionRoute.POST("/orders/:trade_no/cancel", middleware.CriticalRateLimit(), cancelSubscriptionOrder)
 		subscriptionRoute.PUT("/self/preference", updateSubscriptionPreference)
 		subscriptionRoute.POST("/self/claude-conversions", middleware.CriticalRateLimit(), createSubscriptionClaudeConversion)
 		subscriptionRoute.POST("/self/reset-opportunity/use", middleware.CriticalRateLimit(), useSubscriptionResetOpportunity)
