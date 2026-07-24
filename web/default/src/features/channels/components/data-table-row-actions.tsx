@@ -28,8 +28,6 @@ import {
   DollarSign,
   Download,
   Copy,
-  Power,
-  PowerOff,
   Key,
   Trash2,
   RefreshCw,
@@ -56,8 +54,6 @@ import {
   channelsQueryKeys,
   handleDeleteChannel,
   handleTestChannel,
-  handleToggleChannelStatus,
-  isChannelEnabled,
   isMultiKeyChannel,
 } from '../lib'
 import { parseUpstreamUpdateMeta } from '../lib/upstream-update-utils'
@@ -75,9 +71,6 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
   const queryClient = useQueryClient()
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
   const [isTesting, setIsTesting] = useState(false)
-  const [isTogglingStatus, setIsTogglingStatus] = useState(false)
-
-  const isEnabled = isChannelEnabled(channel)
   const isMultiKey = isMultiKeyChannel(channel)
 
   const handleEdit = () => {
@@ -127,18 +120,6 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
     setOpen('multi-key-manage')
   }
 
-  const handleToggleStatus = async (
-    e?: React.MouseEvent<HTMLButtonElement>
-  ) => {
-    e?.stopPropagation()
-    setIsTogglingStatus(true)
-    try {
-      await handleToggleChannelStatus(channel.id, channel.status, queryClient)
-    } finally {
-      setIsTogglingStatus(false)
-    }
-  }
-
   return (
     <div className='flex items-center justify-end gap-1'>
       <Tooltip>
@@ -160,36 +141,6 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
           )}
         </TooltipTrigger>
         <TooltipContent>{t('Test Connection')}</TooltipContent>
-      </Tooltip>
-
-      <Tooltip>
-        <TooltipTrigger
-          render={
-            <Button
-              variant='ghost'
-              size='icon-sm'
-              onClick={handleToggleStatus}
-              disabled={isTogglingStatus}
-              aria-label={isEnabled ? t('Disable') : t('Enable')}
-              className={
-                isEnabled
-                  ? 'text-destructive hover:text-destructive'
-                  : 'text-emerald-600 hover:text-emerald-600 dark:text-emerald-400 dark:hover:text-emerald-400'
-              }
-            />
-          }
-        >
-          {isTogglingStatus ? (
-            <Loader2 className='size-4 animate-spin' />
-          ) : isEnabled ? (
-            <PowerOff className='size-4' />
-          ) : (
-            <Power className='size-4' />
-          )}
-        </TooltipTrigger>
-        <TooltipContent>
-          {isEnabled ? t('Disable') : t('Enable')}
-        </TooltipContent>
       </Tooltip>
 
       <DropdownMenu>

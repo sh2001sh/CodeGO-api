@@ -23,6 +23,7 @@ import { ROLE } from '@/lib/roles'
 import { Channels } from '@/features/channels'
 
 const channelsSearchSchema = z.object({
+  tab: z.enum(['route-pools']).optional().catch(undefined),
   page: z.number().optional().catch(1),
   pageSize: z.number().optional().catch(10),
   filter: z.string().optional().catch(''),

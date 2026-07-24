@@ -115,11 +115,22 @@ export function ProfileDropdown() {
 
           {isSuperAdmin && (
             <>
-              <DropdownMenuItem onClick={() => navigate({ to: '/route-pools' })}>
+              <DropdownMenuItem
+                onClick={() =>
+                  navigate({ to: '/channels', search: { tab: 'route-pools' } })
+                }
+              >
                 <Workflow className='size-4' />
                 智能路由池
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate({ to: '/system-settings/site/$section', params: { section: 'system-info' } })}>
+              <DropdownMenuItem
+                onClick={() =>
+                  navigate({
+                    to: '/system-settings/site/$section',
+                    params: { section: 'system-info' },
+                  })
+                }
+              >
                 <Settings className='size-4' />
                 {t('System Settings')}
               </DropdownMenuItem>
