@@ -119,7 +119,9 @@ func Distribute() func(c *gin.Context) {
 				if preferredChannelID, found := gatewayruntime.GetPreferredChannelByAffinity(c, modelRequest.Model, usingGroup); found {
 					preferred, err := gatewaystore.GetCachedChannel(preferredChannelID)
 					if err == nil && preferred != nil {
-						if preferred.Status != constant.ChannelStatusEnabled || gatewayruntime.IsChannelCooling(preferred.Id, modelRequest.Model) {
+						if preferred.Status != constant.ChannelStatusEnabled ||
+							gatewayruntime.IsChannelCooling(preferred.Id, modelRequest.Model) ||
+							gatewayroutingapp.ShouldMigrateAutomaticPoolAffinity(usingGroup, modelRequest.Model, preferred.Id) {
 							gatewayruntime.InvalidateChannelAffinityForCurrentRequest(c)
 							gatewayruntime.ExcludeRouteDecisionCandidate(c, "stale_affinity")
 						} else if usingGroup == "auto" {
@@ -176,6 +178,7 @@ func Distribute() func(c *gin.Context) {
 		c.Next()
 		if channel != nil && c.Writer != nil && c.Writer.Status() < http.StatusBadRequest {
 			gatewayruntime.RecordChannelAffinity(c, channel.Id)
+			gatewayroutingapp.RecordAutomaticPoolAffinity(c, channel.Id)
 		}
 	}
 }
