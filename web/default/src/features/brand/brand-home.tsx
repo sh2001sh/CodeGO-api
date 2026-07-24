@@ -135,9 +135,9 @@ export function BrandHome() {
       headerProps={{ className: 'eclipse-public-header' }}
     >
       <SiteSeo
-        title='Code Go | Codex API、Claude Code API、Codex 中转、Claude 中转'
-        description='Code Go 是面向长期 AI Coding 的统一入口，覆盖 Codex API、Claude Code API、免费模型、模型广场、套餐与桌面端配置。'
-        keywords='Code Go, Codex API, Claude Code API, Codex中转, Claude中转, 免费模型, AI Coding'
+        title='CodeGo | Codex API、Claude Code API、Codex 中转、Claude 中转'
+        description='CodeGo（Code Go）是面向长期 AI Coding 的统一入口，覆盖 Codex API、Claude Code API、免费模型、模型广场、套餐与桌面端配置。'
+        keywords='CodeGo, Code Go, Codex API, Claude Code API, Codex中转, Claude中转, 免费模型, AI Coding'
         canonicalPath='/'
       />
       <main className='bg-background overflow-hidden'>
