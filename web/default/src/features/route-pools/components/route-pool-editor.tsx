@@ -47,7 +47,9 @@ export function RoutePoolEditor({
   const channelOptions = channels
     .filter(
       (channel) =>
-        !draft.group || channel.group.split(',').includes(draft.group)
+        !draft.group ||
+        (typeof channel.group === 'string' &&
+          channel.group.split(',').includes(draft.group))
     )
     .map((channel) => ({
       value: String(channel.id),
