@@ -167,6 +167,7 @@ func selectRoutePoolCandidate(c *gin.Context, poolID int64, candidate *scoredRou
 		return nil
 	}
 	if c != nil {
+		gatewayruntime.MarkAutomaticPool(c)
 		c.Set(routePoolContextKey, RoutePoolSelection{PoolID: poolID, ProcurementCostMultiplier: candidate.cost})
 	}
 	return candidate.channel

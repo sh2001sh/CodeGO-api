@@ -16,11 +16,9 @@ along with this program. If not, see <https://www.gnu.org/licenses/>.
 
 For commercial licensing, please contact support@quantumnous.com
 */
-import { getRouteApi } from '@tanstack/react-router'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '@/stores/auth-store'
 import { ROLE } from '@/lib/roles'
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { SectionPageLayout } from '@/components/layout'
 import { RoutePoolsContent } from '@/features/route-pools'
 import { ChannelsDialogs } from './components/channels-dialogs'
@@ -28,57 +26,36 @@ import { ChannelsPrimaryButtons } from './components/channels-primary-buttons'
 import { ChannelsProvider } from './components/channels-provider'
 import { ChannelsTable } from './components/channels-table'
 
-const route = getRouteApi('/_authenticated/channels/')
-
 export function Channels() {
   const { t } = useTranslation()
-  const navigate = route.useNavigate()
-  const search = route.useSearch()
   const isSuperAdmin = useAuthStore(
     (state) => state.auth.user?.role === ROLE.SUPER_ADMIN
   )
-  const activeTab =
-    isSuperAdmin && search.tab === 'route-pools' ? 'route-pools' : 'channels'
-
-  const handleTabChange = (tab: string) => {
-    void navigate({
-      search: (previous) => ({
-        ...previous,
-        tab: tab === 'route-pools' ? 'route-pools' : undefined,
-      }),
-    })
-  }
+  const showRouting = isSuperAdmin
 
   return (
     <ChannelsProvider>
       <SectionPageLayout>
         <SectionPageLayout.Title>
-          {activeTab === 'route-pools' ? '智能路由池' : t('Channels')}
+          {showRouting ? '渠道与智能路由' : t('Channels')}
         </SectionPageLayout.Title>
         <SectionPageLayout.Description>
-          {activeTab === 'route-pools'
-            ? '配置分组可用渠道、采购成本和自动选择规则。'
-            : '维护上游接入、凭据和模型能力；路由参与状态在智能路由池中管理。'}
+          {showRouting
+            ? '按渠道已配置分组管理自动路由、渠道启用状态和采购倍率。'
+            : '维护上游接入、凭据和模型能力。'}
         </SectionPageLayout.Description>
         <SectionPageLayout.Actions>
-          {activeTab === 'channels' && <ChannelsPrimaryButtons />}
+          <ChannelsPrimaryButtons />
         </SectionPageLayout.Actions>
         <SectionPageLayout.Content>
-          <div className='space-y-4'>
-            {isSuperAdmin && (
-              <Tabs value={activeTab} onValueChange={handleTabChange}>
-                <TabsList className='h-auto max-w-full flex-wrap justify-start'>
-                  <TabsTrigger value='channels'>渠道配置</TabsTrigger>
-                  <TabsTrigger value='route-pools'>智能路由池</TabsTrigger>
-                </TabsList>
-              </Tabs>
-            )}
-            {activeTab === 'route-pools' ? (
+          {showRouting ? (
+            <div className='space-y-8'>
               <RoutePoolsContent />
-            ) : (
               <ChannelsTable />
-            )}
-          </div>
+            </div>
+          ) : (
+            <ChannelsTable />
+          )}
         </SectionPageLayout.Content>
       </SectionPageLayout>
 

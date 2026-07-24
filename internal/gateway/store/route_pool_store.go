@@ -9,6 +9,7 @@ import (
 
 	"github.com/sh2001sh/new-api/constant"
 	gatewayschema "github.com/sh2001sh/new-api/internal/gateway/schema"
+	platformconfig "github.com/sh2001sh/new-api/internal/platform/config"
 	platformdb "github.com/sh2001sh/new-api/internal/platform/db"
 	"gorm.io/gorm"
 )
@@ -103,7 +104,7 @@ func SaveRoutePool(pool *gatewayschema.RoutePool, members []gatewayschema.RouteP
 				return err
 			}
 		} else if err := tx.Model(&gatewayschema.RoutePool{}).Where("id = ?", pool.ID).
-			Updates(map[string]any{"name": pool.Name, "group": pool.Group, "enabled": pool.Enabled}).Error; err != nil {
+			Updates(map[string]any{"name": pool.Name, "group": pool.Group, "enabled": pool.Enabled, "auto_discover": pool.AutoDiscover}).Error; err != nil {
 			return err
 		}
 		if err := tx.Where("route_pool_id = ?", pool.ID).Delete(&gatewayschema.RoutePoolMember{}).Error; err != nil {
@@ -188,8 +189,16 @@ func LoadRoutePoolCandidates(group, modelName string, detail *RoutePoolDetail) (
 	if detail == nil || !detail.Pool.Enabled {
 		return nil, nil
 	}
-	candidates := make([]RoutePoolCandidate, 0, len(detail.Members))
-	for _, member := range detail.Members {
+	members := detail.Members
+	if detail.Pool.AutoDiscover {
+		var err error
+		members, err = ExpandRoutePoolMembers(group, members)
+		if err != nil {
+			return nil, err
+		}
+	}
+	candidates := make([]RoutePoolCandidate, 0, len(members))
+	for _, member := range members {
 		if !member.Enabled || !IsChannelEnabledForGroupModel(group, modelName, member.ChannelID) {
 			continue
 		}
@@ -201,6 +210,72 @@ func LoadRoutePoolCandidates(group, modelName string, detail *RoutePoolDetail) (
 	}
 	sort.Slice(candidates, func(i, j int) bool { return candidates[i].Channel.Id < candidates[j].Channel.Id })
 	return candidates, nil
+}
+
+// ExpandRoutePoolMembers adds group-assigned channels that have no explicit
+// member row. Explicit rows remain authoritative for disable and model-cost
+// overrides, while newly added group channels use the neutral cost multiplier.
+func ExpandRoutePoolMembers(group string, configured []gatewayschema.RoutePoolMember) ([]gatewayschema.RoutePoolMember, error) {
+	byChannelID := make(map[int]gatewayschema.RoutePoolMember, len(configured))
+	for _, member := range configured {
+		byChannelID[member.ChannelID] = member
+	}
+	channels, err := listChannelsAssignedToGroup(group)
+	if err != nil {
+		return nil, err
+	}
+	members := make([]gatewayschema.RoutePoolMember, 0, len(channels))
+	for _, channel := range channels {
+		member, found := byChannelID[channel.Id]
+		if !found {
+			member = gatewayschema.RoutePoolMember{
+				ChannelID:          channel.Id,
+				CostMultiplier:     1,
+				ModelCostOverrides: "{}",
+				Enabled:            true,
+			}
+		}
+		members = append(members, member)
+	}
+	return members, nil
+}
+
+func listChannelsAssignedToGroup(group string) ([]*gatewayschema.Channel, error) {
+	group = strings.TrimSpace(group)
+	if group == "" {
+		return nil, nil
+	}
+	if platformconfig.MemoryCacheEnabled {
+		channelSyncLock.RLock()
+		defer channelSyncLock.RUnlock()
+		channels := make([]*gatewayschema.Channel, 0)
+		for _, channel := range channelsIDM {
+			for _, channelGroup := range channel.GetGroups() {
+				if channelGroup == group {
+					channels = append(channels, channel)
+					break
+				}
+			}
+		}
+		sort.Slice(channels, func(i, j int) bool { return channels[i].Id < channels[j].Id })
+		return channels, nil
+	}
+
+	var allChannels []*gatewayschema.Channel
+	if err := platformdb.DB.Omit("key").Find(&allChannels).Error; err != nil {
+		return nil, err
+	}
+	channels := make([]*gatewayschema.Channel, 0)
+	for _, channel := range allChannels {
+		for _, channelGroup := range channel.GetGroups() {
+			if channelGroup == group {
+				channels = append(channels, channel)
+				break
+			}
+		}
+	}
+	sort.Slice(channels, func(i, j int) bool { return channels[i].Id < channels[j].Id })
+	return channels, nil
 }
 
 type RoutePoolCandidate struct {

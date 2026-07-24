@@ -10,6 +10,24 @@ export type RoutePool = {
   name: string
   group: string
   enabled: boolean
+  auto_discover: boolean
+}
+
+export type RoutePoolGroup = {
+  group: string
+  pool_id: number
+  enabled: boolean
+  algorithm_active: boolean
+  auto_discover: boolean
+  channels: Array<{
+    channel_id: number
+    channel_name: string
+    channel_status: number
+    models: string
+    enabled: boolean
+    cost_multiplier: number
+    model_cost_overrides: string
+  }>
 }
 
 export type RoutePoolDetail = {
@@ -45,5 +63,6 @@ export const createBlankRoutePoolDraft = (): RoutePoolDraft => ({
   name: '',
   group: '',
   enabled: true,
+  auto_discover: false,
   members: [],
 })

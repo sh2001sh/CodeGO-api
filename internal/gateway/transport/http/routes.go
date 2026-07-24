@@ -9,6 +9,8 @@ func RegisterGatewayRoutes(apiRouter *gin.RouterGroup) {
 	routePoolRoute := apiRouter.Group("/route-pools")
 	routePoolRoute.Use(middleware.RootAuth())
 	{
+		routePoolRoute.GET("/groups", ListRoutePoolGroups)
+		routePoolRoute.PUT("/groups", SaveRoutePoolGroup)
 		routePoolRoute.GET("/", ListRoutePools)
 		routePoolRoute.POST("/", SaveRoutePool)
 		routePoolRoute.PUT("/", SaveRoutePool)

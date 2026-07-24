@@ -117,11 +117,11 @@ export function ProfileDropdown() {
             <>
               <DropdownMenuItem
                 onClick={() =>
-                  navigate({ to: '/channels', search: { tab: 'route-pools' } })
+                  navigate({ to: '/channels' })
                 }
               >
                 <Workflow className='size-4' />
-                智能路由池
+                自动路由
               </DropdownMenuItem>
               <DropdownMenuItem
                 onClick={() =>

@@ -56,6 +56,7 @@ func V2MigrationIDs() []string {
 		"20260720_wallet_quota_conversion",
 		"20260721_blind_box_zero_hour",
 		"20260724_gateway_route_pools",
+		"20260724_gateway_route_pool_auto_discovery",
 		"20260724_billing_funding_attribution",
 	}
 }
@@ -160,6 +161,9 @@ func ApplyV2Migrations(ctx context.Context, dryRun bool) error {
 			return tx.AutoMigrate(&commerceschema.BlindBoxZeroHourState{})
 		}},
 		{ID: "20260724_gateway_route_pools", Run: func(tx *gorm.DB) error {
+			return tx.AutoMigrate(&gatewayschema.RoutePool{}, &gatewayschema.RoutePoolMember{})
+		}},
+		{ID: "20260724_gateway_route_pool_auto_discovery", Run: func(tx *gorm.DB) error {
 			return tx.AutoMigrate(&gatewayschema.RoutePool{}, &gatewayschema.RoutePoolMember{})
 		}},
 		{ID: "20260724_billing_funding_attribution", Run: func(tx *gorm.DB) error {
