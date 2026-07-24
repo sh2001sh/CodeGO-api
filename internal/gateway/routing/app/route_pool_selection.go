@@ -278,15 +278,7 @@ func effectiveRoutePoolCost(member gatewayschema.RoutePoolMember, modelName stri
 		cost *= 1.10
 	}
 	if health.Window5Requests >= 5 {
-		switch rate := routePoolConservativeSuccessRate(health); {
-		case rate >= 98:
-		case rate >= 95:
-			cost *= 1.15
-		case rate >= 90:
-			cost *= 2.5
-		default:
-			cost *= 5
-		}
+		cost *= routePoolReliabilityPenalty(routePoolConservativeSuccessRate(health))
 	}
 	if health.State == gatewayruntime.ChannelHealthDegraded {
 		cost *= 1.35
@@ -295,6 +287,19 @@ func effectiveRoutePoolCost(member gatewayschema.RoutePoolMember, modelName stri
 		cost *= math.Pow(1.25, float64(health.ConsecutiveRetryableFailures))
 	}
 	return cost
+}
+
+func routePoolReliabilityPenalty(rate float64) float64 {
+	switch {
+	case rate >= 98:
+		return 1
+	case rate >= 95:
+		return 1.15 + (98-rate)*0.12
+	case rate >= 90:
+		return 2.5 + (95-rate)*0.3
+	default:
+		return math.Min(15, 5+(90-rate)*0.2)
+	}
 }
 
 func routePoolConservativeSuccessRate(health gatewayruntime.ChannelHealth) float64 {

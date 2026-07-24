@@ -58,3 +58,9 @@ func TestEffectiveRoutePoolCostStronglyPenalizesPoorReliability(t *testing.T) {
 	})
 	assert.Greater(t, poor, stable)
 }
+
+func TestRoutePoolReliabilityPenaltyDifferentiatesUnstableChannels(t *testing.T) {
+	assert.Greater(t, routePoolReliabilityPenalty(60), routePoolReliabilityPenalty(75))
+	assert.Greater(t, routePoolReliabilityPenalty(75), routePoolReliabilityPenalty(89))
+	assert.Greater(t, routePoolReliabilityPenalty(89), routePoolReliabilityPenalty(95))
+}
