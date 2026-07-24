@@ -1,22 +1,18 @@
 # Main Goal
-Improve Code Go acquisition and local configuration workflows while preserving safe billing and restore behavior.
+Implement root-only, group-scoped automatic routing pools that minimize channel procurement cost while preserving model-level reliability. Financial reporting must distinguish actual quota origin: subscription, paid recharge, and blind-box rewards.
 
 # Current Status
-- First blind-box opening for a paid order can no longer retain a prop reward: when a prop is selected, the first-purchase guarantee converts it to ordinary wallet quota at the configured minimum.
-- Codex setup script defaults are now provider `CodeGo` and model `gpt-5.6-luna`.
-- Generated Windows and Linux/macOS scripts offer 0 exit, 1 configure CodeGo, and 2 restore original configuration; they preserve the first pre-CodeGo config/auth snapshot instead of overwriting it on later runs.
-- API key import dialog now includes a separate CC Switch action. It uses the same one-time payload but opens `ccswitch://`; Code Go Desktop remains `codego://`.
-- Desktop token action menu exposes Restore original configuration for tools with saved backups. Existing tool configuration panel restore behavior remains intact.
-
-# Verification
-- `go test ./internal/commerce/app -run "TestApplyFirstPurchaseMinimumGuarantee" -count=1` passed.
-- `node --experimental-strip-types --test src/features/keys/components/dialogs/cc-switch-dialog-submit.test.ts` passed (7 tests).
-- `npm run build` passed in `web/default`.
-- `pnpm vitest run tests/components/CodeGoToolConfigPanel.test.tsx tests/components/CodeGoTokenManager.test.tsx` passed (12 tests).
-- `git diff --check` passed in both repositories.
+- Added `RoutePool` and `RoutePoolMember` schema plus migration `20260724_gateway_route_pools`.
+- Added pool persistence, root-only `/api/route-pools` CRUD and per-model metric endpoint.
+- Automatic selection uses channel procurement cost and model-level health; it ignores legacy priority/weight for an enabled pool and only falls back to legacy routing when no pool is enabled.
+- Expired model cooldowns are now recovery probes and require two successful requests before returning to healthy state.
+- Added immutable funding lots and FIFO allocations for wallet credits. New top-up/blind-box credits snapshot their source multiplier; legacy balances remain explicitly `legacy_unattributed`.
+- Added internal request economics snapshots and root-only `/api/route-finance` policy/daily-report APIs. Procurement figures are not written to user-visible audit metadata.
+- Added Root-only `/route-pools` console for pool editing, health metrics, source multipliers, and daily economics.
 
 # Next Step
-- Changes are local and uncommitted. Existing unrelated local modifications in `new-api` and untracked artifacts in `cc-switch-main` remain preserved.
+- Review the new console in production after migration, configure source multipliers, and create one pool per target group.
+- Commit and publish only after the user requests a release build.
 
 # Blockers
 - None.

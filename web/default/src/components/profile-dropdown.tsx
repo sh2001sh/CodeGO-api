@@ -18,7 +18,7 @@ For commercial licensing, please contact support@quantumnous.com
 */
 import { useMemo } from 'react'
 import { useNavigate } from '@tanstack/react-router'
-import { User, Wallet, LogOut, Settings } from 'lucide-react'
+import { User, Wallet, LogOut, Settings, Workflow } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
 import { useAuthStore } from '@/stores/auth-store'
 import { getUserAvatarFallback, getUserAvatarStyle } from '@/lib/avatar'
@@ -114,17 +114,16 @@ export function ProfileDropdown() {
           </DropdownMenuItem>
 
           {isSuperAdmin && (
-            <DropdownMenuItem
-              onClick={() =>
-                navigate({
-                  to: '/system-settings/site/$section',
-                  params: { section: 'system-info' },
-                })
-              }
-            >
-              <Settings className='size-4' />
-              {t('System Settings')}
-            </DropdownMenuItem>
+            <>
+              <DropdownMenuItem onClick={() => navigate({ to: '/route-pools' })}>
+                <Workflow className='size-4' />
+                智能路由池
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => navigate({ to: '/system-settings/site/$section', params: { section: 'system-info' } })}>
+                <Settings className='size-4' />
+                {t('System Settings')}
+              </DropdownMenuItem>
+            </>
           )}
 
           <DropdownMenuSeparator />

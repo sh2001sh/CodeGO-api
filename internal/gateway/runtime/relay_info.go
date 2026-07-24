@@ -142,6 +142,10 @@ type RelayInfo struct {
 	// SubscriptionPlanId / SubscriptionPlanTitle are used for logging/UI display.
 	SubscriptionPlanId    int
 	SubscriptionPlanTitle string
+	// RoutePoolID and ProcurementCostMultiplier are internal-only settlement
+	// snapshots. They are never sent to users or upstream providers.
+	RoutePoolID               int64
+	ProcurementCostMultiplier float64
 	// RequestId is used for idempotent pre-consume/refund
 	RequestId string
 	// SubscriptionAmountTotal / SubscriptionAmountUsedAfterPreConsume are used to compute remaining in logs.

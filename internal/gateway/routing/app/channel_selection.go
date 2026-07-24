@@ -54,6 +54,9 @@ func (p *RetryParam) ResetRetryNextTry() {
 
 // CacheGetRandomSatisfiedChannel selects an available channel for the current retry round.
 func CacheGetRandomSatisfiedChannel(param *RetryParam) (*gatewayschema.Channel, string, error) {
+	if param != nil && param.Ctx != nil {
+		param.Ctx.Set(routePoolContextKey, RoutePoolSelection{})
+	}
 	var channel *gatewayschema.Channel
 	var err error
 	selectGroup := param.TokenGroup
@@ -83,7 +86,7 @@ func CacheGetRandomSatisfiedChannel(param *RetryParam) (*gatewayschema.Channel, 
 			}
 			logger.LogDebug(param.Ctx, "Auto selecting group: %s, priorityRetry: %d", autoGroup, priorityRetry)
 
-			channel, _ = getHealthySatisfiedChannel(autoGroup, param.ModelName, priorityRetry)
+			channel, _ = getHealthySatisfiedChannelWithContext(param.Ctx, autoGroup, param.ModelName, priorityRetry)
 			if channel == nil {
 				gatewayruntime.ExcludeRouteDecisionCandidate(param.Ctx, "no_healthy_channel")
 				logger.LogDebug(param.Ctx, "No available channel in group %s for model %s at priorityRetry %d, trying next group", autoGroup, param.ModelName, priorityRetry)
@@ -108,7 +111,7 @@ func CacheGetRandomSatisfiedChannel(param *RetryParam) (*gatewayschema.Channel, 
 			break
 		}
 	} else {
-		channel, err = getHealthySatisfiedChannel(param.TokenGroup, param.ModelName, param.GetRetry())
+		channel, err = getHealthySatisfiedChannelWithContext(param.Ctx, param.TokenGroup, param.ModelName, param.GetRetry())
 		if channel != nil {
 			gatewayruntime.SelectRouteDecisionCandidate(param.Ctx, param.TokenGroup, channel.Id, false)
 		}
@@ -119,6 +122,13 @@ func CacheGetRandomSatisfiedChannel(param *RetryParam) (*gatewayschema.Channel, 
 	return channel, selectGroup, nil
 }
 func getHealthySatisfiedChannel(group string, modelName string, retry int) (*gatewayschema.Channel, error) {
+	return getHealthySatisfiedChannelWithContext(nil, group, modelName, retry)
+}
+
+func getHealthySatisfiedChannelWithContext(c *gin.Context, group string, modelName string, retry int) (*gatewayschema.Channel, error) {
+	if channel, managed, err := selectAutomaticPoolChannel(c, group, modelName); err != nil || managed {
+		return channel, err
+	}
 	var degradedCandidate *gatewayschema.Channel
 	seenPriorities := make(map[int64]struct{})
 	for priorityRetry := retry; priorityRetry < retry+16; priorityRetry++ {
@@ -155,7 +165,13 @@ func getHealthySatisfiedChannelAtPriority(group string, modelName string, retry 
 			found = true
 		}
 		health, healthFound := gatewayruntime.GetChannelHealth(channel.Id, modelName)
-		if healthFound && health.State == gatewayruntime.ChannelHealthCooling && health.CoolingUntil.After(time.Now()) {
+		if healthFound && health.State == gatewayruntime.ChannelHealthCooling {
+			if !health.CoolingUntil.After(time.Now()) && degraded == nil {
+				// When legacy routing is still in use, an expired circuit may be
+				// selected only after all healthy candidates are exhausted. Its
+				// next successes are counted as recovery probes by channel health.
+				degraded = channel
+			}
 			continue
 		}
 		if healthFound && health.State == gatewayruntime.ChannelHealthDegraded {

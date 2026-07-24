@@ -92,6 +92,10 @@ func getChannel(c *gin.Context, info *relaycommon.RelayInfo, retryParam *gateway
 	}
 
 	channel, selectGroup, err := gatewayroutingapp.CacheGetRandomSatisfiedChannel(retryParam)
+	if selection, found := gatewayroutingapp.GetRoutePoolSelection(c); found {
+		info.RoutePoolID = selection.PoolID
+		info.ProcurementCostMultiplier = selection.ProcurementCostMultiplier
+	}
 	info.PriceData.GroupRatioInfo = relaycommon.HandleGroupRatio(c, info)
 	if err != nil {
 		return nil, types.NewError(

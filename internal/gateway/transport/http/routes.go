@@ -6,6 +6,23 @@ import (
 )
 
 func RegisterGatewayRoutes(apiRouter *gin.RouterGroup) {
+	routePoolRoute := apiRouter.Group("/route-pools")
+	routePoolRoute.Use(middleware.RootAuth())
+	{
+		routePoolRoute.GET("/", ListRoutePools)
+		routePoolRoute.POST("/", SaveRoutePool)
+		routePoolRoute.PUT("/", SaveRoutePool)
+		routePoolRoute.DELETE("/:id", DeleteRoutePool)
+		routePoolRoute.GET("/:id/metrics", GetRoutePoolMetrics)
+	}
+	routeFinanceRoute := apiRouter.Group("/route-finance")
+	routeFinanceRoute.Use(middleware.RootAuth())
+	{
+		routeFinanceRoute.GET("/policies", GetFundingPolicies)
+		routeFinanceRoute.PUT("/policies", SaveFundingPolicies)
+		routeFinanceRoute.GET("/daily", GetDailyFundingEconomics)
+	}
+
 	channelRoute := apiRouter.Group("/channel")
 	channelRoute.Use(middleware.AdminAuth())
 	{

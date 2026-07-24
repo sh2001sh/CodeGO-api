@@ -39,6 +39,7 @@ type ChannelHealth struct {
 	Model                        string    `json:"model"`
 	State                        string    `json:"state"`
 	ConsecutiveRetryableFailures int       `json:"consecutive_retryable_failures"`
+	RecoveryProbeSuccesses       int       `json:"recovery_probe_successes"`
 	CoolingUntil                 time.Time `json:"cooling_until"`
 	SuccessRate2m                float64   `json:"success_rate_2m"`
 	SuccessRate5m                float64   `json:"success_rate_5m"`
@@ -139,6 +140,7 @@ func RecordChannelModelUnavailable(channelID int, model string, requestID string
 		}
 		state.LastFailureRequestID = requestID
 		state.ConsecutiveRetryableFailures++
+		state.RecoveryProbeSuccesses = 0
 		if state.ConsecutiveRetryableFailures >= channelHealthFailureThreshold {
 			state.State = ChannelHealthCooling
 			state.CoolingUntil = now.Add(channelModelUnavailableTTL)
@@ -167,8 +169,10 @@ func CoolChannelModelForUpstreamFailure(channelID int, model string) bool {
 		state.Model = model
 		state.State = ChannelHealthCooling
 		state.ConsecutiveRetryableFailures = 0
+		state.RecoveryProbeSuccesses = 0
 		state.CoolingUntil = now.Add(channelModelUpstreamFailureTTL)
 		state.LastFailureAt = now
+		state.RecoveryProbeSuccesses = 0
 		recordChannelHealthWindow(&state, now, false)
 		return state, nil
 	})
@@ -236,7 +240,8 @@ func shouldCoolForShortTermFailureRate(state ChannelHealth) bool {
 	return failures >= 3 && state.SuccessRate2m <= channelHealthShortMaxSuccess
 }
 
-// RecordChannelSuccess closes the circuit immediately after the upstream has accepted a request.
+// RecordChannelSuccess requires two successful recovery probes before reopening a
+// cooled model route. Normal healthy routes continue to recover immediately.
 func RecordChannelSuccess(channelID int, model string, ttft time.Duration) {
 	if channelID <= 0 || model == "" {
 		return
@@ -249,7 +254,6 @@ func RecordChannelSuccess(channelID int, model string, ttft time.Duration) {
 	_ = getChannelHealthCache().UpdateWithTTL(channelHealthKey(channelID, model), channelHealthTTL, func(state ChannelHealth, _ bool) (ChannelHealth, error) {
 		state.ChannelID = channelID
 		state.Model = model
-		state.ConsecutiveRetryableFailures = 0
 		state.LastSuccessAt = now
 		recordChannelHealthWindow(&state, now, true)
 		if ttft > 0 {
@@ -258,8 +262,17 @@ func RecordChannelSuccess(channelID int, model string, ttft time.Duration) {
 		if isSlowChannelTTFT(state) {
 			state.State = ChannelHealthCooling
 			state.CoolingUntil = now.Add(channelHealthShortCooldown)
+			state.RecoveryProbeSuccesses = 0
 			return state, nil
 		}
+		if state.State == ChannelHealthCooling && !state.CoolingUntil.After(now) {
+			state.RecoveryProbeSuccesses++
+			if state.RecoveryProbeSuccesses < 2 {
+				return state, nil
+			}
+		}
+		state.ConsecutiveRetryableFailures = 0
+		state.RecoveryProbeSuccesses = 0
 		state.State = ChannelHealthHealthy
 		state.CoolingUntil = time.Time{}
 		return state, nil

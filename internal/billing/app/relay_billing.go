@@ -75,6 +75,9 @@ func SettleRelayBilling(ctx *gin.Context, relayInfo *relaycommon.RelayInfo, actu
 		if err := relayInfo.Billing.Settle(actualQuota); err != nil {
 			return err
 		}
+		if err := RecordRequestEconomics(relayInfo, actualQuota); err != nil {
+			platformobservability.SysError("record request economics: " + err.Error())
+		}
 		if session, ok := relayInfo.Billing.(*BillingSession); ok {
 			if funding, ok := session.funding.(settlementProjectionFunding); ok {
 				startRequestSettlementProjection(ctx, relayInfo, funding, actualQuota)
