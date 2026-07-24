@@ -101,7 +101,10 @@ func DailyFundingEconomics(day time.Time, quotaPerUnit float64) (*FundingDailyEc
 	}
 	start := time.Date(day.In(location).Year(), day.In(location).Month(), day.In(location).Day(), 0, 0, 0, 0, location)
 	end := start.AddDate(0, 0, 1)
-	result := &FundingDailyEconomicsReport{Date: start.Format("2006-01-02")}
+	result := &FundingDailyEconomicsReport{
+		Date:    start.Format("2006-01-02"),
+		Sources: make([]FundingEconomicsSource, 0),
+	}
 	if platformdb.DB == nil || !platformdb.DB.Migrator().HasTable(&billingschema.RequestEconomics{}) {
 		return result, nil
 	}

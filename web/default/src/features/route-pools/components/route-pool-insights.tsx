@@ -123,7 +123,7 @@ export function RoutePoolInsights({
               </p>
             </div>
           </div>
-          {daily?.sources.map((source) => (
+          {(daily?.sources ?? []).map((source) => (
             <div
               key={source.source}
               className='flex justify-between border-t pt-2 text-xs'
