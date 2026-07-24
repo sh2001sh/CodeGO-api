@@ -32,8 +32,11 @@ import {
   Trash2,
   RefreshCw,
   Loader2,
+  RotateCcw,
 } from 'lucide-react'
 import { useTranslation } from 'react-i18next'
+import { useAuthStore } from '@/stores/auth-store'
+import { ROLE } from '@/lib/roles'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -49,10 +52,11 @@ import {
   TooltipTrigger,
 } from '@/components/ui/tooltip'
 import { ConfirmDialog } from '@/components/confirm-dialog'
-import { MODEL_FETCHABLE_TYPES } from '../constants'
+import { CHANNEL_STATUS, MODEL_FETCHABLE_TYPES } from '../constants'
 import {
   channelsQueryKeys,
   handleDeleteChannel,
+  handleEnableChannel,
   handleTestChannel,
   isMultiKeyChannel,
 } from '../lib'
@@ -70,8 +74,12 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
   const { setOpen, setCurrentRow, upstream } = useChannels()
   const queryClient = useQueryClient()
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [recoverConfirmOpen, setRecoverConfirmOpen] = useState(false)
   const [isTesting, setIsTesting] = useState(false)
   const isMultiKey = isMultiKeyChannel(channel)
+  const isSuperAdmin = useAuthStore(
+    (state) => state.auth.user?.role === ROLE.SUPER_ADMIN
+  )
 
   const handleEdit = () => {
     setCurrentRow(channel)
@@ -225,6 +233,20 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
             </DropdownMenuItem>
           )}
 
+          {isSuperAdmin && channel.status !== CHANNEL_STATUS.ENABLED && (
+            <DropdownMenuItem
+              onSelect={(event) => {
+                event.preventDefault()
+                setRecoverConfirmOpen(true)
+              }}
+            >
+              解除全局禁用
+              <DropdownMenuShortcut>
+                <RotateCcw size={16} />
+              </DropdownMenuShortcut>
+            </DropdownMenuItem>
+          )}
+
           <DropdownMenuSeparator />
 
           {/* Copy Channel */}
@@ -273,6 +295,17 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
         handleConfirm={() => {
           handleDeleteChannel(channel.id, queryClient)
           setDeleteConfirmOpen(false)
+        }}
+      />
+      <ConfirmDialog
+        open={recoverConfirmOpen}
+        onOpenChange={setRecoverConfirmOpen}
+        title='解除全局禁用'
+        desc={`恢复“${channel.name}”的全局渠道状态。该操作不会改变分组内自动路由开关或成本倍率。`}
+        confirmText='确认恢复'
+        handleConfirm={() => {
+          void handleEnableChannel(channel.id, queryClient)
+          setRecoverConfirmOpen(false)
         }}
       />
     </div>
