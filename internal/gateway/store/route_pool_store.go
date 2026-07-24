@@ -100,20 +100,30 @@ func SaveRoutePool(pool *gatewayschema.RoutePool, members []gatewayschema.RouteP
 			return errors.New("only one route pool may be configured for a group")
 		}
 		if pool.ID == 0 {
-			if err := tx.Create(pool).Error; err != nil {
+			if err := tx.Select("Name", "Group", "Enabled", "AutoDiscover").Create(pool).Error; err != nil {
 				return err
 			}
 		} else if err := tx.Model(&gatewayschema.RoutePool{}).Where("id = ?", pool.ID).
 			Updates(map[string]any{"name": pool.Name, "group": pool.Group, "enabled": pool.Enabled, "auto_discover": pool.AutoDiscover}).Error; err != nil {
 			return err
 		}
-		if err := tx.Where("route_pool_id = ?", pool.ID).Delete(&gatewayschema.RoutePoolMember{}).Error; err != nil {
+		// Members are replaced as a complete set. The database-level uniqueness
+		// constraint intentionally remains in force for soft-deleted rows, so a
+		// normal GORM delete would make reinserting an unchanged channel fail.
+		if err := tx.Unscoped().Where("route_pool_id = ?", pool.ID).Delete(&gatewayschema.RoutePoolMember{}).Error; err != nil {
 			return err
 		}
 		for index := range members {
 			members[index].ID = 0
 			members[index].RoutePoolID = pool.ID
-			if err := tx.Create(&members[index]).Error; err != nil {
+			member := members[index]
+			if err := tx.Model(&gatewayschema.RoutePoolMember{}).Create(map[string]any{
+				"route_pool_id":        member.RoutePoolID,
+				"channel_id":           member.ChannelID,
+				"cost_multiplier":      member.CostMultiplier,
+				"model_cost_overrides": member.ModelCostOverrides,
+				"enabled":              member.Enabled,
+			}).Error; err != nil {
 				return err
 			}
 		}
